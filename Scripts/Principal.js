@@ -5,26 +5,25 @@ async function Autenticar(usuario, contraseña) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        usuario: usuario,
-        contraseña: contraseña
-      })
+      body: JSON.stringify({ usuario, contraseña })
     });
 
     if (!respuesta.ok) {
-      throw new Error('Error en la solicitud: ' + respuesta.status);
+      throw new Error(`Error en la solicitud: ${respuesta.status}`);
     }
 
     const datos = await respuesta.json();
 
     if (datos.autenticado) {
       console.log('✅ Usuario válido');
-      // Aquí puedes redirigir o guardar token
+      // Redirigir o guardar token
+      localStorage.setItem('token', datos.token);
+      window.location.href = 'dashboard.html';
     } else {
-      console.log('❌ Usuario o contraseña incorrectos');
+      alert('❌ Usuario o contraseña incorrectos');
     }
-
   } catch (error) {
     console.error('Error al validar:', error.message);
+    alert('⚠️ No se pudo conectar con el servidor.');
   }
 }
