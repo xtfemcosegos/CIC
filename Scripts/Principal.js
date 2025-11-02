@@ -1,29 +1,24 @@
-async function Autenticar(usuario, contraseña) {
+async function VerificarSesion() {
   try {
-    const respuesta = await fetch('https://tuservidor.com/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ usuario, contraseña })
-    });
+    const archivo = await fetch('inicio_sesion.json'); // debe estar en raíz
+    if (!archivo.ok) throw new Error('Archivo no encontrado');
 
-    if (!respuesta.ok) {
-      throw new Error(`Error en la solicitud: ${respuesta.status}`);
-    }
+    const sesion = await archivo.json();
+    const { nombre, tipo } = sesion;
 
-    const datos = await respuesta.json();
+    const rutaImagen = `ImgUser/${nombre}.png`;
+    const img = new Image();
+    img.src = rutaImagen;
+    img.onerror = () => img.src = 'ImgUser/0.png';
+    img.alt = 'Foto de usuario';
+    img.style.height = '32px';
+    img.style.borderRadius = '50%';
+    img.style.marginLeft = '8px';
 
-    if (datos.autenticado) {
-      console.log('✅ Usuario válido');
-      // Redirigir o guardar token
-      localStorage.setItem('token', datos.token);
-      window.location.href = 'dashboard.html';
-    } else {
-      alert('❌ Usuario o contraseña incorrectos');
-    }
+    const info = document.getElementById('infoUsuario');
+    info.innerHTML = `👋 Bienvenido, ${nombre} (${tipo})`;
+    info.appendChild(img);
   } catch (error) {
-    console.error('Error al validar:', error.message);
-    alert('⚠️ No se pudo conectar con el servidor.');
+    console.log('No hay sesión activa:', error.message);
   }
 }
