@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Registro de Siniestros</title>
+  <!-- Asumiendo que script.js maneja funciones globales externas si existen -->
+  <script src="../script.js"></script> 
+  <style>
+    :root {
+      /* === Variables de Diseño === */
+      /* Rojo Oscuro Profundo y Elegante */
+      --primary-gradient: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+      /* Plateado Metálico */
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+      
+      /* Color de acento rojo intenso */
+      --accent-color: #b71c1c;
+      
+      --text-dark: #2c3e50;
+      --text-muted: #546e7a;
+      --white: #ffffff;
+      
+      --header-height: 70px;
+      --radius-std: 8px;
+      --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.15);
+      --shadow-header: 0 4px 15px rgba(0, 0, 0, 0.3);
+      
+      --input-border: #cfd8dc;
+      --input-focus-ring: rgba(183, 28, 28, 0.25); /* Anillo de foco rojizo */
+    }
+
+    /* === Reset & Base === */
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg-gradient);
+      margin: 0;
+      padding-top: calc(var(--header-height) + 30px); /* Espacio para el header fijo */
+      color: var(--text-dark);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* === LOADING OVERLAY === */
+    #loadingOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s ease;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #ccc;
+      border-top-color: var(--accent-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      font-weight: bold;
+      color: var(--accent-color);
+      font-size: 1.2rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* === Header Fijo === */
+    .sticky-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--header-height);
+      background: var(--primary-gradient);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%; /* Margen lateral responsive */
+      box-shadow: var(--shadow-header);
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-volver {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--white);
+      padding: 8px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 50px; /* Botón tipo píldora */
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      -webkit-backdrop-filter: blur(5px); /* Safari support */
+      backdrop-filter: blur(5px);
+    }
+
+    .btn-volver:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* === Contenedor del Formulario === */
+    .main-form {
+      background: rgba(255, 255, 255, 0.9); /* Semi-transparente */
+      -webkit-backdrop-filter: blur(15px); /* Safari support */
+      backdrop-filter: blur(15px); /* Efecto cristal */
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 900px;
+      margin: 0 auto 50px auto;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    /* === Labels === */
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* === Inputs y Selects === */
+    .input-control {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      border-radius: var(--radius-std);
+      border: 1px solid var(--input-border);
+      background-color: var(--white);
+      color: var(--text-dark);
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      appearance: none; /* Eliminar estilo nativo del SO */
+    }
+
+    /* Flecha personalizada para selects */
+    select.input-control {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23546e7a' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 12px;
+    }
+
+    .input-control:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 4px var(--input-focus-ring);
+      outline: none;
+    }
+
+    /* === Grid System === */
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Clase específica para ancho completo en Grid */
+    .full-width-col {
+      grid-column: 1 / -1;
+    }
+
+    /* === Checkbox Groups === */
+    .checkbox-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 30px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: var(--radius-std);
+      border: 1px solid #e2e8f0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: var(--text-dark);
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .checkbox-input {
+      accent-color: var(--accent-color);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* === Rich Text Editor === */
+    .editor-container {
+      margin-bottom: 24px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-std);
+      overflow: hidden;
+      background: var(--white);
+      transition: border-color 0.3s;
+    }
+
+    .editor-container:focus-within {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--input-focus-ring);
+    }
+
+    .editor-toolbar {
+      background: #f1f5f9;
+      padding: 10px;
+      border-bottom: 1px solid var(--input-border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tool-btn {
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: var(--white);
+      color: var(--text-dark);
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tool-btn:hover {
+      background: #e2e8f0;
+      color: var(--accent-color);
+    }
+
+    /* Clase específica para el input color en la toolbar */
+    .color-picker-tool {
+      width: 36px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .editor-content {
+      min-height: 180px;
+      padding: 20px;
+      font-size: 1rem;
+      outline: none;
+      color: var(--text-dark);
+    }
+
+    /* === Botón Enviar === */
+    .btn-submit {
+      width: 100%;
+      padding: 18px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--white);
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: var(--radius-std);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      filter: brightness(1.1);
+    }
+
+    .btn-submit:disabled {
+      background: #999;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* === Mobile Ajustes === */
+    @media (max-width: 600px) {
+      .sticky-header {
+        padding: 0 20px;
+      }
+      .header-title {
+        font-size: 1rem;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .main-form {
+        padding: 25px;
+        margin-left: 15px;
+        margin-right: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando datos...</div>
+  </div>
+
+  <!-- Encabezado Fijo (Sticky Header) -->
+  <header class="sticky-header">
+    <h2 class="header-title">📋 Registro de Siniestros</h2>
+    <button id="volverGrid" class="btn-volver">🔙 Regresar</button>
+  </header>
+
+  <!-- Formulario Principal -->
+  <form id="formSiniestros" class="main-form">
+    
+    <!-- Fila 1 -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="Negocio">🏢 Negocio</label>
+        <select id="Negocio" name="negocioSeleccionado" class="input-control" required>
+          <option value="">Seleccione</option>
+          <option value="Club de Futbol Monterrey">Club de Futbol Monterrey</option>
+          <option value="Femsa">Femsa</option>
+          <option value="Oficinas de servicio Oxxo">Oficinas de servicio Oxxo</option>
+          <option value="Otras">Otras</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="Plaza">📍 Plaza/Oficina</label>
+        <select id="Plaza" name="plazaSeleccionada" class="input-control" required>
+          <option value="">Seleccione</option>
+          <option value="Oficina de servicio (OS)">Oficina de servicio (OS)</option>
+          <option value="Otras">Otras</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Fila 2 (Ancho completo usando clase CSS) -->
+    <div class="form-row">
+      <div class="form-group full-width-col">
+        <label for="Edificio">🏗️ Edificio</label>
+        <select id="Edificio" name="edificioSeleccionado" class="input-control" required>
+          <option value="">Seleccione</option>
+          <option value="Almacén Dr. Mora">Almacén Dr. Mora</option>
+          <option value="Almacén Luis Mora">Almacén Luis Mora</option>
+          <option value="Anexo OS">Anexo OS</option>
+          <option value="Cash Center">Cash Center</option>
+          <option value="Corporativo Femsa">Corporativo Femsa</option>
+          <option value="Crisoles">Crisoles</option>
+          <option value="Edison">Edison</option>
+          <option value="Fundadores">Fundadores</option>
+          <option value="Lucas Alemán">Lucas Alemán</option>
+          <option value="Michelena">Michelena</option>
+          <option value="Patio 4">Patio 4</option>
+          <option value="Proyectos culturales">Proyectos culturales</option>
+          <option value="Simón Bolivar">Simón Bolivar</option>
+          <option value="Xpertal">Xpertal</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Fila 3 -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="TipoSiniestro">⚠️ Tipo de Siniestro</label>
+        <select id="TipoSiniestro" name="tipoSiniestroSeleccionado" class="input-control" required>
+          <option value="">Seleccione un tipo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="Subtipo">📌 Subtipo</label>
+        <select id="Subtipo" name="subtipoSeleccionado" class="input-control" required>
+          <option value="">Seleccione un subtipo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Descripción con Editor Enriquecido -->
+    <label for="descripcion">📝 Descripción del incidente</label>
+    <div class="editor-container">
+      <div class="editor-toolbar">
+        <button type="button" class="tool-btn" onclick="document.execCommand('bold')">B</button>
+        <button type="button" class="tool-btn" onclick="document.execCommand('italic')"><i>I</i></button>
+        <button type="button" class="tool-btn" onclick="document.execCommand('underline')"><u>U</u></button>
+        <button type="button" class="tool-btn" onclick="document.execCommand('insertUnorderedList')">• Lista</button>
+        <button type="button" class="tool-btn" onclick="document.execCommand('createLink', false, prompt('Ingrese URL:'))">🔗 Link</button>
+        <!-- Input color con clase CSS, sin estilos inline -->
+        <input type="color" id="colorPicker" title="Color de texto" class="color-picker-tool" onchange="document.execCommand('foreColor', false, this.value)">
+      </div>
+      <div id="descripcion" name="descripcionIncidente" contenteditable="true" class="editor-content">
+        Escriba aquí los detalles del siniestro...
+      </div>
+    </div>
+
+    <!-- Personas afectadas -->
+    <label>🚑 ¿Hubo personas afectadas?</label>
+    <div class="checkbox-panel">
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="personasAfectadas[]" value="Lesionados"> Lesionados</label>
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="personasAfectadas[]" value="Detenidos"> Detenidos</label>
+    </div>
+
+    <!-- Datos de contacto -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="reporta">👤 Nombre de quien reporta</label>
+        <input type="text" id="reporta" name="nombreReporta" class="input-control" required>
+      </div>
+      <div class="form-group">
+        <label for="realiza">🧑‍💼 Nombre de quien realiza el reporte</label>
+        <select id="realiza" name="nombreRealiza" class="input-control" required>
+          <option value="">Seleccione</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Correos -->
+    <label>📨 Enviar también a...</label>
+    <div class="checkbox-panel">
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com"> jesuseduardo.gutierrez@armur.com; juan.paniagua@armur.com</label>
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="emmanuel.zapata@oxxogas.com"> emmanuel.zapata@oxxogas.com</label>
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="andreac.rodriguez@oxxogas.com"> andreac.rodriguez@oxxogas.com</label>
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="eva.rocha@oxxogas.com"> eva.rocha@oxxogas.com</label>
+      <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="seguridadcecac@cecac.edu.mx"> seguridadcecac@cecac.edu.mx</label>
+    </div>
+
+    <label for="correosOtros">✏️ Otras direcciones (separadas por punto y coma)</label>
+    <input type="text" id="correosOtros" name="correosOtros" class="input-control" placeholder="correo1@dominio.com;correo2@dominio.com">
+
+    <!-- Botón enviar -->
+    <button type="submit" class="btn-submit">📨 Enviar registro</button>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      
+      /* === Referencias al DOM === */
+      const form = document.getElementById("formSiniestros");
+      const tipoSelect = document.getElementById("TipoSiniestro");
+      const subtipoSelect = document.getElementById("Subtipo");
+      const realizaSelect = document.getElementById("realiza");
+      const loader = document.getElementById("loadingOverlay");
+      const loadingText = document.getElementById("loadingText");
+      const btnSubmit = document.querySelector(".btn-submit");
+
+      let dataArray = []; 
+
+      // Deshabilitar botón mientras carga
+      if(btnSubmit) btnSubmit.disabled = true;
+
+      // === IMPORTANTE: Forzar reseteo visual de los selects al recargar ===
+      if(tipoSelect) tipoSelect.value = "";
+      if(subtipoSelect) subtipoSelect.value = "";
+
+      /* === Botón Volver === */
+      const volverBtn = document.getElementById("volverGrid");
+      if (volverBtn) {
+        volverBtn.addEventListener("click", () => {
+          window.parent.postMessage({ tipo: "regresarGrid" }, "*");
+        });
+      }
+
+      /* === Función para actualizar Subtipos UI === */
+      const actualizarSubtiposUI = () => {
+        subtipoSelect.innerHTML = "<option value=''>Seleccione un subtipo</option>";
+        
+        const subtipos = dataArray
+            .filter(item => item.Tipo === tipoSelect.value)
+            .map(item => item.Subtipo);
+
+        const fragmentSub = document.createDocumentFragment();
+        subtipos.forEach(subtipo => {
+            const option = document.createElement("option");
+            option.value = subtipo;
+            option.textContent = subtipo;
+            fragmentSub.appendChild(option);
+        });
+        subtipoSelect.appendChild(fragmentSub);
+      };
+
+      /* === Funciones de Carga de Datos === */
+      const cargarTipos = async () => {
+        if (typeof recuperarDatos === 'function') {
+            const tipoSiniestroOptions = await recuperarDatos("Tipos");
+            dataArray = (tipoSiniestroOptions && tipoSiniestroOptions.Matriz) ? tipoSiniestroOptions.Matriz : [];
+
+            // Obtener Tipos únicos y llenar Select
+            const tiposUnicos = [...new Set(dataArray.map(item => item.Tipo))];
+            const fragmentTipos = document.createDocumentFragment();
+            
+            tiposUnicos.forEach(tipo => {
+              const option = document.createElement("option");
+              option.value = tipo;
+              option.textContent = tipo;
+              fragmentTipos.appendChild(option);
+            });
+            tipoSelect.appendChild(fragmentTipos);
+
+            // Si el navegador pre-cargó un valor, actualizar UI
+            if (tipoSelect.value) {
+                actualizarSubtiposUI();
+            }
+
+        } else {
+            console.warn("La función recuperarDatos no está definida.");
+        }
+      };
+
+      const cargarUsuarios = async () => {
+        const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+        
+        const response = await fetch(apiURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mode: "ElementosPP" })
+        });
+
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+        
+        const data = await response.json();
+        const listaUsuarios = data.Usuarios || [];
+
+        if (Array.isArray(listaUsuarios)) {
+            const fragmentUsuarios = document.createDocumentFragment();
+            const usuariosCCO = listaUsuarios.filter(u => u.Area === "CCO");
+            
+            usuariosCCO.forEach(u => {
+                const option = document.createElement("option");
+                option.value = u.Nombre;
+                option.textContent = u.Nombre;
+                fragmentUsuarios.appendChild(option);
+            });
+            realizaSelect.appendChild(fragmentUsuarios);
+        }
+      };
+
+      /* === Ejecución de Carga Paralela === */
+      try {
+        await Promise.all([cargarTipos(), cargarUsuarios()]);
+        
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            if(btnSubmit) btnSubmit.disabled = false;
+        }, 500); 
+
+      } catch (error) {
+        console.error("Error crítico al inicializar datos:", error);
+        loadingText.textContent = "Error al cargar datos. Refresque la página.";
+        loadingText.style.color = "red";
+      }
+
+      /* === Configuración de Eventos === */
+      tipoSelect.addEventListener("change", actualizarSubtiposUI);
+      
+      // El evento change de subtipo ya no es crítico para la lógica de envío, 
+      // pero se puede dejar para feedback visual si quisieras mostrar los correos en pantalla.
+      // Por ahora lo dejaremos limpio para evitar confusiones.
+
+      /* === Manejo del Envío del Formulario (Lógica Crítica Aquí) === */
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          // 1. Capturar valores del DOM en este instante preciso
+          const valNegocio = document.getElementById("Negocio").value;
+          const valPlaza = document.getElementById("Plaza").value;
+          const valEdificio = document.getElementById("Edificio").value;
+          const valTipo = document.getElementById("TipoSiniestro").value;
+          const valSubtipo = document.getElementById("Subtipo").value;
+          const valReporta = document.getElementById("reporta").value;
+          const valRealiza = document.getElementById("realiza").value;
+
+          // 2. Calcular correos base en este instante (basado en la selección actual)
+          // Esto reemplaza a la variable global 'correosSeleccionados'
+          let correosBaseCalculados = [];
+          const registroEncontrado = dataArray.find(item =>
+              item.Tipo === valTipo && item.Subtipo === valSubtipo
+          );
+
+          if (registroEncontrado && registroEncontrado["Listado de correos"]) {
+              correosBaseCalculados = registroEncontrado["Listado de correos"]
+                  .split(";")
+                  .map(c => c.trim())
+                  .filter(c => c.length > 0);
+          }
+          
+          console.log("🔍 Registro encontrado al enviar:", registroEncontrado);
+          console.log("📧 Correos calculados al enviar:", correosBaseCalculados);
+
+          // 3. Recopilar correos de inputs manuales y checkboxes
+          const correosCheckboxes = Array.from(
+            document.querySelectorAll("input[name='correosExtra']:checked")
+          ).map(cb => cb.value);
+
+          const correosManual = document.getElementById("correosOtros").value
+            .split(";")
+            .map(c => c.trim())
+            .filter(c => c.length > 0);
+
+          // 4. Unir todo
+          const todosLosCorreos = [...new Set([...correosBaseCalculados, ...correosCheckboxes, ...correosManual])];
+          
+          const formData = {
+            negocioSeleccionado: valNegocio,
+            plazaSeleccionada: valPlaza,
+            edificioSeleccionado: valEdificio,
+            tipoSiniestroSeleccionado: valTipo,
+            subtipoSeleccionado: valSubtipo, // Valor directo del DOM
+            descripcionIncidente: document.getElementById("descripcion").innerHTML,
+            descripcionTextoPlano: document.getElementById("descripcion").innerText,
+            // === Lógica Modificada para Personas Afectadas ===
+            // Devuelve todos los valores (checked y unchecked) con su estado Sí/No
+            personasAfectadas: Array.from(
+              document.querySelectorAll("input[name='personasAfectadas[]']")
+            ).map(cb => ({
+              [cb.value]: cb.checked ? "Sí" : "No"
+            })),
+            nombreReporta: valReporta,
+            nombreRealiza: valRealiza,
+            listadoCorreos: todosLosCorreos.join(";")
+          };
+
+          console.log("📦 JSON FINAL listo para enviar:", formData);
+          
+          if(typeof enviarDatos === 'function'){
+             enviarDatos(formData);
+          } else {
+             alert("Datos generados correctamente. Revise la consola.");
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
