@@ -91,8 +91,8 @@
       color: var(--white);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 5%; /* Margen lateral responsive */
+      justify-content: center; /* Centrado absoluto del contenido */
+      padding: 0 20px; 
       box-shadow: var(--shadow-header);
       z-index: 1000;
       box-sizing: border-box;
@@ -107,25 +107,41 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      text-align: center;
     }
 
-    .btn-volver {
+    /* Combobox de Navegación en el Header */
+    .nav-select {
+      position: absolute; /* Posicionamiento absoluto a la derecha */
+      right: 20px;
       background: rgba(255, 255, 255, 0.15);
       color: var(--white);
-      padding: 8px 20px;
+      padding: 8px 15px;
       font-size: 0.9rem;
       font-weight: 500;
-      border-radius: 50px; /* Botón tipo píldora */
+      border-radius: 50px;
       border: 1px solid rgba(255, 255, 255, 0.25);
       cursor: pointer;
       transition: all 0.3s ease;
-      -webkit-backdrop-filter: blur(5px); /* Safari support */
       backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      outline: none;
+      /* Icono de flecha blanco personalizado */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px;
+      padding-right: 30px; /* Espacio para la flecha */
+      appearance: none;
+    }
+    
+    .nav-select option {
+        background-color: #4a0000; /* Fondo oscuro para las opciones */
+        color: white;
     }
 
-    .btn-volver:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-1px);
+    .nav-select:hover {
+      background-color: rgba(255, 255, 255, 0.25);
     }
 
     /* === Contenedor del Formulario === */
@@ -317,6 +333,14 @@
       outline: none;
       color: var(--text-dark);
     }
+    
+    /* CSS Placeholder para contenteditable */
+    .editor-content:empty:before {
+        content: attr(placeholder);
+        color: #9ca3af;
+        pointer-events: none;
+        display: block; /* Necesario para Firefox */
+    }
 
     /* === Botón Enviar === */
     .btn-submit {
@@ -359,9 +383,19 @@
     @media (max-width: 600px) {
       .sticky-header {
         padding: 0 20px;
+        justify-content: space-between; /* En móvil, mejor separar */
       }
+      
+      .nav-select {
+          position: relative; /* Quitar absoluto en móvil si hay poco espacio */
+          right: auto;
+          font-size: 0.8rem;
+          padding: 6px 10px;
+          padding-right: 25px;
+      }
+      
       .header-title {
-        font-size: 1rem;
+        font-size: 0.9rem;
       }
       .form-row {
         grid-template-columns: 1fr;
@@ -386,7 +420,12 @@
   <!-- Encabezado Fijo (Sticky Header) -->
   <header class="sticky-header">
     <h2 class="header-title">📋 Registro de Siniestros</h2>
-    <button id="volverGrid" class="btn-volver">🔙 Regresar</button>
+    
+    <!-- Combobox de Navegación (Reemplaza al botón) -->
+    <select id="navFormularios" class="nav-select">
+        <option value="" disabled selected>Ir a...</option>
+        <option value="regresarGrid">Más formularios proximamente</option>
+    </select>
   </header>
 
   <!-- Formulario Principal -->
@@ -468,9 +507,8 @@
             <!-- Input color con clase CSS, sin estilos inline -->
             <input type="color" id="colorPicker" title="Color de texto" class="color-picker-tool" onchange="document.execCommand('foreColor', false, this.value)">
         </div>
-        <div id="descripcion" name="descripcionIncidente" contenteditable="true" class="editor-content" placeholder="Escriba aquí los detalles del siniestro...">
-            
-        </div>
+        <!-- Contenido vacío para permitir el placeholder CSS -->
+        <div id="descripcion" name="descripcionIncidente" contenteditable="true" class="editor-content" placeholder="Escriba aquí los detalles del siniestro..."></div>
         </div>
 
         <!-- Personas afectadas -->
@@ -529,6 +567,7 @@
       const formUI = document.getElementById("formUI");
       const successUI = document.getElementById("successUI");
       const btnNewReport = document.getElementById("btnNewReport");
+      const navFormularios = document.getElementById("navFormularios");
       
       const tipoSelect = document.getElementById("TipoSiniestro");
       const subtipoSelect = document.getElementById("Subtipo");
@@ -546,11 +585,19 @@
       if(tipoSelect) tipoSelect.value = "";
       if(subtipoSelect) subtipoSelect.value = "";
 
-      /* === Botón Volver === */
-      const volverBtn = document.getElementById("volverGrid");
-      if (volverBtn) {
-        volverBtn.addEventListener("click", () => {
-          window.parent.postMessage({ tipo: "regresarGrid" }, "*");
+      /* === Manejo del Combobox de Navegación === */
+      if (navFormularios) {
+        navFormularios.addEventListener("change", function() {
+            const accion = this.value;
+            if (accion === "regresarGrid") {
+                window.parent.postMessage({ tipo: "regresarGrid" }, "*");
+            } else if (accion) {
+                // Lógica placeholder para otros formularios
+                console.log("Navegando a:", accion);
+                // window.location.href = accion + ".html"; // Ejemplo de implementación real
+            }
+            // Resetear el select para que muestre "Ir a..."
+            this.value = "";
         });
       }
 
@@ -730,8 +777,8 @@
             // 1. Limpiar formulario nativo
             form.reset();
             
-            // 2. Limpiar elementos personalizados
-            document.getElementById("descripcion").innerHTML = "Escriba aquí los detalles del siniestro...";
+            // 2. Limpiar contenido del editor (dejándolo vacío para el placeholder)
+            document.getElementById("descripcion").innerHTML = "";
             
             // 3. Restaurar selects dependientes
             tipoSelect.value = "";
@@ -748,5 +795,3 @@
   </script>
 </body>
 </html>
-
-
