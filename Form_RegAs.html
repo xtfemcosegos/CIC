@@ -1,735 +1,761 @@
-  <!DOCTYPE html>
-  <html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⏱️ Registro de Asistencia - Dashboard</title>
-    <script src="script.js"></script> 
-    <style>
-      :root {
-        /* === Paleta de Colores Pro === */
-        --primary-dark: #1a202c;
-        --primary-light: #2d3748;
-        --accent: #b71c1c; /* Rojo Institucional */
-        --accent-hover: #d32f2f;
-        --success: #38a169;
-        --warning: #ecc94b;
-        --text-main: #2d3748;
-        --text-light: #718096;
-        --bg-body: #f7fafc;
-        --card-bg: #ffffff;
-        
-        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        
-        --radius: 12px;
-        --header-height: 60px;
-        --primary-gradient: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
-      }
-
-      /* === Reset === */
-      * { box-sizing: border-box; }
-      body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background-color: var(--bg-body);
-        background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-        background-size: 20px 20px;
-        color: var(--text-main);
-        margin: 0;
-        height: 100vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* === Utilidades === */
-      .d-none { display: none; }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⏱️ Registro de Asistencia - Dashboard</title>
+  <script src="../script.js"></script> 
+  <style>
+    :root {
+      /* === Paleta de Colores Pro === */
+      --primary-dark: #1a202c;
+      --primary-light: #2d3748;
+      --accent: #b71c1c; /* Rojo Institucional */
+      --accent-hover: #d32f2f;
+      --success: #2f855a; /* Verde más oscuro y profesional */
+      --success-light: #c6f6d5;
+      --warning: #ecc94b;
+      --text-main: #2d3748;
+      --text-light: #718096;
+      --bg-body: #f7fafc;
+      --card-bg: #ffffff;
       
-      /* === Header === */
-      .app-header {
-        height: var(--header-height);
-        background: var(--primary-gradient);
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 25px;
-        box-shadow: var(--shadow-md);
-        z-index: 100;
-        color: white;
-      }
-
-      .brand { display: flex; align-items: center; gap: 15px; }
-      .brand-logo { font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-      .brand-title { font-weight: 800; font-size: 1.2rem; color: white; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-
-      .header-controls { display: flex; gap: 15px; align-items: center; }
-      .live-clock-mini { font-variant-numeric: tabular-nums; font-weight: 600; color: white; background: rgba(255, 255, 255, 0.15); padding: 5px 12px; border-radius: 8px; font-size: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); }
-
-      .nav-btn { background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.9rem; text-decoration: none; }
-      .nav-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: white; }
-      .nav-btn option { background-color: #4a0000; color: white; }
-
-      /* === Main Layout === */
-      .dashboard {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 20px 25px;
-        overflow: hidden;
-        max-width: 1600px;
-        margin: 0 auto;
-        width: 100%;
-      }
-
-      /* === Control Bar === */
-      .control-bar {
-        background: white;
-        padding: 15px 20px;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-md);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        align-items: center;
-        margin-bottom: 25px;
-        border: 1px solid #e2e8f0;
-        flex-shrink: 0;
-      }
-
-      .search-wrapper { flex: 2; min-width: 300px; position: relative; }
-      .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #a0aec0; }
-      .main-search-input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1.1rem; transition: all 0.3s; background: #f8fafc; }
-      .main-search-input:focus { outline: none; border-color: var(--accent); background: white; box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.1); }
-
-      .filters-wrapper { flex: 3; display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
-      .filter-chip { padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: var(--text-light); transition: all 0.2s; white-space: nowrap; }
-      .filter-chip:hover { background: #edf2f7; }
-      .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 5px rgba(183, 28, 28, 0.3); }
-      .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: var(--text-main); font-size: 0.9rem; cursor: pointer; }
-
-      /* === Grid de Tarjetas Compactas === */
-      .grid-container {
-        flex: 1;
-        overflow-y: auto;
-        display: grid;
-        /* Columnas más estrechas para más densidad */
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 20px;
-        padding: 10px;
-        scrollbar-width: thin;
-        scrollbar-color: #cbd5e0 #f7fafc;
-      }
-
-      .grid-area-header {
-        grid-column: 1 / -1;
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: var(--text-light);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 15px;
-        margin-bottom: 10px;
-        padding-bottom: 5px;
-        border-bottom: 2px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .grid-area-header:first-child { margin-top: 0; }
-
-      /* Wrapper para manejar el hover sin mover el grid */
-      .card-wrapper {
-          position: relative;
-          height: 200px; /* Altura base fija en el grid */
-          z-index: 1;
-      }
-
-      /* Tarjeta Real */
-      .employee-card {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%;
-        height: 100%; /* Llena el wrapper por defecto */
-        background: white;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid #e2e8f0;
-        padding: 20px 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        overflow: hidden;
-        background-color: #fff;
-      }
-
-      /* Efecto Hover: Expandir */
-      .card-wrapper:hover { z-index: 50; } /* Traer wrapper al frente */
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       
-      .card-wrapper:hover .employee-card {
-        height: auto; /* Crecer según contenido */
-        min-height: 100%;
-        transform: scale(1.05);
-        box-shadow: var(--shadow-hover);
-        border-color: #cbd5e0;
-      }
+      --radius: 12px;
+      --header-height: 60px;
+      --primary-gradient: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+    }
 
-      /* Indicador de Estado (Borde Inferior) */
-      .employee-card.status-in { border-bottom: 4px solid var(--success); }
-      .employee-card.status-out { border-bottom: 4px solid var(--text-light); opacity: 0.9; }
+    /* === Reset === */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-body);
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: var(--text-main);
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
 
-      /* Contenido Tarjeta */
-      .card-header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        width: 100%;
-        margin-bottom: 5px;
-      }
+    /* === Utilidades === */
+    .d-none { display: none; }
+    
+    /* === Header === */
+    .app-header {
+      height: var(--header-height);
+      background: var(--primary-gradient);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 25px;
+      box-shadow: var(--shadow-md);
+      z-index: 100;
+      color: white;
+    }
 
-      .card-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #f7fafc;
-        margin-bottom: 10px;
-        transition: border-color 0.3s;
-        background: #edf2f7;
-      }
-      
-      .status-in .card-avatar { border-color: #c6f6d5; } /* Aro verde si está dentro */
+    .brand { display: flex; align-items: center; gap: 15px; }
+    .brand-logo { font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+    .brand-title { font-weight: 800; font-size: 1.2rem; color: white; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-      .card-name {
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--primary-dark);
-        line-height: 1.2;
-        margin-bottom: 2px;
-        /* Truncar texto si es muy largo por defecto */
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
+    .header-controls { display: flex; gap: 15px; align-items: center; }
+    .live-clock-mini { font-variant-numeric: tabular-nums; font-weight: 600; color: white; background: rgba(255, 255, 255, 0.15); padding: 5px 12px; border-radius: 8px; font-size: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); }
 
-      /* Detalles Ocultos (Solo visibles en hover) */
-      .card-details {
-        opacity: 0;
-        max-height: 0;
-        overflow: hidden;
-        width: 100%;
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 5px;
-      }
+    .nav-btn { background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.9rem; text-decoration: none; }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: white; }
+    .nav-btn option { background-color: #4a0000; color: white; }
 
-      .card-wrapper:hover .card-details {
-        opacity: 1;
-        max-height: 200px; /* Espacio suficiente */
-        margin-top: 15px;
-        padding-top: 10px;
-        border-top: 1px solid #f0f0f0;
-      }
+    /* === Main Layout === */
+    .dashboard {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 25px;
+      overflow: hidden;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
 
-      .meta-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.8rem;
-        color: var(--text-light);
-      }
-      .meta-val { font-weight: 600; color: var(--text-main); }
+    /* === Control Bar === */
+    .control-bar {
+      background: white;
+      padding: 15px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 25px;
+      border: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
 
-      .btn-card-action {
-        width: 100%;
-        padding: 8px;
-        border: none;
-        border-radius: 6px;
-        font-weight: 700;
-        cursor: pointer;
-        font-size: 0.85rem;
-        margin-top: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      .btn-in { background: #e8f5e9; color: #2f855a; }
-      .btn-in:hover { background: #c6f6d5; }
-      
-      .btn-out { background: #fff5f5; color: #c53030; }
-      .btn-out:hover { background: #fed7d7; }
+    .search-wrapper { flex: 2; min-width: 300px; position: relative; }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #a0aec0; }
+    .main-search-input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1.1rem; transition: all 0.3s; background: #f8fafc; }
+    .main-search-input:focus { outline: none; border-color: var(--accent); background: white; box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.1); }
+
+    .filters-wrapper { flex: 3; display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
+    .filter-chip { padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: var(--text-light); transition: all 0.2s; white-space: nowrap; }
+    .filter-chip:hover { background: #edf2f7; }
+    .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 5px rgba(183, 28, 28, 0.3); }
+    .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: var(--text-main); font-size: 0.9rem; cursor: pointer; }
+
+    /* === Grid de Tarjetas Compactas === */
+    .grid-container {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      /* Columnas más estrechas para más densidad */
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+      padding: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e0 #f7fafc;
+    }
+
+    .grid-area-header {
+      grid-column: 1 / -1;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .grid-area-header:first-child { margin-top: 0; }
+
+    /* Wrapper para manejar el hover sin mover el grid */
+    .card-wrapper {
+        position: relative;
+        height: 200px; /* Altura base fija en el grid */
+        z-index: 1;
+    }
+
+    /* Tarjeta Real - Estilo Base */
+    .employee-card {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%; /* Llena el wrapper por defecto */
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid #e2e8f0;
+      padding: 20px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      overflow: hidden;
+      background-color: #fff;
+    }
+
+    /* Efecto Hover: Expandir */
+    .card-wrapper:hover { z-index: 50; } 
+    
+    .card-wrapper:hover .employee-card {
+      height: auto; /* Crecer según contenido */
+      min-height: 100%;
+      transform: scale(1.05);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* === INDICADORES DE ESTADO DE ALTO CONTRASTE === */
+    
+    .card-status-indicator {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 8px; /* Más grueso */
+    }
+
+    /* ESTADO: EN CORPORATIVO (Verde Fuerte) */
+    .employee-card.status-in {
+        border: 1px solid #9ae6b4; /* Borde verde */
+        background: linear-gradient(to right, #f0fff4 0%, #ffffff 30%); /* Fondo sutil */
+    }
+    .status-in .card-status-indicator { background: var(--success); }
+    .status-in .card-avatar { 
+        border: 3px solid var(--success); 
+        box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.15);
+    }
+
+    /* ESTADO: FUERA (Rojo Institucional Fuerte) */
+    .employee-card.status-out {
+        border: 1px solid #feb2b2; /* Borde rojo */
+        background: linear-gradient(to right, #fff5f5 0%, #ffffff 30%);
+    }
+    .status-out .card-status-indicator { background: var(--accent); }
+    .status-out .card-avatar { 
+        border: 3px solid var(--accent);
+        filter: grayscale(0.8); /* Foto un poco desaturada para indicar ausencia */
+        opacity: 0.85;
+        box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.15);
+    }
+
+    /* Contenido Tarjeta */
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+      margin-bottom: 5px;
+    }
+
+    .card-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+      transition: border-color 0.3s;
+      background: #edf2f7;
+    }
+    
+    .card-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary-dark);
+      line-height: 1.2;
+      margin-bottom: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Detalles Ocultos (Solo visibles en hover) */
+    .card-details {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      width: 100%;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 5px;
+    }
+
+    .card-wrapper:hover .card-details {
+      opacity: 1;
+      max-height: 200px; /* Espacio suficiente */
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    .meta-val { font-weight: 600; color: var(--text-main); }
+
+    .btn-card-action {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .btn-in { background: #e8f5e9; color: #2f855a; }
+    .btn-in:hover { background: #c6f6d5; }
+    
+    .btn-out { background: #fff5f5; color: #c53030; }
+    .btn-out:hover { background: #fed7d7; }
 
 
-      /* === Estado de Carga / Vacio === */
-      .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-light); font-style: italic; }
+    /* === Estado de Carga / Vacio === */
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-light); font-style: italic; }
 
-      /* === MODALES (Estilos previos) === */
-      .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(4px); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; }
-      .modal-overlay.active { display: flex; opacity: 1; }
-      .modal-card { background: white; width: 90%; max-width: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; }
-      .modal-overlay.active .modal-card { transform: scale(1); }
-      .modal-header { background: var(--primary-gradient); height: 60px; position: relative; }
-      .btn-close-modal { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
-      .modal-profile-img-wrapper { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; margin: -50px auto 15px auto; position: relative; z-index: 2; background: white; overflow: hidden; box-shadow: var(--shadow-md); }
-      .modal-content-body { padding: 0 30px 30px 30px; text-align: center; }
-      .modal-title { font-size: 1.4rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 5px; }
-      .modal-subtitle { color: var(--text-light); font-size: 0.9rem; margin-bottom: 25px; }
-      .confirm-time-input { font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); text-align: center; border: 2px solid #cbd5e0; border-radius: 10px; background: #f8fafc; width: 160px; display: block; margin: 0 auto 15px auto; }
-      .confirm-time-input:focus { outline: none; border-color: var(--accent); background: white; }
-      .area-select-modal { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 20px; font-size: 1rem; background: #f7fafc; }
-      .modal-actions { display: flex; gap: 15px; margin-top: 10px; }
-      .btn-modal { flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; }
-      .btn-primary { background: var(--accent); color: white; }
-      .btn-secondary { background: #edf2f7; color: var(--text-main); }
+    /* === MODALES (Estilos previos) === */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(4px); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-card { background: white; width: 90%; max-width: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+    .modal-header { background: var(--primary-gradient); height: 60px; position: relative; }
+    .btn-close-modal { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
+    .modal-profile-img-wrapper { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; margin: -50px auto 15px auto; position: relative; z-index: 2; background: white; overflow: hidden; box-shadow: var(--shadow-md); }
+    .modal-content-body { padding: 0 30px 30px 30px; text-align: center; }
+    .modal-title { font-size: 1.4rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 5px; }
+    .modal-subtitle { color: var(--text-light); font-size: 0.9rem; margin-bottom: 25px; }
+    .confirm-time-input { font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); text-align: center; border: 2px solid #cbd5e0; border-radius: 10px; background: #f8fafc; width: 160px; display: block; margin: 0 auto 15px auto; }
+    .confirm-time-input:focus { outline: none; border-color: var(--accent); background: white; }
+    .area-select-modal { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 20px; font-size: 1rem; background: #f7fafc; }
+    .modal-actions { display: flex; gap: 15px; margin-top: 10px; }
+    .btn-modal { flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: #edf2f7; color: var(--text-main); }
 
-      /* Responsive */
-      @media (max-width: 768px) {
-        .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
-        .search-wrapper, .filters-wrapper { flex: 1; width: 100%; }
-        .grid-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } /* Aún más pequeño en móvil */
-        .app-header { padding: 0 15px; }
-      }
-    </style>
-  </head>
+    /* Responsive */
+    @media (max-width: 768px) {
+      .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
+      .search-wrapper, .filters-wrapper { flex: 1; width: 100%; }
+      .grid-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } /* Aún más pequeño en móvil */
+      .app-header { padding: 0 15px; }
+    }
+  </style>
+</head>
 
-  <body>
+<body>
 
-    <!-- Header -->
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-logo">⏱️</div>
-        <div class="brand-title">Asistencia</div>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">⏱️</div>
+      <div class="brand-title">Asistencia</div>
+    </div>
+    
+    <div class="header-controls">
+      <div id="headerClock" class="live-clock-mini">--:--</div>
+      <!-- Navegación -->
+      <select id="navFormularios" class="nav-btn" aria-label="Navegar">
+        <option value="" disabled selected>Menú</option>
+        <option value="regresarGrid">Volver</option>
+        <option value="registro_siniestros">Siniestros</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="dashboard">
+    
+    <!-- Barra de Control: Búsqueda y Filtros -->
+    <div class="control-bar">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="mainSearchInput" class="main-search-input" placeholder="Buscar por # Socio o Nombre..." autocomplete="off" autofocus>
       </div>
-      
-      <div class="header-controls">
-        <div id="headerClock" class="live-clock-mini">--:--</div>
-        <!-- Navegación -->
-        <select id="navFormularios" class="nav-btn" aria-label="Navegar">
-          <option value="" disabled selected>Menú</option>
-          <option value="regresarGrid">Volver</option>
-          <option value="registro_siniestros">Siniestros</option>
+
+      <div class="filters-wrapper">
+        <div class="filter-chip active" data-filter="all">Todos</div>
+        <div class="filter-chip" data-filter="in">En Corporativo</div>
+        <div class="filter-chip" data-filter="out">Fuera</div>
+        
+        <select id="areaFilterSelect" class="filter-select" aria-label="Filtrar por Área">
+          <option value="all">Todas las Áreas</option>
+          <!-- Se llena dinámicamente -->
         </select>
-      </div>
-    </header>
-
-    <!-- Main Dashboard -->
-    <main class="dashboard">
-      
-      <!-- Barra de Control: Búsqueda y Filtros -->
-      <div class="control-bar">
-        <div class="search-wrapper">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="mainSearchInput" class="main-search-input" placeholder="Buscar por # Socio o Nombre..." autocomplete="off" autofocus>
-        </div>
-
-        <div class="filters-wrapper">
-          <div class="filter-chip active" data-filter="all">Todos</div>
-          <div class="filter-chip" data-filter="in">En Corporativo</div>
-          <div class="filter-chip" data-filter="out">Fuera</div>
-          
-          <select id="areaFilterSelect" class="filter-select" aria-label="Filtrar por Área">
-            <option value="all">Todas las Áreas</option>
-            <!-- Se llena dinámicamente -->
-          </select>
-        </div>
-      </div>
-
-      <!-- Grid de Tarjetas -->
-      <div id="cardsGrid" class="grid-container">
-        <div class="empty-state">Cargando datos...</div>
-      </div>
-
-    </main>
-
-    <!-- MODAL UNIFICADO (Perfil/Confirmación) -->
-    <div id="actionModal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <button id="btnModalClose" class="btn-close-modal">×</button>
-        </div>
-        
-        <div class="modal-profile-img-wrapper">
-          <img id="modalImg" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
-        </div>
-
-        <div class="modal-content-body">
-          <h3 id="modalTitle" class="modal-title">Nombre Empleado</h3>
-          <div id="modalSubtitle" class="modal-subtitle">ID: 0000 • Área</div>
-
-          <!-- Formulario Confirmación -->
-          <div id="modalForm">
-            <label class="info-label" style="display:block; margin-bottom:5px; color:#718096; font-size:0.8rem; font-weight:600;">HORA REGISTRO</label>
-            <input type="time" id="modalTimeInput" class="confirm-time-input">
-            
-            <div id="modalAreaSelectContainer" style="display:none;">
-              <label class="info-label" style="display:block; margin-bottom:5px; color:#718096; font-size:0.8rem; font-weight:600; text-align:left;">ÁREA ASIGNADA</label>
-              <select id="modalAreaSelect" class="area-select-modal" aria-label="Seleccionar Área"></select>
-            </div>
-            
-            <div class="modal-actions">
-              <button id="btnModalCancel" class="btn-modal btn-secondary">Cancelar</button>
-              <button id="btnModalConfirm" class="btn-modal btn-primary">Confirmar</button>
-            </div>
-          </div>
-
-          <div id="modalMessage" style="margin-top:15px; font-weight:bold; color:#38a169; display:none;"></div>
-        </div>
       </div>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", async () => {
-        
-        // --- Referencias DOM ---
-        const headerClock = document.getElementById("headerClock");
-        const mainSearchInput = document.getElementById("mainSearchInput");
-        const cardsGrid = document.getElementById("cardsGrid");
-        const filterChips = document.querySelectorAll(".filter-chip");
-        const areaFilterSelect = document.getElementById("areaFilterSelect");
-        const navFormularios = document.getElementById("navFormularios");
+    <!-- Grid de Tarjetas -->
+    <div id="cardsGrid" class="grid-container">
+      <div class="empty-state">Cargando datos...</div>
+    </div>
 
-        // Modal Refs
-        const actionModal = document.getElementById("actionModal");
-        const btnModalClose = document.getElementById("btnModalClose");
-        const btnModalCancel = document.getElementById("btnModalCancel");
-        const btnModalConfirm = document.getElementById("btnModalConfirm");
-        const modalImg = document.getElementById("modalImg");
-        const modalTitle = document.getElementById("modalTitle");
-        const modalSubtitle = document.getElementById("modalSubtitle");
-        const modalTimeInput = document.getElementById("modalTimeInput");
-        const modalAreaSelect = document.getElementById("modalAreaSelect");
-        const modalAreaContainer = document.getElementById("modalAreaSelectContainer");
-        const modalMessage = document.getElementById("modalMessage");
+  </main>
 
-        // --- Estado ---
-        let allUsers = []; 
-        let currentFilterStatus = 'all'; 
-        let currentFilterArea = 'all';
-        let pendingAction = null; 
+  <!-- MODAL UNIFICADO (Perfil/Confirmación) -->
+  <div id="actionModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <button id="btnModalClose" class="btn-close-modal">×</button>
+      </div>
+      
+      <div class="modal-profile-img-wrapper">
+        <img id="modalImg" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+      </div>
 
-        // --- Configuración ---
-        const areasOficiales = [
-            "Centro de Control", "Encargado", "Edison", "Recepcion", 
-            "Impulso", "Michelena", "Carranza", "Simon Bolivar", 
-            "Rondinero", "Universidad"
-        ];
+      <div class="modal-content-body">
+        <h3 id="modalTitle" class="modal-title">Nombre Empleado</h3>
+        <div id="modalSubtitle" class="modal-subtitle">ID: 0000 • Área</div>
 
-        // --- 1. Reloj ---
-        setInterval(() => {
-          const now = new Date();
-          headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
-        }, 1000);
-
-        // --- 2. Carga de Datos ---
-        const cargarDatos = async () => {
-          const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+        <!-- Formulario Confirmación -->
+        <div id="modalForm">
+          <label class="info-label" style="display:block; margin-bottom:5px; color:#718096; font-size:0.8rem; font-weight:600;">HORA REGISTRO</label>
+          <input type="time" id="modalTimeInput" class="confirm-time-input">
           
-          try {
-            const response = await fetch(apiURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) });
-            if(!response.ok) throw new Error("Error API");
-            const data = await response.json();
-            allUsers = data.Usuarios || [];
-            
-            // Poblar filtro de áreas
-            if(areaFilterSelect.options.length === 1) {
-                areasOficiales.forEach(area => {
-                    const opt = document.createElement('option');
-                    opt.value = area;
-                    opt.textContent = area;
-                    areaFilterSelect.appendChild(opt);
-                });
-            }
-            
-            renderGrid();
-          } catch(e) {
-            console.error(e);
-            cardsGrid.innerHTML = '<div class="empty-state">Error de conexión. Recargue la página.</div>';
-          }
-        };
+          <div id="modalAreaSelectContainer" style="display:none;">
+             <label class="info-label" style="display:block; margin-bottom:5px; color:#718096; font-size:0.8rem; font-weight:600; text-align:left;">ÁREA ASIGNADA</label>
+             <select id="modalAreaSelect" class="area-select-modal" aria-label="Seleccionar Área"></select>
+          </div>
+          
+          <div class="modal-actions">
+            <button id="btnModalCancel" class="btn-modal btn-secondary">Cancelar</button>
+            <button id="btnModalConfirm" class="btn-modal btn-primary">Confirmar</button>
+          </div>
+        </div>
 
-        // --- 3. Renderizado de Tarjetas con Agrupación ---
-        const renderGrid = () => {
-            cardsGrid.innerHTML = "";
-            const searchTerm = mainSearchInput.value.trim().toLowerCase();
-            
-            // 3.1 Filtrado
-            const filtered = allUsers.filter(user => {
-                const matchesSearch = !searchTerm || 
-                                      (user.Nombre && user.Nombre.toLowerCase().includes(searchTerm)) || 
-                                      (user.ID && String(user.ID).includes(searchTerm));
-                
-                const status = (user["Ultimo estado"] || "").toLowerCase();
-                const isIn = status === "entrada";
-                
-                let matchesStatus = true;
-                if(currentFilterStatus === 'in') matchesStatus = isIn;
-                if(currentFilterStatus === 'out') matchesStatus = !isIn;
+        <div id="modalMessage" style="margin-top:15px; font-weight:bold; color:#38a169; display:none;"></div>
+      </div>
+    </div>
+  </div>
 
-                const normalize = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
-                let matchesArea = true;
-                if(currentFilterArea !== 'all') {
-                    const userAreaNorm = normalize(user.Area);
-                    const filterAreaNorm = normalize(currentFilterArea);
-                    const target = (filterAreaNorm === "centro de control") ? "cco" : filterAreaNorm;
-                    matchesArea = (userAreaNorm === target);
-                }
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      
+      // --- Referencias DOM ---
+      const headerClock = document.getElementById("headerClock");
+      const mainSearchInput = document.getElementById("mainSearchInput");
+      const cardsGrid = document.getElementById("cardsGrid");
+      const filterChips = document.querySelectorAll(".filter-chip");
+      const areaFilterSelect = document.getElementById("areaFilterSelect");
+      const navFormularios = document.getElementById("navFormularios");
 
-                return matchesSearch && matchesStatus && matchesArea;
-            });
+      // Modal Refs
+      const actionModal = document.getElementById("actionModal");
+      const btnModalClose = document.getElementById("btnModalClose");
+      const btnModalCancel = document.getElementById("btnModalCancel");
+      const btnModalConfirm = document.getElementById("btnModalConfirm");
+      const modalImg = document.getElementById("modalImg");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalSubtitle = document.getElementById("modalSubtitle");
+      const modalTimeInput = document.getElementById("modalTimeInput");
+      const modalAreaSelect = document.getElementById("modalAreaSelect");
+      const modalAreaContainer = document.getElementById("modalAreaSelectContainer");
+      const modalMessage = document.getElementById("modalMessage");
 
-            if(filtered.length === 0) {
-                cardsGrid.innerHTML = '<div class="empty-state">No se encontraron resultados.</div>';
-                return;
-            }
+      // --- Estado ---
+      let allUsers = []; 
+      let currentFilterStatus = 'all'; 
+      let currentFilterArea = 'all';
+      let pendingAction = null; 
 
-            // 3.2 Agrupación por Área
-            const grouped = filtered.reduce((acc, user) => {
-              let area = user.Area || "Sin Asignar";
-              if(area.toLowerCase() === 'cco') area = 'Centro de Control';
-              
-              if (!acc[area]) acc[area] = [];
-              acc[area].push(user);
-              return acc;
-            }, {});
+      // --- Configuración ---
+      const areasOficiales = [
+          "Centro de Control", "Encargado", "Edison", "Recepcion", 
+          "Impulso", "Michelena", "Carranza", "Simon Bolivar", 
+          "Rondinero", "Universidad"
+      ];
 
-            // 3.3 Ordenar Áreas
-            const sortedAreas = Object.keys(grouped).sort((a, b) => {
-                  const idxA = areasOficiales.indexOf(a);
-                  const idxB = areasOficiales.indexOf(b);
-                  if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                  if (idxA !== -1) return -1;
-                  if (idxB !== -1) return 1;
-                  return a.localeCompare(b);
-            });
+      // --- 1. Reloj ---
+      setInterval(() => {
+        const now = new Date();
+        headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+      }, 1000);
 
-            // 3.4 Renderizar Grupos
-            sortedAreas.forEach(areaName => {
-                // Encabezado de Grupo
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'grid-area-header';
-                groupHeader.innerHTML = `<span>${areaName}</span> <span style="background:#edf2f7; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; color:#4a5568;">${grouped[areaName].length}</span>`;
-                cardsGrid.appendChild(groupHeader);
-
-                // Renderizar Cartas
-                grouped[areaName].forEach(u => {
-                    const id = u.ID;
-                    const nombre = u.Nombre;
-                    const area = u.Area || "Sin Asignar";
-                    const status = (u["Ultimo estado"] || "").toLowerCase();
-                    const isIn = status === "entrada";
-                    const rawTime = u.Entrada || u.Hora; 
-
-                    let displayTime = "--:--";
-                    if(isIn && rawTime) {
-                        if(String(rawTime).includes(":")) displayTime = rawTime.substring(0,5); 
-                        else if(!isNaN(rawTime)) {
-                            const totalSeconds = Math.floor(parseFloat(rawTime) * 86400);
-                            const h = Math.floor(totalSeconds / 3600);
-                            const m = Math.floor((totalSeconds % 3600) / 60);
-                            displayTime = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                        }
-                    }
-
-                    // Contenedor (Grid Slot)
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'card-wrapper';
-
-                    // Tarjeta
-                    const card = document.createElement('div');
-                    card.className = `employee-card ${isIn ? 'status-in' : 'status-out'}`;
-                    
-                    const btnLabel = isIn ? "Registrar Salida" : "Registrar Entrada";
-                    const btnClass = isIn ? "btn-out" : "btn-in";
-                    const actionType = isIn ? "Salida" : "Entrada";
-
-                    card.innerHTML = `
-                        <div class="card-status-indicator"></div>
-                        <div class="card-header">
-                            <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=edf2f7&color=2d3748'" class="card-avatar" alt="Foto">
-                            <div class="card-info">
-                                <div class="card-name">${nombre}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Detalles Ocultos (Expandibles) -->
-                        <div class="card-details">
-                            <div class="meta-row">
-                                <span style="color:#a0aec0;">ID:</span>
-                                <span class="meta-val">${id}</span>
-                            </div>
-                            <div class="meta-row">
-                                <span style="color:#a0aec0;">Área:</span>
-                                <span class="meta-val">${area}</span>
-                            </div>
-                            ${isIn ? `
-                            <div class="meta-row" style="margin-top:5px;">
-                                <span class="info-label">Entrada:</span>
-                                <span class="meta-val">${displayTime}</span>
-                            </div>` : ''}
-                            
-                            <button class="btn-card-action ${btnClass}" data-id="${id}">
-                              ${btnLabel}
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Click Listener
-                    const btn = card.querySelector('button');
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation(); // Evitar trigger doble si se clickea tarjeta
-                        openModal(u, actionType);
-                    });
-                    
-                    // Accesibilidad: Click en toda la tarjeta también
-                    card.addEventListener('click', () => openModal(u, actionType));
-
-                    wrapper.appendChild(card);
-                    cardsGrid.appendChild(wrapper);
-                });
-            });
-        };
-
-        // --- 4. Manejo del Modal ---
-        const openModal = (user, actionType) => {
-            modalMessage.style.display = 'none';
-            btnModalConfirm.disabled = false;
-            btnModalConfirm.textContent = "Confirmar";
-            
-            modalImg.src = `FP/${user.ID}.jpg`;
-            modalImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
-            modalTitle.textContent = user.Nombre;
-            modalSubtitle.textContent = `#${user.ID} • ${user.Area || "General"}`;
-            
-            const now = new Date();
-            modalTimeInput.value = now.toLocaleTimeString('es-MX', {hour12: false, hour:'2-digit', minute:'2-digit'});
-            
-            if(actionType === 'Entrada') {
-                modalAreaContainer.style.display = 'block';
-                modalAreaSelect.innerHTML = "";
-                areasOficiales.forEach(a => {
-                  const opt = document.createElement('option');
-                  opt.value = a;
-                  opt.textContent = a;
-                  if(a === user.Area) opt.selected = true;
-                  modalAreaSelect.appendChild(opt);
-                });
-            } else {
-                modalAreaContainer.style.display = 'none';
-            }
-
-            pendingAction = {
-                id: user.ID,
-                nombre: user.Nombre,
-                tipo: actionType,
-            };
-
-            actionModal.classList.add('active');
-        };
-
-        const closeModal = () => actionModal.classList.remove('active');
+      // --- 2. Carga de Datos ---
+      const cargarDatos = async () => {
+        const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
         
-        btnModalClose.addEventListener('click', closeModal);
-        btnModalCancel.addEventListener('click', closeModal);
-
-        // --- 5. Ejecución Acción ---
-        btnModalConfirm.addEventListener('click', async () => {
-            if(!pendingAction) return;
-            btnModalConfirm.disabled = true;
-            btnModalConfirm.textContent = "Procesando...";
-
-            const timeVal = modalTimeInput.value; 
-            const areaVal = (pendingAction.tipo === 'Entrada') ? modalAreaSelect.value : pendingAction.area;
-
-            const now = new Date();
-            const dd = String(now.getDate()).padStart(2, '0');
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const yyyy = now.getFullYear();
-            
-            let horaEnvio = now.toLocaleTimeString('es-MX', { hour12: false });
-            let horasTurno = now.getHours();
-
-            if (timeVal) {
-                const [h, m] = timeVal.split(':');
-                horaEnvio = `${h}:${m}:00`; 
-                horasTurno = parseInt(h, 10);
-            }
-
-            let letraTurno = 'D', nombreTurno = 'Día';
-            if (horasTurno >= 19) { letraTurno = 'N'; nombreTurno = 'Noche'; }
-            else if (horasTurno >= 12) { letraTurno = 'T'; nombreTurno = 'Tarde'; }
-
-            let keyToSend = `${dd}${mm}${yyyy}${pendingAction.id}${letraTurno}`;
-            if (pendingAction.tipo === 'Salida') {
-                const u = allUsers.find(x => x.ID == pendingAction.id);
-                if(u && u.Key) keyToSend = u.Key;
-            }
-
-            const payload = {
-                Key: keyToSend,
-                Fecha: `${dd}/${mm}/${yyyy}`,
-                Numero: pendingAction.id,
-                Nombre: pendingAction.nombre,
-                Turno: nombreTurno,
-                Hora: horaEnvio,
-                TipoRegistro: pendingAction.tipo,
-                Area: areaVal
-            };
-            if(!areaVal) delete payload.Area;
-
-            const postURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
-
-            try {
-                const resp = await fetch(postURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                if(resp.ok) {
-                    modalMessage.textContent = "✔ ¡Registro Exitoso!";
-                    modalMessage.style.display = "block";
-                    setTimeout(() => {
-                        closeModal();
-                        cargarDatos(); 
-                        mainSearchInput.value = ""; 
-                    }, 1000);
-                } else {
-                    throw new Error("Error Servidor");
-                }
-            } catch(e) {
-                console.error(e);
-                btnModalConfirm.textContent = "Error. Reintentar";
-                btnModalConfirm.disabled = false;
-            }
-        });
-
-        // --- Listeners UI ---
-        mainSearchInput.addEventListener('input', renderGrid);
-        filterChips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                filterChips.forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                currentFilterStatus = chip.dataset.filter;
-                renderGrid();
-            });
-        });
-        areaFilterSelect.addEventListener('change', (e) => {
-            currentFilterArea = e.target.value;
-            renderGrid();
-        });
-        if (navFormularios) {
-            navFormularios.addEventListener("change", function() {
-                if (this.value === "regresarGrid") window.parent.postMessage({ tipo: "regresarGrid" }, "*");
-                else if (this.value === "registro_siniestros") window.location.href = "https://xtfemcosegos.github.io/CIC/Form_RegSin.html";
-                this.value = "";
-            });
+        try {
+           const response = await fetch(apiURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) });
+           if(!response.ok) throw new Error("Error API");
+           const data = await response.json();
+           allUsers = data.Usuarios || [];
+           
+           // Poblar filtro de áreas si está vacío
+           if(areaFilterSelect.options.length === 1) {
+               areasOficiales.forEach(area => {
+                   const opt = document.createElement('option');
+                   opt.value = area;
+                   opt.textContent = area;
+                   areaFilterSelect.appendChild(opt);
+               });
+           }
+           
+           renderGrid();
+        } catch(e) {
+           console.error(e);
+           cardsGrid.innerHTML = '<div class="empty-state">Error de conexión. Recargue la página.</div>';
         }
+      };
 
-        cargarDatos();
+      // --- 3. Renderizado de Tarjetas con Agrupación ---
+      const renderGrid = () => {
+          cardsGrid.innerHTML = "";
+          const searchTerm = mainSearchInput.value.trim().toLowerCase();
+          
+          // 3.1 Filtrado
+          const filtered = allUsers.filter(user => {
+              const matchesSearch = !searchTerm || 
+                                    (user.Nombre && user.Nombre.toLowerCase().includes(searchTerm)) || 
+                                    (user.ID && String(user.ID).includes(searchTerm));
+              
+              const status = (user["Ultimo estado"] || "").toLowerCase();
+              const isIn = status === "entrada";
+              
+              let matchesStatus = true;
+              if(currentFilterStatus === 'in') matchesStatus = isIn;
+              if(currentFilterStatus === 'out') matchesStatus = !isIn;
+
+              const normalize = (s) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+              let matchesArea = true;
+              if(currentFilterArea !== 'all') {
+                  const userAreaNorm = normalize(user.Area);
+                  const filterAreaNorm = normalize(currentFilterArea);
+                  const target = (filterAreaNorm === "centro de control") ? "cco" : filterAreaNorm;
+                  matchesArea = (userAreaNorm === target);
+              }
+
+              return matchesSearch && matchesStatus && matchesArea;
+          });
+
+          if(filtered.length === 0) {
+              cardsGrid.innerHTML = '<div class="empty-state">No se encontraron resultados.</div>';
+              return;
+          }
+
+          // 3.2 Agrupación por Área
+          const grouped = filtered.reduce((acc, user) => {
+            let area = user.Area || "Sin Asignar";
+            if(area.toLowerCase() === 'cco') area = 'Centro de Control';
+            
+            if (!acc[area]) acc[area] = [];
+            acc[area].push(user);
+            return acc;
+          }, {});
+
+          // 3.3 Ordenar Áreas
+          const sortedAreas = Object.keys(grouped).sort((a, b) => {
+                const idxA = areasOficiales.indexOf(a);
+                const idxB = areasOficiales.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.localeCompare(b);
+          });
+
+          // 3.4 Renderizar Grupos
+          sortedAreas.forEach(areaName => {
+              // Encabezado de Grupo
+              const groupHeader = document.createElement('div');
+              groupHeader.className = 'grid-area-header';
+              groupHeader.innerHTML = `<span>${areaName}</span> <span style="background:#edf2f7; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; color:#4a5568;">${grouped[areaName].length}</span>`;
+              cardsGrid.appendChild(groupHeader);
+
+              // Renderizar Cartas
+              grouped[areaName].forEach(u => {
+                  const id = u.ID;
+                  const nombre = u.Nombre;
+                  const area = u.Area || "Sin Asignar";
+                  const status = (u["Ultimo estado"] || "").toLowerCase();
+                  const isIn = status === "entrada";
+                  const rawTime = u.Entrada || u.Hora; 
+
+                  let displayTime = "--:--";
+                  if(isIn && rawTime) {
+                      if(String(rawTime).includes(":")) displayTime = rawTime.substring(0,5); 
+                      else if(!isNaN(rawTime)) {
+                          const totalSeconds = Math.floor(parseFloat(rawTime) * 86400);
+                          const h = Math.floor(totalSeconds / 3600);
+                          const m = Math.floor((totalSeconds % 3600) / 60);
+                          displayTime = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                      }
+                  }
+
+                  // Contenedor (Grid Slot)
+                  const wrapper = document.createElement('div');
+                  wrapper.className = 'card-wrapper';
+
+                  // Tarjeta
+                  const card = document.createElement('div');
+                  card.className = `employee-card ${isIn ? 'status-in' : 'status-out'}`;
+                  
+                  const btnLabel = isIn ? "Registrar Salida" : "Registrar Entrada";
+                  const btnClass = isIn ? "btn-out" : "btn-in";
+                  const actionType = isIn ? "Salida" : "Entrada";
+
+                  card.innerHTML = `
+                      <div class="card-status-indicator"></div>
+                      <div class="card-header">
+                          <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=edf2f7&color=2d3748'" class="card-avatar" alt="Foto">
+                          <div class="card-info">
+                              <div class="card-name">${nombre}</div>
+                          </div>
+                      </div>
+                      
+                      <!-- Detalles Ocultos (Expandibles) -->
+                      <div class="card-details">
+                          <div class="meta-row">
+                              <span style="color:#a0aec0;">ID:</span>
+                              <span class="meta-val">${id}</span>
+                          </div>
+                          <div class="meta-row">
+                              <span style="color:#a0aec0;">Área:</span>
+                              <span class="meta-val">${area}</span>
+                          </div>
+                          ${isIn ? `
+                          <div class="meta-row" style="margin-top:5px;">
+                              <span class="info-label">Entrada:</span>
+                              <span class="meta-val">${displayTime}</span>
+                          </div>` : ''}
+                          
+                          <button class="btn-card-action ${btnClass}" data-id="${id}">
+                             ${btnLabel}
+                          </button>
+                      </div>
+                  `;
+                  
+                  // Click Listener
+                  const btn = card.querySelector('button');
+                  btn.addEventListener('click', (e) => {
+                      e.stopPropagation(); // Evitar trigger doble si se clickea tarjeta
+                      openModal(u, actionType);
+                  });
+                  
+                  // Accesibilidad: Click en toda la tarjeta también
+                  card.addEventListener('click', () => openModal(u, actionType));
+
+                  wrapper.appendChild(card);
+                  cardsGrid.appendChild(wrapper);
+              });
+          });
+      };
+
+      // --- 4. Manejo del Modal ---
+      const openModal = (user, actionType) => {
+          // Reset
+          modalMessage.style.display = 'none';
+          btnModalConfirm.disabled = false;
+          btnModalConfirm.textContent = "Confirmar";
+          
+          // Datos usuario
+          modalImg.src = `FP/${user.ID}.jpg`;
+          modalImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
+          modalTitle.textContent = user.Nombre;
+          modalSubtitle.textContent = `#${user.ID} • ${user.Area || "General"}`;
+          
+          const now = new Date();
+          modalTimeInput.value = now.toLocaleTimeString('es-MX', {hour12: false, hour:'2-digit', minute:'2-digit'});
+          
+          if(actionType === 'Entrada') {
+              modalAreaContainer.style.display = 'block';
+              modalAreaSelect.innerHTML = "";
+              areasOficiales.forEach(a => {
+                 const opt = document.createElement('option');
+                 opt.value = a;
+                 opt.textContent = a;
+                 if(a === user.Area) opt.selected = true;
+                 modalAreaSelect.appendChild(opt);
+              });
+          } else {
+              modalAreaContainer.style.display = 'none';
+          }
+
+          pendingAction = {
+              id: user.ID,
+              nombre: user.Nombre,
+              tipo: actionType,
+              // area se toma al confirmar
+          };
+
+          actionModal.classList.add('active');
+      };
+
+      const closeModal = () => actionModal.classList.remove('active');
+      
+      btnModalClose.addEventListener('click', closeModal);
+      btnModalCancel.addEventListener('click', closeModal);
+
+      // --- 5. Ejecución Acción ---
+      btnModalConfirm.addEventListener('click', async () => {
+          if(!pendingAction) return;
+          btnModalConfirm.disabled = true;
+          btnModalConfirm.textContent = "Procesando...";
+
+          const timeVal = modalTimeInput.value; 
+          const areaVal = (pendingAction.tipo === 'Entrada') ? modalAreaSelect.value : pendingAction.area;
+
+          const now = new Date();
+          const dd = String(now.getDate()).padStart(2, '0');
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const yyyy = now.getFullYear();
+          
+          let horaEnvio = now.toLocaleTimeString('es-MX', { hour12: false });
+          let horasTurno = now.getHours();
+
+          if (timeVal) {
+              const [h, m] = timeVal.split(':');
+              horaEnvio = `${h}:${m}:00`; 
+              horasTurno = parseInt(h, 10);
+          }
+
+          let letraTurno = 'D', nombreTurno = 'Día';
+          if (horasTurno >= 19) { letraTurno = 'N'; nombreTurno = 'Noche'; }
+          else if (horasTurno >= 12) { letraTurno = 'T'; nombreTurno = 'Tarde'; }
+
+          let keyToSend = `${dd}${mm}${yyyy}${pendingAction.id}${letraTurno}`;
+          if (pendingAction.tipo === 'Salida') {
+              const u = allUsers.find(x => x.ID == pendingAction.id);
+              if(u && u.Key) keyToSend = u.Key;
+          }
+
+          const payload = {
+              Key: keyToSend,
+              Fecha: `${dd}/${mm}/${yyyy}`,
+              Numero: pendingAction.id,
+              Nombre: pendingAction.nombre,
+              Turno: nombreTurno,
+              Hora: horaEnvio,
+              TipoRegistro: pendingAction.tipo,
+              Area: areaVal
+          };
+          if(!areaVal) delete payload.Area;
+
+          const postURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
+
+          try {
+              const resp = await fetch(postURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+              if(resp.ok) {
+                  modalMessage.textContent = "✔ ¡Registro Exitoso!";
+                  modalMessage.style.display = "block";
+                  setTimeout(() => {
+                      closeModal();
+                      cargarDatos(); 
+                      mainSearchInput.value = ""; 
+                  }, 1000);
+              } else {
+                  throw new Error("Error Servidor");
+              }
+          } catch(e) {
+              console.error(e);
+              btnModalConfirm.textContent = "Error. Reintentar";
+              btnModalConfirm.disabled = false;
+          }
       });
-    </script>
-  </body>
 
-  </html>
+      // --- Listeners UI ---
+      mainSearchInput.addEventListener('input', renderGrid);
+      filterChips.forEach(chip => {
+          chip.addEventListener('click', () => {
+              filterChips.forEach(c => c.classList.remove('active'));
+              chip.classList.add('active');
+              currentFilterStatus = chip.dataset.filter;
+              renderGrid();
+          });
+      });
+      areaFilterSelect.addEventListener('change', (e) => {
+          currentFilterArea = e.target.value;
+          renderGrid();
+      });
+      if (navFormularios) {
+          navFormularios.addEventListener("change", function() {
+              if (this.value === "regresarGrid") window.parent.postMessage({ tipo: "regresarGrid" }, "*");
+              else if (this.value === "registro_siniestros") window.location.href = "https://xtfemcosegos.github.io/CIC/Form_RegSin.html";
+              this.value = "";
+          });
+      }
+
+      cargarDatos();
+    });
+  </script>
+</body>
+</html>
