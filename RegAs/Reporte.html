@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📊 Reporte de Asistencia</title>
+  <style>
+    :root {
+      /* === Paleta de Colores Pro === */
+      --primary-gradient: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+      --accent: #b71c1c;
+      --text-dark: #2c3e50;
+      --text-light: #718096;
+      --bg-body: #f7fafc;
+      --white: #ffffff;
+      
+      --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      
+      --header-height: 70px;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-dark);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === Header === */
+    .app-header {
+      height: var(--header-height);
+      background: var(--primary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 25px;
+      box-shadow: var(--shadow-md);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-title {
+      font-weight: 800;
+      font-size: 1.4rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-back {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+
+    /* === Barra de Herramientas === */
+    .toolbar {
+      background: white;
+      padding: 15px 25px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .label-control {
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+
+    .input-date {
+      padding: 8px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: inherit;
+      color: var(--text-dark);
+      cursor: pointer;
+    }
+    .input-date:focus { border-color: var(--accent); outline: none; }
+
+    .btn-action {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-update {
+      background: #edf2f7;
+      color: var(--text-dark);
+      border: 1px solid #cbd5e0;
+    }
+    .btn-update:hover { background: #e2e8f0; }
+
+    .btn-email {
+      background: var(--primary-gradient);
+      color: white;
+      opacity: 0.6; /* Deshabilitado visualmente */
+      cursor: not-allowed;
+    }
+    
+    .btn-email.active {
+        opacity: 1;
+        cursor: pointer;
+    }
+
+    .last-update-label {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: #a0aec0;
+        font-style: italic;
+    }
+
+    /* === Contenedor del Reporte === */
+    .report-container {
+      flex: 1;
+      padding: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      overflow-y: auto;
+    }
+
+    /* Estilos de Tablas (Copiados para consistencia) */
+    .report-section {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      margin-bottom: 30px;
+      border: 1px solid #e2e8f0;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .section-header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: var(--text-dark);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+    }
+
+    tr:hover { background-color: #fafafa; }
+    
+    .text-center { text-align: center; }
+    .empty-msg { padding: 30px; color: var(--text-light); font-style: italic; text-align: center; }
+
+    /* Loader Overlay */
+    .loader-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center; align-items: center; flex-direction: column;
+        z-index: 200;
+    }
+    .loader-overlay.active { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    @media (max-width: 768px) {
+        .toolbar { flex-direction: column; align-items: stretch; }
+        .last-update-label { margin-left: 0; text-align: center; margin-top: 10px; }
+        .btn-back { text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loader -->
+  <div id="loader" class="loader-overlay">
+      <div class="spinner"></div>
+      <div id="loaderText" style="font-weight:600; color:var(--text-dark);">Cargando...</div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">📊 Reporte de Asistencia</div>
+    <a href="https://cicxtfemco.online/Form_RegAs.html" class="btn-back">↩ Volver al Dashboard</a>
+  </header>
+
+  <!-- Barra de Herramientas -->
+  <div class="toolbar">
+    <div class="control-group">
+        <label class="label-control" for="dateSelector">Fecha:</label>
+        <input type="date" id="dateSelector" class="input-date">
+    </div>
+
+    <div class="control-group">
+        <button id="btnUpdateData" class="btn-action btn-update">
+            🔄 Actualizar Datos
+        </button>
+        <button id="btnSendEmail" class="btn-action btn-email" disabled title="Función en desarrollo">
+            ✉️ Enviar Correo
+        </button>
+    </div>
+    
+    <div id="lastUpdateLabel" class="last-update-label">Datos no cargados</div>
+  </div>
+
+  <!-- Contenido del Reporte -->
+  <div id="reportContent" class="report-container">
+      <div class="empty-msg">Seleccione una fecha o actualice los datos para ver el reporte.</div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        
+        // --- Configuración ---
+        const STORAGE_KEY = "asistencia_reporte_data";
+        const STORAGE_TIMESTAMP_KEY = "asistencia_reporte_timestamp";
+        const API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+
+        // --- Referencias DOM ---
+        const dateSelector = document.getElementById("dateSelector");
+        const btnUpdateData = document.getElementById("btnUpdateData");
+        const btnSendEmail = document.getElementById("btnSendEmail");
+        const reportContent = document.getElementById("reportContent");
+        const loader = document.getElementById("loader");
+        const loaderText = document.getElementById("loaderText");
+        const lastUpdateLabel = document.getElementById("lastUpdateLabel");
+
+        let globalData = [];
+
+        // --- Helpers ---
+        const showLoader = (msg) => { loaderText.textContent = msg; loader.classList.add("active"); };
+        const hideLoader = () => { loader.classList.remove("active"); };
+
+        // Excel Serial Date -> DD/MM/YYYY
+        const excelSerialToDate = (serial) => {
+            if (!serial || isNaN(serial)) return "";
+            const utc_days  = Math.floor(serial - 25569);
+            const utc_value = utc_days * 86400;                                        
+            const date_info = new Date(utc_value * 1000);
+            const offsetMinutes = date_info.getTimezoneOffset();
+            date_info.setMinutes(date_info.getMinutes() + offsetMinutes);
+            const dd = String(date_info.getDate()).padStart(2, '0');
+            const mm = String(date_info.getMonth() + 1).padStart(2, '0');
+            const yyyy = date_info.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        };
+
+        // Excel Fraction Time -> HH:MM
+        const excelFractionToTime = (val) => {
+            if(!val) return "--:--";
+            if(String(val).includes(":")) return String(val).substring(0,5);
+            if(!isNaN(val)) {
+                const totalSeconds = Math.floor(parseFloat(val) * 86400);
+                const h = Math.floor(totalSeconds / 3600);
+                const m = Math.floor((totalSeconds % 3600) / 60);
+                return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+            }
+            return val;
+        };
+
+        // Input Date (YYYY-MM-DD) -> DD/MM/YYYY
+        const formatDateForFilter = (dateString) => {
+            if(!dateString) return "";
+            const [y, m, d] = dateString.split("-");
+            return `${d}/${m}/${y}`;
+        };
+        
+        // Date Object -> YYYY-MM-DD (Input Value)
+        const formatDateForInput = (date) => {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        };
+
+        // --- Funciones Principales ---
+
+        const updateLastSyncLabel = () => {
+            const ts = localStorage.getItem(STORAGE_TIMESTAMP_KEY);
+            if(ts) {
+                lastUpdateLabel.textContent = `Última actualización: ${ts}`;
+            }
+        };
+
+        const renderReport = () => {
+            const selectedDateRaw = dateSelector.value;
+            if (!selectedDateRaw) return;
+
+            const filterDate = formatDateForFilter(selectedDateRaw);
+            reportContent.innerHTML = ""; // Limpiar
+
+            // Filtrar datos por fecha
+            const filteredData = globalData.filter(r => {
+                const rawDate = r.Fecha;
+                if (!rawDate) return false;
+                let computedDate = rawDate;
+                // Si es serial de excel
+                if (!isNaN(rawDate) && String(rawDate).indexOf("/") === -1) {
+                    computedDate = excelSerialToDate(rawDate);
+                }
+                return computedDate === filterDate;
+            });
+
+            if (filteredData.length === 0) {
+                reportContent.innerHTML = `<div class="empty-msg">No se encontraron registros para el <strong>${filterDate}</strong>.</div>`;
+                return;
+            }
+
+            // Generar Secciones por Turno
+            const turnos = ["Día", "Tarde", "Noche"];
+            
+            turnos.forEach(turno => {
+                // Normalización simple para comparación
+                const registrosTurno = filteredData.filter(r => (r.Turno || "").toLowerCase() === turno.toLowerCase());
+                
+                const section = document.createElement("div");
+                section.className = "report-section";
+                
+                const header = `
+                    <div class="section-header">
+                        <div class="section-title">Turno ${turno}</div>
+                        <div class="badge-count">${registrosTurno.length} Registros</div>
+                    </div>
+                `;
+
+                let tableHTML = "";
+                if (registrosTurno.length === 0) {
+                    tableHTML = `<div class="text-center" style="color:#aaa; padding:10px;">Sin registros.</div>`;
+                } else {
+                    tableHTML = `
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width:80px;">ID</th>
+                                        <th>Nombre</th>
+                                        <th>Área</th>
+                                        <th style="width:100px;">Entrada</th>
+                                        <th style="width:100px;">Salida</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${registrosTurno.map(r => `
+                                        <tr>
+                                            <td><strong>${r.ID}</strong></td>
+                                            <td>${r.Nombre}</td>
+                                            <td>${r.Caseta || r.Area || ""}</td>
+                                            <td style="color:#2f855a; font-weight:600;">${excelFractionToTime(r.Entrada)}</td>
+                                            <td style="color:#c53030; font-weight:600;">${excelFractionToTime(r.Salida)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                section.innerHTML = header + tableHTML;
+                reportContent.appendChild(section);
+            });
+        };
+
+        const fetchData = async () => {
+            showLoader("Descargando base de datos...");
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Mode: "GenerarTablas" })
+                });
+
+                if (!response.ok) throw new Error("Error en la API");
+
+                const data = await response.json();
+                // Asumimos que data es array o data.Usuarios es el array
+                const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
+
+                // Guardar en LocalStorage
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
+                
+                const now = new Date().toLocaleString();
+                localStorage.setItem(STORAGE_TIMESTAMP_KEY, now);
+                
+                globalData = cleanData;
+                updateLastSyncLabel();
+                renderReport();
+
+            } catch (error) {
+                console.error(error);
+                alert("Error al descargar datos. Verifique su conexión.");
+            } finally {
+                hideLoader();
+            }
+        };
+
+        const init = () => {
+            // 1. Setear fecha inicial
+            const now = new Date();
+            if (now.getHours() < 7) now.setDate(now.getDate() - 1); // Si es madrugada, mostrar ayer
+            dateSelector.value = formatDateForInput(now);
+
+            // 2. Buscar en LocalStorage
+            const storedData = localStorage.getItem(STORAGE_KEY);
+            
+            if (storedData) {
+                console.log("Cargando datos desde caché local...");
+                globalData = JSON.parse(storedData);
+                updateLastSyncLabel();
+                renderReport();
+            } else {
+                // Si no hay datos locales, descargar
+                fetchData();
+            }
+        };
+
+        // --- Event Listeners ---
+        btnUpdateData.addEventListener("click", fetchData);
+        dateSelector.addEventListener("change", renderReport);
+
+        // Inicializar
+        init();
+    });
+  </script>
+</body>
+</html>
