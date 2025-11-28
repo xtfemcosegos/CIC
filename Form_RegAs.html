@@ -141,6 +141,22 @@
     .main-search-input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1.1rem; transition: all 0.3s; background: #f8fafc; }
     .main-search-input:focus { outline: none; border-color: var(--accent); background: white; box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.1); }
 
+    /* Filtro de Fecha */
+    .filter-date-wrapper { display: flex; align-items: center; gap: 5px; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 10px;}
+    .filter-date-label { font-size: 0.8rem; font-weight: 600; color: #718096; margin-right: 5px; }
+    .filter-date-input {
+        padding: 8px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        font-family: inherit;
+    }
+    .filter-date-input:focus { border-color: var(--accent); outline: none; }
+
     .filters-wrapper { flex: 3; display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
     .filter-chip { padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: var(--text-light); transition: all 0.2s; white-space: nowrap; }
     .filter-chip:hover { background: #edf2f7; }
@@ -366,6 +382,72 @@
     .btn-primary { background: var(--accent); color: white; }
     .btn-secondary { background: #edf2f7; color: var(--text-main); }
 
+    /* === REPORTE FULLSCREEN === */
+    .report-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: white;
+        z-index: 5000;
+        display: none;
+        flex-direction: column;
+    }
+    .report-overlay.active { display: flex; }
+
+    .report-header {
+        height: 60px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: space-between; 
+        padding: 0 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+        color: white;
+    }
+
+    .report-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .btn-close-report, .btn-send-email {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: background 0.2s;
+        font-size: 0.9rem;
+        text-decoration: none;
+    }
+    .btn-close-report:hover, .btn-send-email:hover { background: rgba(255,255,255,0.3); }
+    
+    .report-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .report-date-input {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        font-family: inherit;
+    }
+
+    .report-frame {
+        flex: 1;
+        width: 100%;
+        border: none;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
@@ -373,6 +455,7 @@
       .area-group-card { flex: 1 1 100%; }
       .app-header { padding: 0 15px; }
       .btn-generate { margin-left: 0; justify-content: center; }
+      .report-header { padding: 0 10px; gap: 10px; overflow-x: auto; }
     }
 
     /* Animaciones */
@@ -409,7 +492,7 @@
         <span class="search-icon">🔍</span>
         <input type="text" id="mainSearchInput" class="main-search-input" placeholder="Buscar por # Socio o Nombre..." autocomplete="off" autofocus>
       </div>
-
+      
       <div class="filters-wrapper">
         <div class="filter-chip active" data-filter="all">Todos</div>
         <div class="filter-chip" data-filter="in">En Corporativo</div>
@@ -470,6 +553,21 @@
     </div>
   </div>
 
+  <!-- Reporte Fullscreen -->
+  <div id="reportOverlay" class="report-overlay">
+    <div class="report-header">
+        <button id="btnCloseReport" class="btn-close-report">🔙 Volver</button>
+        
+        <div class="report-controls">
+            <label for="reportDateInput" style="font-weight:600; font-size:0.9rem;">Fecha:</label>
+            <input type="date" id="reportDateInput" class="report-date-input">
+        </div>
+
+        <button id="btnSendEmail" class="btn-send-email">✉️ Enviar Correo</button>
+    </div>
+    <iframe id="reportFrame" class="report-frame" title="Reporte de Asistencia"></iframe>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       
@@ -481,6 +579,11 @@
       const areaFilterSelect = document.getElementById("areaFilterSelect");
       const navFormularios = document.getElementById("navFormularios");
       const btnGenerateTables = document.getElementById("btnGenerateTables");
+      const reportOverlay = document.getElementById("reportOverlay");
+      const reportFrame = document.getElementById("reportFrame");
+      const btnCloseReport = document.getElementById("btnCloseReport");
+      const reportDateInput = document.getElementById("reportDateInput");
+      const btnSendEmail = document.getElementById("btnSendEmail");
 
       // Modal Refs
       const actionModal = document.getElementById("actionModal");
@@ -496,7 +599,8 @@
       const modalMessage = document.getElementById("modalMessage");
 
       // --- Estado ---
-      let allUsers = []; 
+      let dashboardUsers = []; // Datos para el dashboard
+      let reportHistoryData = []; // Datos para el reporte
       let currentFilterStatus = 'all'; 
       let currentFilterArea = 'all';
       let pendingAction = null; 
@@ -508,7 +612,7 @@
           "Rondinero", "Universidad"
       ];
 
-      // Helper: Normalizar texto para búsquedas (quita acentos, mayúsculas, etc)
+      // Helper: Normalizar texto
       const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
 
       // Helper: Obtener Emoji por Área
@@ -523,6 +627,55 @@
           if(a.includes("recepcion")) return "🛎️";
           return "📍";
       };
+      
+      // Helper: Excel Fraccion a HH:MM
+      const excelFractionToTime = (val) => {
+         if(!val) return "--:--";
+         if(String(val).includes(":")) return String(val).substring(0,5); 
+         
+         if(!isNaN(val)) {
+             const totalSeconds = Math.floor(parseFloat(val) * 86400);
+             const h = Math.floor(totalSeconds / 3600);
+             const m = Math.floor((totalSeconds % 3600) / 60);
+             return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+         }
+         return val;
+      };
+
+      // Helper: Excel Serial a Fecha String (DD/MM/YYYY) para filtrado estricto
+      const excelSerialToDate = (serial) => {
+          if (!serial || isNaN(serial)) return "";
+          const utc_days  = Math.floor(serial - 25569);
+          const utc_value = utc_days * 86400;                                        
+          const date_info = new Date(utc_value * 1000);
+          
+          const offsetMinutes = date_info.getTimezoneOffset();
+          date_info.setMinutes(date_info.getMinutes() + offsetMinutes);
+
+          const dd = String(date_info.getDate()).padStart(2, '0');
+          const mm = String(date_info.getMonth() + 1).padStart(2, '0');
+          const yyyy = date_info.getFullYear();
+          return `${dd}/${mm}/${yyyy}`;
+      };
+      
+      // Helper: Formatear Input Date (YYYY-MM-DD) a DD/MM/YYYY
+      const formatDateForFilter = (dateString) => {
+          if(!dateString) return "";
+          const [y, m, d] = dateString.split("-");
+          return `${d}/${m}/${y}`; 
+      };
+
+      // Helper: Obtener YYYY-MM-DD de hoy o ayer (si < 7am)
+      const getInitialReportDate = () => {
+          const now = new Date();
+          if (now.getHours() < 7) {
+              now.setDate(now.getDate() - 1);
+          }
+          const yyyy = now.getFullYear();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      };
 
       // --- 1. Reloj ---
       setInterval(() => {
@@ -530,17 +683,17 @@
         headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       }, 1000);
 
-      // --- 2. Carga de Datos ---
-      const cargarDatos = async () => {
+      // --- 2. Carga de Datos Dashboard ---
+      const cargarDatosDashboard = async () => {
         const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
         
         try {
+           // Carga NORMAL para el dashboard (Estado Actual)
            const response = await fetch(apiURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) });
            if(!response.ok) throw new Error("Error API");
            const data = await response.json();
-           allUsers = data.Usuarios || [];
+           dashboardUsers = data.Usuarios || [];
            
-           // Poblar filtro de áreas si está vacío
            if(areaFilterSelect.options.length === 1) {
                areasOficiales.forEach(area => {
                    const opt = document.createElement('option');
@@ -557,24 +710,19 @@
         }
       };
 
-      // --- 3. Renderizado de Dashboard Agrupado ---
+      // --- 3. Renderizado Dashboard ---
       const renderGrid = () => {
           cardsGrid.innerHTML = "";
           const term = normalize(mainSearchInput.value.trim());
           
-          // 3.1 Filtrado
-          const filtered = allUsers.filter(user => {
-              // Búsqueda global: ignora filtros si hay texto
+          const filtered = dashboardUsers.filter(user => {
               if (term) {
                   const matchName = normalize(user.Nombre).includes(term);
                   const matchId = String(user.ID).includes(term);
                   return matchName || matchId;
               }
-
-              // Filtros normales
               const status = (user["Ultimo estado"] || "").toLowerCase();
               const isIn = status === "entrada";
-              
               let matchesStatus = true;
               if(currentFilterStatus === 'in') matchesStatus = isIn;
               if(currentFilterStatus === 'out') matchesStatus = !isIn;
@@ -586,7 +734,6 @@
                   const target = (filterAreaNorm === "centro de control") ? "cco" : filterAreaNorm;
                   matchesArea = (userAreaNorm === target);
               }
-
               return matchesStatus && matchesArea;
           });
 
@@ -595,17 +742,14 @@
               return;
           }
 
-          // 3.2 Agrupación por Área
           const grouped = filtered.reduce((acc, user) => {
             let area = user.Area || "Sin Asignar";
             if(area.toLowerCase() === 'cco') area = 'Centro de Control';
-            
             if (!acc[area]) acc[area] = [];
             acc[area].push(user);
             return acc;
           }, {});
 
-          // 3.3 Ordenar Áreas
           const sortedAreas = Object.keys(grouped).sort((a, b) => {
                 const idxA = areasOficiales.indexOf(a);
                 const idxB = areasOficiales.indexOf(b);
@@ -615,16 +759,12 @@
                 return a.localeCompare(b);
           });
 
-          // 3.4 Renderizar Grupos como Tarjetas
           sortedAreas.forEach(areaName => {
-              // Crear Tarjeta de Grupo de Área
               const groupCard = document.createElement('div');
               groupCard.className = 'area-group-card';
-              
               const count = grouped[areaName].length;
               const emoji = getAreaEmoji(areaName);
               
-              // Header del Grupo
               groupCard.innerHTML = `
                   <div class="area-group-header">
                       <div class="area-title">${emoji} ${areaName}</div>
@@ -635,27 +775,16 @@
               
               const gridContainer = groupCard.querySelector('.area-cards-grid');
 
-              // Renderizar Empleados dentro del Grid del Grupo
               grouped[areaName].forEach(u => {
                   const id = u.ID;
                   const nombre = u.Nombre;
                   const area = u.Area || "Sin Asignar";
                   const status = (u["Ultimo estado"] || "").toLowerCase();
                   const isIn = status === "entrada";
-                  const rawTime = u.Entrada || u.Hora; 
-
+                  const rawTime = u.Entrada || u.Hora;
                   let displayTime = "--:--";
-                  if(isIn && rawTime) {
-                      if(String(rawTime).includes(":")) displayTime = rawTime.substring(0,5); 
-                      else if(!isNaN(rawTime)) {
-                          const totalSeconds = Math.floor(parseFloat(rawTime) * 86400);
-                          const h = Math.floor(totalSeconds / 3600);
-                          const m = Math.floor((totalSeconds % 3600) / 60);
-                          displayTime = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                      }
-                  }
+                  if(isIn) displayTime = excelFractionToTime(rawTime);
 
-                  // Estructura de Tarjeta de Empleado (Wrapper + Card)
                   const wrapper = document.createElement('div');
                   wrapper.className = 'card-wrapper';
 
@@ -692,32 +821,26 @@
                       </div>
                   `;
                   
-                  // Click Listener
                   const btn = card.querySelector('button');
                   btn.addEventListener('click', (e) => {
                       e.stopPropagation(); 
                       openModal(u, actionType);
                   });
-                  
-                  // Accesibilidad: Click en toda la tarjeta también
                   card.addEventListener('click', () => openModal(u, actionType));
 
                   wrapper.appendChild(card);
                   gridContainer.appendChild(wrapper);
               });
-
               cardsGrid.appendChild(groupCard);
           });
       };
 
-      // --- 4. Manejo del Modal ---
+      // --- 4. Modal ---
       const openModal = (user, actionType) => {
-          // Reset
           modalMessage.style.display = 'none';
           btnModalConfirm.disabled = false;
           btnModalConfirm.textContent = "Confirmar";
           
-          // Datos usuario
           modalImg.src = `FP/${user.ID}.jpg`;
           modalImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
           modalTitle.textContent = user.Nombre;
@@ -741,34 +864,23 @@
               modalAreaContainer.classList.add('d-none');
               modalAreaContainer.classList.remove('d-block');
           }
-
-          pendingAction = {
-              id: user.ID,
-              nombre: user.Nombre,
-              tipo: actionType,
-              // area se toma al confirmar
-          };
-
+          pendingAction = { id: user.ID, nombre: user.Nombre, tipo: actionType };
           actionModal.classList.add('active');
       };
 
       const closeModal = () => actionModal.classList.remove('active');
-      
       btnModalClose.addEventListener('click', closeModal);
       btnModalCancel.addEventListener('click', closeModal);
 
-      // --- 5. Ejecución Acción (API) ---
+      // --- 5. Ejecución Acción ---
       btnModalConfirm.addEventListener('click', async () => {
           if(!pendingAction) return;
-
           btnModalConfirm.disabled = true;
           btnModalConfirm.textContent = "Procesando...";
 
-          // Datos del modal
-          const timeVal = modalTimeInput.value; // HH:mm
+          const timeVal = modalTimeInput.value; 
           const areaVal = (pendingAction.tipo === 'Entrada') ? modalAreaSelect.value : pendingAction.area;
 
-          // Lógica de Fecha/Turno
           const now = new Date();
           const dd = String(now.getDate()).padStart(2, '0');
           const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -787,27 +899,18 @@
           if (horasTurno >= 18) { letraTurno = 'N'; nombreTurno = 'Noche'; }
           else if (horasTurno >= 12) { letraTurno = 'T'; nombreTurno = 'Tarde'; }
 
-          // Key
           let keyToSend = `${dd}${mm}${yyyy}${pendingAction.id}${letraTurno}`;
-          // Si es salida, intentar buscar Key original
           if (pendingAction.tipo === 'Salida') {
-              const u = allUsers.find(x => x.ID == pendingAction.id);
+              const u = dashboardUsers.find(x => x.ID == pendingAction.id);
               if(u && u.Key) keyToSend = u.Key;
           }
 
           const payload = {
-              Key: keyToSend,
-              Fecha: `${dd}/${mm}/${yyyy}`,
-              Numero: pendingAction.id,
-              Nombre: pendingAction.nombre,
-              Turno: nombreTurno,
-              Hora: horaEnvio,
-              TipoRegistro: pendingAction.tipo,
-              Area: areaVal
+              Key: keyToSend, Fecha: `${dd}/${mm}/${yyyy}`, Numero: pendingAction.id, Nombre: pendingAction.nombre,
+              Turno: nombreTurno, Hora: horaEnvio, TipoRegistro: pendingAction.tipo, Area: areaVal
           };
           if(!areaVal) delete payload.Area;
 
-          // Envío
           const postURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
 
           try {
@@ -815,22 +918,15 @@
               if(resp.ok) {
                   modalMessage.textContent = "✔ ¡Registro Exitoso!";
                   modalMessage.style.display = "block";
-                  setTimeout(() => {
-                      closeModal();
-                      cargarDatos(); 
-                      mainSearchInput.value = ""; 
-                  }, 1000);
-              } else {
-                  throw new Error("Error Servidor");
-              }
+                  setTimeout(() => { closeModal(); cargarDatosDashboard(); mainSearchInput.value = ""; }, 1000);
+              } else throw new Error("Error Servidor");
           } catch(e) {
-              console.error(e);
               btnModalConfirm.textContent = "Error. Reintentar";
               btnModalConfirm.disabled = false;
           }
       });
 
-      // --- 6. Listeners Filtros y Búsqueda ---
+      // --- 6. Listeners UI ---
       mainSearchInput.addEventListener('input', renderGrid);
 
       filterChips.forEach(chip => {
@@ -847,10 +943,211 @@
           renderGrid();
       });
       
+      // === GENERAR REPORTE (Logica Nueva) ===
+      const renderReportFrame = (dateString) => {
+            const selectedDate = formatDateForFilter(dateString);
+            console.log("Rendering report for:", selectedDate);
+            
+            // Mostrar en reporte la cantidad recibida para diagnóstico
+            const totalRecibidos = reportHistoryData.length;
+
+            const registrosFiltrados = reportHistoryData.filter(r => {
+                const rawDate = r.Fecha;
+                if (!rawDate) return false;
+                
+                let computedDate = rawDate;
+                if (!isNaN(rawDate) && String(rawDate).indexOf("/") === -1) {
+                    computedDate = excelSerialToDate(rawDate);
+                }
+                
+                return computedDate === selectedDate;
+            });
+
+            let htmlReport = `
+                <html><head><style>
+                    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background:#fff; }
+                    h2 { border-bottom: 2px solid #b71c1c; color: #b71c1c; padding-bottom: 5px; margin-top: 30px; font-size:1.2rem; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
+                    th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+                    th { background-color: #f7fafc; color: #2d3748; font-weight:700; text-transform:uppercase; font-size:0.75rem; }
+                    tr:nth-child(even) { background-color: #fcfcfc; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .header h1 { margin:0; color:#1a202c; }
+                    .header h3 { margin:5px 0; color:#718096; font-weight:400; }
+                    .empty-msg { font-style: italic; color: #a0aec0; text-align:center; padding:20px; background:#f9f9f9; border-radius:8px; }
+                    .debug-info { font-size: 0.7rem; color: #cbd5e0; text-align: center; margin-top: 50px; }
+                </style></head><body>
+                <div class="header">
+                    <h1>Reporte de Asistencia</h1>
+                    <h3>Fecha: ${selectedDate}</h3>
+                </div>
+            `;
+
+            const turnos = ["Día", "Tarde", "Noche"];
+            turnos.forEach(turno => {
+                // Normalizar turno de API (evitar errores de acentos)
+                const porTurno = registrosFiltrados.filter(r => normalize(r.Turno || "") === normalize(turno));
+                
+                htmlReport += `<h2>Turno ${turno} <span style="font-size:0.9rem; color:#718096;">(${porTurno.length})</span></h2>`;
+                
+                if (porTurno.length === 0) {
+                    htmlReport += "<p class='empty-msg'>No hay registros para este turno.</p>";
+                } else {
+                    htmlReport += `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:80px;">ID</th>
+                                    <th>Nombre</th>
+                                    <th>Área</th>
+                                    <th style="width:100px;">Entrada</th>
+                                    <th style="width:100px;">Salida</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    porTurno.forEach(r => {
+                        htmlReport += `
+                            <tr>
+                                <td style="font-weight:600;">${r.ID}</td>
+                                <td>${r.Nombre}</td>
+                                <td>${r.Caseta || r.Area || ""}</td>
+                                <td style="color:#38a169; font-weight:600;">${excelFractionToTime(r.Entrada)}</td>
+                                <td style="color:#e53e3e; font-weight:600;">${excelFractionToTime(r.Salida)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    htmlReport += `</tbody></table>`;
+                }
+            });
+            
+            htmlReport += `
+                <div class="debug-info">
+                    Registros totales recibidos: ${totalRecibidos} | Registros mostrados: ${registrosFiltrados.length}
+                </div>
+            </body></html>`;
+
+            const frameDoc = reportFrame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(htmlReport);
+            frameDoc.close();
+      };
+
       if (btnGenerateTables) {
-          btnGenerateTables.addEventListener('click', () => {
-              // Placeholder para lógica futura
-              console.log("Generar tablas clickeado");
+          btnGenerateTables.addEventListener('click', async () => {
+            // 1. Abrir Overlay y setear fecha inicial
+            const initialDate = getInitialReportDate();
+            reportDateInput.value = initialDate;
+            reportOverlay.classList.add("active");
+
+            // 2. Cargar datos si no existen
+            if (reportHistoryData.length === 0) {
+                const originalText = btnGenerateTables.innerHTML;
+                btnGenerateTables.innerHTML = "⌛ Cargando...";
+                btnGenerateTables.disabled = true;
+                
+                // Mostrar loading en iframe temporalmente
+                const frameDoc = reportFrame.contentWindow.document;
+                frameDoc.open(); frameDoc.write("<h3 style='text-align:center; font-family:sans-serif; margin-top:50px; color:#718096;'>Cargando historial de asistencia...</h3>"); frameDoc.close();
+
+                const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+
+                try {
+                    const response = await fetch(apiURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ Mode: "GenerarTablas" })
+                    });
+
+                    if (!response.ok) throw new Error("Error API Reporte");
+                    const data = await response.json();
+                    // Guardar historial completo
+                    reportHistoryData = Array.isArray(data) ? data : (data.Usuarios || []);
+                    
+                    // Renderizar con la fecha inicial
+                    renderReportFrame(initialDate);
+
+                } catch (error) {
+                    console.error(error);
+                    alert("Error al cargar historial para reporte.");
+                    reportOverlay.classList.remove("active");
+                } finally {
+                    btnGenerateTables.innerHTML = originalText;
+                    btnGenerateTables.disabled = false;
+                }
+            } else {
+                // Si ya hay datos, solo renderizar
+                renderReportFrame(initialDate);
+            }
+          });
+      }
+
+      // Listener para cambio de fecha en el reporte
+      reportDateInput.addEventListener('change', (e) => {
+          if (reportHistoryData.length > 0) {
+              renderReportFrame(e.target.value);
+          }
+      });
+      
+      // LOGICA BOTÓN ENVIAR CORREO (Nuevo Enfoque: Copiar y Abrir)
+      if (btnSendEmail) {
+          btnSendEmail.addEventListener('click', async () => {
+              
+              // 1. Obtener el documento del iframe
+              const frameDoc = reportFrame.contentDocument || reportFrame.contentWindow.document;
+              
+              // 2. Seleccionar todo el contenido del reporte
+              const range = document.createRange();
+              range.selectNode(frameDoc.body);
+              const selection = window.getSelection(); 
+              
+              // Vamos a intentar la técnica de Clipboard API con text/html si está disponible.
+              try {
+                  const htmlContent = frameDoc.body.innerHTML;
+                  const textContent = frameDoc.body.innerText;
+                  
+                  const blobHtml = new Blob([htmlContent], { type: "text/html" });
+                  const blobText = new Blob([textContent], { type: "text/plain" });
+                  
+                  const data = [new ClipboardItem({
+                      ["text/html"]: blobHtml,
+                      ["text/plain"]: blobText
+                  })];
+                  
+                  await navigator.clipboard.write(data);
+                  
+                  // Notificación visual
+                  const originalText = btnSendEmail.innerText;
+                  btnSendEmail.innerText = "📋 Copiado!";
+                  setTimeout(() => btnSendEmail.innerText = originalText, 2000);
+                  
+                  // Abrir cliente de correo
+                  const subject = "ASISTENCIA CSCP/CORPORATIVO OXXO";
+                  const to = "jesuseduardo.gutierrez@armur.com,juan.paniagua@armur.com";
+                  const cc = "ROBERTO.RODRIGUEZ@ARMUR.COM,josedavid.montano@armur.com";
+                  const bodyMsg = "El reporte de asistencia se ha copiado al portapapeles.\n\nPor favor, presione Ctrl+V (Pegar) aquí para visualizar la tabla de asistencia.\n\n";
+                  
+                  const mailtoLink = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyMsg)}`;
+                  window.location.href = mailtoLink; 
+                  
+              } catch (err) {
+                  console.error("Error copiando al portapapeles:", err);
+                  alert("No se pudo copiar la tabla automáticamente. Por favor seleccione el contenido del reporte, copielo y péguelo en su correo.");
+                  
+                  // Fallback a mailto simple
+                  const subject = "ASISTENCIA CSCP/CORPORATIVO OXXO";
+                  const to = "jesuseduardo.gutierrez@armur.com,juan.paniagua@armur.com";
+                  const cc = "ROBERTO.RODRIGUEZ@ARMUR.COM,josedavid.montano@armur.com";
+                  window.location.href = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}`;
+              }
+          });
+      }
+      
+      if (btnCloseReport) {
+          btnCloseReport.addEventListener('click', () => {
+              reportOverlay.classList.remove("active");
           });
       }
 
@@ -862,8 +1159,8 @@
           });
       }
 
-      // Inicio
-      cargarDatos();
+      // Inicio Dashboard
+      cargarDatosDashboard();
     });
   </script>
 </body>
