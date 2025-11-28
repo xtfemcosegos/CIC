@@ -112,54 +112,88 @@
     .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 5px rgba(183, 28, 28, 0.3); }
     .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: var(--text-main); font-size: 0.9rem; cursor: pointer; }
 
-    /* === Grid de Tarjetas Compactas === */
-    .grid-container {
+    /* === DASHBOARD GRID LAYOUT (NUEVO) === */
+    .dashboard-grid-container {
       flex: 1;
       overflow-y: auto;
-      display: grid;
-      /* Columnas más estrechas para más densidad */
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 20px;
+      /* Layout Flexible para los Grupos de Área */
+      display: flex; 
+      flex-wrap: wrap;
+      align-items: flex-start; /* Alinear arriba para evitar estiramientos */
+      gap: 25px;
       padding: 10px;
       scrollbar-width: thin;
       scrollbar-color: #cbd5e0 #f7fafc;
     }
 
-    .grid-area-header {
-      grid-column: 1 / -1;
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 15px;
-      margin-bottom: 10px;
-      padding-bottom: 5px;
-      border-bottom: 2px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    /* Tarjeta Contenedora del Grupo de Área */
+    .area-group-card {
+        background: white;
+        border-radius: var(--radius);
+        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow-sm);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        /* Dimensionamiento Flexible: Base 300px, crece para llenar fila */
+        flex: 1 1 320px; 
+        /* Opcional: max-width para que en pantallas ultra anchas no se estiren infinitamente */
+        /* max-width: 600px; */ 
+        animation: fadeIn 0.5s ease;
     }
-    .grid-area-header:first-child { margin-top: 0; }
 
-    /* Wrapper para manejar el hover sin mover el grid */
+    .area-group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .area-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--primary-dark);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .area-count {
+        background: #edf2f7;
+        color: var(--text-main);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* Grid Interno de Tarjetas de Empleado */
+    .area-cards-grid {
+        display: grid;
+        /* Tarjetas pequeñas adaptables */
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    /* Wrapper para hover effect */
     .card-wrapper {
         position: relative;
-        height: 200px; /* Altura base fija en el grid */
+        height: 190px; /* Altura base */
         z-index: 1;
     }
 
-    /* Tarjeta Real - Estilo Base */
+    /* Tarjeta de Empleado */
     .employee-card {
       position: absolute;
       top: 0; left: 0;
       width: 100%;
-      height: 100%; /* Llena el wrapper por defecto */
+      height: 100%;
       background: white;
       border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      border: 1px solid #e2e8f0;
-      padding: 20px 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      border: 1px solid #edf2f7;
+      padding: 15px 5px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -168,81 +202,55 @@
       background-color: #fff;
     }
 
-    /* Efecto Hover: Expandir */
+    /* Hover: Expandir sobre los demás */
     .card-wrapper:hover { z-index: 50; } 
-    
     .card-wrapper:hover .employee-card {
-      height: auto; /* Crecer según contenido */
+      height: auto;
       min-height: 100%;
-      transform: scale(1.05);
-      box-shadow: var(--shadow-hover);
+      transform: scale(1.08);
+      box-shadow: var(--shadow-lg);
+      border-color: #cbd5e0;
     }
 
-    /* === INDICADORES DE ESTADO DE ALTO CONTRASTE === */
-    
-    .card-status-indicator {
-      position: absolute;
-      top: 0; left: 0; bottom: 0;
-      width: 8px; /* Más grueso */
-    }
-
-    /* ESTADO: EN CORPORATIVO (Verde Fuerte) */
+    /* Indicadores de Estado */
     .employee-card.status-in {
-        border: 1px solid #9ae6b4; /* Borde verde */
-        background: linear-gradient(to right, #f0fff4 0%, #ffffff 30%); /* Fondo sutil */
+        border-bottom: 4px solid var(--success);
+        background: linear-gradient(to bottom, #f9fffb, #fff);
     }
-    .status-in .card-status-indicator { background: var(--success); }
-    .status-in .card-avatar { 
-        border: 3px solid var(--success); 
-        box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.15);
-    }
-
-    /* ESTADO: FUERA (Rojo Institucional Fuerte) */
     .employee-card.status-out {
-        border: 1px solid #feb2b2; /* Borde rojo */
-        background: linear-gradient(to right, #fff5f5 0%, #ffffff 30%);
-    }
-    .status-out .card-status-indicator { background: var(--accent); }
-    .status-out .card-avatar { 
-        border: 3px solid var(--accent);
-        filter: grayscale(0.8); /* Foto un poco desaturada para indicar ausencia */
-        opacity: 0.85;
-        box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.15);
-    }
-
-    /* Contenido Tarjeta */
-    .card-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      width: 100%;
-      margin-bottom: 5px;
+        border-bottom: 4px solid var(--accent);
+        background: linear-gradient(to bottom, #fff5f5, #fff);
     }
 
     .card-avatar {
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       object-fit: cover;
       margin-bottom: 10px;
       transition: border-color 0.3s;
       background: #edf2f7;
+      border: 3px solid transparent;
     }
     
+    .status-in .card-avatar { border-color: var(--success); }
+    .status-out .card-avatar { border-color: var(--accent); filter: grayscale(0.8); opacity: 0.9; }
+
     .card-name {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--primary-dark);
       line-height: 1.2;
       margin-bottom: 2px;
+      text-align: center;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      padding: 0 5px;
     }
 
-    /* Detalles Ocultos (Solo visibles en hover) */
+    /* Detalles Ocultos */
     .card-details {
       opacity: 0;
       max-height: 0;
@@ -251,50 +259,48 @@
       transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 5px;
       margin-top: 5px;
+      padding: 0 10px;
     }
 
     .card-wrapper:hover .card-details {
       opacity: 1;
-      max-height: 200px; /* Espacio suficiente */
-      margin-top: 15px;
-      padding-top: 10px;
+      max-height: 200px; 
+      margin-top: 10px;
+      padding-top: 8px;
       border-top: 1px solid #f0f0f0;
     }
 
     .meta-row {
       display: flex;
       justify-content: space-between;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--text-light);
     }
     .meta-val { font-weight: 600; color: var(--text-main); }
 
     .btn-card-action {
       width: 100%;
-      padding: 8px;
+      padding: 6px;
       border: none;
       border-radius: 6px;
       font-weight: 700;
       cursor: pointer;
-      font-size: 0.85rem;
-      margin-top: 10px;
+      font-size: 0.8rem;
+      margin-top: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     
     .btn-in { background: #e8f5e9; color: #2f855a; }
     .btn-in:hover { background: #c6f6d5; }
-    
     .btn-out { background: #fff5f5; color: #c53030; }
     .btn-out:hover { background: #fed7d7; }
 
-
     /* === Estado de Carga / Vacio === */
-    .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-light); font-style: italic; }
+    .empty-state { width: 100%; text-align: center; padding: 50px; color: var(--text-light); font-style: italic; }
 
-    /* === MODALES (Estilos previos) === */
+    /* === MODALES === */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(4px); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; }
     .modal-overlay.active { display: flex; opacity: 1; }
     .modal-card { background: white; width: 90%; max-width: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; }
@@ -317,9 +323,13 @@
     @media (max-width: 768px) {
       .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
       .search-wrapper, .filters-wrapper { flex: 1; width: 100%; }
-      .grid-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } /* Aún más pequeño en móvil */
+      /* En móvil, 1 columna para los grupos de área */
+      .area-group-card { flex: 1 1 100%; }
       .app-header { padding: 0 15px; }
     }
+
+    /* Animaciones */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 
@@ -365,8 +375,8 @@
       </div>
     </div>
 
-    <!-- Grid de Tarjetas -->
-    <div id="cardsGrid" class="grid-container">
+    <!-- Grid de Grupos de Área -->
+    <div id="cardsGrid" class="dashboard-grid-container">
       <div class="empty-state">Cargando datos...</div>
     </div>
 
@@ -433,15 +443,15 @@
       const modalMessage = document.getElementById("modalMessage");
 
       // --- Estado ---
-      let allUsers = []; 
-      let currentFilterStatus = 'all'; 
+      let allUsers = []; 
+      let currentFilterStatus = 'all'; 
       let currentFilterArea = 'all';
-      let pendingAction = null; 
+      let pendingAction = null; 
 
       // --- Configuración ---
       const areasOficiales = [
-          "Centro de Control", "Encargado", "Edison", "Recepcion", 
-          "Impulso", "Michelena", "Carranza", "Simon Bolivar", 
+          "Centro de Control", "Encargado", "Edison", "Recepcion", 
+          "Impulso", "Michelena", "Carranza", "Simon Bolivar", 
           "Rondinero", "Universidad"
       ];
 
@@ -478,15 +488,15 @@
         }
       };
 
-      // --- 3. Renderizado de Tarjetas con Agrupación ---
+      // --- 3. Renderizado de Dashboard Agrupado ---
       const renderGrid = () => {
           cardsGrid.innerHTML = "";
           const searchTerm = mainSearchInput.value.trim().toLowerCase();
           
           // 3.1 Filtrado
           const filtered = allUsers.filter(user => {
-              const matchesSearch = !searchTerm || 
-                                    (user.Nombre && user.Nombre.toLowerCase().includes(searchTerm)) || 
+              const matchesSearch = !searchTerm || 
+                                    (user.Nombre && user.Nombre.toLowerCase().includes(searchTerm)) || 
                                     (user.ID && String(user.ID).includes(searchTerm));
               
               const status = (user["Ultimo estado"] || "").toLowerCase();
@@ -517,7 +527,6 @@
           const grouped = filtered.reduce((acc, user) => {
             let area = user.Area || "Sin Asignar";
             if(area.toLowerCase() === 'cco') area = 'Centro de Control';
-            
             if (!acc[area]) acc[area] = [];
             acc[area].push(user);
             return acc;
@@ -533,26 +542,37 @@
                 return a.localeCompare(b);
           });
 
-          // 3.4 Renderizar Grupos
+          // 3.4 Renderizar Grupos como Tarjetas
           sortedAreas.forEach(areaName => {
-              // Encabezado de Grupo
-              const groupHeader = document.createElement('div');
-              groupHeader.className = 'grid-area-header';
-              groupHeader.innerHTML = `<span>${areaName}</span> <span style="background:#edf2f7; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; color:#4a5568;">${grouped[areaName].length}</span>`;
-              cardsGrid.appendChild(groupHeader);
+              // Crear Tarjeta de Grupo de Área
+              const groupCard = document.createElement('div');
+              groupCard.className = 'area-group-card';
+              
+              const count = grouped[areaName].length;
+              
+              // Header del Grupo
+              groupCard.innerHTML = `
+                  <div class="area-group-header">
+                      <div class="area-title">${areaName}</div>
+                      <div class="area-count">${count}</div>
+                  </div>
+                  <div class="area-cards-grid"></div>
+              `;
+              
+              const gridContainer = groupCard.querySelector('.area-cards-grid');
 
-              // Renderizar Cartas
+              // Renderizar Empleados dentro del Grid del Grupo
               grouped[areaName].forEach(u => {
                   const id = u.ID;
                   const nombre = u.Nombre;
                   const area = u.Area || "Sin Asignar";
                   const status = (u["Ultimo estado"] || "").toLowerCase();
                   const isIn = status === "entrada";
-                  const rawTime = u.Entrada || u.Hora; 
+                  const rawTime = u.Entrada || u.Hora; 
 
                   let displayTime = "--:--";
                   if(isIn && rawTime) {
-                      if(String(rawTime).includes(":")) displayTime = rawTime.substring(0,5); 
+                      if(String(rawTime).includes(":")) displayTime = rawTime.substring(0,5); 
                       else if(!isNaN(rawTime)) {
                           const totalSeconds = Math.floor(parseFloat(rawTime) * 86400);
                           const h = Math.floor(totalSeconds / 3600);
@@ -561,11 +581,10 @@
                       }
                   }
 
-                  // Contenedor (Grid Slot)
+                  // Estructura de Tarjeta de Empleado (Wrapper + Card)
                   const wrapper = document.createElement('div');
                   wrapper.className = 'card-wrapper';
 
-                  // Tarjeta
                   const card = document.createElement('div');
                   card.className = `employee-card ${isIn ? 'status-in' : 'status-out'}`;
                   
@@ -574,7 +593,6 @@
                   const actionType = isIn ? "Salida" : "Entrada";
 
                   card.innerHTML = `
-                      <div class="card-status-indicator"></div>
                       <div class="card-header">
                           <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=edf2f7&color=2d3748'" class="card-avatar" alt="Foto">
                           <div class="card-info">
@@ -582,15 +600,10 @@
                           </div>
                       </div>
                       
-                      <!-- Detalles Ocultos (Expandibles) -->
                       <div class="card-details">
                           <div class="meta-row">
                               <span style="color:#a0aec0;">ID:</span>
                               <span class="meta-val">${id}</span>
-                          </div>
-                          <div class="meta-row">
-                              <span style="color:#a0aec0;">Área:</span>
-                              <span class="meta-val">${area}</span>
                           </div>
                           ${isIn ? `
                           <div class="meta-row" style="margin-top:5px;">
@@ -604,30 +617,28 @@
                       </div>
                   `;
                   
-                  // Click Listener
+                  // Click Listeners
                   const btn = card.querySelector('button');
                   btn.addEventListener('click', (e) => {
-                      e.stopPropagation(); // Evitar trigger doble si se clickea tarjeta
+                      e.stopPropagation(); 
                       openModal(u, actionType);
                   });
-                  
-                  // Accesibilidad: Click en toda la tarjeta también
                   card.addEventListener('click', () => openModal(u, actionType));
 
                   wrapper.appendChild(card);
-                  cardsGrid.appendChild(wrapper);
+                  gridContainer.appendChild(wrapper);
               });
+
+              cardsGrid.appendChild(groupCard);
           });
       };
 
       // --- 4. Manejo del Modal ---
       const openModal = (user, actionType) => {
-          // Reset
           modalMessage.style.display = 'none';
           btnModalConfirm.disabled = false;
           btnModalConfirm.textContent = "Confirmar";
           
-          // Datos usuario
           modalImg.src = `FP/${user.ID}.jpg`;
           modalImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
           modalTitle.textContent = user.Nombre;
@@ -654,7 +665,7 @@
               id: user.ID,
               nombre: user.Nombre,
               tipo: actionType,
-              // area se toma al confirmar
+              area: user.Area
           };
 
           actionModal.classList.add('active');
@@ -665,13 +676,14 @@
       btnModalClose.addEventListener('click', closeModal);
       btnModalCancel.addEventListener('click', closeModal);
 
-      // --- 5. Ejecución Acción ---
+      // --- 5. Ejecución Acción (API) ---
       btnModalConfirm.addEventListener('click', async () => {
           if(!pendingAction) return;
+
           btnModalConfirm.disabled = true;
           btnModalConfirm.textContent = "Procesando...";
 
-          const timeVal = modalTimeInput.value; 
+          const timeVal = modalTimeInput.value; 
           const areaVal = (pendingAction.tipo === 'Entrada') ? modalAreaSelect.value : pendingAction.area;
 
           const now = new Date();
@@ -684,7 +696,7 @@
 
           if (timeVal) {
               const [h, m] = timeVal.split(':');
-              horaEnvio = `${h}:${m}:00`; 
+              horaEnvio = `${h}:${m}:00`; 
               horasTurno = parseInt(h, 10);
           }
 
@@ -719,8 +731,8 @@
                   modalMessage.style.display = "block";
                   setTimeout(() => {
                       closeModal();
-                      cargarDatos(); 
-                      mainSearchInput.value = ""; 
+                      cargarDatos(); 
+                      mainSearchInput.value = ""; 
                   }, 1000);
               } else {
                   throw new Error("Error Servidor");
@@ -732,8 +744,9 @@
           }
       });
 
-      // --- Listeners UI ---
+      // --- 6. Listeners UI ---
       mainSearchInput.addEventListener('input', renderGrid);
+
       filterChips.forEach(chip => {
           chip.addEventListener('click', () => {
               filterChips.forEach(c => c.classList.remove('active'));
@@ -742,10 +755,12 @@
               renderGrid();
           });
       });
+
       areaFilterSelect.addEventListener('change', (e) => {
           currentFilterArea = e.target.value;
           renderGrid();
       });
+
       if (navFormularios) {
           navFormularios.addEventListener("change", function() {
               if (this.value === "regresarGrid") window.parent.postMessage({ tipo: "regresarGrid" }, "*");
@@ -754,6 +769,7 @@
           });
       }
 
+      // Inicio
       cargarDatos();
     });
   </script>
