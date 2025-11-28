@@ -382,72 +382,6 @@
     .btn-primary { background: var(--accent); color: white; }
     .btn-secondary { background: #edf2f7; color: var(--text-main); }
 
-    /* === REPORTE FULLSCREEN === */
-    .report-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: white;
-        z-index: 5000;
-        display: none;
-        flex-direction: column;
-    }
-    .report-overlay.active { display: flex; }
-
-    .report-header {
-        height: 60px;
-        background: var(--primary-gradient);
-        display: flex;
-        align-items: center;
-        justify-content: space-between; 
-        padding: 0 20px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        flex-shrink: 0;
-        color: white;
-    }
-
-    .report-actions {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .btn-close-report, .btn-send-email {
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        transition: background 0.2s;
-        font-size: 0.9rem;
-        text-decoration: none;
-    }
-    .btn-close-report:hover, .btn-send-email:hover { background: rgba(255,255,255,0.3); }
-    
-    .report-controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .report-date-input {
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: none;
-        font-family: inherit;
-    }
-
-    .report-frame {
-        flex: 1;
-        width: 100%;
-        border: none;
-    }
-
     /* Responsive */
     @media (max-width: 768px) {
       .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
@@ -455,7 +389,6 @@
       .area-group-card { flex: 1 1 100%; }
       .app-header { padding: 0 15px; }
       .btn-generate { margin-left: 0; justify-content: center; }
-      .report-header { padding: 0 10px; gap: 10px; overflow-x: auto; }
     }
 
     /* Animaciones */
@@ -553,21 +486,6 @@
     </div>
   </div>
 
-  <!-- Reporte Fullscreen -->
-  <div id="reportOverlay" class="report-overlay">
-    <div class="report-header">
-        <button id="btnCloseReport" class="btn-close-report">🔙 Volver</button>
-        
-        <div class="report-controls">
-            <label for="reportDateInput" style="font-weight:600; font-size:0.9rem;">Fecha:</label>
-            <input type="date" id="reportDateInput" class="report-date-input">
-        </div>
-
-        <button id="btnSendEmail" class="btn-send-email">✉️ Enviar Correo</button>
-    </div>
-    <iframe id="reportFrame" class="report-frame" title="Reporte de Asistencia"></iframe>
-  </div>
-
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       
@@ -579,11 +497,6 @@
       const areaFilterSelect = document.getElementById("areaFilterSelect");
       const navFormularios = document.getElementById("navFormularios");
       const btnGenerateTables = document.getElementById("btnGenerateTables");
-      const reportOverlay = document.getElementById("reportOverlay");
-      const reportFrame = document.getElementById("reportFrame");
-      const btnCloseReport = document.getElementById("btnCloseReport");
-      const reportDateInput = document.getElementById("reportDateInput");
-      const btnSendEmail = document.getElementById("btnSendEmail");
 
       // Modal Refs
       const actionModal = document.getElementById("actionModal");
@@ -600,7 +513,6 @@
 
       // --- Estado ---
       let dashboardUsers = []; // Datos para el dashboard
-      let reportHistoryData = []; // Datos para el reporte
       let currentFilterStatus = 'all'; 
       let currentFilterArea = 'all';
       let pendingAction = null; 
@@ -640,41 +552,6 @@
              return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
          }
          return val;
-      };
-
-      // Helper: Excel Serial a Fecha String (DD/MM/YYYY) para filtrado estricto
-      const excelSerialToDate = (serial) => {
-          if (!serial || isNaN(serial)) return "";
-          const utc_days  = Math.floor(serial - 25569);
-          const utc_value = utc_days * 86400;                                     
-          const date_info = new Date(utc_value * 1000);
-          
-          const offsetMinutes = date_info.getTimezoneOffset();
-          date_info.setMinutes(date_info.getMinutes() + offsetMinutes);
-
-          const dd = String(date_info.getDate()).padStart(2, '0');
-          const mm = String(date_info.getMonth() + 1).padStart(2, '0');
-          const yyyy = date_info.getFullYear();
-          return `${dd}/${mm}/${yyyy}`;
-      };
-      
-      // Helper: Formatear Input Date (YYYY-MM-DD) a DD/MM/YYYY
-      const formatDateForFilter = (dateString) => {
-          if(!dateString) return "";
-          const [y, m, d] = dateString.split("-");
-          return `${d}/${m}/${y}`; 
-      };
-
-      // Helper: Obtener YYYY-MM-DD de hoy o ayer (si < 7am)
-      const getInitialReportDate = () => {
-          const now = new Date();
-          if (now.getHours() < 7) {
-              now.setDate(now.getDate() - 1);
-          }
-          const yyyy = now.getFullYear();
-          const mm = String(now.getMonth() + 1).padStart(2, '0');
-          const dd = String(now.getDate()).padStart(2, '0');
-          return `${yyyy}-${mm}-${dd}`;
       };
 
       // --- 1. Reloj ---
@@ -946,81 +823,8 @@
       // === BOTÓN GENERAR TABLAS (NUEVA LÓGICA) ===
       if (btnGenerateTables) {
           btnGenerateTables.addEventListener('click', () => {
-              // 1. Abrir Overlay y setear fecha inicial visualmente
-              const initialDate = getInitialReportDate();
-              reportDateInput.value = initialDate;
-              reportOverlay.classList.add("active");
-
-              // 2. Cargar directamente el enlace externo solicitado en el iframe
-              // Se asegura https para evitar bloqueos de contenido mixto
-              reportFrame.src = "https://cicxtfemco.online/RegAs/Reporte.html";
-          });
-      }
-
-      // Listener para cambio de fecha en el reporte (Opcional, si quisieras pasar el parámetro a la URL externa)
-      reportDateInput.addEventListener('change', (e) => {
-         // Aquí podrías agregar lógica para recargar el iframe con ?fecha=... si el sitio externo lo soporta
-         console.log("Fecha cambiada:", e.target.value);
-      });
-      
-      // LOGICA BOTÓN ENVIAR CORREO (Se mantiene, pero depende de CORS)
-      if (btnSendEmail) {
-          btnSendEmail.addEventListener('click', async () => {
-              
-              // Intentar acceder al documento del iframe (Puede fallar si es dominio cruzado)
-              try {
-                  const frameDoc = reportFrame.contentDocument || reportFrame.contentWindow.document;
-                  
-                  // Seleccionar todo el contenido del reporte
-                  const range = document.createRange();
-                  range.selectNode(frameDoc.body);
-                  const selection = window.getSelection(); 
-                  
-                  const htmlContent = frameDoc.body.innerHTML;
-                  const textContent = frameDoc.body.innerText;
-                  
-                  const blobHtml = new Blob([htmlContent], { type: "text/html" });
-                  const blobText = new Blob([textContent], { type: "text/plain" });
-                  
-                  const data = [new ClipboardItem({
-                      ["text/html"]: blobHtml,
-                      ["text/plain"]: blobText
-                  })];
-                  
-                  await navigator.clipboard.write(data);
-                  
-                  // Notificación visual
-                  const originalText = btnSendEmail.innerText;
-                  btnSendEmail.innerText = "📋 Copiado!";
-                  setTimeout(() => btnSendEmail.innerText = originalText, 2000);
-                  
-                  // Abrir cliente de correo
-                  const subject = "ASISTENCIA CSCP/CORPORATIVO OXXO";
-                  const to = "jesuseduardo.gutierrez@armur.com,juan.paniagua@armur.com";
-                  const cc = "ROBERTO.RODRIGUEZ@ARMUR.COM,josedavid.montano@armur.com";
-                  const bodyMsg = "El reporte de asistencia se ha copiado al portapapeles.\n\nPor favor, presione Ctrl+V (Pegar) aquí para visualizar la tabla de asistencia.\n\n";
-                  
-                  const mailtoLink = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyMsg)}`;
-                  window.location.href = mailtoLink; 
-                  
-              } catch (err) {
-                  console.error("Error acceso iframe o clipboard:", err);
-                  alert("Al ser una página externa, por seguridad no se puede copiar el contenido automáticamente. Por favor copie la tabla manualmente.");
-                  
-                  // Fallback a mailto simple
-                  const subject = "ASISTENCIA CSCP/CORPORATIVO OXXO";
-                  const to = "jesuseduardo.gutierrez@armur.com,juan.paniagua@armur.com";
-                  const cc = "ROBERTO.RODRIGUEZ@ARMUR.COM,josedavid.montano@armur.com";
-                  window.location.href = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}`;
-              }
-          });
-      }
-      
-      if (btnCloseReport) {
-          btnCloseReport.addEventListener('click', () => {
-              reportOverlay.classList.remove("active");
-              // Limpiar src al cerrar para detener carga
-              reportFrame.src = "";
+             // Redirigir completamente a la página del reporte
+             window.location.href = "https://cicxtfemco.online/RegAs/Reporte.html";
           });
       }
 
