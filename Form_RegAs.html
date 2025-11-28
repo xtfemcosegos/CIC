@@ -646,7 +646,7 @@
       const excelSerialToDate = (serial) => {
           if (!serial || isNaN(serial)) return "";
           const utc_days  = Math.floor(serial - 25569);
-          const utc_value = utc_days * 86400;                                        
+          const utc_value = utc_days * 86400;                                     
           const date_info = new Date(utc_value * 1000);
           
           const offsetMinutes = date_info.getTimezoneOffset();
@@ -943,168 +943,39 @@
           renderGrid();
       });
       
-      // === GENERAR REPORTE (Logica Nueva) ===
-      const renderReportFrame = (dateString) => {
-            const selectedDate = formatDateForFilter(dateString);
-            console.log("Rendering report for:", selectedDate);
-            
-            // Mostrar en reporte la cantidad recibida para diagnóstico
-            const totalRecibidos = reportHistoryData.length;
-
-            const registrosFiltrados = reportHistoryData.filter(r => {
-                const rawDate = r.Fecha;
-                if (!rawDate) return false;
-                
-                let computedDate = rawDate;
-                if (!isNaN(rawDate) && String(rawDate).indexOf("/") === -1) {
-                    computedDate = excelSerialToDate(rawDate);
-                }
-                
-                return computedDate === selectedDate;
-            });
-
-            let htmlReport = `
-                <html><head><style>
-                    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background:#fff; }
-                    h2 { border-bottom: 2px solid #b71c1c; color: #b71c1c; padding-bottom: 5px; margin-top: 30px; font-size:1.2rem; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
-                    th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
-                    th { background-color: #f7fafc; color: #2d3748; font-weight:700; text-transform:uppercase; font-size:0.75rem; }
-                    tr:nth-child(even) { background-color: #fcfcfc; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .header h1 { margin:0; color:#1a202c; }
-                    .header h3 { margin:5px 0; color:#718096; font-weight:400; }
-                    .empty-msg { font-style: italic; color: #a0aec0; text-align:center; padding:20px; background:#f9f9f9; border-radius:8px; }
-                    .debug-info { font-size: 0.7rem; color: #cbd5e0; text-align: center; margin-top: 50px; }
-                </style></head><body>
-                <div class="header">
-                    <h1>Reporte de Asistencia</h1>
-                    <h3>Fecha: ${selectedDate}</h3>
-                </div>
-            `;
-
-            const turnos = ["Día", "Tarde", "Noche"];
-            turnos.forEach(turno => {
-                // Normalizar turno de API (evitar errores de acentos)
-                const porTurno = registrosFiltrados.filter(r => normalize(r.Turno || "") === normalize(turno));
-                
-                htmlReport += `<h2>Turno ${turno} <span style="font-size:0.9rem; color:#718096;">(${porTurno.length})</span></h2>`;
-                
-                if (porTurno.length === 0) {
-                    htmlReport += "<p class='empty-msg'>No hay registros para este turno.</p>";
-                } else {
-                    htmlReport += `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:80px;">ID</th>
-                                    <th>Nombre</th>
-                                    <th>Área</th>
-                                    <th style="width:100px;">Entrada</th>
-                                    <th style="width:100px;">Salida</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-                    
-                    porTurno.forEach(r => {
-                        htmlReport += `
-                            <tr>
-                                <td style="font-weight:600;">${r.ID}</td>
-                                <td>${r.Nombre}</td>
-                                <td>${r.Caseta || r.Area || ""}</td>
-                                <td style="color:#38a169; font-weight:600;">${excelFractionToTime(r.Entrada)}</td>
-                                <td style="color:#e53e3e; font-weight:600;">${excelFractionToTime(r.Salida)}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    htmlReport += `</tbody></table>`;
-                }
-            });
-            
-            htmlReport += `
-                <div class="debug-info">
-                    Registros totales recibidos: ${totalRecibidos} | Registros mostrados: ${registrosFiltrados.length}
-                </div>
-            </body></html>`;
-
-            const frameDoc = reportFrame.contentWindow.document;
-            frameDoc.open();
-            frameDoc.write(htmlReport);
-            frameDoc.close();
-      };
-
+      // === BOTÓN GENERAR TABLAS (NUEVA LÓGICA) ===
       if (btnGenerateTables) {
-          btnGenerateTables.addEventListener('click', async () => {
-            // 1. Abrir Overlay y setear fecha inicial
-            const initialDate = getInitialReportDate();
-            reportDateInput.value = initialDate;
-            reportOverlay.classList.add("active");
+          btnGenerateTables.addEventListener('click', () => {
+              // 1. Abrir Overlay y setear fecha inicial visualmente
+              const initialDate = getInitialReportDate();
+              reportDateInput.value = initialDate;
+              reportOverlay.classList.add("active");
 
-            // 2. Cargar datos si no existen
-            if (reportHistoryData.length === 0) {
-                const originalText = btnGenerateTables.innerHTML;
-                btnGenerateTables.innerHTML = "⌛ Cargando...";
-                btnGenerateTables.disabled = true;
-                
-                // Mostrar loading en iframe temporalmente
-                const frameDoc = reportFrame.contentWindow.document;
-                frameDoc.open(); frameDoc.write("<h3 style='text-align:center; font-family:sans-serif; margin-top:50px; color:#718096;'>Cargando historial de asistencia...</h3>"); frameDoc.close();
-
-                const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
-
-                try {
-                    const response = await fetch(apiURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ Mode: "GenerarTablas" })
-                    });
-
-                    if (!response.ok) throw new Error("Error API Reporte");
-                    const data = await response.json();
-                    // Guardar historial completo
-                    reportHistoryData = Array.isArray(data) ? data : (data.Usuarios || []);
-                    
-                    // Renderizar con la fecha inicial
-                    renderReportFrame(initialDate);
-
-                } catch (error) {
-                    console.error(error);
-                    alert("Error al cargar historial para reporte.");
-                    reportOverlay.classList.remove("active");
-                } finally {
-                    btnGenerateTables.innerHTML = originalText;
-                    btnGenerateTables.disabled = false;
-                }
-            } else {
-                // Si ya hay datos, solo renderizar
-                renderReportFrame(initialDate);
-            }
+              // 2. Cargar directamente el enlace externo solicitado en el iframe
+              // Se asegura https para evitar bloqueos de contenido mixto
+              reportFrame.src = "https://cicxtfemco.online/RegAs/Reporte.html";
           });
       }
 
-      // Listener para cambio de fecha en el reporte
+      // Listener para cambio de fecha en el reporte (Opcional, si quisieras pasar el parámetro a la URL externa)
       reportDateInput.addEventListener('change', (e) => {
-          if (reportHistoryData.length > 0) {
-              renderReportFrame(e.target.value);
-          }
+         // Aquí podrías agregar lógica para recargar el iframe con ?fecha=... si el sitio externo lo soporta
+         console.log("Fecha cambiada:", e.target.value);
       });
       
-      // LOGICA BOTÓN ENVIAR CORREO (Nuevo Enfoque: Copiar y Abrir)
+      // LOGICA BOTÓN ENVIAR CORREO (Se mantiene, pero depende de CORS)
       if (btnSendEmail) {
           btnSendEmail.addEventListener('click', async () => {
               
-              // 1. Obtener el documento del iframe
-              const frameDoc = reportFrame.contentDocument || reportFrame.contentWindow.document;
-              
-              // 2. Seleccionar todo el contenido del reporte
-              const range = document.createRange();
-              range.selectNode(frameDoc.body);
-              const selection = window.getSelection(); 
-              
-              // Vamos a intentar la técnica de Clipboard API con text/html si está disponible.
+              // Intentar acceder al documento del iframe (Puede fallar si es dominio cruzado)
               try {
+                  const frameDoc = reportFrame.contentDocument || reportFrame.contentWindow.document;
+                  
+                  // Seleccionar todo el contenido del reporte
+                  const range = document.createRange();
+                  range.selectNode(frameDoc.body);
+                  const selection = window.getSelection(); 
+                  
                   const htmlContent = frameDoc.body.innerHTML;
                   const textContent = frameDoc.body.innerText;
                   
@@ -1133,8 +1004,8 @@
                   window.location.href = mailtoLink; 
                   
               } catch (err) {
-                  console.error("Error copiando al portapapeles:", err);
-                  alert("No se pudo copiar la tabla automáticamente. Por favor seleccione el contenido del reporte, copielo y péguelo en su correo.");
+                  console.error("Error acceso iframe o clipboard:", err);
+                  alert("Al ser una página externa, por seguridad no se puede copiar el contenido automáticamente. Por favor copie la tabla manualmente.");
                   
                   // Fallback a mailto simple
                   const subject = "ASISTENCIA CSCP/CORPORATIVO OXXO";
@@ -1148,6 +1019,8 @@
       if (btnCloseReport) {
           btnCloseReport.addEventListener('click', () => {
               reportOverlay.classList.remove("active");
+              // Limpiar src al cerrar para detener carga
+              reportFrame.src = "";
           });
       }
 
