@@ -63,6 +63,25 @@
     .brand-title { font-weight: 800; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
 
     .header-controls { display: flex; gap: 15px; align-items: center; }
+    
+    /* Indicador de Sincronización (NUEVO) */
+    .sync-status {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(0,0,0,0.25); padding: 5px 12px; border-radius: 20px;
+        font-size: 0.75rem; color: rgba(255,255,255,0.9); font-weight: 500;
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: opacity 0.3s ease;
+        opacity: 0; pointer-events: none; /* Invisible por defecto */
+    }
+    .sync-status.active { opacity: 1; pointer-events: auto; }
+    
+    .sync-spinner {
+        width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white; border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
     .live-clock-mini { 
         font-variant-numeric: tabular-nums; 
         font-weight: 600; 
@@ -242,11 +261,18 @@
     .modal-actions { display: flex; gap: 15px; margin-bottom: 20px; }
     .btn-modal { flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.95rem; }
     
-    .btn-save-edit { background: #4a5568; color: white; }
+    .btn-save-edit { background: #4a5568; color: white; transition: background 0.3s; }
     .btn-save-edit:hover { background: #2d3748; }
     
     .btn-secondary { background: #edf2f7; color: var(--text-main); border: 1px solid #e2e8f0; }
     .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Mensaje de éxito interno */
+    .modal-msg-success { 
+        margin-top: 10px; padding: 10px; border-radius: 8px; background: #f0fff4; 
+        color: #2f855a; font-weight: 700; text-align: center; border: 1px solid #c6f6d5;
+        display: none; animation: fadeIn 0.3s;
+    }
 
     /* Botón de Acción Principal */
     .action-divider { border-top: 1px dashed #cbd5e0; margin: 10px 0 20px 0; position: relative; }
@@ -272,6 +298,7 @@
     .punch-actions { display: flex; gap: 10px; }
     
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
@@ -285,6 +312,12 @@
     </div>
     
     <div class="header-controls">
+      <!-- INDICADOR DE SINCRONIZACIÓN -->
+      <div id="syncIndicator" class="sync-status">
+          <div class="sync-spinner"></div>
+          <span>Sincronizando asistencia...</span>
+      </div>
+
       <div id="headerClock" class="live-clock-mini">--:--</div>
       <select id="navFormularios" class="nav-btn">
         <option value="" disabled selected>Menú</option>
@@ -340,6 +373,8 @@
             </div>
             <textarea id="txtComentario" class="input-textarea" placeholder="Agregar comentario..."></textarea>
             
+            <div id="profileMessage" class="modal-msg-success"></div> <!-- Mensaje de Éxito -->
+
             <!-- ACCIONES DEL FORMULARIO DE EDICIÓN -->
             <div class="modal-actions">
                 <button id="btnCancelProfile" class="btn-modal btn-secondary">Cancelar</button>
@@ -364,6 +399,8 @@
               
               <input type="time" id="punchTimeInput" class="punch-time-input">
               
+              <div id="punchMessage" class="modal-msg-success" style="margin-bottom:15px;"></div> <!-- Mensaje de Éxito -->
+
               <div class="punch-actions">
                   <button id="btnCancelPunch" class="btn-save-edit" style="background:#edf2f7; color:#2d3748; margin:0;">Cancelar</button>
                   <button id="btnConfirmPunch" class="btn-save-edit" style="background:var(--accent); color:white; margin:0;">Confirmar</button>
@@ -384,6 +421,7 @@
       const mainSearchInput = document.getElementById("mainSearchInput");
       const cardsGrid = document.getElementById("cardsGrid");
       const areaFilterSelect = document.getElementById("areaFilterSelect");
+      const syncIndicator = document.getElementById("syncIndicator"); // NUEVO REF
       
       // Modal 1 Refs
       const profileModal = document.getElementById("profileModal");
@@ -392,7 +430,8 @@
       const modalProfileImg = document.getElementById("modalProfileImg");
       const modalProfileName = document.getElementById("modalProfileName");
       const modalProfileMeta = document.getElementById("modalProfileMeta");
-      const modalProfileAreaSelect = document.getElementById("modalProfileAreaSelect"); // Nuevo Select
+      const modalProfileAreaSelect = document.getElementById("modalProfileAreaSelect"); 
+      const profileMessage = document.getElementById("profileMessage");
       
       const chkFes = document.getElementById("chkFes");
       const chkTiEx = document.getElementById("chkTiEx");
@@ -407,6 +446,7 @@
       const punchTitle = document.getElementById("punchTitle");
       const punchSubtitle = document.getElementById("punchSubtitle");
       const punchTimeInput = document.getElementById("punchTimeInput");
+      const punchMessage = document.getElementById("punchMessage");
       const btnCancelPunch = document.getElementById("btnCancelPunch");
       const btnConfirmPunch = document.getElementById("btnConfirmPunch");
 
@@ -421,6 +461,13 @@
 
       // --- Helpers ---
       const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+      
+      const safeBool = (val) => {
+          if (!val) return false;
+          const s = String(val).toLowerCase();
+          return s === 'true' || s === 'yes' || s === '1' || s === 'on';
+      };
+
       const excelFractionToTime = (val) => {
          if(!val) return "";
          if(String(val).includes(":")) return String(val).substring(0,5);
@@ -439,9 +486,12 @@
         headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       }, 1000);
 
-      // 2. Fetch Data
+      // 2. Fetch Data (ACTUALIZADO CON INDICADOR)
       const cargarDatosReporteBackground = async () => {
           try {
+              // Mostrar indicador
+              syncIndicator.classList.add('active');
+              
               const response = await fetch(API_DASHBOARD, { 
                   method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "GenerarTablas" }) 
               });
@@ -450,12 +500,17 @@
                   const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
                   localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(cleanData));
               }
-          } catch(e) { console.warn("Background fetch failed", e); }
+          } catch(e) { 
+              console.warn("Background fetch failed", e); 
+          } finally {
+              // Ocultar indicador sea éxito o error
+              setTimeout(() => syncIndicator.classList.remove('active'), 1000); // Pequeño delay para suavidad
+          }
       };
 
       const cargarDatosDashboard = async () => {
          try {
-            cargarDatosReporteBackground();
+            cargarDatosReporteBackground(); // Inicia background fetch
             const response = await fetch(API_DASHBOARD, { 
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) 
             });
@@ -539,15 +594,12 @@
                   const btnLabel = isIn ? "Registrar Salida" : "Registrar Entrada";
                   const btnClass = isIn ? "btn-out" : "btn-in";
 
-                  // Estructura Compacta (List-Like)
                   card.innerHTML = `
                       <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.Nombre)}&background=edf2f7&color=2d3748'" class="card-avatar">
                       <div class="card-info">
                           <div class="card-name">${u.Nombre}</div>
                           ${isIn ? `<div class="card-status-text">Entrada: ${timeStr}</div>` : ''}
                       </div>
-                      
-                      <!-- Botón Hover (Hidden by default via CSS) -->
                       <div class="card-details-hover">
                           <button class="btn-card-action ${btnClass}">
                               ${isIn ? '🔻' : '🟢'} ${btnLabel}
@@ -555,9 +607,7 @@
                       </div>
                   `;
                   
-                  // Abrir Modal de Perfil
                   card.addEventListener('click', () => openProfileModal(u));
-                  
                   wrapper.appendChild(card);
                   gridContainer.appendChild(wrapper);
               });
@@ -565,26 +615,24 @@
           });
       };
 
-      // 4. Modal Perfil (Edición)
+      // 4. Modal Perfil
       const openProfileModal = (user) => {
           activeUser = user;
+          profileMessage.style.display = 'none'; // Ocultar mensaje previo
           
           modalProfileImg.src = `FP/${user.ID}.jpg`;
           modalProfileImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
           modalProfileName.textContent = user.Nombre;
           modalProfileMeta.textContent = `ID: ${user.ID}`;
           
-          // Llenar Select de Área en el Perfil
           modalProfileAreaSelect.innerHTML = "";
           areasOficiales.forEach(a => {
              const opt = document.createElement('option');
-             opt.value = a; 
-             opt.textContent = a;
+             opt.value = a; opt.textContent = a;
              if(a === user.Area) opt.selected = true;
              modalProfileAreaSelect.appendChild(opt);
           });
 
-          // Cargar datos locales del reporte (si existen)
           const localData = JSON.parse(localStorage.getItem(STORAGE_REPORT_KEY) || "[]");
           const userRecord = localData.find(r => String(r.ID) === String(user.ID));
 
@@ -592,14 +640,13 @@
           txtComentario.value = "";
 
           if (userRecord) {
-              chkFes.checked = Boolean(userRecord.Fes);
-              chkTiEx.checked = Boolean(userRecord.TiEx);
-              chkRec.checked = Boolean(userRecord.Rec);
-              chkRet.checked = Boolean(userRecord.Ret);
+              chkFes.checked = safeBool(userRecord.Fes);
+              chkTiEx.checked = safeBool(userRecord.TiEx);
+              chkRec.checked = safeBool(userRecord.Rec);
+              chkRet.checked = safeBool(userRecord.Ret);
               txtComentario.value = userRecord.Comentarios || userRecord.Comentario || "";
           }
 
-          // Configurar Botón de Acción
           const status = (user["Ultimo estado"] || "").toLowerCase();
           const isIn = status === "entrada";
           
@@ -610,28 +657,34 @@
           profileModal.classList.add('active');
       };
 
-      // Helper para obtener datos extra del DOM
       const getExtraDataFromDOM = () => ({
-          Fes: chkFes.checked, 
-          TiEx: chkTiEx.checked, 
-          Rec: chkRec.checked, 
-          Ret: chkRet.checked, 
-          Comentarios: txtComentario.value,
-          Area: modalProfileAreaSelect.value // Caseta Editable
+          Fes: chkFes.checked, TiEx: chkTiEx.checked, Rec: chkRec.checked, Ret: chkRet.checked, 
+          Comentarios: txtComentario.value, Area: modalProfileAreaSelect.value 
       });
 
-      // 5. Guardar Edición (Incidencias)
+      // 5. Enviar Solicitud General
+      const sendRequest = async (payload) => {
+          try {
+              const resp = await fetch(API_ACTION, { 
+                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) 
+              });
+              return resp.ok;
+          } catch(e) {
+              return false;
+          }
+      };
+
+      // 5a. Guardar Edición con Feedback Visual
       btnSaveEdits.addEventListener('click', async () => {
           if(!activeUser) return;
           const btn = btnSaveEdits;
+          const originalText = btn.textContent;
           btn.disabled = true; btn.textContent = "Guardando...";
+          profileMessage.style.display = 'none';
 
           const extraData = getExtraDataFromDOM();
-
-          // Actualizar Local
           updateLocalStorage(activeUser.ID, extraData);
 
-          // Enviar Servidor (Misma Estructura)
           const payload = {
               Key: getKey(activeUser.ID),
               Fecha: getTodayString(),
@@ -642,33 +695,53 @@
               ...extraData
           };
 
-          await sendRequest(payload, btn, "💾 Guardar Cambios");
+          const success = await sendRequest(payload);
+          
+          if(success) {
+              // Éxito Visual
+              btn.textContent = "✔ Guardado";
+              btn.style.backgroundColor = "var(--success)";
+              profileMessage.textContent = "✔ Cambios guardados correctamente";
+              profileMessage.style.display = "block";
+              
+              setTimeout(() => {
+                  profileModal.classList.remove('active');
+                  btn.disabled = false; 
+                  btn.textContent = originalText;
+                  btn.style.backgroundColor = ""; // Reset color
+                  profileMessage.style.display = 'none';
+              }, 1500);
+          } else {
+              // Error
+              btn.textContent = "Error";
+              btn.disabled = false;
+              setTimeout(() => { btn.textContent = originalText; }, 2000);
+          }
       });
 
-      // 6. Modal Punch (Acción)
+      // 6. Modal Punch
       const openPunchModal = (user, type) => {
           pendingAction = { user, type };
-          
+          punchMessage.style.display = 'none'; // Ocultar mensaje previo
           punchTitle.textContent = type === "Entrada" ? "Registrar Entrada" : "Registrar Salida";
           punchSubtitle.textContent = user.Nombre;
-          
           const now = new Date();
           punchTimeInput.value = now.toLocaleTimeString('es-MX', {hour12: false, hour:'2-digit', minute:'2-digit'});
-          
           punchModal.classList.add('active');
       };
 
-      // 7. Confirmar Punch
+      // 7. Confirmar Punch con Feedback Visual
       btnConfirmPunch.addEventListener('click', async () => {
           if(!pendingAction) return;
           const btn = btnConfirmPunch;
+          const originalText = btn.textContent;
           btn.disabled = true; btn.textContent = "...";
+          punchMessage.style.display = 'none';
 
           const timeVal = punchTimeInput.value;
           const [h, m] = timeVal.split(':');
           const horaEnvio = `${h}:${m}:00`;
           
-          // Datos completos incluyendo los del perfil (checkboxes, area, comentario)
           const extraData = getExtraDataFromDOM();
 
           const payload = {
@@ -678,20 +751,37 @@
               Nombre: pendingAction.user.Nombre,
               Turno: getTurno(parseInt(h, 10)),
               Hora: horaEnvio,
-              TipoRegistro: pendingAction.type, // Entrada o Salida
+              TipoRegistro: pendingAction.type,
               ...extraData
           };
 
-          // Actualizar area en objeto local si es entrada para UX inmediata
           if(pendingAction.type === 'Entrada') {
               updateLocalStorage(pendingAction.user.ID, { Area: extraData.Area, Entrada: horaEnvio });
           }
 
-          const success = await sendRequest(payload, btn, "Confirmar");
+          const success = await sendRequest(payload);
+          
           if(success) {
-              punchModal.classList.remove('active');
-              profileModal.classList.remove('active'); 
-              cargarDatosDashboard(); 
+              btn.textContent = "✔";
+              btn.style.backgroundColor = "var(--success)";
+              punchMessage.textContent = "✔ Registro Exitoso";
+              punchMessage.style.display = "block";
+
+              setTimeout(() => {
+                  punchModal.classList.remove('active');
+                  profileModal.classList.remove('active'); 
+                  
+                  // Reset botón
+                  btn.disabled = false; 
+                  btn.textContent = originalText;
+                  btn.style.backgroundColor = ""; 
+                  
+                  cargarDatosDashboard(); 
+              }, 1500);
+          } else {
+              btn.textContent = "Error";
+              btn.disabled = false;
+              setTimeout(() => { btn.textContent = originalText; }, 2000);
           }
       });
 
@@ -725,23 +815,6 @@
               localData.push({ ID: id, ...dataObj });
           }
           localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(localData));
-      };
-
-      const sendRequest = async (payload, btnElem, originalText) => {
-          try {
-              const resp = await fetch(API_ACTION, { 
-                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) 
-              });
-              if(resp.ok) {
-                  alert("✔ Guardado correctamente");
-                  btnElem.disabled = false; btnElem.textContent = originalText;
-                  return true;
-              } else throw new Error();
-          } catch(e) {
-              alert("❌ Error al guardar");
-              btnElem.disabled = false; btnElem.textContent = originalText;
-              return false;
-          }
       };
 
       // Close handlers
