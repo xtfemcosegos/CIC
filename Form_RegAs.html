@@ -243,7 +243,7 @@
 
     .modal-body { padding: 20px; }
 
-    /* Sección Checkboxes */
+    /* Sección Checkboxes & Form */
     .modal-section-title { font-size: 0.8rem; font-weight: 700; color: #718096; text-transform: uppercase; margin-bottom: 10px; display: block; }
     
     /* Area Selector en Modal */
@@ -253,6 +253,7 @@
     }
 
     .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; margin-top: 15px; }
+    
     .checkbox-item { 
         display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--primary-dark); 
         background: #f7fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;
@@ -260,17 +261,27 @@
     .checkbox-item:hover { border-color: #cbd5e0; background: #edf2f7; }
     .checkbox-item input { accent-color: var(--accent); transform: scale(1.2); cursor: pointer; }
 
+    /* Estilo específico para items de Ausentismo */
+    .checkbox-item.absence-item { background: #fff5f5; border-color: #feb2b2; color: #c53030; }
+    .checkbox-item.absence-item:hover { background: #fed7d7; }
+    .checkbox-item.absence-item input { accent-color: #c53030; }
+
     .input-textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 8px; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 70px; margin-bottom: 15px; }
 
     /* Botones de acción del Modal */
-    .modal-actions { display: flex; gap: 15px; margin-bottom: 20px; }
-    .btn-modal { flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.95rem; }
+    .modal-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
+    .btn-modal { flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.85rem; display: flex; justify-content: center; align-items: center; gap: 5px;}
     
     .btn-save-edit { background: #4a5568; color: white; transition: background 0.3s; }
     .btn-save-edit:hover { background: #2d3748; }
     
     .btn-secondary { background: #edf2f7; color: var(--text-main); border: 1px solid #e2e8f0; }
     .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Botón Ausentismo */
+    .btn-absence { background: white; border: 1px solid #fc8181; color: #c53030; }
+    .btn-absence:hover { background: #fff5f5; }
+    .btn-absence.active { background: #c53030; color: white; border-color: #c53030; }
 
     /* Mensaje de éxito interno */
     .modal-msg-success { 
@@ -293,7 +304,7 @@
     .trigger-out { background: var(--accent); color: white; }
     .trigger-out:hover { background: #9b2c2c; }
 
-    /* === SEGUNDO MODAL (Confirmación Hora) === */
+    /* === SEGUNDO MODAL === */
     .punch-confirm-modal { width: 90%; max-width: 350px; text-align: center; }
     .punch-time-display { font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); margin: 15px 0; font-variant-numeric: tabular-nums; }
     .punch-time-input { 
@@ -317,13 +328,11 @@
     </div>
     
     <div class="header-controls">
-      <!-- INDICADOR DE SINCRONIZACIÓN -->
       <div id="syncIndicator" class="sync-status" title="Clic para recargar base local">
-          <div id="syncSpinner" class="sync-spinner"></div> <!-- Spinner -->
-          <span id="syncIcon" class="d-none" style="font-size:1rem; font-weight:bold;">✔</span> <!-- Palomita -->
+          <div id="syncSpinner" class="sync-spinner"></div>
+          <span id="syncIcon" class="d-none" style="font-size:1rem; font-weight:bold;">✔</span>
           <span id="syncText">Sincronizando...</span>
       </div>
-
       <div id="headerClock" class="live-clock-mini">--:--</div>
       <select id="navFormularios" class="nav-btn">
         <option value="" disabled selected>Menú</option>
@@ -348,13 +357,13 @@
       </div>
     </div>
 
-    <!-- Grid de Tarjetas Compactas -->
+    <!-- Grid de Tarjetas -->
     <div id="cardsGrid" class="dashboard-grid-container">
       <div class="text-center" style="width:100%; padding:40px; color:#aaa;">Cargando personal...</div>
     </div>
   </main>
 
-  <!-- MODAL 1: PERFIL Y EDICIÓN -->
+  <!-- MODAL 1: PERFIL / EDICIÓN / AUSENTISMO -->
   <div id="profileModal" class="modal-overlay">
     <div class="modal-card">
         <button class="btn-close-modal" id="btnCloseProfile">×</button>
@@ -364,34 +373,48 @@
             <div class="modal-user-info">
                 <h3 id="modalProfileName">Nombre</h3>
                 <p id="modalProfileMeta">ID: 0000</p>
-                <!-- Area ahora es un Select Editable -->
                 <select id="modalProfileAreaSelect" class="modal-area-select"></select>
             </div>
         </div>
 
         <div class="modal-body">
-            <!-- Sección de Edición -->
-            <div class="checkbox-grid">
+            
+            <!-- GRID 1: INCIDENCIAS NORMALES (Checkbox) -->
+            <div id="gridStandardChecks" class="checkbox-grid">
                 <label class="checkbox-item"><input type="checkbox" id="chkFes"> Festivo</label>
                 <label class="checkbox-item"><input type="checkbox" id="chkTiEx"> T. Extra</label>
                 <label class="checkbox-item"><input type="checkbox" id="chkRec"> Recuperación</label>
                 <label class="checkbox-item"><input type="checkbox" id="chkRet"> Retardo</label>
             </div>
-            <textarea id="txtComentario" class="input-textarea" placeholder="Agregar comentario..."></textarea>
-            
-            <div id="profileMessage" class="modal-msg-success"></div> <!-- Mensaje de Éxito -->
 
-            <!-- ACCIONES DEL FORMULARIO DE EDICIÓN -->
-            <div class="modal-actions">
-                <button id="btnCancelProfile" class="btn-modal btn-secondary">Cancelar</button>
-                <button id="btnSaveEdits" class="btn-modal btn-save-edit">💾 Guardar Cambios</button>
+            <!-- GRID 2: AUSENTISMO (Radio Buttons) - Oculto por defecto -->
+            <div id="gridAbsenceChecks" class="checkbox-grid d-none">
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Descanso"> Descanso</label>
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Permiso"> Permiso</label>
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Incapacidad"> Incapacidad</label>
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Vacaciones"> Vacaciones</label>
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Suspension"> Suspensión</label>
+                <label class="checkbox-item absence-item"><input type="radio" name="absenceReason" value="Falta"> Falta</label>
             </div>
 
-            <!-- Sección de Acción -->
-            <div class="action-divider"><span>REGISTRO</span></div>
-            <button id="btnTriggerPunch" class="btn-punch-trigger">
-                <!-- Se llena dinamicamente: 🟢 Registrar Entrada -->
-            </button>
+            <textarea id="txtComentario" class="input-textarea" placeholder="Agregar comentario..."></textarea>
+            
+            <div id="profileMessage" class="modal-msg-success"></div>
+
+            <!-- BOTONERA -->
+            <div class="modal-actions">
+                <button id="btnCancelProfile" class="btn-modal btn-secondary">Cancelar</button>
+                <button id="btnToggleAbsence" class="btn-modal btn-absence">🚫 Ausentismo</button>
+                <button id="btnSaveEdits" class="btn-modal btn-save-edit">💾 Guardar</button>
+            </div>
+
+            <!-- REGISTRO (Ocultar si es ausentismo) -->
+            <div id="punchSection">
+                <div class="action-divider"><span>REGISTRO</span></div>
+                <button id="btnTriggerPunch" class="btn-punch-trigger">
+                    <!-- Dinámico -->
+                </button>
+            </div>
         </div>
     </div>
   </div>
@@ -402,11 +425,8 @@
           <div style="padding:20px;">
               <h3 id="punchTitle" style="margin:0; color:#2d3748;">Confirmar Hora</h3>
               <p id="punchSubtitle" style="color:#718096; font-size:0.9rem;">Acción</p>
-              
               <input type="time" id="punchTimeInput" class="punch-time-input">
-              
-              <div id="punchMessage" class="modal-msg-success" style="margin-bottom:15px;"></div> <!-- Mensaje de Éxito -->
-
+              <div id="punchMessage" class="modal-msg-success" style="margin-bottom:15px;"></div>
               <div class="punch-actions">
                   <button id="btnCancelPunch" class="btn-save-edit" style="background:#edf2f7; color:#2d3748; margin:0;">Cancelar</button>
                   <button id="btnConfirmPunch" class="btn-save-edit" style="background:var(--accent); color:white; margin:0;">Confirmar</button>
@@ -422,7 +442,7 @@
       const API_ACTION = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
       const STORAGE_REPORT_KEY = "asistencia_reporte_data";
 
-      // Refs
+      // Refs Principales
       const headerClock = document.getElementById("headerClock");
       const mainSearchInput = document.getElementById("mainSearchInput");
       const cardsGrid = document.getElementById("cardsGrid");
@@ -432,7 +452,7 @@
       const syncIcon = document.getElementById("syncIcon");
       const syncText = document.getElementById("syncText");
       
-      // Modal 1 Refs
+      // Modal Perfil Refs
       const profileModal = document.getElementById("profileModal");
       const btnCloseProfile = document.getElementById("btnCloseProfile");
       const btnCancelProfile = document.getElementById("btnCancelProfile");
@@ -441,16 +461,25 @@
       const modalProfileMeta = document.getElementById("modalProfileMeta");
       const modalProfileAreaSelect = document.getElementById("modalProfileAreaSelect"); 
       const profileMessage = document.getElementById("profileMessage");
+      const punchSection = document.getElementById("punchSection");
       
+      // Checkboxes y Grids
+      const gridStandardChecks = document.getElementById("gridStandardChecks");
+      const gridAbsenceChecks = document.getElementById("gridAbsenceChecks");
       const chkFes = document.getElementById("chkFes");
       const chkTiEx = document.getElementById("chkTiEx");
       const chkRec = document.getElementById("chkRec");
       const chkRet = document.getElementById("chkRet");
+      const radioAbsences = document.getElementsByName("absenceReason");
+      
       const txtComentario = document.getElementById("txtComentario");
+      
+      // Botones Accion Modal
       const btnSaveEdits = document.getElementById("btnSaveEdits");
+      const btnToggleAbsence = document.getElementById("btnToggleAbsence");
       const btnTriggerPunch = document.getElementById("btnTriggerPunch");
 
-      // Modal 2 Refs
+      // Modal Punch Refs
       const punchModal = document.getElementById("punchModal");
       const punchTitle = document.getElementById("punchTitle");
       const punchSubtitle = document.getElementById("punchSubtitle");
@@ -465,6 +494,7 @@
       let currentFilterArea = 'all';
       let activeUser = null; 
       let pendingAction = null; 
+      let isAbsenceMode = false; // Estado del modal
 
       const areasOficiales = ["Centro de Control", "Encargado", "Edison", "Recepcion", "Impulso", "Michelena", "Carranza", "Simon Bolivar", "Rondinero", "Universidad"];
 
@@ -495,7 +525,7 @@
         headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       }, 1000);
 
-      // 2. Fetch Data (ACTUALIZADO CON INDICADOR CLICKABLE)
+      // 2. Fetch Data (ACTUALIZADO: Check local primero)
       const cargarDatosReporteBackground = async () => {
           try {
               // UI Cargando
@@ -514,19 +544,26 @@
                   localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(cleanData));
                   
                   // UI Éxito
-                  syncSpinner.classList.add('d-none');
-                  syncIcon.classList.remove('d-none');
-                  syncText.textContent = "BD Local Actualizada";
-                  syncIndicator.classList.add('clickable');
+                  setSyncSuccessState();
               }
           } catch(e) { 
               console.warn("Background fetch failed", e);
-              // Si falla, lo ocultamos para no molestar
-              syncIndicator.classList.remove('active'); 
+              // Si falla, ocultar si no hay datos previos, o dejar estado anterior si habia
+              const localData = localStorage.getItem(STORAGE_REPORT_KEY);
+              if(localData) setSyncSuccessState();
+              else syncIndicator.classList.remove('active'); 
           }
       };
+
+      const setSyncSuccessState = () => {
+          syncSpinner.classList.add('d-none');
+          syncIcon.classList.remove('d-none');
+          syncText.textContent = "BD Local Actualizada";
+          syncIndicator.classList.add('active'); // Asegurar visible
+          syncIndicator.classList.add('clickable');
+      };
       
-      // Listener para re-sincronizar
+      // Listener para re-sincronizar (Manual)
       syncIndicator.addEventListener('click', () => {
           if (syncIndicator.classList.contains('clickable')) {
               cargarDatosReporteBackground();
@@ -535,7 +572,16 @@
 
       const cargarDatosDashboard = async () => {
          try {
-            cargarDatosReporteBackground(); // Inicia background fetch
+            // LÓGICA DE INICIO: Verificar si existe base local
+            const localData = localStorage.getItem(STORAGE_REPORT_KEY);
+            if (localData) {
+                // Si existe, mostramos indicador de actualizado y NO descargamos
+                setSyncSuccessState();
+            } else {
+                // Si no existe, descargamos en background
+                cargarDatosReporteBackground(); 
+            }
+
             const response = await fetch(API_DASHBOARD, { 
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) 
             });
@@ -593,7 +639,6 @@
           Object.keys(grouped).sort().forEach(areaName => {
               const groupCard = document.createElement('div');
               groupCard.className = 'area-group-card';
-              
               groupCard.innerHTML = `
                   <div class="area-group-header">
                       <div class="area-title">${areaName}</div>
@@ -601,7 +646,6 @@
                   </div>
                   <div class="area-cards-grid"></div>
               `;
-              
               const gridContainer = groupCard.querySelector('.area-cards-grid');
 
               grouped[areaName].forEach(u => {
@@ -631,7 +675,6 @@
                           </button>
                       </div>
                   `;
-                  
                   card.addEventListener('click', () => openProfileModal(u));
                   wrapper.appendChild(card);
                   gridContainer.appendChild(wrapper);
@@ -643,8 +686,12 @@
       // 4. Modal Perfil
       const openProfileModal = (user) => {
           activeUser = user;
-          profileMessage.style.display = 'none'; // Ocultar mensaje previo
+          profileMessage.style.display = 'none';
           
+          // Reset UI a Modo Normal
+          isAbsenceMode = false;
+          toggleAbsenceMode(false);
+
           modalProfileImg.src = `FP/${user.ID}.jpg`;
           modalProfileImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
           modalProfileName.textContent = user.Nombre;
@@ -658,11 +705,14 @@
              modalProfileAreaSelect.appendChild(opt);
           });
 
+          // Cargar datos locales
           const localData = JSON.parse(localStorage.getItem(STORAGE_REPORT_KEY) || "[]");
           const userRecord = localData.find(r => String(r.ID) === String(user.ID));
 
           chkFes.checked = false; chkTiEx.checked = false; chkRec.checked = false; chkRet.checked = false;
           txtComentario.value = "";
+          // Reset radios
+          for(const rd of radioAbsences) rd.checked = false;
 
           if (userRecord) {
               chkFes.checked = safeBool(userRecord.Fes);
@@ -682,62 +732,101 @@
           profileModal.classList.add('active');
       };
 
-      const getExtraDataFromDOM = () => ({
-          Fes: chkFes.checked, TiEx: chkTiEx.checked, Rec: chkRec.checked, Ret: chkRet.checked, 
-          Comentarios: txtComentario.value, Area: modalProfileAreaSelect.value 
-      });
-
-      // 5. Enviar Solicitud General
-      const sendRequest = async (payload) => {
-          try {
-              const resp = await fetch(API_ACTION, { 
-                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) 
-              });
-              return resp.ok;
-          } catch(e) {
-              return false;
+      // --- LOGICA DE AUSENTISMO ---
+      const toggleAbsenceMode = (active) => {
+          isAbsenceMode = active;
+          if (active) {
+              gridStandardChecks.classList.add('d-none');
+              gridAbsenceChecks.classList.remove('d-none');
+              punchSection.classList.add('d-none'); // Ocultar punch
+              btnToggleAbsence.classList.add('active');
+              btnToggleAbsence.textContent = "↩ Regresar";
+              btnSaveEdits.textContent = "Confirmar Ausentismo";
+              btnSaveEdits.style.backgroundColor = "#c53030"; // Color alerta
+          } else {
+              gridStandardChecks.classList.remove('d-none');
+              gridAbsenceChecks.classList.add('d-none');
+              punchSection.classList.remove('d-none');
+              btnToggleAbsence.classList.remove('active');
+              btnToggleAbsence.textContent = "🚫 Ausentismo";
+              btnSaveEdits.textContent = "💾 Guardar";
+              btnSaveEdits.style.backgroundColor = "#4a5568";
           }
       };
 
-      // 5a. Guardar Edición con Feedback Visual
+      btnToggleAbsence.addEventListener('click', () => toggleAbsenceMode(!isAbsenceMode));
+
+      // 5. Guardar Edición o Ausentismo
       btnSaveEdits.addEventListener('click', async () => {
           if(!activeUser) return;
           const btn = btnSaveEdits;
           const originalText = btn.textContent;
-          btn.disabled = true; btn.textContent = "Guardando...";
+          const originalBg = btn.style.backgroundColor;
+          btn.disabled = true; btn.textContent = "Procesando...";
           profileMessage.style.display = 'none';
 
-          const extraData = getExtraDataFromDOM();
-          updateLocalStorage(activeUser.ID, extraData);
-
-          const payload = {
+          const commonData = {
               Key: getKey(activeUser.ID),
               Fecha: getTodayString(),
               Numero: activeUser.ID,
               Nombre: activeUser.Nombre,
               Turno: getTurno(),
-              TipoRegistro: "Edicion", 
-              ...extraData
+              Area: modalProfileAreaSelect.value,
+              Comentarios: txtComentario.value
           };
+
+          let payload = {};
+
+          if (isAbsenceMode) {
+              // Buscar radio seleccionado
+              let motivo = "";
+              for(const rd of radioAbsences) { if(rd.checked) motivo = rd.value; }
+              
+              if (!motivo) {
+                  alert("Seleccione un motivo de ausentismo.");
+                  btn.disabled = false; btn.textContent = originalText;
+                  return;
+              }
+
+              payload = {
+                  ...commonData,
+                  TipoRegistro: "Ausentismo",
+                  Motivo: motivo
+                  // Nota: Fes, TiEx etc se envian? Probablemente no aplican en ausentismo o se asumen false.
+              };
+          } else {
+              // Modo Edición Normal
+              payload = {
+                  ...commonData,
+                  TipoRegistro: "Edicion",
+                  Fes: chkFes.checked,
+                  TiEx: chkTiEx.checked,
+                  Rec: chkRec.checked,
+                  Ret: chkRet.checked
+              };
+              // Guardar en local storage para feedback inmediato
+              updateLocalStorage(activeUser.ID, { 
+                  Fes: chkFes.checked, TiEx: chkTiEx.checked, Rec: chkRec.checked, Ret: chkRet.checked, 
+                  Comentarios: txtComentario.value, Area: modalProfileAreaSelect.value 
+              });
+          }
 
           const success = await sendRequest(payload);
           
           if(success) {
-              // Éxito Visual
-              btn.textContent = "✔ Guardado";
+              btn.textContent = "✔ Listo";
               btn.style.backgroundColor = "var(--success)";
-              profileMessage.textContent = "✔ Cambios guardados correctamente";
+              profileMessage.textContent = isAbsenceMode ? "✔ Ausentismo registrado" : "✔ Cambios guardados";
               profileMessage.style.display = "block";
               
               setTimeout(() => {
                   profileModal.classList.remove('active');
                   btn.disabled = false; 
                   btn.textContent = originalText;
-                  btn.style.backgroundColor = ""; // Reset color
+                  btn.style.backgroundColor = originalBg; 
                   profileMessage.style.display = 'none';
               }, 1500);
           } else {
-              // Error
               btn.textContent = "Error";
               btn.disabled = false;
               setTimeout(() => { btn.textContent = originalText; }, 2000);
@@ -747,7 +836,7 @@
       // 6. Modal Punch
       const openPunchModal = (user, type) => {
           pendingAction = { user, type };
-          punchMessage.style.display = 'none'; // Ocultar mensaje previo
+          punchMessage.style.display = 'none';
           punchTitle.textContent = type === "Entrada" ? "Registrar Entrada" : "Registrar Salida";
           punchSubtitle.textContent = user.Nombre;
           const now = new Date();
@@ -755,7 +844,7 @@
           punchModal.classList.add('active');
       };
 
-      // 7. Confirmar Punch con Feedback Visual
+      // 7. Confirmar Punch
       btnConfirmPunch.addEventListener('click', async () => {
           if(!pendingAction) return;
           const btn = btnConfirmPunch;
@@ -767,8 +856,7 @@
           const [h, m] = timeVal.split(':');
           const horaEnvio = `${h}:${m}:00`;
           
-          const extraData = getExtraDataFromDOM();
-
+          // Enviamos también los checkboxes actuales por si acaso
           const payload = {
               Key: getKey(pendingAction.user.ID, parseInt(h, 10)),
               Fecha: getTodayString(),
@@ -777,11 +865,13 @@
               Turno: getTurno(parseInt(h, 10)),
               Hora: horaEnvio,
               TipoRegistro: pendingAction.type,
-              ...extraData
+              Area: modalProfileAreaSelect.value,
+              Fes: chkFes.checked, TiEx: chkTiEx.checked, Rec: chkRec.checked, Ret: chkRet.checked, 
+              Comentarios: txtComentario.value
           };
 
           if(pendingAction.type === 'Entrada') {
-              updateLocalStorage(pendingAction.user.ID, { Area: extraData.Area, Entrada: horaEnvio });
+              updateLocalStorage(pendingAction.user.ID, { Area: payload.Area, Entrada: horaEnvio });
           }
 
           const success = await sendRequest(payload);
@@ -795,12 +885,9 @@
               setTimeout(() => {
                   punchModal.classList.remove('active');
                   profileModal.classList.remove('active'); 
-                  
-                  // Reset botón
                   btn.disabled = false; 
                   btn.textContent = originalText;
                   btn.style.backgroundColor = ""; 
-                  
                   cargarDatosDashboard(); 
               }, 1500);
           } else {
@@ -810,7 +897,7 @@
           }
       });
 
-      // --- Helpers Comunes ---
+      // --- Helpers ---
       const getKey = (id, hour = new Date().getHours()) => {
           const now = new Date();
           const dd = String(now.getDate()).padStart(2, '0');
@@ -840,6 +927,15 @@
               localData.push({ ID: id, ...dataObj });
           }
           localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(localData));
+      };
+
+      const sendRequest = async (payload) => {
+          try {
+              const resp = await fetch(API_ACTION, { 
+                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) 
+              });
+              return resp.ok;
+          } catch(e) { return false; }
       };
 
       // Close handlers
