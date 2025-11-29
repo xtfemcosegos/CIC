@@ -30,12 +30,12 @@
       --state-recup-bg: #dcfce7;   --state-recup-text: #166534;   /* Verde */
       --state-extra-bg: #fce7f3;   --state-extra-text: #be185d;   /* Rosa Fucsia */
       
-      /* === Colores de Ausentismo === */
-      --abs-falta: #fecaca;       /* Rojo claro */
-      --abs-incap: #fed7aa;       /* Naranja */
-      --abs-vac: #bae6fd;         /* Azul */
-      --abs-permiso: #e9d5ff;     /* Lila */
-      --abs-susp: #e5e7eb;        /* Gris */
+      /* === Colores de Ausentismo (Base) === */
+      --abs-falta: #fecaca;       
+      --abs-incap: #fed7aa;       
+      --abs-vac: #bae6fd;         
+      --abs-permiso: #e9d5ff;     
+      --abs-susp: #e5e7eb;        
     }
 
     * { box-sizing: border-box; outline: none; }
@@ -173,9 +173,23 @@
     /* Fix corner z-index */
     .matrix-table thead th:first-child, .matrix-table thead th:nth-child(2) { z-index: 30; background: #e2e8f0; }
 
-    .matrix-cell { cursor: pointer; transition: all 0.1s; }
-    .matrix-cell:hover { background-color: #e0f2fe; outline: 2px solid var(--highlight); z-index: 5; position: relative; }
-    .matrix-cell.selected { background-color: var(--highlight); color: white; outline: 2px solid var(--primary); }
+    /* MATRIX CELL COLORS (Backgrounds) */
+    .matrix-cell { cursor: pointer; transition: all 0.1s; color: #1e293b; font-weight: 600; }
+    .matrix-cell:hover { filter: brightness(0.95); outline: 2px solid var(--highlight); z-index: 5; position: relative; }
+    .matrix-cell.selected { outline: 3px solid var(--primary); z-index: 6; }
+
+    /* Turnos */
+    .bg-turno-dia { background-color: #fff7ed; color: #c2410c; } /* Naranja suave */
+    .bg-turno-tarde { background-color: #eff6ff; color: #1d4ed8; } /* Azul suave */
+    .bg-turno-noche { background-color: #f1f5f9; color: #334155; } /* Gris/Azul oscuro */
+    
+    /* Ausentismos */
+    .bg-abs-vac { background-color: var(--abs-vac); color: #075985; }
+    .bg-abs-desc { background-color: #dcfce7; color: #166534; }
+    .bg-abs-perm { background-color: var(--abs-permiso); color: #6b21a8; }
+    .bg-abs-falta { background-color: var(--abs-falta); color: #991b1b; }
+    .bg-abs-incap { background-color: var(--abs-incap); color: #9a3412; }
+    .bg-abs-susp { background-color: var(--abs-susp); color: #374151; }
 
     /* Hover por defecto Standard Table */
     .standard-table tr:hover td { background: #f8fafc; }
@@ -184,7 +198,7 @@
     .cell-time { font-family: 'Monaco', 'Consolas', monospace; font-weight: 600; padding: 8px 12px; border-radius: 6px; display: inline-block; min-width: 70px; text-align: center; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); }
     .col-incidencia-text { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--primary); opacity: 0.8; }
 
-    /* ROW COLORS */
+    /* ROW COLORS (Reporte Diario) */
     tr.row-retardo { background-color: var(--state-retardo-bg); }
     tr.row-festivo { background-color: var(--state-festivo-bg); }
     tr.row-recup { background-color: var(--state-recup-bg); }
@@ -199,25 +213,53 @@
     /* SIDE PANEL (Right 30%) */
     .side-panel {
         position: fixed; top: var(--header-height); right: 0; bottom: 0;
-        width: 350px; /* Min width */
-        max-width: 30%;
+        width: 380px; /* Ancho fijo un poco mayor para la foto */
+        max-width: 35%;
         background: white; border-left: 1px solid var(--border); box-shadow: -5px 0 15px rgba(0,0,0,0.05);
         z-index: 200; transform: translateX(100%); transition: transform 0.3s ease-in-out;
         display: flex; flex-direction: column;
     }
     .side-panel.open { transform: translateX(0); }
 
-    .panel-header { padding: 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: flex-start; }
-    .panel-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; }
-    .panel-subtitle { font-size: 0.85rem; opacity: 0.8; }
-    .btn-close-panel { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .panel-header { padding: 20px; background: var(--primary); color: white; display: flex; align-items: center; gap: 15px; }
+    
+    .panel-photo-container {
+        width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; overflow: hidden; background: #cbd5e1;
+        flex-shrink: 0;
+    }
+    .panel-photo { width: 100%; height: 100%; object-fit: cover; }
+    
+    .panel-header-info { flex: 1; }
+    .panel-title { font-size: 1rem; font-weight: 700; margin-bottom: 3px; line-height: 1.2; }
+    .panel-subtitle { font-size: 0.8rem; opacity: 0.8; }
+    
+    .btn-close-panel { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; padding: 0; align-self: flex-start; }
     .btn-close-panel:hover { opacity: 1; }
 
-    .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
-    .detail-group { margin-bottom: 20px; }
-    .detail-label { font-size: 0.75rem; color: var(--secondary); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
-    .detail-value { font-size: 0.95rem; color: var(--primary); font-weight: 600; padding: 8px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border); }
+    .panel-body { padding: 0; overflow-y: auto; flex: 1; background: #f8fafc; }
     
+    /* Record Card in Panel */
+    .panel-record-card {
+        background: white; margin: 15px; padding: 15px; border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid var(--border);
+    }
+    .record-index-title {
+        font-size: 0.75rem; font-weight: 800; color: var(--highlight); 
+        text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;
+    }
+
+    .detail-group { margin-bottom: 15px; }
+    .detail-label { font-size: 0.7rem; color: var(--secondary); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+    .detail-value { font-size: 0.9rem; color: var(--primary); font-weight: 600; padding: 8px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border); }
+    
+    /* Editables */
+    .input-select {
+        width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);
+        background: white; color: var(--primary); font-family: inherit; font-size: 0.9rem; font-weight: 600;
+        cursor: pointer;
+    }
+    .input-select:focus { border-color: var(--highlight); }
+
     .panel-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
     .panel-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 
@@ -308,34 +350,17 @@
       <!-- PANEL LATERAL -->
       <aside id="sidePanel" class="side-panel">
           <div class="panel-header">
-              <div>
+              <div class="panel-photo-container">
+                  <img src="" id="panelPhoto" class="panel-photo" alt="Foto">
+              </div>
+              <div class="panel-header-info">
                   <div class="panel-title" id="panelName">Nombre Empleado</div>
                   <div class="panel-subtitle" id="panelId">ID: 00000</div>
               </div>
               <button class="btn-close-panel" id="btnClosePanel">&times;</button>
           </div>
-          <div class="panel-body">
-              <div class="panel-badges" id="panelBadges">
-                  <!-- Badges here -->
-              </div>
-              <div class="detail-group">
-                  <div class="detail-label">Fecha / Turno</div>
-                  <div class="detail-value" id="panelDateTurno">--</div>
-              </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                  <div class="detail-group">
-                      <div class="detail-label">Entrada</div>
-                      <div class="detail-value" id="panelEntrada">--:--</div>
-                  </div>
-                  <div class="detail-group">
-                      <div class="detail-label">Salida</div>
-                      <div class="detail-value" id="panelSalida">--:--</div>
-                  </div>
-              </div>
-              <div class="detail-group">
-                  <div class="detail-label">Comentarios</div>
-                  <div class="detail-value" id="panelComentarios" style="min-height:60px;">Sin comentarios</div>
-              </div>
+          <div class="panel-body" id="panelRecordsContainer">
+              <!-- Cards dinamicas aqui -->
           </div>
       </aside>
   </div>
@@ -387,11 +412,8 @@
         const btnClosePanel = document.getElementById("btnClosePanel");
         const panelName = document.getElementById("panelName");
         const panelId = document.getElementById("panelId");
-        const panelBadges = document.getElementById("panelBadges");
-        const panelDateTurno = document.getElementById("panelDateTurno");
-        const panelEntrada = document.getElementById("panelEntrada");
-        const panelSalida = document.getElementById("panelSalida");
-        const panelComentarios = document.getElementById("panelComentarios");
+        const panelPhoto = document.getElementById("panelPhoto");
+        const panelRecordsContainer = document.getElementById("panelRecordsContainer");
 
         const emailModal = document.getElementById("emailModal");
         const emailBodyPreview = document.getElementById("emailBodyPreview");
@@ -483,35 +505,136 @@
         };
 
         // --- SIDE PANEL LOGIC ---
-        const openPanel = (record) => {
-            panelName.textContent = record.Nombre;
-            panelId.textContent = `ID: ${record.ID || record.Numero}`;
+        const openPanel = (records, uid) => {
+            if(!records || records.length === 0) return;
+            const first = records[0];
             
-            // Fecha y Turno
-            let rDate = record.Fecha;
-            if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
-            panelDateTurno.textContent = `${rDate} - ${record.Turno || "Sin Turno"}`;
-
-            panelEntrada.textContent = excelFractionToTime(record.Entrada);
-            panelSalida.textContent = excelFractionToTime(record.Salida);
-            panelComentarios.textContent = record.Comentarios || "Sin comentarios adicionales.";
-
-            // Badges
-            let badgesHtml = "";
-            if(safeBool(record.Ret)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRet}">Retardo</span>`;
-            if(safeBool(record.Fes)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeFes}">Festivo</span>`;
-            if(safeBool(record.Rec)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRec}">Recuperación</span>`;
-            if(safeBool(record.TiEx)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeExt}">T.Extra</span>`;
+            // 1. Header Info
+            panelName.textContent = first.Nombre;
+            const cleanId = first.ID || first.Numero;
+            panelId.textContent = `ID: ${cleanId}`;
             
-            if(record.Motivo) {
-                 const absStyle = ABS_COLORS[record.Motivo] || "background:#ccc;";
-                 badgesHtml += `<span class="panel-badge" style="${absStyle}">${record.Motivo}</span>`;
-            }
+            // 2. Photo
+            // Usa un placeholder en onerror para evitar imagen rota
+            panelPhoto.src = `../FP/${cleanId}.jpg`;
+            panelPhoto.onerror = function() {
+                this.src = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23cbd5e1%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22>👤</text></svg>";
+            };
 
-            panelBadges.innerHTML = badgesHtml;
+            // 3. Render Records
+            let html = "";
+            records.forEach((record, idx) => {
+                let rDate = record.Fecha;
+                if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+
+                const countTitle = records.length > 1 ? `<div class="record-index-title">Registro #${idx + 1}</div>` : "";
+
+                // Options for selects
+                const shifts = ["Día", "Tarde", "Noche"];
+                const absences = ["", "Vacaciones", "Descanso", "Permiso", "Falta", "Incapacidad", "Suspension"];
+
+                const currentTurno = record.Turno || "";
+                const currentMotivo = record.Motivo || "";
+
+                // Build Select Turno
+                let turnoOptions = `<option value="">-- Seleccionar --</option>`;
+                shifts.forEach(s => {
+                    const sel = s.toLowerCase() === currentTurno.toLowerCase() ? "selected" : "";
+                    turnoOptions += `<option value="${s}" ${sel}>${s}</option>`;
+                });
+
+                // Build Select Ausentismo
+                let absOptions = `<option value="">-- Ninguno --</option>`;
+                absences.forEach(a => {
+                    if(a === "") return;
+                    const sel = a.toLowerCase() === currentMotivo.toLowerCase() ? "selected" : "";
+                    absOptions += `<option value="${a}" ${sel}>${a}</option>`;
+                });
+
+                // Badges
+                let badgesHtml = "";
+                if(safeBool(record.Ret)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRet}">Retardo</span>`;
+                if(safeBool(record.Fes)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeFes}">Festivo</span>`;
+                if(safeBool(record.Rec)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRec}">Recuperación</span>`;
+                if(safeBool(record.TiEx)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeExt}">T.Extra</span>`;
+
+                html += `
+                <div class="panel-record-card">
+                    ${countTitle}
+                    <div class="detail-group">
+                        <div class="detail-label">Fecha</div>
+                        <div class="detail-value">${rDate}</div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <div>
+                            <div class="detail-label">Turno</div>
+                            <select class="input-select select-turno" data-idx="${globalData.indexOf(record)}">
+                                ${turnoOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <div class="detail-label">Ausentismo</div>
+                            <select class="input-select select-motivo" data-idx="${globalData.indexOf(record)}">
+                                ${absOptions}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <div class="detail-group">
+                            <div class="detail-label">Entrada</div>
+                            <div class="detail-value">${excelFractionToTime(record.Entrada)}</div>
+                        </div>
+                        <div class="detail-group">
+                            <div class="detail-label">Salida</div>
+                            <div class="detail-value">${excelFractionToTime(record.Salida)}</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-badges">${badgesHtml}</div>
+
+                    <div class="detail-group">
+                        <div class="detail-label">Comentarios</div>
+                        <div class="detail-value" style="font-weight:400; font-size:0.85rem;">${record.Comentarios || "Sin comentarios"}</div>
+                    </div>
+                </div>`;
+            });
+
+            panelRecordsContainer.innerHTML = html;
             
-            // Deseleccionar previos
-            document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
+            // Attach Events to Selects
+            const selectTurnos = panelRecordsContainer.querySelectorAll('.select-turno');
+            const selectMotivos = panelRecordsContainer.querySelectorAll('.select-motivo');
+            
+            const handleUpdate = (e, type) => {
+                const globalIndex = e.target.getAttribute('data-idx');
+                const newVal = e.target.value;
+                
+                if(globalIndex > -1) {
+                    if(type === 'turno') globalData[globalIndex].Turno = newVal;
+                    if(type === 'motivo') globalData[globalIndex].Motivo = newVal;
+                    
+                    // Save local
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(globalData));
+                    // Re-render matrix (efficient enough)
+                    renderMatrix(); 
+                    
+                    // Re-select current cell visual state
+                    const r = globalData[globalIndex];
+                    let rDate = r.Fecha;
+                    if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+                    
+                    const cell = document.querySelector(`.matrix-cell[data-uid="${uid}"][data-date="${rDate}"]`);
+                    if(cell) {
+                         document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
+                         cell.classList.add('selected');
+                    }
+                }
+            };
+
+            selectTurnos.forEach(sel => sel.addEventListener('change', (e) => handleUpdate(e, 'turno')));
+            selectMotivos.forEach(sel => sel.addEventListener('change', (e) => handleUpdate(e, 'motivo')));
             
             sidePanel.classList.add('open');
         };
@@ -719,9 +842,9 @@
         const generateMatrixHTML = () => {
             if(!globalData || globalData.length === 0) return `<div style="padding:40px; text-align:center;">No hay datos para mostrar.</div>`;
 
-            // 1. Extract Unique Dates
+            // 1. Extract Unique Dates and Users
             const allDates = new Set();
-            const usersMap = new Map(); // ID -> {Name, Records: {Date -> Record}}
+            const usersMap = new Map(); // ID -> {Name, Records: {Date -> [Records]}}
 
             globalData.forEach(r => {
                 let rDate = r.Fecha;
@@ -734,8 +857,12 @@
                 if(!usersMap.has(uid)) {
                     usersMap.set(uid, { name: r.Nombre, records: {} });
                 }
-                // Guardar registro indexado por fecha
-                usersMap.get(uid).records[rDate] = r;
+                
+                // Guardar registro indexado por fecha (Array por si hay multiples)
+                if(!usersMap.get(uid).records[rDate]) {
+                    usersMap.get(uid).records[rDate] = [];
+                }
+                usersMap.get(uid).records[rDate].push(r);
             });
 
             // Convertir fechas a array y ordenar (dd/mm/yyyy logic)
@@ -765,16 +892,39 @@
                             <td>${user.name}</td>`;
                 
                 sortedDates.forEach(date => {
-                    const rec = user.records[date];
+                    const recs = user.records[date];
                     let cellContent = "-";
                     let cellClass = "";
-                    let cellId = "";
                     
-                    if(rec) {
-                        cellContent = rec.Turno || (rec.Motivo ? rec.Motivo.substring(0,3) : "Ok");
+                    if(recs && recs.length > 0) {
+                        // Logic to pick content and color. Prioritize Absence > Shift
+                        // If multiple records, pick first one for display but maybe add indicator
+                        const mainRec = recs[0];
+                        
+                        if (mainRec.Motivo) {
+                            cellContent = mainRec.Motivo.substring(0,3);
+                            // Determine Color Class
+                            const m = mainRec.Motivo.toLowerCase();
+                            if(m.includes('vac')) cellClass = "bg-abs-vac";
+                            else if(m.includes('desc')) cellClass = "bg-abs-desc";
+                            else if(m.includes('perm')) cellClass = "bg-abs-perm";
+                            else if(m.includes('falt')) cellClass = "bg-abs-falta";
+                            else if(m.includes('incap')) cellClass = "bg-abs-incap";
+                            else if(m.includes('susp')) cellClass = "bg-abs-susp";
+                        } else if (mainRec.Turno) {
+                            cellContent = mainRec.Turno.substring(0,1); // D, T, N
+                            const t = mainRec.Turno.toLowerCase();
+                            if(t.includes('día') || t.includes('dia')) cellClass = "bg-turno-dia";
+                            else if(t.includes('tarde')) cellClass = "bg-turno-tarde";
+                            else if(t.includes('noche')) cellClass = "bg-turno-noche";
+                        } else {
+                            cellContent = "Ok";
+                        }
+                        
+                        if(recs.length > 1) cellContent += "+"; // Indicator
                     }
                     
-                    table += `<td class="matrix-cell" data-uid="${uid}" data-date="${date}">${cellContent}</td>`;
+                    table += `<td class="matrix-cell ${cellClass}" data-uid="${uid}" data-date="${date}">${cellContent}</td>`;
                 });
                 table += `</tr>`;
             });
@@ -793,18 +943,18 @@
                      const date = cell.dataset.date;
                      if(!uid || !date) return;
 
-                     // Find Record (Re-scan globalData is fast enough for interaction)
-                     const record = globalData.find(r => {
+                     // Find Records (Re-scan globalData)
+                     const records = globalData.filter(r => {
                         let rDate = r.Fecha;
                         if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
                         return (r.ID == uid || r.Numero == uid) && rDate == date;
                      });
 
-                     if(record) {
+                     if(records.length > 0) {
                          // Highlight Cell
                          document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
                          cell.classList.add('selected');
-                         openPanel(record);
+                         openPanel(records, uid);
                      }
                  });
              });
