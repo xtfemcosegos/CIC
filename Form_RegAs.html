@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⏱️ Registro de Asistencia - Dashboard</title>
-  <script src="../script.js"></script> 
   <style>
     :root {
       /* === Paleta de Colores Pro === */
@@ -19,19 +18,15 @@
       --text-main: #2d3748;
       --text-light: #718096;
       --bg-body: #f7fafc;
-      --card-bg: #ffffff;
       
-      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
       
       --radius: 12px;
       --header-height: 60px;
       --primary-gradient: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
     }
 
-    /* === Reset === */
     * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -47,38 +42,25 @@
     }
 
     /* === CLASES UTILITARIAS === */
-    .d-none { display: none; }
-    .d-block { display: block; }
-    .text-placeholder { color: #aaa; font-size: 0.9rem; }
-    .text-success { color: #28a745; font-size: 0.9rem; }
-    .text-error { color: #e53e3e; font-size: 0.9rem; font-weight: bold; }
-    .text-empty { text-align: center; color: #ccc; font-style: italic; padding: 20px; }
-    .badge-count { background: #edf2f7; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; color: #4a5568; }
-    .meta-label-light { color: #a0aec0; }
-    .mt-small { margin-top: 5px; }
-    .td-action-cell { text-align: right; width: 70px; }
-    .text-bold-dark { font-weight: bold; color: var(--text-dark); }
-    .form-label { display: block; margin-bottom: 5px; color: #718096; font-size: 0.8rem; font-weight: 600; }
-    .text-left { text-align: left; }
-    .modal-msg-success { margin-top: 15px; font-weight: bold; color: #38a169; display: none; }
+    .d-none { display: none !important; }
+    .text-center { text-align: center; }
     
     /* === Header === */
     .app-header {
       height: var(--header-height);
       background: var(--primary-gradient);
-      border-bottom: 1px solid rgba(0,0,0,0.1);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 25px;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       z-index: 100;
       color: white;
     }
 
     .brand { display: flex; align-items: center; gap: 15px; }
-    .brand-logo { font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-    .brand-title { font-weight: 800; font-size: 1.2rem; color: white; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .brand-logo { font-size: 1.5rem; }
+    .brand-title { font-weight: 800; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
 
     .header-controls { display: flex; gap: 15px; align-items: center; }
     .live-clock-mini { 
@@ -90,309 +72,206 @@
         border-radius: 8px; 
         font-size: 0.9rem; 
         border: 1px solid rgba(255, 255, 255, 0.1); 
-        -webkit-backdrop-filter: blur(4px);
         backdrop-filter: blur(4px); 
     }
 
     .nav-btn { 
-        background: transparent; 
-        border: 1px solid rgba(255, 255, 255, 0.4); 
-        color: white; 
-        padding: 8px 16px; 
-        border-radius: 8px; 
-        cursor: pointer; 
-        transition: all 0.2s; 
-        font-weight: 600; 
-        font-size: 0.9rem; 
-        text-decoration: none; 
+        background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: white; 
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; 
     }
-    .nav-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: white; }
     .nav-btn option { background-color: #4a0000; color: white; }
 
     /* === Main Layout === */
     .dashboard {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px 25px;
-      overflow: hidden;
-      max-width: 1600px;
-      margin: 0 auto;
-      width: 100%;
+      flex: 1; display: flex; flex-direction: column; padding: 20px 25px; 
+      overflow: hidden; max-width: 1600px; margin: 0 auto; width: 100%;
     }
 
     /* === Control Bar === */
     .control-bar {
-      background: white;
-      padding: 15px 20px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-md);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      align-items: center;
-      margin-bottom: 25px;
-      border: 1px solid #e2e8f0;
-      flex-shrink: 0;
+      background: white; padding: 15px 20px; border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 25px; border: 1px solid #e2e8f0; flex-shrink: 0;
     }
 
     .search-wrapper { flex: 2; min-width: 300px; position: relative; }
     .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #a0aec0; }
-    .main-search-input { width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1.1rem; transition: all 0.3s; background: #f8fafc; }
-    .main-search-input:focus { outline: none; border-color: var(--accent); background: white; box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.1); }
+    .main-search-input { width: 100%; padding: 10px 15px 10px 40px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+    .main-search-input:focus { outline: none; border-color: var(--accent); }
 
-    /* Filtro de Fecha */
-    .filter-date-wrapper { display: flex; align-items: center; gap: 5px; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 10px;}
-    .filter-date-label { font-size: 0.8rem; font-weight: 600; color: #718096; margin-right: 5px; }
-    .filter-date-input {
-        padding: 8px 12px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        color: var(--text-main);
-        background: white;
-        cursor: pointer;
-        transition: border-color 0.2s;
-        font-family: inherit;
-    }
-    .filter-date-input:focus { border-color: var(--accent); outline: none; }
+    .filters-wrapper { flex: 3; display: flex; gap: 10px; align-items: center; overflow-x: auto; }
+    .filter-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: var(--text-light); transition: all 0.2s; white-space: nowrap; }
+    .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .filter-select { padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-size: 0.85rem; }
 
-    .filters-wrapper { flex: 3; display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
-    .filter-chip { padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: var(--text-light); transition: all 0.2s; white-space: nowrap; }
-    .filter-chip:hover { background: #edf2f7; }
-    .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 5px rgba(183, 28, 28, 0.3); }
-    .filter-select { padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: var(--text-main); font-size: 0.9rem; cursor: pointer; }
-
-    /* Botón Generar Tablas */
     .btn-generate {
-        background: #2d3748;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        margin-left: auto; /* Empujar a la derecha si hay espacio */
-        white-space: nowrap;
-    }
-    .btn-generate:hover {
-        background: #1a202c;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transform: translateY(-1px);
+        background: #2d3748; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; margin-left: auto;
     }
 
-    /* === DASHBOARD GRID LAYOUT === */
+    /* === GRID & CARDS === */
     .dashboard-grid-container {
-      flex: 1;
-      overflow-y: auto;
-      display: flex; 
-      flex-wrap: wrap;
-      align-items: flex-start; 
-      gap: 25px;
-      padding: 10px;
+      flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 5px;
       scrollbar-width: thin;
-      scrollbar-color: #cbd5e0 #f7fafc;
     }
 
     .area-group-card {
-        background: white;
-        border-radius: var(--radius);
-        border: 1px solid #e2e8f0;
-        box-shadow: var(--shadow-sm);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        flex: 1 1 320px; 
-        animation: fadeIn 0.5s ease;
+        background: white; border-radius: var(--radius); border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); padding: 15px;
+        display: flex; flex-direction: column; gap: 10px; flex: 1 1 300px; animation: fadeIn 0.5s ease;
     }
 
-    .area-group-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #f0f0f0;
-    }
+    .area-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 5px; }
+    .area-title { font-size: 0.95rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; }
+    .badge-count { background: #edf2f7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; color: #4a5568; }
 
-    .area-title {
-        font-size: 1rem;
-        font-weight: 800;
-        color: var(--primary-dark);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+    .area-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 
-    .area-cards-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
-    }
-
+    /* === TARJETAS COMPACTAS (LIST STYLE) === */
     .card-wrapper {
         position: relative;
-        height: 190px; 
+        height: 60px; /* Altura compacta inicial */
+        transition: height 0.2s ease, z-index 0s;
         z-index: 1;
     }
 
     .employee-card {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-      border-radius: var(--radius);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      border: 1px solid #edf2f7;
-      padding: 15px 5px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      overflow: hidden;
-      background-color: #fff;
+        position: absolute; top: 0; left: 0; width: 100%;
+        background: white; border-radius: 8px; border: 1px solid #e2e8f0;
+        padding: 8px; display: flex; flex-direction: row; /* Diseño Horizontal */
+        align-items: center; overflow: hidden; cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+        height: 60px; /* Match wrapper */
     }
 
-    .card-wrapper:hover { z-index: 50; } 
+    /* Hover Effect: Expande y muestra detalles */
+    .card-wrapper:hover {
+        height: 110px;
+        z-index: 50;
+    }
+    
     .card-wrapper:hover .employee-card {
-      height: auto;
-      min-height: 100%;
-      transform: scale(1.08);
-      box-shadow: var(--shadow-lg);
-      border-color: #cbd5e0;
+        height: auto;
+        min-height: 110px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        border-color: #cbd5e0;
+        align-items: flex-start; /* Alinear arriba al expandir */
+        flex-wrap: wrap; /* Permitir wrap para los botones */
     }
 
-    .employee-card.status-in {
-        border-bottom: 4px solid var(--success);
-        background: linear-gradient(to bottom, #f9fffb, #fff);
-    }
-    .employee-card.status-out {
-        border-bottom: 4px solid var(--accent);
-        background: linear-gradient(to bottom, #fff5f5, #fff);
-    }
+    .employee-card.status-in { border-left: 4px solid var(--success); }
+    .employee-card.status-out { border-left: 4px solid var(--accent); }
 
     .card-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 10px;
-      transition: border-color 0.3s;
-      background: #edf2f7;
-      border: 3px solid transparent;
+        width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+        margin-right: 12px; background: #edf2f7; border: 1px solid #e2e8f0; flex-shrink: 0;
     }
-    
-    .status-in .card-avatar { border-color: var(--success); }
-    .status-out .card-avatar { border-color: var(--accent); filter: grayscale(0.8); opacity: 0.9; }
+    .status-out .card-avatar { filter: grayscale(1); opacity: 0.7; }
 
+    .card-info { flex: 1; min-width: 0; }
     .card-name {
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: var(--primary-dark);
-      line-height: 1.2;
-      margin-bottom: 2px;
-      text-align: center;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      padding: 0 5px;
+        font-weight: 700; font-size: 0.85rem; color: var(--primary-dark);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .card-status-text { font-size: 0.7rem; color: var(--text-light); }
 
-    .card-details {
-      opacity: 0;
-      max-height: 0;
-      overflow: hidden;
-      width: 100%;
-      transition: all 0.3s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-top: 5px;
-      padding: 0 10px;
+    /* Detalles Ocultos */
+    .card-details-hover {
+        display: none; width: 100%; margin-top: 10px;
+        padding-top: 8px; border-top: 1px solid #f0f0f0;
+        animation: fadeIn 0.2s;
     }
-
-    .card-wrapper:hover .card-details {
-      opacity: 1;
-      max-height: 200px; 
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid #f0f0f0;
-    }
-
-    .meta-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: var(--text-light);
-    }
-    .meta-val { font-weight: 600; color: var(--text-main); }
+    .card-wrapper:hover .card-details-hover { display: block; }
 
     .btn-card-action {
-      width: 100%;
-      padding: 6px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 0.8rem;
-      margin-top: 8px;
-      text-transform: uppercase;
+        width: 100%; padding: 6px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.75rem; text-transform: uppercase;
+        display: flex; justify-content: center; align-items: center; gap: 5px;
     }
-    
     .btn-in { background: #e8f5e9; color: #2f855a; }
     .btn-in:hover { background: #c6f6d5; }
     .btn-out { background: #fff5f5; color: #c53030; }
     .btn-out:hover { background: #fed7d7; }
 
-    /* === MODALES === */
+    /* === MODAL DE PERFIL (Edición) === */
     .modal-overlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(26, 32, 44, 0.7); 
-        -webkit-backdrop-filter: blur(4px);
-        backdrop-filter: blur(4px); 
+        background: rgba(26, 32, 44, 0.85); backdrop-filter: blur(4px);
         z-index: 2000; display: none; justify-content: center; align-items: center; 
         opacity: 0; transition: opacity 0.2s; 
     }
     .modal-overlay.active { display: flex; opacity: 1; }
-    .modal-card { background: white; width: 90%; max-width: 420px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; }
+    
+    .modal-card { 
+        background: white; width: 95%; max-width: 500px; border-radius: 16px; overflow: hidden; 
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: scale(0.95); transition: transform 0.2s; 
+    }
     .modal-overlay.active .modal-card { transform: scale(1); }
-    .modal-header { background: var(--primary-gradient); height: 60px; position: relative; }
-    .btn-close-modal { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
-    .modal-profile-img-wrapper { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; margin: -50px auto 15px auto; position: relative; z-index: 2; background: white; overflow: hidden; box-shadow: var(--shadow-md); }
-    .modal-content-body { padding: 0 30px 30px 30px; text-align: center; }
-    .modal-title { font-size: 1.4rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 5px; }
-    .modal-subtitle { color: var(--text-light); font-size: 0.9rem; margin-bottom: 25px; }
     
-    .confirm-time-input { 
-        font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); 
-        text-align: center; border: 2px solid #cbd5e0; border-radius: 10px; 
-        background: #f8fafc; width: 160px; display: block; margin: 0 auto 15px auto; 
+    /* Header Modal Estilo ID Card */
+    .modal-profile-header {
+        background: #f8fafc; padding: 20px; display: flex; align-items: center; gap: 20px;
+        border-bottom: 1px solid #e2e8f0; position: relative;
     }
-    .confirm-time-input:focus { outline: none; border-color: var(--accent); background: white; }
-    
-    .area-select-modal { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 20px; font-size: 1rem; background: #f7fafc; }
-    .modal-actions { display: flex; gap: 15px; margin-top: 10px; }
-    .btn-modal { flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-secondary { background: #edf2f7; color: var(--text-main); }
+    .modal-img-large { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .modal-user-info { flex: 1; }
+    .modal-user-info h3 { margin: 0; font-size: 1.2rem; color: var(--primary-dark); }
+    .modal-user-info p { margin: 2px 0 0; color: var(--text-light); font-size: 0.9rem; }
+    .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; color: #a0aec0; cursor: pointer; }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .control-bar { flex-direction: column; align-items: stretch; gap: 15px; }
-      .search-wrapper, .filters-wrapper { flex: 1; width: 100%; }
-      .area-group-card { flex: 1 1 100%; }
-      .app-header { padding: 0 15px; }
-      .btn-generate { margin-left: 0; justify-content: center; }
+    .modal-body { padding: 20px; }
+
+    /* Sección Checkboxes */
+    .modal-section-title { font-size: 0.8rem; font-weight: 700; color: #718096; text-transform: uppercase; margin-bottom: 10px; display: block; }
+    
+    /* Area Selector en Modal */
+    .modal-area-select {
+        width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; 
+        font-weight: 600; color: #2d3748; background: white; margin-top: 5px;
     }
 
-    /* Animaciones */
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; margin-top: 15px; }
+    .checkbox-item { 
+        display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--primary-dark); 
+        background: #f7fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;
+    }
+    .checkbox-item:hover { border-color: #cbd5e0; background: #edf2f7; }
+    .checkbox-item input { accent-color: var(--accent); transform: scale(1.2); cursor: pointer; }
+
+    .input-textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 8px; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 70px; margin-bottom: 15px; }
+
+    /* Botones de acción del Modal */
+    .modal-actions { display: flex; gap: 15px; margin-bottom: 20px; }
+    .btn-modal { flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.95rem; }
+    
+    .btn-save-edit { background: #4a5568; color: white; }
+    .btn-save-edit:hover { background: #2d3748; }
+    
+    .btn-secondary { background: #edf2f7; color: var(--text-main); border: 1px solid #e2e8f0; }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Botón de Acción Principal */
+    .action-divider { border-top: 1px dashed #cbd5e0; margin: 10px 0 20px 0; position: relative; }
+    .action-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: #a0aec0; font-size: 0.8rem; font-weight: 600; }
+
+    .btn-punch-trigger {
+        width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; text-transform: uppercase;
+        display: flex; justify-content: center; align-items: center; gap: 10px; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .btn-punch-trigger:active { transform: scale(0.98); }
+    .trigger-in { background: var(--success); color: white; }
+    .trigger-in:hover { background: #276749; }
+    .trigger-out { background: var(--accent); color: white; }
+    .trigger-out:hover { background: #9b2c2c; }
+
+    /* === SEGUNDO MODAL (Confirmación Hora) === */
+    .punch-confirm-modal { width: 90%; max-width: 350px; text-align: center; }
+    .punch-time-display { font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); margin: 15px 0; font-variant-numeric: tabular-nums; }
+    .punch-time-input { 
+        font-size: 2rem; font-weight: 800; color: var(--primary-dark); text-align: center; 
+        border: 2px solid #cbd5e0; border-radius: 10px; background: #f8fafc; width: 100%; margin-bottom: 15px; 
+    }
+    .punch-actions { display: flex; gap: 10px; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 
@@ -407,8 +286,7 @@
     
     <div class="header-controls">
       <div id="headerClock" class="live-clock-mini">--:--</div>
-      <!-- Navegación -->
-      <select id="navFormularios" class="nav-btn" aria-label="Navegar">
+      <select id="navFormularios" class="nav-btn">
         <option value="" disabled selected>Menú</option>
         <option value="regresarGrid">Volver</option>
         <option value="registro_siniestros">Siniestros</option>
@@ -416,135 +294,136 @@
     </div>
   </header>
 
-  <!-- Main Dashboard -->
   <main class="dashboard">
-    
-    <!-- Barra de Control: Búsqueda y Filtros -->
     <div class="control-bar">
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="mainSearchInput" class="main-search-input" placeholder="Buscar por # Socio o Nombre..." autocomplete="off" autofocus>
+        <input type="text" id="mainSearchInput" class="main-search-input" placeholder="Buscar empleado..." autocomplete="off">
       </div>
-      
       <div class="filters-wrapper">
         <div class="filter-chip active" data-filter="all">Todos</div>
-        <div class="filter-chip" data-filter="in">En Corporativo</div>
+        <div class="filter-chip" data-filter="in">En Turno</div>
         <div class="filter-chip" data-filter="out">Fuera</div>
-        
-        <select id="areaFilterSelect" class="filter-select" aria-label="Filtrar por Área">
-          <option value="all">Todas las Áreas</option>
-          <!-- Se llena dinámicamente -->
-        </select>
-
-        <!-- Botón Generar Tablas -->
-        <button id="btnGenerateTables" class="btn-generate">
-            📊 Generar tablas
-        </button>
+        <select id="areaFilterSelect" class="filter-select"><option value="all">Todas las Áreas</option></select>
+        <button id="btnGenerateTables" class="btn-generate">📊 Reporte</button>
       </div>
     </div>
 
-    <!-- Grid de Grupos de Área -->
+    <!-- Grid de Tarjetas Compactas -->
     <div id="cardsGrid" class="dashboard-grid-container">
-      <div class="text-empty">Cargando datos...</div>
+      <div class="text-center" style="width:100%; padding:40px; color:#aaa;">Cargando personal...</div>
     </div>
-
   </main>
 
-  <!-- MODAL UNIFICADO (Perfil/Confirmación) -->
-  <div id="actionModal" class="modal-overlay">
+  <!-- MODAL 1: PERFIL Y EDICIÓN -->
+  <div id="profileModal" class="modal-overlay">
     <div class="modal-card">
-      <div class="modal-header">
-        <button id="btnModalClose" class="btn-close-modal">×</button>
-      </div>
-      
-      <div class="modal-profile-img-wrapper">
-        <img id="modalImg" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
-      </div>
-
-      <div class="modal-content-body">
-        <h3 id="modalTitle" class="modal-title">Nombre Empleado</h3>
-        <div id="modalSubtitle" class="modal-subtitle">ID: 0000 • Área</div>
-
-        <!-- Formulario Confirmación -->
-        <div id="modalForm">
-          <label for="modalTimeInput" class="form-label">HORA REGISTRO</label>
-          <input type="time" id="modalTimeInput" class="confirm-time-input">
-          
-          <div id="modalAreaSelectContainer" class="d-none">
-             <label for="modalAreaSelect" class="form-label text-left">ÁREA ASIGNADA</label>
-             <select id="modalAreaSelect" class="area-select-modal" aria-label="Seleccionar Área"></select>
-          </div>
-          
-          <div class="modal-actions">
-            <button id="btnModalCancel" class="btn-modal btn-secondary">Cancelar</button>
-            <button id="btnModalConfirm" class="btn-modal btn-primary">Confirmar</button>
-          </div>
+        <button class="btn-close-modal" id="btnCloseProfile">×</button>
+        
+        <div class="modal-profile-header">
+            <img id="modalProfileImg" src="" class="modal-img-large" alt="Foto">
+            <div class="modal-user-info">
+                <h3 id="modalProfileName">Nombre</h3>
+                <p id="modalProfileMeta">ID: 0000</p>
+                <!-- Area ahora es un Select Editable -->
+                <select id="modalProfileAreaSelect" class="modal-area-select"></select>
+            </div>
         </div>
 
-        <div id="modalMessage" class="modal-msg-success"></div>
-      </div>
+        <div class="modal-body">
+            <!-- Sección de Edición -->
+            <div class="checkbox-grid">
+                <label class="checkbox-item"><input type="checkbox" id="chkFes"> Festivo</label>
+                <label class="checkbox-item"><input type="checkbox" id="chkTiEx"> T. Extra</label>
+                <label class="checkbox-item"><input type="checkbox" id="chkRec"> Recuperación</label>
+                <label class="checkbox-item"><input type="checkbox" id="chkRet"> Retardo</label>
+            </div>
+            <textarea id="txtComentario" class="input-textarea" placeholder="Agregar comentario..."></textarea>
+            
+            <!-- ACCIONES DEL FORMULARIO DE EDICIÓN -->
+            <div class="modal-actions">
+                <button id="btnCancelProfile" class="btn-modal btn-secondary">Cancelar</button>
+                <button id="btnSaveEdits" class="btn-modal btn-save-edit">💾 Guardar Cambios</button>
+            </div>
+
+            <!-- Sección de Acción -->
+            <div class="action-divider"><span>REGISTRO</span></div>
+            <button id="btnTriggerPunch" class="btn-punch-trigger">
+                <!-- Se llena dinamicamente: 🟢 Registrar Entrada -->
+            </button>
+        </div>
     </div>
   </div>
 
+  <!-- MODAL 2: CONFIRMACIÓN DE HORA (PUNCH) -->
+  <div id="punchModal" class="modal-overlay" style="z-index: 2100;">
+      <div class="modal-card punch-confirm-modal">
+          <div style="padding:20px;">
+              <h3 id="punchTitle" style="margin:0; color:#2d3748;">Confirmar Hora</h3>
+              <p id="punchSubtitle" style="color:#718096; font-size:0.9rem;">Acción</p>
+              
+              <input type="time" id="punchTimeInput" class="punch-time-input">
+              
+              <div class="punch-actions">
+                  <button id="btnCancelPunch" class="btn-save-edit" style="background:#edf2f7; color:#2d3748; margin:0;">Cancelar</button>
+                  <button id="btnConfirmPunch" class="btn-save-edit" style="background:var(--accent); color:white; margin:0;">Confirmar</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
   <script>
-    document.addEventListener("DOMContentLoaded", async () => {
+    document.addEventListener("DOMContentLoaded", () => {
       
-      // --- Referencias DOM ---
+      const API_DASHBOARD = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+      const API_ACTION = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
+      const STORAGE_REPORT_KEY = "asistencia_reporte_data";
+
+      // Refs
       const headerClock = document.getElementById("headerClock");
       const mainSearchInput = document.getElementById("mainSearchInput");
       const cardsGrid = document.getElementById("cardsGrid");
-      const filterChips = document.querySelectorAll(".filter-chip");
       const areaFilterSelect = document.getElementById("areaFilterSelect");
-      const navFormularios = document.getElementById("navFormularios");
-      const btnGenerateTables = document.getElementById("btnGenerateTables");
+      
+      // Modal 1 Refs
+      const profileModal = document.getElementById("profileModal");
+      const btnCloseProfile = document.getElementById("btnCloseProfile");
+      const btnCancelProfile = document.getElementById("btnCancelProfile");
+      const modalProfileImg = document.getElementById("modalProfileImg");
+      const modalProfileName = document.getElementById("modalProfileName");
+      const modalProfileMeta = document.getElementById("modalProfileMeta");
+      const modalProfileAreaSelect = document.getElementById("modalProfileAreaSelect"); // Nuevo Select
+      
+      const chkFes = document.getElementById("chkFes");
+      const chkTiEx = document.getElementById("chkTiEx");
+      const chkRec = document.getElementById("chkRec");
+      const chkRet = document.getElementById("chkRet");
+      const txtComentario = document.getElementById("txtComentario");
+      const btnSaveEdits = document.getElementById("btnSaveEdits");
+      const btnTriggerPunch = document.getElementById("btnTriggerPunch");
 
-      // Modal Refs
-      const actionModal = document.getElementById("actionModal");
-      const btnModalClose = document.getElementById("btnModalClose");
-      const btnModalCancel = document.getElementById("btnModalCancel");
-      const btnModalConfirm = document.getElementById("btnModalConfirm");
-      const modalImg = document.getElementById("modalImg");
-      const modalTitle = document.getElementById("modalTitle");
-      const modalSubtitle = document.getElementById("modalSubtitle");
-      const modalTimeInput = document.getElementById("modalTimeInput");
-      const modalAreaSelect = document.getElementById("modalAreaSelect");
-      const modalAreaContainer = document.getElementById("modalAreaSelectContainer");
-      const modalMessage = document.getElementById("modalMessage");
+      // Modal 2 Refs
+      const punchModal = document.getElementById("punchModal");
+      const punchTitle = document.getElementById("punchTitle");
+      const punchSubtitle = document.getElementById("punchSubtitle");
+      const punchTimeInput = document.getElementById("punchTimeInput");
+      const btnCancelPunch = document.getElementById("btnCancelPunch");
+      const btnConfirmPunch = document.getElementById("btnConfirmPunch");
 
-      // --- Estado ---
-      let dashboardUsers = []; // Datos para el dashboard
+      // State
+      let dashboardUsers = [];
       let currentFilterStatus = 'all'; 
       let currentFilterArea = 'all';
+      let activeUser = null; 
       let pendingAction = null; 
 
-      // --- Configuración ---
-      const areasOficiales = [
-          "Centro de Control", "Encargado", "Edison", "Recepcion", 
-          "Impulso", "Michelena", "Carranza", "Simon Bolivar", 
-          "Rondinero", "Universidad"
-      ];
+      const areasOficiales = ["Centro de Control", "Encargado", "Edison", "Recepcion", "Impulso", "Michelena", "Carranza", "Simon Bolivar", "Rondinero", "Universidad"];
 
-      // Helper: Normalizar texto
+      // --- Helpers ---
       const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
-
-      // Helper: Obtener Emoji por Área
-      const getAreaEmoji = (areaName) => {
-          const a = normalize(areaName);
-          if(a.includes("simon") || a.includes("bolivar")) return "💻";
-          if(a.includes("carranza") || a.includes("universidad")) return "🚗";
-          if(a.includes("edison")) return "🏢";
-          if(a.includes("impulso")) return "👷";
-          if(a.includes("centro") || a.includes("cco")) return "🚨";
-          if(a.includes("encargado")) return "👮";
-          if(a.includes("recepcion")) return "🛎️";
-          return "📍";
-      };
-      
-      // Helper: Excel Fraccion a HH:MM
       const excelFractionToTime = (val) => {
-         if(!val) return "--:--";
-         if(String(val).includes(":")) return String(val).substring(0,5); 
-         
+         if(!val) return "";
+         if(String(val).includes(":")) return String(val).substring(0,5);
          if(!isNaN(val)) {
              const totalSeconds = Math.floor(parseFloat(val) * 86400);
              const h = Math.floor(totalSeconds / 3600);
@@ -554,68 +433,72 @@
          return val;
       };
 
-      // --- 1. Reloj ---
+      // 1. Clock
       setInterval(() => {
         const now = new Date();
         headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       }, 1000);
 
-      // --- 2. Carga de Datos Dashboard ---
-      const cargarDatosDashboard = async () => {
-        const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
-        
-        try {
-           // Carga NORMAL para el dashboard (Estado Actual)
-           const response = await fetch(apiURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) });
-           if(!response.ok) throw new Error("Error API");
-           const data = await response.json();
-           dashboardUsers = data.Usuarios || [];
-           
-           if(areaFilterSelect.options.length === 1) {
-               areasOficiales.forEach(area => {
-                   const opt = document.createElement('option');
-                   opt.value = area;
-                   opt.textContent = area;
-                   areaFilterSelect.appendChild(opt);
-               });
-           }
-           
-           renderGrid();
-        } catch(e) {
-           console.error(e);
-           cardsGrid.innerHTML = '<div class="text-empty">Error de conexión. Recargue la página.</div>';
-        }
+      // 2. Fetch Data
+      const cargarDatosReporteBackground = async () => {
+          try {
+              const response = await fetch(API_DASHBOARD, { 
+                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "GenerarTablas" }) 
+              });
+              if(response.ok) {
+                  const data = await response.json();
+                  const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
+                  localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(cleanData));
+              }
+          } catch(e) { console.warn("Background fetch failed", e); }
       };
 
-      // --- 3. Renderizado Dashboard ---
+      const cargarDatosDashboard = async () => {
+         try {
+            cargarDatosReporteBackground();
+            const response = await fetch(API_DASHBOARD, { 
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "ElementosPP" }) 
+            });
+            if(!response.ok) throw new Error("Error API");
+            const data = await response.json();
+            dashboardUsers = data.Usuarios || [];
+            
+            if(areaFilterSelect.options.length === 1) {
+                areasOficiales.forEach(area => {
+                    const opt = document.createElement('option');
+                    opt.value = area; opt.textContent = area; areaFilterSelect.appendChild(opt);
+                });
+            }
+            renderGrid();
+         } catch(e) { cardsGrid.innerHTML = '<div class="text-center" style="padding:20px;">Error de conexión.</div>'; }
+      };
+
+      // 3. Render
       const renderGrid = () => {
           cardsGrid.innerHTML = "";
           const term = normalize(mainSearchInput.value.trim());
           
           const filtered = dashboardUsers.filter(user => {
               if (term) {
-                  const matchName = normalize(user.Nombre).includes(term);
-                  const matchId = String(user.ID).includes(term);
-                  return matchName || matchId;
+                  return normalize(user.Nombre).includes(term) || String(user.ID).includes(term);
               }
               const status = (user["Ultimo estado"] || "").toLowerCase();
               const isIn = status === "entrada";
-              let matchesStatus = true;
-              if(currentFilterStatus === 'in') matchesStatus = isIn;
-              if(currentFilterStatus === 'out') matchesStatus = !isIn;
+              
+              if(currentFilterStatus === 'in' && !isIn) return false;
+              if(currentFilterStatus === 'out' && isIn) return false;
 
-              let matchesArea = true;
               if(currentFilterArea !== 'all') {
-                  const userAreaNorm = normalize(user.Area);
-                  const filterAreaNorm = normalize(currentFilterArea);
-                  const target = (filterAreaNorm === "centro de control") ? "cco" : filterAreaNorm;
-                  matchesArea = (userAreaNorm === target);
+                  const userArea = normalize(user.Area);
+                  const filterArea = normalize(currentFilterArea);
+                  const target = (filterArea === "centro de control") ? "cco" : filterArea;
+                  if(userArea !== target) return false;
               }
-              return matchesStatus && matchesArea;
+              return true;
           });
 
           if(filtered.length === 0) {
-              cardsGrid.innerHTML = '<div class="text-empty">No se encontraron resultados.</div>';
+              cardsGrid.innerHTML = '<div class="text-center" style="width:100%; color:#aaa;">No se encontraron resultados.</div>';
               return;
           }
 
@@ -627,25 +510,14 @@
             return acc;
           }, {});
 
-          const sortedAreas = Object.keys(grouped).sort((a, b) => {
-                const idxA = areasOficiales.indexOf(a);
-                const idxB = areasOficiales.indexOf(b);
-                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                if (idxA !== -1) return -1;
-                if (idxB !== -1) return 1;
-                return a.localeCompare(b);
-          });
-
-          sortedAreas.forEach(areaName => {
+          Object.keys(grouped).sort().forEach(areaName => {
               const groupCard = document.createElement('div');
               groupCard.className = 'area-group-card';
-              const count = grouped[areaName].length;
-              const emoji = getAreaEmoji(areaName);
               
               groupCard.innerHTML = `
                   <div class="area-group-header">
-                      <div class="area-title">${emoji} ${areaName}</div>
-                      <div class="badge-count">${count}</div>
+                      <div class="area-title">${areaName}</div>
+                      <div class="badge-count">${grouped[areaName].length}</div>
                   </div>
                   <div class="area-cards-grid"></div>
               `;
@@ -654,13 +526,9 @@
 
               grouped[areaName].forEach(u => {
                   const id = u.ID;
-                  const nombre = u.Nombre;
-                  const area = u.Area || "Sin Asignar";
                   const status = (u["Ultimo estado"] || "").toLowerCase();
                   const isIn = status === "entrada";
-                  const rawTime = u.Entrada || u.Hora;
-                  let displayTime = "--:--";
-                  if(isIn) displayTime = excelFractionToTime(rawTime);
+                  const timeStr = excelFractionToTime(u.Entrada || u.Hora);
 
                   const wrapper = document.createElement('div');
                   wrapper.className = 'card-wrapper';
@@ -670,41 +538,26 @@
                   
                   const btnLabel = isIn ? "Registrar Salida" : "Registrar Entrada";
                   const btnClass = isIn ? "btn-out" : "btn-in";
-                  const actionType = isIn ? "Salida" : "Entrada";
 
+                  // Estructura Compacta (List-Like)
                   card.innerHTML = `
-                      <div class="card-status-indicator"></div>
-                      <div class="card-header">
-                          <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=edf2f7&color=2d3748'" class="card-avatar" alt="Foto">
-                          <div class="card-info">
-                              <div class="card-name">${nombre}</div>
-                          </div>
+                      <img src="FP/${id}.jpg" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.Nombre)}&background=edf2f7&color=2d3748'" class="card-avatar">
+                      <div class="card-info">
+                          <div class="card-name">${u.Nombre}</div>
+                          ${isIn ? `<div class="card-status-text">Entrada: ${timeStr}</div>` : ''}
                       </div>
                       
-                      <div class="card-details">
-                          <div class="meta-row">
-                              <span class="meta-label-light">ID:</span>
-                              <span class="meta-val">${id}</span>
-                          </div>
-                          ${isIn ? `
-                          <div class="meta-row mt-small">
-                              <span class="form-label" style="margin:0">Entrada:</span>
-                              <span class="meta-val">${displayTime}</span>
-                          </div>` : ''}
-                          
-                          <button class="btn-card-action ${btnClass}" data-id="${id}">
-                             ${btnLabel}
+                      <!-- Botón Hover (Hidden by default via CSS) -->
+                      <div class="card-details-hover">
+                          <button class="btn-card-action ${btnClass}">
+                              ${isIn ? '🔻' : '🟢'} ${btnLabel}
                           </button>
                       </div>
                   `;
                   
-                  const btn = card.querySelector('button');
-                  btn.addEventListener('click', (e) => {
-                      e.stopPropagation(); 
-                      openModal(u, actionType);
-                  });
-                  card.addEventListener('click', () => openModal(u, actionType));
-
+                  // Abrir Modal de Perfil
+                  card.addEventListener('click', () => openProfileModal(u));
+                  
                   wrapper.appendChild(card);
                   gridContainer.appendChild(wrapper);
               });
@@ -712,131 +565,204 @@
           });
       };
 
-      // --- 4. Modal ---
-      const openModal = (user, actionType) => {
-          modalMessage.style.display = 'none';
-          btnModalConfirm.disabled = false;
-          btnModalConfirm.textContent = "Confirmar";
+      // 4. Modal Perfil (Edición)
+      const openProfileModal = (user) => {
+          activeUser = user;
           
-          modalImg.src = `FP/${user.ID}.jpg`;
-          modalImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
-          modalTitle.textContent = user.Nombre;
-          modalSubtitle.textContent = `#${user.ID} • ${user.Area || "General"}`;
+          modalProfileImg.src = `FP/${user.ID}.jpg`;
+          modalProfileImg.onerror = function() { this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Nombre)}&background=b71c1c&color=fff`; };
+          modalProfileName.textContent = user.Nombre;
+          modalProfileMeta.textContent = `ID: ${user.ID}`;
           
-          const now = new Date();
-          modalTimeInput.value = now.toLocaleTimeString('es-MX', {hour12: false, hour:'2-digit', minute:'2-digit'});
-          
-          if(actionType === 'Entrada') {
-              modalAreaContainer.classList.remove('d-none');
-              modalAreaContainer.classList.add('d-block');
-              modalAreaSelect.innerHTML = "";
-              areasOficiales.forEach(a => {
-                 const opt = document.createElement('option');
-                 opt.value = a;
-                 opt.textContent = a;
-                 if(a === user.Area) opt.selected = true;
-                 modalAreaSelect.appendChild(opt);
-              });
-          } else {
-              modalAreaContainer.classList.add('d-none');
-              modalAreaContainer.classList.remove('d-block');
+          // Llenar Select de Área en el Perfil
+          modalProfileAreaSelect.innerHTML = "";
+          areasOficiales.forEach(a => {
+             const opt = document.createElement('option');
+             opt.value = a; 
+             opt.textContent = a;
+             if(a === user.Area) opt.selected = true;
+             modalProfileAreaSelect.appendChild(opt);
+          });
+
+          // Cargar datos locales del reporte (si existen)
+          const localData = JSON.parse(localStorage.getItem(STORAGE_REPORT_KEY) || "[]");
+          const userRecord = localData.find(r => String(r.ID) === String(user.ID));
+
+          chkFes.checked = false; chkTiEx.checked = false; chkRec.checked = false; chkRet.checked = false;
+          txtComentario.value = "";
+
+          if (userRecord) {
+              chkFes.checked = Boolean(userRecord.Fes);
+              chkTiEx.checked = Boolean(userRecord.TiEx);
+              chkRec.checked = Boolean(userRecord.Rec);
+              chkRet.checked = Boolean(userRecord.Ret);
+              txtComentario.value = userRecord.Comentarios || userRecord.Comentario || "";
           }
-          pendingAction = { id: user.ID, nombre: user.Nombre, tipo: actionType };
-          actionModal.classList.add('active');
+
+          // Configurar Botón de Acción
+          const status = (user["Ultimo estado"] || "").toLowerCase();
+          const isIn = status === "entrada";
+          
+          btnTriggerPunch.className = "btn-punch-trigger " + (isIn ? "trigger-out" : "trigger-in");
+          btnTriggerPunch.innerHTML = isIn ? "🔻 Registrar Salida" : "🟢 Registrar Entrada";
+          btnTriggerPunch.onclick = () => openPunchModal(user, isIn ? "Salida" : "Entrada");
+
+          profileModal.classList.add('active');
       };
 
-      const closeModal = () => actionModal.classList.remove('active');
-      btnModalClose.addEventListener('click', closeModal);
-      btnModalCancel.addEventListener('click', closeModal);
+      // Helper para obtener datos extra del DOM
+      const getExtraDataFromDOM = () => ({
+          Fes: chkFes.checked, 
+          TiEx: chkTiEx.checked, 
+          Rec: chkRec.checked, 
+          Ret: chkRet.checked, 
+          Comentarios: txtComentario.value,
+          Area: modalProfileAreaSelect.value // Caseta Editable
+      });
 
-      // --- 5. Ejecución Acción ---
-      btnModalConfirm.addEventListener('click', async () => {
+      // 5. Guardar Edición (Incidencias)
+      btnSaveEdits.addEventListener('click', async () => {
+          if(!activeUser) return;
+          const btn = btnSaveEdits;
+          btn.disabled = true; btn.textContent = "Guardando...";
+
+          const extraData = getExtraDataFromDOM();
+
+          // Actualizar Local
+          updateLocalStorage(activeUser.ID, extraData);
+
+          // Enviar Servidor (Misma Estructura)
+          const payload = {
+              Key: getKey(activeUser.ID),
+              Fecha: getTodayString(),
+              Numero: activeUser.ID,
+              Nombre: activeUser.Nombre,
+              Turno: getTurno(),
+              TipoRegistro: "Edicion", 
+              ...extraData
+          };
+
+          await sendRequest(payload, btn, "💾 Guardar Cambios");
+      });
+
+      // 6. Modal Punch (Acción)
+      const openPunchModal = (user, type) => {
+          pendingAction = { user, type };
+          
+          punchTitle.textContent = type === "Entrada" ? "Registrar Entrada" : "Registrar Salida";
+          punchSubtitle.textContent = user.Nombre;
+          
+          const now = new Date();
+          punchTimeInput.value = now.toLocaleTimeString('es-MX', {hour12: false, hour:'2-digit', minute:'2-digit'});
+          
+          punchModal.classList.add('active');
+      };
+
+      // 7. Confirmar Punch
+      btnConfirmPunch.addEventListener('click', async () => {
           if(!pendingAction) return;
-          btnModalConfirm.disabled = true;
-          btnModalConfirm.textContent = "Procesando...";
+          const btn = btnConfirmPunch;
+          btn.disabled = true; btn.textContent = "...";
 
-          const timeVal = modalTimeInput.value; 
-          const areaVal = (pendingAction.tipo === 'Entrada') ? modalAreaSelect.value : pendingAction.area;
+          const timeVal = punchTimeInput.value;
+          const [h, m] = timeVal.split(':');
+          const horaEnvio = `${h}:${m}:00`;
+          
+          // Datos completos incluyendo los del perfil (checkboxes, area, comentario)
+          const extraData = getExtraDataFromDOM();
 
+          const payload = {
+              Key: getKey(pendingAction.user.ID, parseInt(h, 10)),
+              Fecha: getTodayString(),
+              Numero: pendingAction.user.ID,
+              Nombre: pendingAction.user.Nombre,
+              Turno: getTurno(parseInt(h, 10)),
+              Hora: horaEnvio,
+              TipoRegistro: pendingAction.type, // Entrada o Salida
+              ...extraData
+          };
+
+          // Actualizar area en objeto local si es entrada para UX inmediata
+          if(pendingAction.type === 'Entrada') {
+              updateLocalStorage(pendingAction.user.ID, { Area: extraData.Area, Entrada: horaEnvio });
+          }
+
+          const success = await sendRequest(payload, btn, "Confirmar");
+          if(success) {
+              punchModal.classList.remove('active');
+              profileModal.classList.remove('active'); 
+              cargarDatosDashboard(); 
+          }
+      });
+
+      // --- Helpers Comunes ---
+      const getKey = (id, hour = new Date().getHours()) => {
           const now = new Date();
           const dd = String(now.getDate()).padStart(2, '0');
           const mm = String(now.getMonth() + 1).padStart(2, '0');
           const yyyy = now.getFullYear();
-          
-          let horaEnvio = now.toLocaleTimeString('es-MX', { hour12: false });
-          let horasTurno = now.getHours();
+          let letra = (hour >= 18) ? 'N' : (hour >= 12 ? 'T' : 'D');
+          return `${dd}${mm}${yyyy}${id}${letra}`;
+      };
 
-          if (timeVal) {
-              const [h, m] = timeVal.split(':');
-              horaEnvio = `${h}:${m}:00`; 
-              horasTurno = parseInt(h, 10);
+      const getTurno = (hour = new Date().getHours()) => {
+          if (hour >= 18) return 'Noche';
+          if (hour >= 12) return 'Tarde';
+          return 'Día';
+      };
+
+      const getTodayString = () => {
+          const now = new Date();
+          return `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+      };
+
+      const updateLocalStorage = (id, dataObj) => {
+          const localData = JSON.parse(localStorage.getItem(STORAGE_REPORT_KEY) || "[]");
+          const idx = localData.findIndex(r => String(r.ID) === String(id));
+          if(idx >= 0) {
+              localData[idx] = { ...localData[idx], ...dataObj };
+          } else {
+              localData.push({ ID: id, ...dataObj });
           }
+          localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(localData));
+      };
 
-          let letraTurno = 'D', nombreTurno = 'Día';
-          if (horasTurno >= 18) { letraTurno = 'N'; nombreTurno = 'Noche'; }
-          else if (horasTurno >= 12) { letraTurno = 'T'; nombreTurno = 'Tarde'; }
-
-          let keyToSend = `${dd}${mm}${yyyy}${pendingAction.id}${letraTurno}`;
-          if (pendingAction.tipo === 'Salida') {
-              const u = dashboardUsers.find(x => x.ID == pendingAction.id);
-              if(u && u.Key) keyToSend = u.Key;
-          }
-
-          const payload = {
-              Key: keyToSend, Fecha: `${dd}/${mm}/${yyyy}`, Numero: pendingAction.id, Nombre: pendingAction.nombre,
-              Turno: nombreTurno, Hora: horaEnvio, TipoRegistro: pendingAction.tipo, Area: areaVal
-          };
-          if(!areaVal) delete payload.Area;
-
-          const postURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
-
+      const sendRequest = async (payload, btnElem, originalText) => {
           try {
-              const resp = await fetch(postURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+              const resp = await fetch(API_ACTION, { 
+                  method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) 
+              });
               if(resp.ok) {
-                  modalMessage.textContent = "✔ ¡Registro Exitoso!";
-                  modalMessage.style.display = "block";
-                  setTimeout(() => { closeModal(); cargarDatosDashboard(); mainSearchInput.value = ""; }, 1000);
-              } else throw new Error("Error Servidor");
+                  alert("✔ Guardado correctamente");
+                  btnElem.disabled = false; btnElem.textContent = originalText;
+                  return true;
+              } else throw new Error();
           } catch(e) {
-              btnModalConfirm.textContent = "Error. Reintentar";
-              btnModalConfirm.disabled = false;
+              alert("❌ Error al guardar");
+              btnElem.disabled = false; btnElem.textContent = originalText;
+              return false;
           }
-      });
+      };
 
-      // --- 6. Listeners UI ---
+      // Close handlers
+      btnCloseProfile.onclick = () => profileModal.classList.remove('active');
+      btnCancelProfile.onclick = () => profileModal.classList.remove('active'); 
+      btnCancelPunch.onclick = () => punchModal.classList.remove('active');
+
+      // Listeners
       mainSearchInput.addEventListener('input', renderGrid);
-
-      filterChips.forEach(chip => {
+      document.querySelectorAll('.filter-chip').forEach(chip => {
           chip.addEventListener('click', () => {
-              filterChips.forEach(c => c.classList.remove('active'));
+              document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
               chip.classList.add('active');
               currentFilterStatus = chip.dataset.filter;
               renderGrid();
           });
       });
+      areaFilterSelect.addEventListener('change', (e) => { currentFilterArea = e.target.value; renderGrid(); });
+      document.getElementById('btnGenerateTables').addEventListener('click', () => window.location.href = "https://cicxtfemco.online/RegAs/Reporte.html");
 
-      areaFilterSelect.addEventListener('change', (e) => {
-          currentFilterArea = e.target.value;
-          renderGrid();
-      });
-      
-      // === BOTÓN GENERAR TABLAS (NUEVA LÓGICA) ===
-      if (btnGenerateTables) {
-          btnGenerateTables.addEventListener('click', () => {
-             // Redirigir completamente a la página del reporte
-             window.location.href = "https://cicxtfemco.online/RegAs/Reporte.html";
-          });
-      }
-
-      if (navFormularios) {
-          navFormularios.addEventListener("change", function() {
-              if (this.value === "regresarGrid") window.parent.postMessage({ tipo: "regresarGrid" }, "*");
-              else if (this.value === "registro_siniestros") window.location.href = "https://xtfemcosegos.github.io/CIC/Form_RegSin.html";
-              this.value = "";
-          });
-      }
-
-      // Inicio Dashboard
+      // Init
       cargarDatosDashboard();
     });
   </script>
