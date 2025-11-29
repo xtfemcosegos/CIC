@@ -64,16 +64,21 @@
 
     .header-controls { display: flex; gap: 15px; align-items: center; }
     
-    /* Indicador de Sincronización (NUEVO) */
+    /* Indicador de Sincronización (MEJORADO) */
     .sync-status {
-        display: flex; align-items: center; gap: 8px;
-        background: rgba(0,0,0,0.25); padding: 5px 12px; border-radius: 20px;
+        display: flex; align-items: center; gap: 6px;
+        background: rgba(0,0,0,0.25); padding: 4px 12px; border-radius: 20px;
         font-size: 0.75rem; color: rgba(255,255,255,0.9); font-weight: 500;
         border: 1px solid rgba(255,255,255,0.1);
-        transition: opacity 0.3s ease;
+        transition: all 0.3s ease;
         opacity: 0; pointer-events: none; /* Invisible por defecto */
+        user-select: none;
     }
-    .sync-status.active { opacity: 1; pointer-events: auto; }
+    .sync-status.active { opacity: 1; }
+    
+    /* Estado Clickable (Success) */
+    .sync-status.clickable { pointer-events: auto; cursor: pointer; }
+    .sync-status.clickable:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
     
     .sync-spinner {
         width: 12px; height: 12px;
@@ -313,9 +318,10 @@
     
     <div class="header-controls">
       <!-- INDICADOR DE SINCRONIZACIÓN -->
-      <div id="syncIndicator" class="sync-status">
-          <div class="sync-spinner"></div>
-          <span>Sincronizando asistencia...</span>
+      <div id="syncIndicator" class="sync-status" title="Clic para recargar base local">
+          <div id="syncSpinner" class="sync-spinner"></div> <!-- Spinner -->
+          <span id="syncIcon" class="d-none" style="font-size:1rem; font-weight:bold;">✔</span> <!-- Palomita -->
+          <span id="syncText">Sincronizando...</span>
       </div>
 
       <div id="headerClock" class="live-clock-mini">--:--</div>
@@ -421,7 +427,10 @@
       const mainSearchInput = document.getElementById("mainSearchInput");
       const cardsGrid = document.getElementById("cardsGrid");
       const areaFilterSelect = document.getElementById("areaFilterSelect");
-      const syncIndicator = document.getElementById("syncIndicator"); // NUEVO REF
+      const syncIndicator = document.getElementById("syncIndicator");
+      const syncSpinner = document.getElementById("syncSpinner");
+      const syncIcon = document.getElementById("syncIcon");
+      const syncText = document.getElementById("syncText");
       
       // Modal 1 Refs
       const profileModal = document.getElementById("profileModal");
@@ -486,11 +495,15 @@
         headerClock.textContent = now.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
       }, 1000);
 
-      // 2. Fetch Data (ACTUALIZADO CON INDICADOR)
+      // 2. Fetch Data (ACTUALIZADO CON INDICADOR CLICKABLE)
       const cargarDatosReporteBackground = async () => {
           try {
-              // Mostrar indicador
+              // UI Cargando
               syncIndicator.classList.add('active');
+              syncIndicator.classList.remove('clickable');
+              syncSpinner.classList.remove('d-none');
+              syncIcon.classList.add('d-none');
+              syncText.textContent = "Sincronizando...";
               
               const response = await fetch(API_DASHBOARD, { 
                   method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ Mode: "GenerarTablas" }) 
@@ -499,14 +512,26 @@
                   const data = await response.json();
                   const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
                   localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(cleanData));
+                  
+                  // UI Éxito
+                  syncSpinner.classList.add('d-none');
+                  syncIcon.classList.remove('d-none');
+                  syncText.textContent = "BD Local Actualizada";
+                  syncIndicator.classList.add('clickable');
               }
           } catch(e) { 
-              console.warn("Background fetch failed", e); 
-          } finally {
-              // Ocultar indicador sea éxito o error
-              setTimeout(() => syncIndicator.classList.remove('active'), 1000); // Pequeño delay para suavidad
+              console.warn("Background fetch failed", e);
+              // Si falla, lo ocultamos para no molestar
+              syncIndicator.classList.remove('active'); 
           }
       };
+      
+      // Listener para re-sincronizar
+      syncIndicator.addEventListener('click', () => {
+          if (syncIndicator.classList.contains('clickable')) {
+              cargarDatosReporteBackground();
+          }
+      });
 
       const cargarDatosDashboard = async () => {
          try {
