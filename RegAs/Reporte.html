@@ -7,7 +7,7 @@
   <title>📊 Reporte de Asistencia - Pro</title>
   <style>
     :root {
-      /* === Identidad Visual Unificada (Igual que Dashboard) === */
+      /* === Identidad Visual Unificada === */
       --bg-app-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
       --bg-panel: #ffffff;
       
@@ -18,12 +18,10 @@
       --highlight: #3b82f6;
       
       --radius-lg: 16px;
-      --radius-md: 12px;
       
       --header-height: 70px;
       
       --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-      --shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 
       /* === Colores de Estado (Incidencias) === */
       --state-retardo-bg: #fee2e2; --state-retardo-text: #dc2626; /* Rojo */
@@ -32,11 +30,11 @@
       --state-extra-bg: #e0f2fe;   --state-extra-text: #0284c7;   /* Azul */
       
       /* === Colores de Ausentismo === */
-      --abs-falta: #fecaca;      /* Rojo claro */
-      --abs-incap: #fed7aa;      /* Naranja */
-      --abs-vac: #bae6fd;        /* Azul */
-      --abs-permiso: #e9d5ff;    /* Lila */
-      --abs-susp: #e5e7eb;       /* Gris */
+      --abs-falta: #fecaca;       /* Rojo claro */
+      --abs-incap: #fed7aa;       /* Naranja */
+      --abs-vac: #bae6fd;         /* Azul */
+      --abs-permiso: #e9d5ff;     /* Lila */
+      --abs-susp: #e5e7eb;        /* Gris */
     }
 
     * { box-sizing: border-box; outline: none; }
@@ -59,7 +57,6 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 30px;
       border-bottom: 1px solid rgba(255,255,255,0.5);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
       position: sticky; top: 0; z-index: 100;
     }
 
@@ -92,6 +89,10 @@
         color: var(--primary); font-family: inherit; font-weight: 600; background: #f8fafc;
     }
     
+    /* Checkbox estilo switch simple */
+    .checkbox-wrapper { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; user-select: none;}
+    .checkbox-wrapper input { width: 18px; height: 18px; accent-color: var(--highlight); cursor: pointer; }
+
     .btn-action {
       padding: 10px 20px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;
       display: flex; align-items: center; gap: 8px; transition: transform 0.1s, box-shadow 0.2s; font-size: 0.9rem;
@@ -214,6 +215,12 @@
         <input type="date" id="dateSelector" class="input-date">
     </div>
     <div class="control-group">
+        <label class="checkbox-wrapper">
+            <input type="checkbox" id="chkNocturno">
+            <span>Incluir Noche Anterior</span>
+        </label>
+    </div>
+    <div class="control-group">
         <span id="lastUpdateLabel" style="font-size:0.8rem; color:var(--secondary); margin-right:10px;"></span>
         <button id="btnUpdateData" class="btn-action btn-update">🔄 Actualizar</button>
         <button id="btnSendEmail" class="btn-action btn-email">✉️ Enviar Correo</button>
@@ -238,6 +245,7 @@
                 <input type="text" id="inputEmailTo" placeholder="Para..." class="input-date" style="width:100%;">
                 <input type="text" id="inputEmailCC" placeholder="CC..." class="input-date" style="width:100%;">
             </div>
+            <!-- Contenedor editable para el correo -->
             <div id="emailBodyPreview" class="preview-box" contenteditable="true"></div>
         </div>
         <div class="modal-footer">
@@ -259,6 +267,7 @@
         
         // Refs
         const dateSelector = document.getElementById("dateSelector");
+        const chkNocturno = document.getElementById("chkNocturno");
         const reportContent = document.getElementById("reportContent");
         const loader = document.getElementById("loader");
         const lastUpdateLabel = document.getElementById("lastUpdateLabel");
@@ -269,11 +278,36 @@
         const inputEmailCC = document.getElementById("inputEmailCC");
 
         let globalData = [];
-        let currentFilteredData = [];
-        let currentAbsenceData = [];
-        let descansosCount = 0;
 
-        // Helpers
+        // --- STYLES CONFIG FOR EMAIL (INLINE MAPPING) ---
+        const STYLES = {
+            table: "width:100%; border-collapse:collapse; font-size:14px; font-family:Arial, sans-serif;",
+            th: "text-align:left; padding:10px; color:#64748b; font-weight:700; font-size:11px; text-transform:uppercase; border-bottom:2px solid #e2e8f0; background:#ffffff;",
+            td: "padding:10px; border-bottom:1px solid #e2e8f0; color:#1e293b; vertical-align:middle;",
+            sectionHeader: "background:#f8fafc; padding:10px 15px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;",
+            sectionHeaderEmail: "background:#f8fafc; padding:10px 15px; border-bottom:1px solid #e2e8f0; margin-top:20px;", // Fallback for email div
+            sectionTitle: "font-size:14px; font-weight:800; color:#1e293b; text-transform:uppercase; letter-spacing:1px; margin:0;",
+            cellTime: "font-family:monospace; font-weight:600; background:#f1f5f9; padding:4px 8px; border-radius:4px; display:inline-block; border:1px solid #e2e8f0;",
+            badge: "padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; text-transform:uppercase; display:inline-block; margin-left:5px;",
+            // Colores
+            ret: "background:#fee2e2; color:#dc2626;",
+            fes: "background:#f3e8ff; color:#9333ea;",
+            rec: "background:#dcfce7; color:#166534;",
+            ext: "background:#e0f2fe; color:#0284c7;",
+            // Absences
+            abs: "padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; text-transform:uppercase; display:inline-block;"
+        };
+
+        const ABS_COLORS = {
+            'Falta': 'background:#fecaca; color:#991b1b;',
+            'Incapacidad': 'background:#fed7aa; color:#9a3412;',
+            'Vacaciones': 'background:#bae6fd; color:#075985;',
+            'Permiso': 'background:#e9d5ff; color:#6b21a8;',
+            'Suspension': 'background:#e5e7eb; color:#374151;',
+            'Descanso': 'background:#dcfce7; color:#166534;'
+        };
+
+        // --- HELPERS ---
         const safeBool = (val) => {
             if (!val) return false;
             const s = String(val).toLowerCase();
@@ -317,150 +351,250 @@
             return `${yyyy}-${mm}-${dd}`;
         };
 
-        // --- RENDER LOGIC ---
-        const renderReport = () => {
-            const selectedDateRaw = dateSelector.value;
-            if (!selectedDateRaw) return;
-
-            const filterDate = formatDateForFilter(selectedDateRaw);
-            reportContent.innerHTML = ""; 
-
-            // Filtro por fecha
-            const dataOfDay = globalData.filter(r => {
-                const rawDate = r.Fecha;
-                if (!rawDate) return false;
-                let computedDate = rawDate;
-                if (!isNaN(rawDate) && String(rawDate).indexOf("/") === -1) {
-                    computedDate = excelSerialToDate(rawDate);
-                }
-                return computedDate === filterDate;
-            });
-
-            if (dataOfDay.length === 0) {
-                reportContent.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">No se encontraron registros para el <strong>${filterDate}</strong>.</div>`;
-                currentFilteredData = [];
-                currentAbsenceData = [];
-                return;
-            }
-
-            // Separación de datos
-            currentFilteredData = [];
-            currentAbsenceData = [];
-            descansosCount = 0;
-
-            dataOfDay.forEach(row => {
-                if (row.Motivo || row.TipoRegistro === 'Ausentismo') {
-                    if (row.Motivo === 'Descanso') descansosCount++;
-                    else currentAbsenceData.push(row);
-                } else {
-                    currentFilteredData.push(row);
-                }
-            });
-
-            // 1. Tablas por Turno
-            const turnos = ["Día", "Tarde", "Noche"];
-            turnos.forEach(turno => {
-                const registros = currentFilteredData.filter(r => (r.Turno || "").toLowerCase() === turno.toLowerCase());
-                
-                const section = document.createElement("div");
-                section.className = "report-section";
-                
-                let html = `<div class="section-header">
-                                <div class="section-title">Turno ${turno}</div>
-                                <div class="badge-count">${registros.length}</div>
-                            </div>`;
-                
-                if (registros.length === 0) {
-                    html += `<div style="padding:20px; text-align:center; color:#cbd5e0;">Sin registros</div>`;
-                } else {
-                    html += `<div class="table-wrapper"><table><thead><tr>
-                                <th class="col-id">ID</th>
-                                <th>Nombre</th>
-                                <th style="text-align:center;">Entrada</th>
-                                <th style="text-align:center;">Salida</th>
-                                <th>Comentarios</th>
-                             </tr></thead><tbody>`;
-                             
-                    html += registros.map(r => {
-                        const incEntrada = getIncidenceTag(r, 'entrada');
-                        const incSalida = getIncidenceTag(r, 'salida');
-                        
-                        return `<tr>
-                                    <td class="col-id">${r.ID || r.Numero}</td>
-                                    <td class="col-name">${r.Nombre}</td>
-                                    <td style="text-align:center;">
-                                        <span class="cell-time">${excelFractionToTime(r.Entrada)}</span>
-                                        ${incEntrada}
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <span class="cell-time">${excelFractionToTime(r.Salida)}</span>
-                                        ${incSalida}
-                                    </td>
-                                    <td style="font-size:0.85rem; color:var(--secondary);">${r.Comentarios || ""}</td>
-                                </tr>`;
-                    }).join('');
-                    
-                    html += `</tbody></table></div>`;
-                }
-                section.innerHTML = html;
-                reportContent.appendChild(section);
-            });
-
-            // 2. Tabla Ausentismos
-            const absSection = document.createElement("div");
-            absSection.className = "report-section";
-            absSection.style.borderLeft = "5px solid #ef4444"; // Indicador Rojo
-
-            let absHTML = `<div class="section-header" style="background:#fef2f2;">
-                                <div class="section-title" style="color:#ef4444;">Ausentismos / Incidencias</div>
-                                <div class="badge-count">${currentAbsenceData.length}</div>
-                           </div>`;
-
-            if(currentAbsenceData.length === 0) {
-                absHTML += `<div style="padding:20px; text-align:center; color:#cbd5e0;">No hay incidencias mayores.</div>`;
-            } else {
-                absHTML += `<div class="table-wrapper"><table><thead><tr>
-                                <th class="col-id">ID</th>
-                                <th>Nombre</th>
-                                <th>Motivo</th>
-                                <th>Detalles</th>
-                            </tr></thead><tbody>`;
-                
-                absHTML += currentAbsenceData.map(r => `
-                    <tr>
-                        <td class="col-id">${r.ID || r.Numero}</td>
-                        <td class="col-name">${r.Nombre}</td>
-                        <td><span class="badge-abs abs-${r.Motivo}">${r.Motivo}</span></td>
-                        <td style="color:var(--secondary); font-size:0.85rem;">${r.Comentarios || ""}</td>
-                    </tr>
-                `).join('');
-                
-                absHTML += `</tbody></table></div>`;
-            }
-            
-            if(descansosCount > 0) {
-                absHTML += `<div style="padding:10px 20px; background:#f0fdf4; color:#166534; font-size:0.85rem; border-top:1px solid #dcfce7; text-align:right;">
-                                ℹ️ <strong>${descansosCount}</strong> colaboradores en descanso programado.
-                            </div>`;
-            }
-
-            absSection.innerHTML = absHTML;
-            reportContent.appendChild(absSection);
+        const getPreviousDate = (dateString) => {
+            const [y, m, d] = dateString.split("-");
+            const date = new Date(y, m - 1, d);
+            date.setDate(date.getDate() - 1);
+            return formatDateForInput(date);
         };
 
-        const getIncidenceTag = (r, type) => {
-            // Prioridad de banderas
+        // --- CORE HTML GENERATOR (Used for both Screen and Email) ---
+        const generateReportHTML = (isEmail) => {
+            const selectedDateRaw = dateSelector.value;
+            if (!selectedDateRaw) return `<div style="padding:20px; text-align:center;">Seleccione una fecha</div>`;
+
+            const filterDate = formatDateForFilter(selectedDateRaw);
+            const prevDateRaw = getPreviousDate(selectedDateRaw);
+            const prevFilterDate = formatDateForFilter(prevDateRaw);
+            const useNocturnoAyer = chkNocturno.checked;
+
+            // Header for Email
+            let html = "";
+            if (isEmail) {
+                html += `<div style="font-family:Arial,sans-serif; color:#333; background:#ffffff; padding:20px;">
+                         <h2 style="color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:5px; margin-bottom:10px;">
+                            Reporte de Asistencia: ${filterDate}
+                         </h2>`;
+                
+                // Simbologia Inline para Email
+                html += `<div style="background:#f1f5f9; padding:10px; border-radius:6px; font-size:12px; margin-bottom:20px; border:1px solid #e2e8f0;">
+                            <strong style="color:#64748b; text-transform:uppercase; margin-right:10px;">Simbología:</strong>
+                            <span style="${STYLES.badge} ${STYLES.ret}">Retardo</span>
+                            <span style="${STYLES.badge} ${STYLES.fes}">Festivo</span>
+                            <span style="${STYLES.badge} ${STYLES.rec}">Recuperación</span>
+                            <span style="${STYLES.badge} ${STYLES.ext}">Tiempo Extra</span>
+                         </div>`;
+            }
+
+            // Preparar Datos Generales
+            let turnos = [];
+            
+            if (useNocturnoAyer) {
+                // Lógica Especial: Noche (Ayer) + Día (Hoy). Se omite Tarde.
+                turnos = [
+                    { id: "Noche", label: `Turno Noche (Ayer - ${prevFilterDate})`, date: prevFilterDate },
+                    { id: "Día", label: `Turno Día (${filterDate})`, date: filterDate }
+                ];
+            } else {
+                // Lógica Normal: Todo del día actual
+                turnos = [
+                    { id: "Día", label: "Turno Día", date: filterDate },
+                    { id: "Tarde", label: "Turno Tarde", date: filterDate },
+                    { id: "Noche", label: "Turno Noche", date: filterDate }
+                ];
+            }
+
+            let globalAbsences = [];
+            let descansosCount = 0;
+
+            // 1. ITERAR TURNOS
+            turnos.forEach(turnoInfo => {
+                // Filtrar datos para este turno y fecha específica
+                const regs = globalData.filter(r => {
+                    // Check fecha
+                    let rDate = r.Fecha;
+                    if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+                    if (rDate !== turnoInfo.date) return false;
+
+                    // Check Turno
+                    if ((r.Turno || "").toLowerCase() !== turnoInfo.id.toLowerCase()) return false;
+                    
+                    // Ajuste: Vamos a excluir Ausentismos de esta tabla de "Asistencia"
+                    if (r.Motivo || r.TipoRegistro === 'Ausentismo') return false; 
+                    
+                    return true;
+                });
+
+                // Render Section Header
+                if (isEmail) {
+                    html += `<div style="${STYLES.sectionHeaderEmail}">
+                                <h3 style="${STYLES.sectionTitle}">${turnoInfo.label} <span style="background:#fff; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:10px;">${regs.length}</span></h3>
+                             </div>`;
+                } else {
+                    html += `<div class="report-section">
+                                <div class="section-header">
+                                    <div class="section-title">${turnoInfo.label}</div>
+                                    <div class="badge-count">${regs.length}</div>
+                                </div>`;
+                }
+
+                // Render Table
+                const tableStyle = isEmail ? STYLES.table : "";
+                const thStyle = isEmail ? STYLES.th : "";
+                
+                html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table>`;
+                html += `<thead><tr>
+                            <th style="${thStyle} width:80px;">ID</th>
+                            <th style="${thStyle}">Nombre</th>
+                            <th style="${thStyle} text-align:center;">Entrada</th>
+                            <th style="${thStyle} text-align:center;">Salida</th>
+                            <th style="${thStyle}">Comentarios</th>
+                         </tr></thead><tbody>`;
+
+                if (regs.length === 0) {
+                    // Tabla vacía con mensaje
+                    html += `<tr><td colspan="5" style="${isEmail ? STYLES.td : ""} text-align:center; color:#94a3b8; padding:20px;">Sin registros</td></tr>`;
+                } else {
+                    html += regs.map(r => {
+                        const incEntrada = getIncidenceTag(r, 'entrada', isEmail);
+                        const incSalida = getIncidenceTag(r, 'salida', isEmail);
+                        const timeStyle = isEmail ? STYLES.cellTime : "class='cell-time'";
+                        const tdStyle = isEmail ? STYLES.td : "";
+                        
+                        return `<tr>
+                                    <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
+                                    <td style="${tdStyle} font-weight:600;">${r.Nombre}</td>
+                                    <td style="${tdStyle} text-align:center;">
+                                        <span ${isEmail ? `style="${timeStyle}"` : `class="cell-time"`}>${excelFractionToTime(r.Entrada)}</span>
+                                        ${incEntrada}
+                                    </td>
+                                    <td style="${tdStyle} text-align:center;">
+                                        <span ${isEmail ? `style="${timeStyle}"` : `class="cell-time"`}>${excelFractionToTime(r.Salida)}</span>
+                                        ${incSalida}
+                                    </td>
+                                    <td style="${tdStyle} font-size:12px; color:#64748b;">${r.Comentarios || ""}</td>
+                                </tr>`;
+                    }).join('');
+                }
+
+                html += isEmail ? `</tbody></table>` : `</tbody></table></div></div>`;
+            });
+
+            // 2. RECOLECTAR AUSENTISMOS
+            // Lógica: Si "Noche Anterior" activado, tomamos ausentismos de AYER y HOY. Si no, solo HOY.
+            const absData = globalData.filter(r => {
+                let rDate = r.Fecha;
+                if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+                
+                // Check fecha
+                let isDateMatch = false;
+                if(useNocturnoAyer) {
+                    isDateMatch = (rDate === filterDate || rDate === prevFilterDate);
+                } else {
+                    isDateMatch = (rDate === filterDate);
+                }
+                
+                if (!isDateMatch) return false;
+                
+                if (r.Motivo || r.TipoRegistro === 'Ausentismo') {
+                    if (r.Motivo === 'Descanso') {
+                        descansosCount++;
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            });
+
+            // Render Ausentismos
+            const absTitleColor = "color:#ef4444;";
+            const absHeaderBg = isEmail ? "background:#fef2f2;" : "";
+            const absContainerStyle = isEmail ? `margin-top:20px; border:1px solid #fecaca; border-radius:8px; overflow:hidden;` : `class="report-section" style="border-left: 5px solid #ef4444;"`;
+
+            if (isEmail) {
+                html += `<div style="${absContainerStyle}">
+                            <div style="${STYLES.sectionHeaderEmail} ${absHeaderBg} margin-top:0;">
+                                <h3 style="${STYLES.sectionTitle} ${absTitleColor}">Ausentismos / Incidencias <span style="background:#fff; border:1px solid #fca5a5; color:#ef4444; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:10px;">${absData.length}</span></h3>
+                            </div>`;
+            } else {
+                html += `<div ${absContainerStyle}>
+                            <div class="section-header" style="background:#fef2f2;">
+                                <div class="section-title" style="color:#ef4444;">Ausentismos / Incidencias</div>
+                                <div class="badge-count">${absData.length}</div>
+                            </div>`;
+            }
+
+            const tableStyle = isEmail ? STYLES.table : "";
+            const thStyle = isEmail ? STYLES.th : "";
+            
+            html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table>`;
+            html += `<thead><tr>
+                        <th style="${thStyle} width:80px;">ID</th>
+                        <th style="${thStyle} width:80px;">Fecha</th>
+                        <th style="${thStyle}">Nombre</th>
+                        <th style="${thStyle}">Motivo</th>
+                        <th style="${thStyle}">Detalles</th>
+                     </tr></thead><tbody>`;
+
+            if (absData.length === 0) {
+                 html += `<tr><td colspan="5" style="${isEmail ? STYLES.td : ""} text-align:center; color:#94a3b8; padding:20px;">No hay incidencias mayores.</td></tr>`;
+            } else {
+                html += absData.map(r => {
+                    const tdStyle = isEmail ? STYLES.td : "";
+                    const badgeStyle = isEmail ? `${STYLES.abs} ${ABS_COLORS[r.Motivo] || ''}` : `class="badge-abs abs-${r.Motivo}"`;
+                    // Convertir fecha serial si es necesario para mostrarla
+                    let displayDate = r.Fecha;
+                    if (!isNaN(displayDate) && String(displayDate).indexOf("/") === -1) displayDate = excelSerialToDate(displayDate);
+
+                    return `<tr>
+                                <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
+                                <td style="${tdStyle} font-size:11px; color:#64748b;">${displayDate}</td>
+                                <td style="${tdStyle} font-weight:600;">${r.Nombre}</td>
+                                <td style="${tdStyle}"><span ${badgeStyle}>${r.Motivo}</span></td>
+                                <td style="${tdStyle} font-size:12px; color:#64748b;">${r.Comentarios || ""}</td>
+                            </tr>`;
+                }).join('');
+            }
+            
+            // Fila de Descansos
+            if (descansosCount > 0) {
+                const footerStyle = isEmail ? "padding:10px 20px; background:#f0fdf4; color:#166534; font-size:12px; border-top:1px solid #dcfce7; text-align:right; font-weight:bold;" 
+                                            : "padding:10px 20px; background:#f0fdf4; color:#166534; font-size:0.85rem; border-top:1px solid #dcfce7; text-align:right;";
+                
+                // Cerramos tabla primero
+                html += `</tbody></table>${isEmail ? "" : "</div>"}`;
+                html += `<div style="${footerStyle}">ℹ️ ${descansosCount} colaboradores en descanso programado.</div>`;
+            } else {
+                html += `</tbody></table>${isEmail ? "" : "</div>"}`;
+            }
+
+            html += isEmail ? `</div>` : `</div>`; // Close container
+
+            if(isEmail) html += `<p style="font-size:11px; color:#aaa; margin-top:30px; text-align:center;">Generado automáticamente por Asistencia Pro.</p></div>`;
+
+            return html;
+        };
+
+        const getIncidenceTag = (r, type, isEmail) => {
+            let content = "";
+            
             if (type === 'entrada') {
-                if (safeBool(r.Ret)) return `<span class="tag-incidencia inc-retardo">RET</span>`;
-                if (safeBool(r.Fes)) return `<span class="tag-incidencia inc-festivo">FES</span>`;
-                if (safeBool(r.Rec)) return `<span class="tag-incidencia inc-recup">REC</span>`;
+                if (safeBool(r.Ret)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.ret}">RET</span>` : `<span class="tag-incidencia inc-retardo">RET</span>`;
+                else if (safeBool(r.Fes)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.fes}">FES</span>` : `<span class="tag-incidencia inc-festivo">FES</span>`;
+                else if (safeBool(r.Rec)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.rec}">REC</span>` : `<span class="tag-incidencia inc-recup">REC</span>`;
             }
             if (type === 'salida') {
-                if (safeBool(r.TiEx)) return `<span class="tag-incidencia inc-extra">EXT</span>`;
-                if (safeBool(r.Fes)) return `<span class="tag-incidencia inc-festivo">FES</span>`;
-                if (safeBool(r.Rec)) return `<span class="tag-incidencia inc-recup">REC</span>`;
+                if (safeBool(r.TiEx)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.ext}">EXT</span>` : `<span class="tag-incidencia inc-extra">EXT</span>`;
+                else if (safeBool(r.Fes)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.fes}">FES</span>` : `<span class="tag-incidencia inc-festivo">FES</span>`;
+                else if (safeBool(r.Rec)) content = isEmail ? `<span style="${STYLES.badge} ${STYLES.rec}">REC</span>` : `<span class="tag-incidencia inc-recup">REC</span>`;
             }
-            return "";
+            return content;
+        };
+
+        // --- RENDER SCREEN ---
+        const renderReport = () => {
+             const html = generateReportHTML(false);
+             reportContent.innerHTML = html;
         };
 
         // --- FETCH DATA ---
@@ -494,47 +628,8 @@
             inputEmailTo.value = DEFAULT_EMAIL_TO;
             inputEmailCC.value = DEFAULT_EMAIL_CC;
             
-            // Generar HTML simple para el cuerpo del correo (Inline Styles obligatorios para emails)
-            let emailContent = `<div style="font-family:Arial,sans-serif; color:#333;">
-                <h2 style="color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:5px;">Reporte de Asistencia: ${formatDateForFilter(dateSelector.value)}</h2>`;
-            
-            // Tablas Simplificadas para Email
-            ["Día", "Tarde", "Noche"].forEach(turno => {
-                const regs = currentFilteredData.filter(r => (r.Turno || "").toLowerCase() === turno.toLowerCase());
-                if(regs.length > 0) {
-                    emailContent += `<h3 style="background:#f1f5f9; padding:5px; margin-top:20px;">Turno ${turno} (${regs.length})</h3>
-                    <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                        <thead style="background:#e2e8f0;"><tr><th style="padding:5px; text-align:left;">Nombre</th><th style="padding:5px;">Entrada</th><th style="padding:5px;">Salida</th><th>Inc</th></tr></thead>
-                        <tbody>`;
-                    regs.forEach(r => {
-                        // Detectar incidencia texto simple
-                        let inc = "";
-                        if(safeBool(r.Ret)) inc += "RET ";
-                        if(safeBool(r.TiEx)) inc += "EXT ";
-                        if(safeBool(r.Fes)) inc += "FES ";
-                        
-                        emailContent += `<tr>
-                            <td style="border-bottom:1px solid #eee; padding:5px;">${r.Nombre}</td>
-                            <td style="border-bottom:1px solid #eee; padding:5px; text-align:center;">${excelFractionToTime(r.Entrada)}</td>
-                            <td style="border-bottom:1px solid #eee; padding:5px; text-align:center;">${excelFractionToTime(r.Salida)}</td>
-                            <td style="border-bottom:1px solid #eee; padding:5px; color:#ef4444; font-weight:bold;">${inc}</td>
-                        </tr>`;
-                    });
-                    emailContent += `</tbody></table>`;
-                }
-            });
-
-            // Ausentismos Email
-            if(currentAbsenceData.length > 0) {
-                emailContent += `<h3 style="background:#fee2e2; color:#991b1b; padding:5px; margin-top:20px;">Ausentismos</h3>
-                <ul>`;
-                currentAbsenceData.forEach(r => {
-                    emailContent += `<li><strong>${r.Nombre}</strong>: ${r.Motivo} - <em>${r.Comentarios || ''}</em></li>`;
-                });
-                emailContent += `</ul>`;
-            }
-            
-            emailContent += `<p style="font-size:11px; color:#aaa; margin-top:30px;">Generado automáticamente.</p></div>`;
+            // GENERAR HTML IDENTICO PERO CON INLINE STYLES
+            const emailContent = generateReportHTML(true);
 
             emailBodyPreview.innerHTML = emailContent;
             emailModal.classList.add('active');
@@ -571,12 +666,17 @@
         document.getElementById('btnConfirmSend').addEventListener('click', sendEmailRequest);
         document.getElementById('btnCancel').addEventListener('click', () => emailModal.classList.remove('active'));
         document.getElementById('closeModal').addEventListener('click', () => emailModal.classList.remove('active'));
+        
         dateSelector.addEventListener('change', renderReport);
+        chkNocturno.addEventListener('change', renderReport); // Actualizar al cambiar check
 
         // Init
         const now = new Date();
         if (now.getHours() < 7) now.setDate(now.getDate() - 1);
         dateSelector.value = formatDateForInput(now);
+        
+        // Default check nocturno true si es lunes? O default false. Dejemoslo false.
+        // chkNocturno.checked = true; 
 
         const storedData = localStorage.getItem(STORAGE_KEY);
         if (storedData) {
