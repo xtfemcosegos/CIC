@@ -48,6 +48,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden; /* Evitar scroll horizontal global por el panel */
     }
 
     /* === HEADER === */
@@ -75,6 +76,26 @@
     }
     .btn-back:hover { color: var(--primary); border-color: var(--secondary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
+    /* === VIEW TABS === */
+    .view-tabs {
+        display: flex; gap: 10px; padding: 15px 30px 0 30px; background: white;
+    }
+    .tab-btn {
+        padding: 10px 20px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        color: var(--secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--primary); background: #f8fafc; border-radius: 8px 8px 0 0; }
+    .tab-btn.active {
+        color: var(--highlight);
+        border-bottom-color: var(--highlight);
+    }
+
     /* === TOOLBAR === */
     .toolbar {
       background: white; padding: 15px 30px; border-bottom: 1px solid var(--border);
@@ -90,7 +111,6 @@
         color: var(--primary); font-family: inherit; font-weight: 600; background: #f8fafc;
     }
     
-    /* Checkbox estilo switch simple */
     .checkbox-wrapper { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; user-select: none;}
     .checkbox-wrapper input { width: 18px; height: 18px; accent-color: var(--highlight); cursor: pointer; }
 
@@ -116,12 +136,17 @@
     .legend-item { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(0,0,0,0.05); }
     
     /* === REPORT CONTAINER === */
-    .report-container { flex: 1; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-y: auto; }
+    .view-container { flex: 1; position: relative; display: flex; overflow: hidden; }
+    
+    .report-container { flex: 1; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-y: auto; display: none; }
+    .report-container.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+    .matrix-container { flex: 1; padding: 20px; overflow: auto; display: none; background: #f8fafc; }
+    .matrix-container.active { display: block; animation: fadeIn 0.3s ease-out; }
 
     .report-section {
       background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
       margin-bottom: 30px; border: 1px solid var(--border); overflow: hidden;
-      animation: fadeIn 0.4s ease-out;
     }
 
     .section-header {
@@ -131,57 +156,70 @@
     .section-title { font-size: 1rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
     .badge-count { background: white; color: var(--secondary); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
-    /* TABLES */
+    /* TABLES (Standard) */
     .table-wrapper { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     th { text-align: left; padding: 15px 20px; color: var(--secondary); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid var(--border); background: white; }
     td { padding: 14px 20px; border-bottom: 1px solid var(--border); color: var(--primary); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
     
-    /* Hover por defecto */
-    tr:hover td { background: #f8fafc; }
+    /* MATRIX TABLE STYLES */
+    .matrix-table { border-collapse: separate; border-spacing: 0; background: white; border: 1px solid var(--border); }
+    .matrix-table th, .matrix-table td { border: 1px solid var(--border); padding: 10px; font-size: 0.85rem; text-align: center; white-space: nowrap; }
+    
+    /* Sticky Headers Matrix */
+    .matrix-table thead tr:first-child th { position: sticky; top: 0; background: #f1f5f9; z-index: 10; border-bottom: 2px solid #cbd5e1; }
+    .matrix-table tbody td:first-child, .matrix-table thead th:first-child { position: sticky; left: 0; background: #f8fafc; z-index: 20; border-right: 2px solid #cbd5e1; font-weight: bold; width: 60px; }
+    .matrix-table tbody td:nth-child(2), .matrix-table thead th:nth-child(2) { position: sticky; left: 60px; background: #f8fafc; z-index: 20; border-right: 2px solid #cbd5e1; font-weight: 600; text-align: left; min-width: 200px; }
+    /* Fix corner z-index */
+    .matrix-table thead th:first-child, .matrix-table thead th:nth-child(2) { z-index: 30; background: #e2e8f0; }
 
-    .col-id { width: 80px; font-weight: 700; color: var(--secondary); }
-    .col-name { font-weight: 600; }
-    
-    /* ESTILOS DE CELDA (Entrada/Salida simple) */
+    .matrix-cell { cursor: pointer; transition: all 0.1s; }
+    .matrix-cell:hover { background-color: #e0f2fe; outline: 2px solid var(--highlight); z-index: 5; position: relative; }
+    .matrix-cell.selected { background-color: var(--highlight); color: white; outline: 2px solid var(--primary); }
+
+    /* Hover por defecto Standard Table */
+    .standard-table tr:hover td { background: #f8fafc; }
+
+    /* ESTILOS DE CELDA */
     .cell-time { font-family: 'Monaco', 'Consolas', monospace; font-weight: 600; padding: 8px 12px; border-radius: 6px; display: inline-block; min-width: 70px; text-align: center; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); }
-    
-    /* Nueva Columna Incidencia */
     .col-incidencia-text { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--primary); opacity: 0.8; }
 
-    /* === COLORES DE FILA (ROW BACKGROUNDS) === */
+    /* ROW COLORS */
     tr.row-retardo { background-color: var(--state-retardo-bg); }
-    tr.row-retardo:hover td { background-color: #fecaca; } /* Oscurecer un poco al hover */
-    
     tr.row-festivo { background-color: var(--state-festivo-bg); }
-    tr.row-festivo:hover td { background-color: #e9d5ff; }
-
     tr.row-recup { background-color: var(--state-recup-bg); }
-    tr.row-recup:hover td { background-color: #bbf7d0; }
-
     tr.row-extra { background-color: var(--state-extra-bg); }
-    tr.row-extra:hover td { background-color: #fbcfe8; }
 
-    /* Leyenda Colores */
+    /* Legend */
     .legend-item.inc-retardo { background: var(--state-retardo-bg); color: var(--state-retardo-text); }
     .legend-item.inc-festivo { background: var(--state-festivo-bg); color: var(--state-festivo-text); }
     .legend-item.inc-recup { background: var(--state-recup-bg); color: var(--state-recup-text); }
     .legend-item.inc-extra { background: var(--state-extra-bg); color: var(--state-extra-text); }
 
-    /* Badges de Ausentismo */
-    .badge-abs { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
-    .abs-Falta { background: var(--abs-falta); color: #991b1b; }
-    .abs-Incapacidad { background: var(--abs-incap); color: #9a3412; }
-    .abs-Vacaciones { background: var(--abs-vac); color: #075985; }
-    .abs-Permiso { background: var(--abs-permiso); color: #6b21a8; }
-    .abs-Suspension { background: var(--abs-susp); color: #374151; }
-    .abs-Descanso { background: #dcfce7; color: #166534; }
+    /* SIDE PANEL (Right 30%) */
+    .side-panel {
+        position: fixed; top: var(--header-height); right: 0; bottom: 0;
+        width: 350px; /* Min width */
+        max-width: 30%;
+        background: white; border-left: 1px solid var(--border); box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        z-index: 200; transform: translateX(100%); transition: transform 0.3s ease-in-out;
+        display: flex; flex-direction: column;
+    }
+    .side-panel.open { transform: translateX(0); }
 
-    /* Loader */
-    .loader-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 2000; flex-direction: column; }
-    .loader-overlay.active { display: flex; }
-    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--highlight); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    .panel-header { padding: 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: flex-start; }
+    .panel-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; }
+    .panel-subtitle { font-size: 0.85rem; opacity: 0.8; }
+    .btn-close-panel { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .btn-close-panel:hover { opacity: 1; }
+
+    .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .detail-group { margin-bottom: 20px; }
+    .detail-label { font-size: 0.75rem; color: var(--secondary); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+    .detail-value { font-size: 0.95rem; color: var(--primary); font-weight: 600; padding: 8px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border); }
+    
+    .panel-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+    .panel-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 
     /* Modal Email */
     .modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 3000; align-items: center; justify-content: center; }
@@ -192,10 +230,13 @@
     .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: white; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
     
     .preview-box { background: white; padding: 20px; border: 1px solid var(--border); border-radius: 8px; min-height: 300px; }
+    .loader-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 2000; flex-direction: column; }
+    .loader-overlay.active { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--highlight); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { .toolbar { flex-direction: column; align-items: stretch; } }
+    @media (max-width: 768px) { .toolbar { flex-direction: column; align-items: stretch; } .side-panel { width: 90%; max-width: none; } }
   </style>
 </head>
 
@@ -217,13 +258,9 @@
     <a href="https://cicxtfemco.online/Form_RegAs.html" class="btn-back">↩ Volver al Dashboard</a>
   </header>
 
-  <!-- DIAGRAMA / LEYENDA VISUAL -->
-  <div class="legend-bar">
-      <span class="legend-title">Simbología:</span>
-      <div class="legend-item inc-retardo">Retardo</div>
-      <div class="legend-item inc-festivo">Festivo</div>
-      <div class="legend-item inc-recup">Recuperación</div>
-      <div class="legend-item inc-extra">Tiempo Extra</div>
+  <div class="view-tabs">
+      <button class="tab-btn active" data-view="daily">Reporte Diario</button>
+      <button class="tab-btn" data-view="matrix">Matriz Mensual</button>
   </div>
 
   <div class="toolbar">
@@ -244,10 +281,63 @@
     </div>
   </div>
 
-  <div id="reportContent" class="report-container">
-      <div style="text-align:center; padding:50px; color:#94a3b8; border: 2px dashed #e2e8f0; border-radius:16px;">
-          Seleccione una fecha o actualice la base de datos.
+  <!-- LEYENDA (Visible solo en Diario) -->
+  <div id="legendDaily" class="legend-bar">
+      <span class="legend-title">Simbología:</span>
+      <div class="legend-item inc-retardo">Retardo</div>
+      <div class="legend-item inc-festivo">Festivo</div>
+      <div class="legend-item inc-recup">Recuperación</div>
+      <div class="legend-item inc-extra">Tiempo Extra</div>
+  </div>
+
+  <div class="view-container">
+      <!-- VISTA DIARIA -->
+      <div id="reportContent" class="report-container active">
+          <div style="text-align:center; padding:50px; color:#94a3b8; border: 2px dashed #e2e8f0; border-radius:16px;">
+              Seleccione una fecha o actualice la base de datos.
+          </div>
       </div>
+
+      <!-- VISTA MATRIZ -->
+      <div id="matrixContent" class="matrix-container">
+          <div style="text-align:center; padding:50px; color:#94a3b8;">
+              Cargando matriz...
+          </div>
+      </div>
+
+      <!-- PANEL LATERAL -->
+      <aside id="sidePanel" class="side-panel">
+          <div class="panel-header">
+              <div>
+                  <div class="panel-title" id="panelName">Nombre Empleado</div>
+                  <div class="panel-subtitle" id="panelId">ID: 00000</div>
+              </div>
+              <button class="btn-close-panel" id="btnClosePanel">&times;</button>
+          </div>
+          <div class="panel-body">
+              <div class="panel-badges" id="panelBadges">
+                  <!-- Badges here -->
+              </div>
+              <div class="detail-group">
+                  <div class="detail-label">Fecha / Turno</div>
+                  <div class="detail-value" id="panelDateTurno">--</div>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                  <div class="detail-group">
+                      <div class="detail-label">Entrada</div>
+                      <div class="detail-value" id="panelEntrada">--:--</div>
+                  </div>
+                  <div class="detail-group">
+                      <div class="detail-label">Salida</div>
+                      <div class="detail-value" id="panelSalida">--:--</div>
+                  </div>
+              </div>
+              <div class="detail-group">
+                  <div class="detail-label">Comentarios</div>
+                  <div class="detail-value" id="panelComentarios" style="min-height:60px;">Sin comentarios</div>
+              </div>
+          </div>
+      </aside>
   </div>
 
   <!-- MODAL EMAIL -->
@@ -282,21 +372,36 @@
         const DEFAULT_EMAIL_TO = "jesuseduardo.gutierrez@armur.com; juan.paniagua@armur.com";
         const DEFAULT_EMAIL_CC = "josedavid.montano@armur.com; ROBERTO.RODRIGUEZ@ARMUR.COM";
         
-        // Refs
+        // UI Refs
         const dateSelector = document.getElementById("dateSelector");
         const chkNocturno = document.getElementById("chkNocturno");
         const reportContent = document.getElementById("reportContent");
+        const matrixContent = document.getElementById("matrixContent");
         const loader = document.getElementById("loader");
         const lastUpdateLabel = document.getElementById("lastUpdateLabel");
+        const tabButtons = document.querySelectorAll(".tab-btn");
+        const legendDaily = document.getElementById("legendDaily");
         
+        // Side Panel Refs
+        const sidePanel = document.getElementById("sidePanel");
+        const btnClosePanel = document.getElementById("btnClosePanel");
+        const panelName = document.getElementById("panelName");
+        const panelId = document.getElementById("panelId");
+        const panelBadges = document.getElementById("panelBadges");
+        const panelDateTurno = document.getElementById("panelDateTurno");
+        const panelEntrada = document.getElementById("panelEntrada");
+        const panelSalida = document.getElementById("panelSalida");
+        const panelComentarios = document.getElementById("panelComentarios");
+
         const emailModal = document.getElementById("emailModal");
         const emailBodyPreview = document.getElementById("emailBodyPreview");
         const inputEmailTo = document.getElementById("inputEmailTo");
         const inputEmailCC = document.getElementById("inputEmailCC");
 
         let globalData = [];
+        let currentView = 'daily';
 
-        // --- STYLES CONFIG FOR EMAIL (INLINE MAPPING) ---
+        // --- STYLES CONFIG ---
         const STYLES = {
             table: "width:100%; border-collapse:collapse; font-size:14px; font-family:Arial, sans-serif;",
             th: "text-align:left; padding:10px; color:#64748b; font-weight:700; font-size:11px; text-transform:uppercase; border-bottom:2px solid #e2e8f0; background:#ffffff;",
@@ -304,26 +409,16 @@
             sectionHeader: "background:#f8fafc; padding:10px 15px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;",
             sectionHeaderEmail: "background:#f8fafc; padding:10px 15px; border-bottom:1px solid #e2e8f0; margin-top:20px;",
             sectionTitle: "font-size:14px; font-weight:800; color:#1e293b; text-transform:uppercase; letter-spacing:1px; margin:0;",
-            
-            // Estilo base de celda de tiempo (sin color)
             cellTime: "font-family:monospace; font-weight:600; padding:6px 12px; border-radius:4px; display:inline-block; border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.5); color:#1e293b;",
-            
-            // Badge genérico (para simbología en header)
             badge: "padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; text-transform:uppercase; display:inline-block; margin-left:5px;",
-            
-            // Colores para el Background de LA FILA (Row)
             rowRet: "background-color:#fee2e2;",
             rowFes: "background-color:#f3e8ff;",
             rowRec: "background-color:#dcfce7;",
             rowExt: "background-color:#fce7f3;",
-            
-            // Simbología Badge Colors
             badgeRet: "background:#fee2e2; color:#dc2626;",
             badgeFes: "background:#f3e8ff; color:#9333ea;",
             badgeRec: "background:#dcfce7; color:#166534;",
             badgeExt: "background:#fce7f3; color:#be185d;",
-
-            // Absences
             abs: "padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; text-transform:uppercase; display:inline-block;"
         };
 
@@ -387,7 +482,48 @@
             return formatDateForInput(date);
         };
 
-        // --- CORE HTML GENERATOR (Used for both Screen and Email) ---
+        // --- SIDE PANEL LOGIC ---
+        const openPanel = (record) => {
+            panelName.textContent = record.Nombre;
+            panelId.textContent = `ID: ${record.ID || record.Numero}`;
+            
+            // Fecha y Turno
+            let rDate = record.Fecha;
+            if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+            panelDateTurno.textContent = `${rDate} - ${record.Turno || "Sin Turno"}`;
+
+            panelEntrada.textContent = excelFractionToTime(record.Entrada);
+            panelSalida.textContent = excelFractionToTime(record.Salida);
+            panelComentarios.textContent = record.Comentarios || "Sin comentarios adicionales.";
+
+            // Badges
+            let badgesHtml = "";
+            if(safeBool(record.Ret)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRet}">Retardo</span>`;
+            if(safeBool(record.Fes)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeFes}">Festivo</span>`;
+            if(safeBool(record.Rec)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeRec}">Recuperación</span>`;
+            if(safeBool(record.TiEx)) badgesHtml += `<span class="panel-badge" style="${STYLES.badgeExt}">T.Extra</span>`;
+            
+            if(record.Motivo) {
+                 const absStyle = ABS_COLORS[record.Motivo] || "background:#ccc;";
+                 badgesHtml += `<span class="panel-badge" style="${absStyle}">${record.Motivo}</span>`;
+            }
+
+            panelBadges.innerHTML = badgesHtml;
+            
+            // Deseleccionar previos
+            document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
+            
+            sidePanel.classList.add('open');
+        };
+
+        const closePanel = () => {
+            sidePanel.classList.remove('open');
+            document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
+        };
+
+        btnClosePanel.addEventListener('click', closePanel);
+
+        // --- DAILY REPORT LOGIC (Standard View) ---
         const generateReportHTML = (isEmail) => {
             const selectedDateRaw = dateSelector.value;
             if (!selectedDateRaw) return `<div style="padding:20px; text-align:center;">Seleccione una fecha</div>`;
@@ -404,8 +540,6 @@
                          <h2 style="color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:5px; margin-bottom:10px;">
                            Reporte de Asistencia: ${filterDate}
                          </h2>`;
-                
-                // Simbologia Inline para Email
                 html += `<div style="background:#f1f5f9; padding:10px; border-radius:6px; font-size:12px; margin-bottom:20px; border:1px solid #e2e8f0;">
                             <strong style="color:#64748b; text-transform:uppercase; margin-right:10px;">Simbología:</strong>
                             <span style="${STYLES.badge} ${STYLES.badgeRet}">Retardo</span>
@@ -415,9 +549,7 @@
                          </div>`;
             }
 
-            // Preparar Datos Generales
             let turnos = [];
-            
             if (useNocturnoAyer) {
                 turnos = [
                     { id: "Noche", label: `Turno Noche (Ayer - ${prevFilterDate})`, date: prevFilterDate },
@@ -431,10 +563,8 @@
                 ];
             }
 
-            let globalAbsences = [];
             let descansosCount = 0;
 
-            // 1. ITERAR TURNOS
             turnos.forEach(turnoInfo => {
                 const regs = globalData.filter(r => {
                     let rDate = r.Fecha;
@@ -445,7 +575,6 @@
                     return true;
                 });
 
-                // Render Section Header
                 if (isEmail) {
                     html += `<div style="${STYLES.sectionHeaderEmail}">
                                 <h3 style="${STYLES.sectionTitle}">${turnoInfo.label} <span style="background:#fff; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:10px;">${regs.length}</span></h3>
@@ -458,11 +587,10 @@
                                 </div>`;
                 }
 
-                // Render Table
-                const tableStyle = isEmail ? STYLES.table : "";
+                const tableStyle = isEmail ? STYLES.table : "class='standard-table'";
                 const thStyle = isEmail ? STYLES.th : "";
                 
-                html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table>`;
+                html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table ${tableStyle}>`;
                 html += `<thead><tr>
                             <th style="${thStyle} width:80px;">ID</th>
                             <th style="${thStyle}">Nombre</th>
@@ -477,117 +605,54 @@
                 } else {
                     html += regs.map(r => {
                         const tdStyle = isEmail ? STYLES.td : "";
-
-                        // Lógica de Incidencias: Texto y Estilos de FONDO DE FILA
                         let incidenciaLabels = [];
-                        
-                        // Determinamos el tipo de fila por prioridad
-                        // 1. Retardo (Rojo)
-                        // 2. Tiempo Extra (Rosa)
-                        // 3. Festivo (Morado)
-                        // 4. Recuperación (Verde)
-                        
                         let rowClass = "";
                         let rowStyleEmail = "";
 
-                        // Check Entrada Flags
                         if (safeBool(r.Ret)) incidenciaLabels.push("Retardo");
                         if (safeBool(r.Fes)) incidenciaLabels.push("Festivo");
                         if (safeBool(r.Rec)) incidenciaLabels.push("Recuperación");
-
-                        // Check Salida Flags
                         if (safeBool(r.TiEx)) incidenciaLabels.push("T.Extra");
                         
-                        // Evitar duplicados visuales en texto si ya existen
-                        // (El array `incidenciaLabels` ahora tiene strings duplicados si Fes está en ambos)
-                        // Limpiamos duplicados
                         incidenciaLabels = [...new Set(incidenciaLabels)];
 
-                        // Lógica de Color de Fila
-                        if (safeBool(r.Ret)) {
-                            rowClass = "row-retardo";
-                            rowStyleEmail = STYLES.rowRet;
-                        } else if (safeBool(r.TiEx)) {
-                            rowClass = "row-extra";
-                            rowStyleEmail = STYLES.rowExt;
-                        } else if (safeBool(r.Fes)) {
-                            rowClass = "row-festivo";
-                            rowStyleEmail = STYLES.rowFes;
-                        } else if (safeBool(r.Rec)) {
-                            rowClass = "row-recup";
-                            rowStyleEmail = STYLES.rowRec;
-                        }
+                        if (safeBool(r.Ret)) { rowClass = "row-retardo"; rowStyleEmail = STYLES.rowRet; } 
+                        else if (safeBool(r.TiEx)) { rowClass = "row-extra"; rowStyleEmail = STYLES.rowExt; } 
+                        else if (safeBool(r.Fes)) { rowClass = "row-festivo"; rowStyleEmail = STYLES.rowFes; } 
+                        else if (safeBool(r.Rec)) { rowClass = "row-recup"; rowStyleEmail = STYLES.rowRec; }
 
-                        // Generar string de incidencia
                         const incidenciaText = incidenciaLabels.length > 0 ? incidenciaLabels.join(" / ") : "-";
-                        
-                        // Estilo para la columna de texto de incidencia
                         const incTextStyle = isEmail ? "font-size:11px; font-weight:bold; color:#1e293b; text-transform:uppercase; opacity:0.8;" : "class='col-incidencia-text'";
                         const timeStyle = isEmail ? STYLES.cellTime : "class='cell-time'";
 
-                        // Construcción de fila
-                        if (isEmail) {
-                            return `<tr style="${rowStyleEmail}">
-                                        <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
-                                        <td style="${tdStyle} font-weight:600;">${r.Nombre}</td>
-                                        <td style="${tdStyle}">
-                                            <span ${incTextStyle}>${incidenciaText}</span>
-                                        </td>
-                                        <td style="${tdStyle} text-align:center;">
-                                            <span style="${timeStyle}">${excelFractionToTime(r.Entrada)}</span>
-                                        </td>
-                                        <td style="${tdStyle} text-align:center;">
-                                            <span style="${timeStyle}">${excelFractionToTime(r.Salida)}</span>
-                                        </td>
-                                        <td style="${tdStyle} font-size:12px; color:#64748b;">${r.Comentarios || ""}</td>
-                                    </tr>`;
-                        } else {
-                            return `<tr class="${rowClass}">
-                                        <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
-                                        <td style="${tdStyle} font-weight:600;">${r.Nombre}</td>
-                                        <td style="${tdStyle}">
-                                            <span ${incTextStyle}>${incidenciaText}</span>
-                                        </td>
-                                        <td style="${tdStyle} text-align:center;">
-                                            <span ${timeStyle}>${excelFractionToTime(r.Entrada)}</span>
-                                        </td>
-                                        <td style="${tdStyle} text-align:center;">
-                                            <span ${timeStyle}>${excelFractionToTime(r.Salida)}</span>
-                                        </td>
-                                        <td style="${tdStyle} font-size:12px; color:#64748b;">${r.Comentarios || ""}</td>
-                                    </tr>`;
-                        }
+                        const trOpen = isEmail ? `<tr style="${rowStyleEmail}">` : `<tr class="${rowClass}">`;
+
+                        return `${trOpen}
+                                    <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
+                                    <td style="${tdStyle} font-weight:600;">${r.Nombre}</td>
+                                    <td style="${tdStyle}"><span ${incTextStyle}>${incidenciaText}</span></td>
+                                    <td style="${tdStyle} text-align:center;"><span style="${timeStyle}">${excelFractionToTime(r.Entrada)}</span></td>
+                                    <td style="${tdStyle} text-align:center;"><span style="${timeStyle}">${excelFractionToTime(r.Salida)}</span></td>
+                                    <td style="${tdStyle} font-size:12px; color:#64748b;">${r.Comentarios || ""}</td>
+                                </tr>`;
                     }).join('');
                 }
-
                 html += isEmail ? `</tbody></table>` : `</tbody></table></div></div>`;
             });
 
-            // 2. RECOLECTAR AUSENTISMOS
+            // Ausentismos
             const absData = globalData.filter(r => {
                 let rDate = r.Fecha;
                 if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
-                
-                let isDateMatch = false;
-                if(useNocturnoAyer) {
-                    isDateMatch = (rDate === filterDate || rDate === prevFilterDate);
-                } else {
-                    isDateMatch = (rDate === filterDate);
-                }
-                
+                let isDateMatch = (useNocturnoAyer) ? (rDate === filterDate || rDate === prevFilterDate) : (rDate === filterDate);
                 if (!isDateMatch) return false;
-                
                 if (r.Motivo || r.TipoRegistro === 'Ausentismo') {
-                    if (r.Motivo === 'Descanso') {
-                        descansosCount++;
-                        return false;
-                    }
+                    if (r.Motivo === 'Descanso') { descansosCount++; return false; }
                     return true;
                 }
                 return false;
             });
 
-            // Render Ausentismos
             const absTitleColor = "color:#ef4444;";
             const absHeaderBg = isEmail ? "background:#fef2f2;" : "";
             const absContainerStyle = isEmail ? `margin-top:20px; border:1px solid #fecaca; border-radius:8px; overflow:hidden;` : `class="report-section" style="border-left: 5px solid #ef4444;"`;
@@ -605,10 +670,10 @@
                             </div>`;
             }
 
-            const tableStyle = isEmail ? STYLES.table : "";
+            const tableStyle = isEmail ? STYLES.table : "class='standard-table'";
             const thStyle = isEmail ? STYLES.th : "";
             
-            html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table>`;
+            html += isEmail ? `<table style="${tableStyle}">` : `<div class="table-wrapper"><table ${tableStyle}>`;
             html += `<thead><tr>
                         <th style="${thStyle} width:80px;">ID</th>
                         <th style="${thStyle} width:80px;">Fecha</th>
@@ -625,7 +690,6 @@
                     const badgeStyle = isEmail ? `${STYLES.abs} ${ABS_COLORS[r.Motivo] || ''}` : `class="badge-abs abs-${r.Motivo}"`;
                     let displayDate = r.Fecha;
                     if (!isNaN(displayDate) && String(displayDate).indexOf("/") === -1) displayDate = excelSerialToDate(displayDate);
-
                     return `<tr>
                                 <td style="${tdStyle} font-weight:bold; color:#64748b;">${r.ID || r.Numero}</td>
                                 <td style="${tdStyle} font-size:11px; color:#64748b;">${displayDate}</td>
@@ -636,62 +700,123 @@
                 }).join('');
             }
             
-            // Fila de Descansos
             if (descansosCount > 0) {
                 const footerStyle = isEmail ? "padding:10px 20px; background:#f0fdf4; color:#166534; font-size:12px; border-top:1px solid #dcfce7; text-align:right; font-weight:bold;" 
                                             : "padding:10px 20px; background:#f0fdf4; color:#166534; font-size:0.85rem; border-top:1px solid #dcfce7; text-align:right;";
-                
                 html += `</tbody></table>${isEmail ? "" : "</div>"}`;
                 html += `<div style="${footerStyle}">ℹ️ ${descansosCount} colaboradores en descanso programado.</div>`;
             } else {
                 html += `</tbody></table>${isEmail ? "" : "</div>"}`;
             }
 
-            html += isEmail ? `</div>` : `</div>`; // Close container
-
+            html += isEmail ? `</div>` : `</div>`;
             if(isEmail) html += `<p style="font-size:11px; color:#aaa; margin-top:30px; text-align:center;">Generado automáticamente por Asistencia Pro.</p></div>`;
 
             return html;
         };
 
-        // --- RENDER SCREEN ---
-        const renderReport = () => {
-             const html = generateReportHTML(false);
-             reportContent.innerHTML = html;
-        };
+        // --- MATRIX VIEW GENERATOR ---
+        const generateMatrixHTML = () => {
+            if(!globalData || globalData.length === 0) return `<div style="padding:40px; text-align:center;">No hay datos para mostrar.</div>`;
 
-        // --- FETCH DATA ---
-        const fetchData = async () => {
-            loader.classList.add('active');
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Mode: "GenerarTablas" })
+            // 1. Extract Unique Dates
+            const allDates = new Set();
+            const usersMap = new Map(); // ID -> {Name, Records: {Date -> Record}}
+
+            globalData.forEach(r => {
+                let rDate = r.Fecha;
+                if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+                
+                // Normalizar fecha dd/mm/yyyy
+                if(rDate) allDates.add(rDate);
+
+                const uid = r.ID || r.Numero;
+                if(!usersMap.has(uid)) {
+                    usersMap.set(uid, { name: r.Nombre, records: {} });
+                }
+                // Guardar registro indexado por fecha
+                usersMap.get(uid).records[rDate] = r;
+            });
+
+            // Convertir fechas a array y ordenar (dd/mm/yyyy logic)
+            const sortedDates = Array.from(allDates).sort((a, b) => {
+                const [d1, m1, y1] = a.split('/').map(Number);
+                const [d2, m2, y2] = b.split('/').map(Number);
+                return new Date(y1, m1-1, d1) - new Date(y2, m2-1, d2);
+            });
+
+            // 2. Build Table
+            let table = `<table class="matrix-table">`;
+            
+            // Header Row
+            table += `<thead><tr>
+                        <th>ID</th>
+                        <th>Nombre</th>`;
+            sortedDates.forEach(d => {
+                table += `<th>${d.substring(0, 5)}</th>`; // Mostrar dd/mm
+            });
+            table += `</tr></thead>`;
+
+            // Body Rows
+            table += `<tbody>`;
+            usersMap.forEach((user, uid) => {
+                table += `<tr>
+                            <td>${uid}</td>
+                            <td>${user.name}</td>`;
+                
+                sortedDates.forEach(date => {
+                    const rec = user.records[date];
+                    let cellContent = "-";
+                    let cellClass = "";
+                    let cellId = "";
+                    
+                    if(rec) {
+                        cellContent = rec.Turno || (rec.Motivo ? rec.Motivo.substring(0,3) : "Ok");
+                    }
+                    
+                    table += `<td class="matrix-cell" data-uid="${uid}" data-date="${date}">${cellContent}</td>`;
                 });
-                if (!response.ok) throw new Error("Error API");
-                const data = await response.json();
-                const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
-                
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
-                localStorage.setItem(STORAGE_TIMESTAMP_KEY, new Date().toLocaleString());
-                globalData = cleanData;
-                
-                lastUpdateLabel.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-                renderReport();
-            } catch (error) {
-                alert("Error al sincronizar datos.");
-            } finally {
-                loader.classList.remove('active');
-            }
+                table += `</tr>`;
+            });
+            table += `</tbody></table>`;
+            
+            return table;
         };
 
-        // --- EMAIL ---
+        const renderMatrix = () => {
+             matrixContent.innerHTML = generateMatrixHTML();
+             
+             // Bind Click Events
+             document.querySelectorAll('.matrix-cell').forEach(cell => {
+                 cell.addEventListener('click', (e) => {
+                     const uid = cell.dataset.uid;
+                     const date = cell.dataset.date;
+                     if(!uid || !date) return;
+
+                     // Find Record (Re-scan globalData is fast enough for interaction)
+                     const record = globalData.find(r => {
+                        let rDate = r.Fecha;
+                        if (!isNaN(rDate) && String(rDate).indexOf("/") === -1) rDate = excelSerialToDate(rDate);
+                        return (r.ID == uid || r.Numero == uid) && rDate == date;
+                     });
+
+                     if(record) {
+                         // Highlight Cell
+                         document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
+                         cell.classList.add('selected');
+                         openPanel(record);
+                     }
+                 });
+             });
+        };
+
+        // --- EMAIL LOGIC (RESTORED) ---
         const openEmailPreview = () => {
             if (!globalData.length) return alert("No hay datos cargados.");
             
             inputEmailTo.value = DEFAULT_EMAIL_TO;
             inputEmailCC.value = DEFAULT_EMAIL_CC;
             
-            // GENERAR HTML IDENTICO PERO CON INLINE STYLES
             const emailContent = generateReportHTML(true);
 
             emailBodyPreview.innerHTML = emailContent;
@@ -723,15 +848,75 @@
             }
         };
 
-        // Events
+        // --- MAIN RENDER ---
+        const renderView = () => {
+            if(currentView === 'daily') {
+                reportContent.classList.add('active');
+                matrixContent.classList.remove('active');
+                legendDaily.style.display = "flex";
+                // Toolbar logic (date picker is only for daily)
+                dateSelector.disabled = false;
+                chkNocturno.disabled = false;
+                
+                const html = generateReportHTML(false);
+                reportContent.innerHTML = html;
+            } else {
+                reportContent.classList.remove('active');
+                matrixContent.classList.add('active');
+                legendDaily.style.display = "none";
+                
+                // Disable daily specific filters visually or functional
+                dateSelector.disabled = true;
+                chkNocturno.disabled = true;
+                
+                renderMatrix();
+            }
+        };
+
+        // --- FETCH DATA ---
+        const fetchData = async () => {
+            loader.classList.add('active');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Mode: "GenerarTablas" })
+                });
+                if (!response.ok) throw new Error("Error API");
+                const data = await response.json();
+                const cleanData = Array.isArray(data) ? data : (data.Usuarios || []);
+                
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
+                localStorage.setItem(STORAGE_TIMESTAMP_KEY, new Date().toLocaleString());
+                globalData = cleanData;
+                
+                lastUpdateLabel.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+                renderView();
+            } catch (error) {
+                alert("Error al sincronizar datos.");
+            } finally {
+                loader.classList.remove('active');
+            }
+        };
+
+        // --- EVENTS ---
         document.getElementById('btnUpdateData').addEventListener('click', fetchData);
         document.getElementById('btnSendEmail').addEventListener('click', openEmailPreview);
         document.getElementById('btnConfirmSend').addEventListener('click', sendEmailRequest);
         document.getElementById('btnCancel').addEventListener('click', () => emailModal.classList.remove('active'));
         document.getElementById('closeModal').addEventListener('click', () => emailModal.classList.remove('active'));
         
-        dateSelector.addEventListener('change', renderReport);
-        chkNocturno.addEventListener('change', renderReport);
+        dateSelector.addEventListener('change', () => { if(currentView === 'daily') renderView(); });
+        chkNocturno.addEventListener('change', () => { if(currentView === 'daily') renderView(); });
+
+        // Tab Switching
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentView = btn.dataset.view;
+                closePanel(); // Cerrar panel al cambiar vista
+                renderView();
+            });
+        });
 
         // Init
         const now = new Date();
@@ -742,7 +927,7 @@
         if (storedData) {
             globalData = JSON.parse(storedData);
             lastUpdateLabel.textContent = `Cache: ${localStorage.getItem(STORAGE_TIMESTAMP_KEY) || ""}`;
-            renderReport();
+            renderView();
         } else {
             fetchData();
         }
