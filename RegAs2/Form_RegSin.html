@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Siniestros</title>
+    <!-- FAVICON GENERADO -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚨</text></svg>">
+
+  <!-- Asumiendo que script.js maneja funciones globales externas si existen -->
+  <script src="script.js"></script> 
+  <style>
+    :root {
+      /* === Identidad Visual Unificada (Slate/Blue Theme) === */
+      --bg-app-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+      --bg-panel: #ffffff;
+      
+      --primary: #1e293b;       /* Slate Dark */
+      --secondary: #64748b;     /* Slate Muted */
+      --white: #ffffff;
+      
+      /* Gradientes de Estado */
+      --grad-primary: linear-gradient(to bottom, #1e293b, #0f172a); /* Oscuro para header icon */
+      --grad-success: linear-gradient(to bottom, #10b981, #059669); /* Verde para acciones positivas */
+      --grad-danger: linear-gradient(to bottom, #ef4444, #dc2626); /* Rojo para alertas */
+      
+      --accent-color: #ef4444; /* Rojo para acentos de siniestros */
+      --border: #e2e8f0;
+      --highlight: #3b82f6;
+      
+      --header-height: 70px;
+      --radius-std: 12px; /* Redondeado suave coincidente con Dashboard */
+      
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      
+      --input-bg: #ffffff;
+      --input-focus-ring: rgba(59, 130, 246, 0.15); /* Azul suave */
+    }
+
+    /* === Reset & Base === */
+    * { box-sizing: border-box; outline: none; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-app-gradient);
+      margin: 0;
+      padding-top: calc(var(--header-height) + 30px); /* Espacio para el header fijo */
+      color: var(--primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* === LOADING OVERLAY === */
+    #loadingOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s ease;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #cbd5e1;
+      border-top-color: var(--highlight);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      font-weight: 700;
+      color: var(--secondary);
+      font-size: 1.1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* === Header Estilo Dashboard === */
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--header-height);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+      z-index: 1000;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { 
+        width: 40px; height: 40px; 
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); /* Rojo para Siniestros */
+        color: white; 
+        border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+    }
+    .brand-text h1 { font-size: 1.2rem; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
+    .brand-text span { font-size: 0.8rem; color: var(--secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .header-right { display: flex; align-items: center; gap: 20px; }
+
+    /* Botón Inicio estilo Nav Link */
+    .nav-link { 
+        text-decoration: none; color: var(--secondary); font-weight: 600; font-size: 0.9rem; 
+        transition: all 0.2s; display: flex; align-items: center; gap: 6px; 
+        padding: 8px 12px; border-radius: 8px;
+    }
+    .nav-link:hover { color: var(--primary); background: #f1f5f9; }
+
+    /* Combobox de Navegación estilo limpio */
+    .nav-select {
+      padding: 8px 30px 8px 15px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background-color: white;
+      color: var(--secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+      /* Icono de flecha gris */
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
+      appearance: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+    .nav-select:hover { border-color: #cbd5e1; color: var(--primary); }
+
+    /* === Contenedor del Formulario === */
+    .main-form {
+      background: var(--bg-panel);
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 900px;
+      margin: 0 auto 50px auto;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    /* === UI de Éxito === */
+    .success-container {
+      text-align: center;
+      padding: 40px 20px;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .success-icon {
+      font-size: 80px;
+      color: #10b981; /* Verde éxito */
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .success-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .success-message {
+      font-size: 1.1rem;
+      color: var(--secondary);
+      margin-bottom: 30px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Labels === */
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--secondary);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* === Inputs y Selects === */
+    .input-control {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      border-radius: var(--radius-std);
+      border: 1px solid var(--border);
+      background-color: #f8fafc; /* Fondo muy sutil */
+      color: var(--primary);
+      font-size: 0.95rem;
+      font-weight: 500;
+      box-sizing: border-box;
+      transition: all 0.2s;
+      appearance: none;
+    }
+
+    /* Flecha personalizada para selects */
+    select.input-control {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      cursor: pointer;
+    }
+
+    .input-control:focus {
+      border-color: var(--highlight);
+      background-color: white;
+      box-shadow: 0 4px 12px var(--input-focus-ring);
+      outline: none;
+    }
+
+    /* === Grid System === */
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .full-width-col {
+      grid-column: 1 / -1;
+    }
+
+    /* === Checkbox Groups === */
+    .checkbox-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 30px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: var(--radius-std);
+      border: 1px solid var(--border);
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--primary);
+      cursor: pointer;
+      margin: 0;
+      transition: color 0.2s;
+    }
+    .checkbox-label:hover { color: var(--highlight); }
+
+    .checkbox-input {
+      accent-color: var(--highlight);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* === Rich Text Editor === */
+    .editor-container {
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-std);
+      overflow: hidden;
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .editor-container:focus-within {
+      border-color: var(--highlight);
+      box-shadow: 0 4px 12px var(--input-focus-ring);
+    }
+
+    .editor-toolbar {
+      background: #f8fafc;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tool-btn {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: white;
+      color: var(--secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .tool-btn:hover {
+      background: #fff;
+      border-color: #cbd5e1;
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .color-picker-tool {
+      width: 36px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .editor-content {
+      min-height: 180px;
+      padding: 20px;
+      font-size: 1rem;
+      outline: none;
+      color: var(--primary);
+    }
+    
+    .editor-content:empty:before {
+        content: attr(placeholder);
+        color: #94a3b8;
+        pointer-events: none;
+        display: block; 
+    }
+
+    /* === Botones de Acción === */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+      background: var(--grad-success);
+      border: none;
+      border-radius: var(--radius-std);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: transform 0.1s, box-shadow 0.2s;
+      margin-top: 10px;
+      display: flex; justify-content: center; align-items: center; gap: 10px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-submit:active { transform: scale(0.98); }
+
+    .btn-submit:disabled {
+      background: #cbd5e1;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Botón Nuevo Reporte (Variante) */
+    .btn-new-report {
+        background: var(--highlight); /* Azul para nuevo reporte */
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        margin-top: 20px;
+        width: auto;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+    .btn-new-report:hover {
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    /* === Mobile Ajustes === */
+    @media (max-width: 600px) {
+      .app-header {
+        padding: 0 15px;
+      }
+      
+      .brand-text { display: none; } /* Ocultar texto de marca en móvil si falta espacio */
+      
+      .header-right { gap: 10px; }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .main-form {
+        padding: 25px;
+        margin-left: 15px;
+        margin-right: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando datos...</div>
+  </div>
+
+  <!-- Encabezado Fijo Estilo Dashboard -->
+  <header class="app-header">
+    <div class="brand">
+        <!-- Icono Rojo para Siniestros -->
+        <div class="brand-icon">🚨</div>
+        <div class="brand-text">
+            <h1>Registro de Siniestros</h1>
+            <span>Sistema Central</span>
+        </div>
+    </div>
+    
+    <div class="header-right">
+        <!-- Botón Inicio -->
+        <a href="https://cicxtfemco.online" class="nav-link">🏠 Inicio</a>
+
+        <!-- Combobox de Navegación -->
+        <select id="navFormularios" class="nav-select">
+            <option value="" disabled selected>Ir a...</option>
+            <option value="regresarGrid">Más formularios proximamente</option>
+        </select>
+    </div>
+  </header>
+
+  <!-- Formulario Principal -->
+  <form id="formSiniestros" class="main-form">
+    
+    <!-- Contenedor UI del Formulario (Inputs) -->
+    <div id="formUI">
+        <!-- Fila 1 -->
+        <div class="form-row">
+        <div class="form-group">
+            <label for="Negocio">🏢 Negocio</label>
+            <select id="Negocio" name="negocioSeleccionado" class="input-control" required>
+            <option value="">Seleccione</option>
+            <option value="Club de Futbol Monterrey">Club de Futbol Monterrey</option>
+            <option value="Femsa">Femsa</option>
+            <option value="Oficinas de servicio Oxxo" selected>Oficinas de servicio Oxxo</option>
+            <option value="Otras">Otras</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="Plaza">📍 Plaza/Oficina</label>
+            <select id="Plaza" name="plazaSeleccionada" class="input-control" required>
+            <option value="">Seleccione</option>
+            <option value="Oficina de servicio (OS)" selected>Oficina de servicio (OS)</option>
+            <option value="Otras">Otras</option>
+            </select>
+        </div>
+        </div>
+
+        <!-- Fila 2 (Ancho completo usando clase CSS) -->
+        <div class="form-row">
+        <div class="form-group full-width-col">
+            <label for="Edificio">🏗️ Edificio</label>
+            <select id="Edificio" name="edificioSeleccionado" class="input-control" required>
+            <option value="">Seleccione</option>
+            <option value="Almacén Dr. Mora">Almacén Dr. Mora</option>
+            <option value="Almacén Luis Mora">Almacén Luis Mora</option>
+            <option value="Anexo OS">Anexo OS</option>
+            <option value="Cash Center">Cash Center</option>
+            <option value="Corporativo Femsa">Corporativo Femsa</option>
+            <option value="Crisoles">Crisoles</option>
+            <option value="Edison" selected>Edison</option>
+            <option value="Fundadores">Fundadores</option>
+            <option value="Lucas Alemán">Lucas Alemán</option>
+            <option value="Michelena">Michelena</option>
+            <option value="Patio 4">Patio 4</option>
+            <option value="Proyectos culturales">Proyectos culturales</option>
+            <option value="Simón Bolivar">Simón Bolivar</option>
+            <option value="Xpertal">Xpertal</option>
+            </select>
+        </div>
+        </div>
+
+        <!-- Fila 3 -->
+        <div class="form-row">
+        <div class="form-group">
+            <label for="TipoSiniestro">⚠️ Tipo de Siniestro</label>
+            <select id="TipoSiniestro" name="tipoSiniestroSeleccionado" class="input-control" required>
+            <option value="">Seleccione un tipo</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="Subtipo">📌 Subtipo</label>
+            <select id="Subtipo" name="subtipoSeleccionado" class="input-control" required>
+            <option value="">Seleccione un subtipo</option>
+            </select>
+        </div>
+        </div>
+
+        <!-- Descripción con Editor Enriquecido -->
+        <label for="descripcion">📝 Descripción del incidente</label>
+        <div class="editor-container">
+        <div class="editor-toolbar">
+            <button type="button" class="tool-btn" onclick="document.execCommand('bold')">B</button>
+            <button type="button" class="tool-btn" onclick="document.execCommand('italic')"><i>I</i></button>
+            <button type="button" class="tool-btn" onclick="document.execCommand('underline')"><u>U</u></button>
+            <button type="button" class="tool-btn" onclick="document.execCommand('insertUnorderedList')">• Lista</button>
+            <button type="button" class="tool-btn" onclick="document.execCommand('createLink', false, prompt('Ingrese URL:'))">🔗 Link</button>
+            <!-- Input color con clase CSS, sin estilos inline -->
+            <input type="color" id="colorPicker" title="Color de texto" class="color-picker-tool" onchange="document.execCommand('foreColor', false, this.value)">
+        </div>
+        <!-- Contenido vacío para permitir el placeholder CSS -->
+        <div id="descripcion" name="descripcionIncidente" contenteditable="true" class="editor-content" placeholder="Escriba aquí los detalles del siniestro..."></div>
+        </div>
+
+        <!-- Personas afectadas -->
+        <label>🚑 ¿Hubo personas afectadas?</label>
+        <div class="checkbox-panel">
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="personasAfectadas[]" value="Lesionados"> Lesionados</label>
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="personasAfectadas[]" value="Detenidos"> Detenidos</label>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="form-row">
+        <div class="form-group">
+            <label for="reporta">👤 Nombre de quien reporta</label>
+            <input type="text" id="reporta" name="nombreReporta" class="input-control" required>
+        </div>
+        <div class="form-group">
+            <label for="realiza">🧑‍💼 Nombre de quien realiza el reporte</label>
+            <select id="realiza" name="nombreRealiza" class="input-control" required>
+            <option value="">Seleccione</option>
+            </select>
+        </div>
+        </div>
+
+        <!-- Correos -->
+        <label>📨 Enviar también a...</label>
+        <div class="checkbox-panel">
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com"> jesuseduardo.gutierrez@armur.com; juan.paniagua@armur.com</label>
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="emmanuel.zapata@oxxogas.com"> emmanuel.zapata@oxxogas.com</label>
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="andreac.rodriguez@oxxogas.com"> andreac.rodriguez@oxxogas.com</label>
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="eva.rocha@oxxogas.com"> eva.rocha@oxxogas.com</label>
+        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="correosExtra" value="seguridadcecac@cecac.edu.mx"> seguridadcecac@cecac.edu.mx</label>
+        </div>
+
+        <label for="correosOtros">✏️ Otras direcciones (separadas por punto y coma)</label>
+        <input type="text" id="correosOtros" name="correosOtros" class="input-control" placeholder="correo1@dominio.com;correo2@dominio.com">
+
+        <!-- Botón enviar -->
+        <button type="submit" class="btn-submit">📨 Enviar registro</button>
+    </div>
+
+    <!-- Contenedor UI de Éxito (Oculto por defecto) -->
+    <div id="successUI" class="success-container" style="display: none;">
+        <div class="success-icon">✅</div>
+        <h3 class="success-title">¡Reporte Generado!</h3>
+        <p class="success-message">La información ha sido registrada y enviada correctamente.</p>
+        <button type="button" id="btnNewReport" class="btn-submit btn-new-report">Generar Nuevo Reporte</button>
+    </div>
+
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      
+      /* === Referencias al DOM === */
+      const form = document.getElementById("formSiniestros");
+      const formUI = document.getElementById("formUI");
+      const successUI = document.getElementById("successUI");
+      const btnNewReport = document.getElementById("btnNewReport");
+      const navFormularios = document.getElementById("navFormularios");
+      
+      const tipoSelect = document.getElementById("TipoSiniestro");
+      const subtipoSelect = document.getElementById("Subtipo");
+      const realizaSelect = document.getElementById("realiza");
+      const loader = document.getElementById("loadingOverlay");
+      const loadingText = document.getElementById("loadingText");
+      const btnSubmit = document.querySelector(".btn-submit");
+
+      let dataArray = []; 
+
+      // Deshabilitar botón mientras carga
+      if(btnSubmit) btnSubmit.disabled = true;
+
+      // === IMPORTANTE: Forzar reseteo visual de los selects al recargar ===
+      if(tipoSelect) tipoSelect.value = "";
+      if(subtipoSelect) subtipoSelect.value = "";
+
+      /* === Manejo del Combobox de Navegación === */
+      if (navFormularios) {
+        navFormularios.addEventListener("change", function() {
+            const accion = this.value;
+            if (accion === "regresarGrid") {
+                window.parent.postMessage({ tipo: "regresarGrid" }, "*");
+            } else if (accion) {
+                // Lógica placeholder para otros formularios
+                console.log("Navegando a:", accion);
+                // window.location.href = accion + ".html"; // Ejemplo de implementación real
+            }
+            // Resetear el select para que muestre "Ir a..."
+            this.value = "";
+        });
+      }
+
+      /* === Función para actualizar Subtipos UI === */
+      const actualizarSubtiposUI = () => {
+        subtipoSelect.innerHTML = "<option value=''>Seleccione un subtipo</option>";
+        
+        const subtipos = dataArray
+            .filter(item => item.Tipo === tipoSelect.value)
+            .map(item => item.Subtipo);
+
+        const fragmentSub = document.createDocumentFragment();
+        subtipos.forEach(subtipo => {
+            const option = document.createElement("option");
+            option.value = subtipo;
+            option.textContent = subtipo;
+            fragmentSub.appendChild(option);
+        });
+        subtipoSelect.appendChild(fragmentSub);
+      };
+
+      /* === Funciones de Carga de Datos === */
+      const cargarTipos = async () => {
+        if (typeof recuperarDatos === 'function') {
+            const tipoSiniestroOptions = await recuperarDatos("Tipos");
+            dataArray = (tipoSiniestroOptions && tipoSiniestroOptions.Matriz) ? tipoSiniestroOptions.Matriz : [];
+
+            // Obtener Tipos únicos y llenar Select (Filtrando vacíos)
+            const tiposUnicos = [...new Set(dataArray
+                .map(item => item.Tipo)
+                .filter(tipo => tipo && tipo.trim() !== "") 
+            )];
+
+            const fragmentTipos = document.createDocumentFragment();
+            
+            tiposUnicos.forEach(tipo => {
+              const option = document.createElement("option");
+              option.value = tipo;
+              option.textContent = tipo;
+              fragmentTipos.appendChild(option);
+            });
+            tipoSelect.appendChild(fragmentTipos);
+
+            // Si el navegador pre-cargó un valor, actualizar UI
+            if (tipoSelect.value) {
+                actualizarSubtiposUI();
+            }
+
+        } else {
+            console.warn("La función recuperarDatos no está definida.");
+        }
+      };
+
+      const cargarUsuarios = async () => {
+        const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+        
+        const response = await fetch(apiURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mode: "ElementosPP" })
+        });
+
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+        
+        const data = await response.json();
+        const listaUsuarios = data.Usuarios || [];
+
+        if (Array.isArray(listaUsuarios)) {
+            const fragmentUsuarios = document.createDocumentFragment();
+            const usuariosCCO = listaUsuarios.filter(u => u.Area === "Centro de Control");
+            
+            usuariosCCO.forEach(u => {
+                const option = document.createElement("option");
+                option.value = u.Nombre;
+                option.textContent = u.Nombre;
+                fragmentUsuarios.appendChild(option);
+            });
+            realizaSelect.appendChild(fragmentUsuarios);
+        }
+      };
+
+      /* === Ejecución de Carga Paralela === */
+      try {
+        await Promise.all([cargarTipos(), cargarUsuarios()]);
+        
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            if(btnSubmit) btnSubmit.disabled = false;
+        }, 500); 
+
+      } catch (error) {
+        console.error("Error crítico al inicializar datos:", error);
+        loadingText.textContent = "Error al cargar datos. Refresque la página.";
+        loadingText.style.color = "red";
+      }
+
+      /* === Configuración de Eventos === */
+      tipoSelect.addEventListener("change", actualizarSubtiposUI);
+      
+      /* === Manejo del Envío del Formulario === */
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          // 1. Capturar valores del DOM en este instante preciso
+          const valNegocio = document.getElementById("Negocio").value;
+          const valPlaza = document.getElementById("Plaza").value;
+          const valEdificio = document.getElementById("Edificio").value;
+          const valTipo = document.getElementById("TipoSiniestro").value;
+          const valSubtipo = document.getElementById("Subtipo").value;
+          const valReporta = document.getElementById("reporta").value;
+          const valRealiza = document.getElementById("realiza").value;
+
+          // 2. Calcular correos base
+          let correosBaseCalculados = [];
+          const registroEncontrado = dataArray.find(item =>
+              item.Tipo === valTipo && item.Subtipo === valSubtipo
+          );
+
+          if (registroEncontrado && registroEncontrado["Listado de correos"]) {
+              correosBaseCalculados = registroEncontrado["Listado de correos"]
+                  .split(";")
+                  .map(c => c.trim())
+                  .filter(c => c.length > 0);
+          }
+          
+          // 3. Recopilar correos adicionales
+          const correosCheckboxes = Array.from(
+            document.querySelectorAll("input[name='correosExtra']:checked")
+          ).map(cb => cb.value);
+
+          const correosManual = document.getElementById("correosOtros").value
+            .split(";")
+            .map(c => c.trim())
+            .filter(c => c.length > 0);
+
+          // 4. Unir todo
+          const todosLosCorreos = [...new Set([...correosBaseCalculados, ...correosCheckboxes, ...correosManual])];
+          
+          const formData = {
+            negocioSeleccionado: valNegocio,
+            plazaSeleccionada: valPlaza,
+            edificioSeleccionado: valEdificio,
+            tipoSiniestroSeleccionado: valTipo,
+            subtipoSeleccionado: valSubtipo, 
+            descripcionIncidente: document.getElementById("descripcion").innerHTML,
+            descripcionTextoPlano: document.getElementById("descripcion").innerText,
+            personasAfectadas: Array.from(
+              document.querySelectorAll("input[name='personasAfectadas[]']")
+            ).map(cb => ({
+              [cb.value]: cb.checked ? "Sí" : "No"
+            })),
+            nombreReporta: valReporta,
+            nombreRealiza: valRealiza,
+            listadoCorreos: todosLosCorreos.join(";")
+          };
+
+          console.log("📦 JSON FINAL listo para enviar:", formData);
+          
+          if(typeof enviarDatos === 'function'){
+             enviarDatos(formData);
+          } else {
+             console.log("Datos generados correctamente. Revise la consola.");
+          }
+
+          // === Mostrar UI de Éxito ===
+          formUI.style.display = "none";
+          successUI.style.display = "block";
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+      /* === Botón Generar Nuevo Reporte === */
+      if (btnNewReport) {
+        btnNewReport.addEventListener("click", () => {
+            // 1. Limpiar formulario nativo
+            form.reset();
+            
+            // 2. Limpiar contenido del editor (dejándolo vacío para el placeholder)
+            document.getElementById("descripcion").innerHTML = "";
+            
+            // 3. Restaurar selects dependientes
+            tipoSelect.value = "";
+            subtipoSelect.innerHTML = "<option value=''>Seleccione un subtipo</option>";
+
+            // 4. Cambiar UI
+            successUI.style.display = "none";
+            formUI.style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+    });
+  </script>
+</body>
+</html>
+
