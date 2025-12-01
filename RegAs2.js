@@ -100,12 +100,8 @@ const App = () => {
   const [view, setView] = useState('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // Datos
-  const [staff, setStaff] = useState(() => JSON.parse(localStorage.getItem('planner_staff_v2')) || [
-      { id: '101', name: 'Juan Pérez', defArea: 'Edison', defRole: 'shift_m8' },
-      { id: '102', name: 'Maria López', defArea: 'Carranza', defRole: 'shift_v8' },
-      { id: '103', name: 'Carlos Ruiz', defArea: 'Rondinero', defRole: 'shift_n12' }
-  ]);
+  // Datos - AHORA INICIA VACÍO
+  const [staff, setStaff] = useState(() => JSON.parse(localStorage.getItem('planner_staff_v2')) || []);
   const [structure, setStructure] = useState(() => JSON.parse(localStorage.getItem('planner_structure')) || DEFAULT_STRUCTURE);
   const [shiftTypes, setShiftTypes] = useState(() => JSON.parse(localStorage.getItem('planner_shifts')) || DEFAULT_SHIFTS);
   const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('planner_assignments_v2')) || {});
@@ -157,9 +153,8 @@ const App = () => {
   useEffect(() => { localStorage.setItem('planner_patterns', JSON.stringify(savedPatterns)); }, [savedPatterns]);
 
   // --- AUTO-SYNC ON LOAD ---
-  // Se ejecuta una sola vez al montar el componente para traer datos de la nube
   useEffect(() => {
-      fetchStaffFromCloud(true); // true = silent mode (no alert on success)
+      fetchStaffFromCloud(true); // true = silent mode
   }, []);
 
   // --- HELPERS Y TRANSFORMACIÓN DE DATOS ---
@@ -237,10 +232,10 @@ const App = () => {
     setStaff([...staff, newPerson]); setNewStaffName(''); setNewStaffId('');
   };
   
-  // FIX: Función removeStaff mejorada para evitar errores
+  // FIX: Función removeStaff robusta
   const removeStaff = (e, id) => { 
-      e.stopPropagation(); // Evitar propagación si está dentro de otro elemento clickeable
-      if(confirm("¿Eliminar socio?")) {
+      e.stopPropagation(); 
+      if(window.confirm("¿Estás seguro de eliminar a este socio? Esta acción no se puede deshacer.")) {
           setStaff(prev => prev.filter(s => s.id !== id)); 
       }
   };
@@ -539,7 +534,6 @@ const App = () => {
     );
   };
 
-  // --- OTRAS VISTAS Y MODALES (REUTILIZADOS) ---
   const WeekView = () => {
     const start = getStartOfWeek(currentDate); const weekDays = Array.from({ length: 7 }, (_, i) => addDays(start, i));
     return (
