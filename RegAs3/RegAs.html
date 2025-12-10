@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RegAs - Gestión Modular</title>
+    
+    <!-- Importar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Importar Iconos (FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Configuración personalizada de Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#dc2626',
+                            600: '#b91c1c', // Rojo Principal
+                            700: '#991b1b',
+                            800: '#7f1d1d',
+                            900: '#450a0a',
+                            950: '#2a0a0a',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'glow': '0 0 15px rgba(185, 28, 28, 0.3)',
+                    },
+                    animation: {
+                        'spin-slow-hover': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Estilos Globales */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Ocultar footer globalmente */
+        footer {
+            display: none !important;
+        }
+
+        /* Animaciones */
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbars Personalizados */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased flex flex-col h-screen selection:bg-brand-100 selection:text-brand-900 overflow-hidden bg-slate-50">
+
+    <!-- 1. MÓDULO DE NAVEGACIÓN (Fijo - Full Width) -->
+    <nav class="flex-shrink-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+        <div class="w-full px-4 lg:px-6"> 
+            <div class="flex justify-between h-16 lg:h-20 items-center">
+                
+                <!-- Izquierda: Logo y Toggle Móvil -->
+                <div class="flex items-center gap-4">
+                    <!-- Botón Móvil -->
+                    <button id="mobile-sidebar-btn" class="lg:hidden text-slate-500 hover:text-brand-600 hover:bg-slate-100 p-2 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+
+                    <!-- Logo -->
+                    <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.reload()">
+                        <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:shadow-glow transition-all duration-300 transform group-hover:scale-105">
+                            <i class="fa-solid fa-shield-cat text-lg lg:text-xl"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xl lg:text-2xl tracking-tight text-slate-900 leading-none">Reg<span class="text-brand-600">As</span></span>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest leading-none mt-0.5">Enterprise</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Centro: Enlaces de Navegación Principal (Restaurados) -->
+                <div class="hidden md:flex items-center space-x-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-inner mx-4">
+                    <button onclick="loadModule('Vistas/ElementosPP.html')" class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-helmet-safety text-slate-400 group-hover:text-brand-500"></i> Elementos PP
+                    </button>
+                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-user text-slate-400 group-hover:text-brand-500"></i> Visitas
+                    </button>
+                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-truck-fast text-slate-400 group-hover:text-brand-500"></i> Proveedores
+                    </button>
+                </div>
+
+                <!-- Derecha: Herramientas y Perfil -->
+                <div class="flex items-center gap-3 lg:gap-4">
+                    <!-- Reloj Digital -->
+                    <div id="clock-display" class="hidden md:block font-mono font-bold text-slate-600 text-base lg:text-lg tracking-wider bg-slate-100 px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg border border-slate-200 shadow-inner">
+                        00:00
+                    </div>
+
+                    <!-- Separador -->
+                    <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
+
+                    <!-- Botón Configuración -->
+                    <button class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-200 hover:shadow-md flex items-center justify-center transition-all duration-200 group" title="Configuración Global">
+                        <i class="fa-solid fa-gear text-lg group-hover:animate-spin-slow-hover"></i>
+                    </button>
+                    
+                    <!-- Avatar Usuario -->
+                    <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all shadow-sm border border-brand-200">
+                        AD
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. LAYOUT PRINCIPAL (Dos Columnas) -->
+    <div class="flex-grow flex w-full overflow-hidden relative">
+        
+        <!-- COLUMNA IZQUIERDA (20%) - Banner Lateral -->
+        <aside id="sidebar-container" class="hidden lg:block w-1/5 min-w-[250px] max-w-xs bg-white border-r border-slate-200 h-full overflow-hidden flex-shrink-0 z-30">
+            <!-- Se carga Baner_Lateral.html aquí -->
+            <div class="flex items-center justify-center h-full text-slate-300">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl"></i>
+            </div>
+        </aside>
+
+        <!-- COLUMNA DERECHA (80%) - Contenido Principal -->
+        <main id="app-container" class="flex-grow w-full lg:w-4/5 h-full overflow-y-auto bg-slate-50 p-4 md:p-6 lg:p-8 relative custom-scrollbar">
+            <!-- Estado inicial de carga -->
+            <div class="flex-grow flex flex-col items-center justify-center h-full text-slate-300">
+                <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-soft mb-6 animate-pulse">
+                    <i class="fa-solid fa-shield-halved text-5xl text-slate-200"></i>
+                </div>
+                <h2 class="text-xl font-medium text-slate-400">Cargando sistema...</h2>
+            </div>
+        </main>
+
+        <!-- OVERLAY MÓVIL (MODAL DEL BANNER LATERAL) -->
+        <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity duration-300" onclick="toggleMobileSidebar()"></div>
+        
+        <div id="mobile-sidebar-drawer" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 lg:hidden flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+                <div class="flex items-center gap-2 font-bold text-slate-800">
+                    <i class="fa-solid fa-bars text-brand-600"></i> Menú
+                </div>
+                <button onclick="toggleMobileSidebar()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <!-- Contenedor donde se clona el contenido del sidebar -->
+            <div id="mobile-sidebar-content" class="flex-grow overflow-y-auto custom-scrollbar"></div>
+        </div>
+
+    </div>
+
+    <!-- LÓGICA PRINCIPAL DEL SISTEMA -->
+    <script>
+        // --- Reloj Global ---
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            
+            const clockEl = document.getElementById('clock-display');
+            if (clockEl) clockEl.textContent = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Carga de Módulos (Sidebar y Main) ---
+        async function loadComponent(url, containerId) {
+            const container = document.getElementById(containerId);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const html = await response.text();
+                
+                container.innerHTML = html;
+                
+                // Reinyección de Scripts
+                container.querySelectorAll("script").forEach(oldScript => {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
+                return true;
+            } catch (error) {
+                console.error(`Error cargando ${url}:`, error);
+                container.innerHTML = `<div class="p-6 text-center text-red-400 text-sm bg-white rounded-lg border border-red-100 m-4"><i class="fa-solid fa-triangle-exclamation mb-2 text-2xl"></i><br>Error cargando componente: ${url}</div>`;
+                return false;
+            }
+        }
+
+        // Wrapper para cargar en el panel principal
+        window.loadModule = function(url) {
+            const container = document.getElementById('app-container');
+            const navBtns = document.querySelectorAll('.nav-btn');
+
+            // Feedback visual en botones
+            navBtns.forEach(btn => {
+                // Limpiar estilos activos (esto se puede mejorar con lógica de URL real)
+                // Por ahora solo reseteamos para dar feedback de click
+                btn.classList.remove('bg-white', 'shadow-sm', 'text-brand-700');
+                btn.classList.add('text-slate-600');
+            });
+            
+            // Animación de salida
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                loadComponent(url, 'app-container').then(() => {
+                    // Animación de entrada
+                    container.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0)';
+                    
+                    // Cerrar menú móvil si está abierto
+                    const drawer = document.getElementById('mobile-sidebar-drawer');
+                    if (!drawer.classList.contains('-translate-x-full')) toggleMobileSidebar();
+                    
+                    // Auto-scroll top
+                    container.scrollTop = 0;
+                });
+            }, 200);
+        };
+
+        // --- Lógica Menú Móvil ---
+        window.toggleMobileSidebar = function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const drawer = document.getElementById('mobile-sidebar-drawer');
+            const sidebarContent = document.getElementById('sidebar-container').innerHTML;
+            const mobileContent = document.getElementById('mobile-sidebar-content');
+
+            if (drawer.classList.contains('-translate-x-full')) {
+                // Abrir
+                // Clonar contenido si está vacío o para actualizar
+                mobileContent.innerHTML = sidebarContent;
+                
+                overlay.classList.remove('hidden');
+                // Timeout para permitir renderizado antes de la transición CSS
+                setTimeout(() => {
+                    drawer.classList.remove('-translate-x-full');
+                }, 10);
+            } else {
+                // Cerrar
+                drawer.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300); // Esperar duración de transición
+            }
+        };
+
+        document.getElementById('mobile-sidebar-btn').addEventListener('click', toggleMobileSidebar);
+
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("Sistema RegAs Iniciado v2.2 - Header Nav Restored");
+            
+            // 1. Cargar Banner Lateral
+            await loadComponent('Componentes/Baner_Lateral.html', 'sidebar-container');
+            
+            // 2. Cargar Módulo Principal por defecto
+            loadModule('Vistas/ElementosPP.html');
+        });
+    </script>
+</body>
+</html>

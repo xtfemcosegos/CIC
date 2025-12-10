@@ -1,0 +1,114 @@
+<div class="bg-white shadow-xl rounded-2xl p-6 sm:p-10 border border-gray-100 my-8 w-full max-w-4xl mx-auto">
+    <h2 class="text-3xl font-extrabold text-red-800 text-center mb-6 border-b border-red-700 pb-3">
+        Configuración del Sistema
+    </h2>
+    <p class="text-center text-gray-500 mb-8">
+        Administre la configuración de usuarios, horarios y apariencia de la plataforma.
+    </p>
+
+    <!-- Navegación de Pestañas -->
+    <div class="border-b border-gray-200">
+        <nav class="flex space-x-2 sm:space-x-4 -mb-px" role="tablist">
+            <button id="tab-personal" 
+                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-red-700 text-red-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
+                    data-tab="personal" aria-selected="true" type="button">
+                Personal
+            </button>
+            <button id="tab-turnos" 
+                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
+                    data-tab="turnos" aria-selected="false" type="button">
+                Turnos y Áreas
+            </button>
+            <button id="tab-temas" 
+                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
+                    data-tab="temas" aria-selected="false" type="button">
+                Temas
+            </button>
+        </nav>
+    </div>
+
+    <!-- Contenido de las Pestañas -->
+    <div id="tab-content" class="pt-6 space-y-6">
+        
+        <!-- Pestaña 1: Personal -->
+        <div id="content-personal" class="tab-pane">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Gestión de Personal</h3>
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-gray-600">Aquí se listarían y editarían los datos completos de los colaboradores, roles y permisos de acceso al sistema (CRUD de usuarios).</p>
+                <button class="mt-4 px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 transition">Ver Listado de Usuarios</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 2: Turnos y Áreas -->
+        <div id="content-turnos" class="tab-pane hidden">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Configuración de Turnos y Áreas</h3>
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-gray-600">Definición de horarios laborales, turnos rotativos y estructura organizacional por departamentos o áreas.</p>
+                <div class="mt-4 space-y-2">
+                    <input type="text" placeholder="Nombre de nueva área..." class="w-full p-2 border border-gray-300 rounded-lg focus:ring-red-700 focus:border-red-700 text-sm">
+                    <button class="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 transition">Añadir Área</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pestaña 3: Temas -->
+        <div id="content-temas" class="tab-pane hidden">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Apariencia y Temas</h3>
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-gray-600 mb-4">Permite al usuario elegir entre diferentes esquemas de color o modos de visualización (claro/oscuro).</p>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-700">Modo Oscuro</span>
+                    <!-- Toggle Switch simple -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-700"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.tab-button');
+        const contents = document.querySelectorAll('.tab-pane');
+
+        function activateTab(tabId) {
+            // 1. Desactivar todos los botones y contenidos
+            tabs.forEach(tab => {
+                tab.classList.remove('border-red-700', 'text-red-700');
+                tab.classList.add('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
+                tab.setAttribute('aria-selected', 'false');
+            });
+
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // 2. Activar el botón y contenido seleccionados
+            const activeTabButton = document.querySelector(`[data-tab="${tabId}"]`);
+            const activeTabContent = document.getElementById(`content-${tabId}`);
+            
+            if (activeTabButton && activeTabContent) {
+                activeTabButton.classList.add('border-red-700', 'text-red-700');
+                activeTabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
+                activeTabButton.setAttribute('aria-selected', 'true');
+                
+                activeTabContent.classList.remove('hidden');
+            }
+        }
+
+        // Asignar listeners de clic a los botones
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                activateTab(tabId);
+            });
+        });
+
+        // Asegurar que la primera pestaña ('personal') esté activa por defecto
+        activateTab('personal');
+    });
+</script>

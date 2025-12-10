@@ -1,0 +1,455 @@
+<div class="flex flex-col h-full bg-white relative animate-fade-in">
+    
+    <!-- 1. Header con Foto -->
+    <div class="h-40 bg-slate-800 relative shrink-0 group overflow-hidden">
+        <img id="side-p-photo" src="" class="w-full h-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105" alt="Perfil">
+        
+        <!-- Fallback -->
+        <div id="side-p-fallback" class="absolute inset-0 flex items-center justify-center bg-slate-700 hidden">
+            <i class="fa-solid fa-user text-5xl text-slate-500"></i>
+        </div>
+
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent flex flex-col justify-end p-4">
+            <div class="flex justify-between items-end w-full">
+                <div class="min-w-0 mr-2">
+                    <h2 id="side-p-name" class="text-white font-bold text-lg leading-tight drop-shadow-md mb-0.5 truncate">Cargando...</h2>
+                    <div class="flex items-center gap-2">
+                        <span id="side-p-id" class="text-slate-300 text-[10px] font-mono bg-white/10 px-1.5 py-0.5 rounded backdrop-blur-sm">ID: ---</span>
+                        <span id="side-p-area" class="text-slate-300 text-[10px] truncate max-w-[150px]"><i class="fa-solid fa-map-pin mr-1"></i> ---</span>
+                    </div>
+                </div>
+                <!-- Botón Perfil -->
+                <button id="btn-expand-profile" class="text-white hover:text-brand-300 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm px-2 py-1.5 rounded-md text-xs transition-all shadow-sm flex-shrink-0" title="Ver Perfil Completo">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+            </div>
+        </div>
+
+        <button onclick="window.toggleRightPanel(false)" class="absolute top-3 right-3 bg-black/30 hover:bg-black/50 text-white rounded-full p-1.5 backdrop-blur-sm transition-colors z-10">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- 2. Pestañas -->
+    <div class="flex border-b border-slate-200 bg-white shrink-0 sticky top-0 z-10">
+        <button onclick="window.profileSidePanelManager.setTab('turno')" id="side-tab-turno" class="flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide">Turno</button>
+        <button onclick="window.profileSidePanelManager.setTab('incidencias')" id="side-tab-incidencias" class="flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide">Incidencias</button>
+        <button onclick="window.profileSidePanelManager.setTab('bitacora')" id="side-tab-bitacora" class="flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide" disabled>Bitácora</button>
+    </div>
+
+    <!-- 3. Contenido Scrollable -->
+    <div class="flex-grow overflow-y-auto p-5 bg-slate-50 custom-scrollbar">
+        
+        <!-- VISTA: TURNO -->
+        <div id="side-content-turno" class="animate-fade-in">
+            
+            <!-- TARJETA DE CONFIGURACIÓN DE TURNO -->
+            <div id="shift-config-card" class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden">
+                
+                <!-- Modo Visualización -->
+                <div id="shift-view-mode" class="p-3">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Asignación Actual</span>
+                        <button onclick="window.profileSidePanelManager.toggleEditMode(true)" class="text-brand-600 hover:text-brand-700 text-xs font-bold hover:bg-brand-50 px-2 py-1 rounded transition-colors">
+                            <i class="fa-solid fa-pen mr-1"></i> Editar
+                        </button>
+                    </div>
+                    
+                    <!-- Turno 1 -->
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm"><i class="fa-regular fa-clock"></i></div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700" id="view-shift-1-name">--</p>
+                            <p class="text-xs text-slate-500 font-mono" id="view-shift-1-time">--:-- - --:--</p>
+                        </div>
+                    </div>
+
+                    <!-- Turno 2 (Condicional) -->
+                    <div id="view-shift-2-container" class="hidden border-t border-slate-100 pt-2 mt-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-700" id="view-shift-2-name">--</p>
+                                <p class="text-xs text-slate-500 font-mono" id="view-shift-2-time">--:-- - --:--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modo Edición -->
+                <div id="shift-edit-mode" class="hidden bg-slate-50 p-3 border-t border-brand-100">
+                    <div class="space-y-3">
+                        <!-- Turno 1 -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Turno Principal</label>
+                            <select id="edit-template-1" onchange="window.profileSidePanelManager.applyTemplate(1)" class="w-full text-xs rounded border-slate-300 mb-2 focus:ring-brand-500">
+                                <option value="">-- Personalizado --</option>
+                                <!-- Se llena dinámicamente -->
+                            </select>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-1">
+                                    <input type="text" id="edit-type-1" placeholder="Nombre" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                                <div>
+                                    <input type="time" id="edit-start-1" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                                <div>
+                                    <input type="number" id="edit-dur-1" placeholder="Hrs" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Turno 2 -->
+                        <div id="edit-shift-2-wrapper" class="hidden border-t border-slate-200 pt-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Turno Adicional</label>
+                                <button onclick="window.profileSidePanelManager.toggleSecondShift(false)" class="text-[10px] text-red-500 hover:underline">Quitar</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-1">
+                                    <input type="text" id="edit-type-2" value="Extra" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                                <div>
+                                    <input type="time" id="edit-start-2" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                                <div>
+                                    <input type="number" id="edit-dur-2" value="4" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones Acción -->
+                        <div class="flex gap-2 pt-1">
+                            <button id="btn-add-shift-2" onclick="window.profileSidePanelManager.toggleSecondShift(true)" class="flex-1 py-1.5 border border-dashed border-slate-300 text-slate-500 text-xs rounded hover:bg-white hover:text-brand-600 transition-colors">
+                                + Agregar Turno
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="window.profileSidePanelManager.saveConfiguration()" class="flex-1 bg-brand-600 text-white text-xs font-bold py-1.5 rounded shadow-sm hover:bg-brand-700">Guardar</button>
+                            <button onclick="window.profileSidePanelManager.toggleEditMode(false)" class="px-3 bg-white border border-slate-300 text-slate-600 text-xs font-bold py-1.5 rounded hover:bg-slate-50">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TIMELINE DE ASISTENCIA -->
+            <div class="relative pl-4 border-l-2 border-slate-200 space-y-8 ml-2" id="timeline-container">
+                <!-- Se genera dinámicamente según 1 o 2 turnos -->
+            </div>
+        </div>
+
+        <!-- VISTA: INCIDENCIAS -->
+        <div id="side-content-incidencias" class="hidden animate-fade-in">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Registro de Excepciones</h3>
+            <div class="space-y-3">
+                <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-300 transition-colors group">
+                    <span class="text-sm font-medium text-slate-700">Recuperación de Turno</span>
+                    <input type="checkbox" id="check-recuperacion" class="form-checkbox h-5 w-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500" onchange="window.profileSidePanelManager.saveFlags()">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-300 transition-colors group">
+                    <span class="text-sm font-medium text-slate-700">Tiempo Extra Autorizado</span>
+                    <input type="checkbox" id="check-extra" class="form-checkbox h-5 w-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500" onchange="window.profileSidePanelManager.saveFlags()">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-white border border-red-200 rounded-xl cursor-pointer hover:border-red-400 transition-colors group">
+                    <span class="text-sm font-medium text-red-700">Falta / Ausencia</span>
+                    <input type="checkbox" id="check-falta" class="form-checkbox h-5 w-5 text-red-600 rounded border-red-300 focus:ring-red-500" onchange="window.profileSidePanelManager.saveFlags()">
+                </label>
+            </div>
+            <div class="mt-6">
+                <label class="block text-xs font-bold text-slate-500 mb-2">Observaciones</label>
+                <textarea id="input-observaciones" rows="4" class="w-full text-sm border-slate-300 rounded-xl focus:border-brand-500 focus:ring-brand-500" placeholder="Escribe detalles adicionales..." onchange="window.profileSidePanelManager.saveComments(this.value)"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Disparador de seguridad para inicialización -->
+<img src="x" onerror="if(!window.profileSidePanelManager && document.getElementById('script-baner-perfil')) eval(document.getElementById('script-baner-perfil').innerText);" style="display:none;">
+
+<script id="script-baner-perfil">
+    window.profileSidePanelManager = {
+        currentItem: null,
+        hasSecondShift: false,
+
+        init(item) {
+            this.currentItem = item;
+            
+            // 1. Header
+            this.renderHeader(item);
+            
+            // 2. Determinar si hay 2 turnos
+            this.hasSecondShift = !!(item.shift2 && item.startTime2);
+
+            // 3. Renderizar Configuración (Vista y Edición)
+            this.renderConfigView();
+            this.populateEditForm();
+            
+            // 4. Renderizar Timeline (Dinámico 1 o 2 turnos)
+            this.renderTimeline();
+
+            // 5. Incidencias
+            this.populateIncidents();
+
+            // 6. Configurar botón Expandir
+            const btnExpand = document.getElementById('btn-expand-profile');
+            btnExpand.onclick = () => {
+                window.toggleRightPanel(false); 
+                if(window.openElementProfile) window.openElementProfile(item.elementId || item.id);
+            };
+        },
+
+        renderHeader(item) {
+            document.getElementById('side-p-name').textContent = item.name || 'Sin Nombre';
+            document.getElementById('side-p-id').textContent = `ID: ${item.elementId || item.id}`;
+            document.getElementById('side-p-area').innerHTML = `<i class="fa-solid fa-map-pin mr-1"></i> ${item.area || 'N/A'}`;
+            
+            const photoEl = document.getElementById('side-p-photo');
+            const fallbackEl = document.getElementById('side-p-fallback');
+            const localPhotoPath = `FotosElementosPP/${item.elementId || item.id}.jpg`;
+            
+            photoEl.classList.remove('hidden');
+            fallbackEl.classList.add('hidden');
+            photoEl.src = localPhotoPath;
+            photoEl.onerror = function() {
+                this.classList.add('hidden');
+                fallbackEl.classList.remove('hidden');
+                fallbackEl.classList.add('flex');
+            };
+        },
+
+        // --- GESTIÓN DE VISTA VS EDICIÓN ---
+        toggleEditMode(edit) {
+            const viewMode = document.getElementById('shift-view-mode');
+            const editMode = document.getElementById('shift-edit-mode');
+            if(edit) {
+                viewMode.classList.add('hidden');
+                editMode.classList.remove('hidden');
+            } else {
+                viewMode.classList.remove('hidden');
+                editMode.classList.add('hidden');
+            }
+        },
+
+        renderConfigView() {
+            // Turno 1
+            document.getElementById('view-shift-1-name').textContent = this.currentItem.shift || 'Por definir';
+            document.getElementById('view-shift-1-time').textContent = `${this.currentItem.startTime || '--:--'} - ${this.currentItem.duration || 0}h`;
+
+            // Turno 2
+            const container2 = document.getElementById('view-shift-2-container');
+            if(this.hasSecondShift) {
+                container2.classList.remove('hidden');
+                document.getElementById('view-shift-2-name').textContent = this.currentItem.shift2;
+                document.getElementById('view-shift-2-time').textContent = `${this.currentItem.startTime2} - ${this.currentItem.duration2}h`;
+            } else {
+                container2.classList.add('hidden');
+            }
+        },
+
+        populateEditForm() {
+            // Cargar plantillas
+            const templates = JSON.parse(localStorage.getItem('regas_shift_templates') || '[]');
+            const select = document.getElementById('edit-template-1');
+            select.innerHTML = '<option value="">-- Personalizado --</option>';
+            templates.forEach(t => {
+                select.innerHTML += `<option value='${JSON.stringify(t)}'>${t.name}</option>`;
+            });
+
+            // Llenar inputs T1
+            document.getElementById('edit-type-1').value = this.currentItem.shift || 'Diurno';
+            document.getElementById('edit-start-1').value = this.currentItem.startTime || '';
+            document.getElementById('edit-dur-1').value = this.currentItem.duration || 8;
+
+            // Estado T2
+            this.toggleSecondShift(this.hasSecondShift);
+            if(this.hasSecondShift) {
+                document.getElementById('edit-type-2').value = this.currentItem.shift2 || 'Extra';
+                document.getElementById('edit-start-2').value = this.currentItem.startTime2 || '';
+                document.getElementById('edit-dur-2').value = this.currentItem.duration2 || 4;
+            }
+        },
+
+        toggleSecondShift(show) {
+            const wrap = document.getElementById('edit-shift-2-wrapper');
+            const btn = document.getElementById('btn-add-shift-2');
+            if(show) {
+                wrap.classList.remove('hidden');
+                btn.classList.add('hidden');
+            } else {
+                wrap.classList.add('hidden');
+                btn.classList.remove('hidden');
+            }
+        },
+
+        applyTemplate(num) {
+            // Solo implementado para T1 por ahora simpleza
+            const val = document.getElementById('edit-template-1').value;
+            if(!val) return;
+            const t = JSON.parse(val);
+            document.getElementById('edit-type-1').value = t.type;
+            document.getElementById('edit-start-1').value = t.start;
+            document.getElementById('edit-dur-1').value = t.duration;
+        },
+
+        saveConfiguration() {
+            // Actualizar objeto local
+            this.currentItem.shift = document.getElementById('edit-type-1').value;
+            this.currentItem.startTime = document.getElementById('edit-start-1').value;
+            this.currentItem.duration = document.getElementById('edit-dur-1').value;
+
+            // Revisar si hay turno 2 activo en el form
+            const isT2Active = !document.getElementById('edit-shift-2-wrapper').classList.contains('hidden');
+            if(isT2Active) {
+                this.currentItem.shift2 = document.getElementById('edit-type-2').value;
+                this.currentItem.startTime2 = document.getElementById('edit-start-2').value;
+                this.currentItem.duration2 = document.getElementById('edit-dur-2').value;
+                this.hasSecondShift = true;
+            } else {
+                delete this.currentItem.shift2;
+                delete this.currentItem.startTime2;
+                delete this.currentItem.duration2;
+                this.hasSecondShift = false;
+            }
+
+            this.persistChanges();
+            this.renderConfigView();
+            this.renderTimeline();
+            this.toggleEditMode(false);
+        },
+
+        // --- TIMELINE BUILDER ---
+        renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = ''; // Limpiar
+
+            // --- BLOQUE TURNO 1 ---
+            this.createTimelineBlock(container, 1, this.currentItem.shift, this.currentItem.startTime, this.currentItem.checkInTime, this.currentItem.checkOutTime);
+
+            // --- BLOQUE TURNO 2 ---
+            if(this.hasSecondShift) {
+                // Separador visual
+                const sep = document.createElement('div');
+                sep.className = "py-2 text-center text-[10px] text-slate-300 font-bold uppercase tracking-widest";
+                sep.textContent = "- Cambio de Turno -";
+                container.appendChild(sep);
+
+                this.createTimelineBlock(container, 2, this.currentItem.shift2, this.currentItem.startTime2, this.currentItem.checkInTime2, this.currentItem.checkOutTime2);
+            }
+        },
+
+        createTimelineBlock(container, num, shiftName, startTime, checkIn, checkOut) {
+            const suffix = num === 1 ? '' : '2'; // Sufijo para campos de datos (checkInTime2)
+            
+            const html = `
+                <div class="relative group">
+                    <div class="absolute -left-[23px] top-0 w-3.5 h-3.5 ${num === 1 ? 'bg-blue-600' : 'bg-purple-600'} rounded-full border-2 border-white ring-1 ring-slate-200 z-10"></div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1 block">${shiftName} (${startTime})</label>
+                    
+                    <!-- Entrada -->
+                    <div class="mb-4 relative">
+                        <div id="dot-in-${num}" class="absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors"></div>
+                        <div class="flex gap-2">
+                            <input type="time" id="input-in-${num}" value="${checkIn || ''}" class="w-full text-xs border-slate-300 rounded focus:ring-brand-500 h-8" onchange="window.profileSidePanelManager.saveTime('in${suffix}', this.value)">
+                            <button onclick="window.profileSidePanelManager.setNow('input-in-${num}', 'in${suffix}')" class="bg-white border border-slate-200 text-slate-400 hover:text-green-600 hover:border-green-500 rounded px-2 h-8 transition-colors"><i class="fa-solid fa-stopwatch"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Salida -->
+                    <div class="relative">
+                        <div id="dot-out-${num}" class="absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors"></div>
+                        <div class="flex gap-2">
+                            <input type="time" id="input-out-${num}" value="${checkOut || ''}" class="w-full text-xs border-slate-300 rounded focus:ring-brand-500 h-8" onchange="window.profileSidePanelManager.saveTime('out${suffix}', this.value)">
+                            <button onclick="window.profileSidePanelManager.setNow('input-out-${num}', 'out${suffix}')" class="bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-500 rounded px-2 h-8 transition-colors"><i class="fa-solid fa-stopwatch"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            container.appendChild(wrapper);
+            
+            // Actualizar dots visuales
+            this.updateDotStatus(`input-in-${num}`, `dot-in-${num}`, 'green');
+            this.updateDotStatus(`input-out-${num}`, `dot-out-${num}`, 'red');
+        },
+
+        // --- INCIDENCIAS ---
+        populateIncidents() {
+            document.getElementById('check-recuperacion').checked = !!this.currentItem.isRecovery;
+            document.getElementById('check-extra').checked = !!this.currentItem.isExtraTime;
+            document.getElementById('check-falta').checked = !!this.currentItem.isAbsent;
+            document.getElementById('input-observaciones').value = this.currentItem.comments || '';
+        },
+
+        // --- GUARDADO GENÉRICO ---
+        saveTime(fieldKey, value) {
+            // Mapeo simple: in -> checkInTime, out2 -> checkOutTime2
+            const map = {
+                'in': 'checkInTime', 'out': 'checkOutTime',
+                'in2': 'checkInTime2', 'out2': 'checkOutTime2'
+            };
+            this.currentItem[map[fieldKey]] = value;
+            this.persistChanges();
+            
+            // Actualizar visuales
+            const num = fieldKey.includes('2') ? 2 : 1;
+            const type = fieldKey.includes('in') ? 'in' : 'out';
+            const color = type === 'in' ? 'green' : 'red';
+            this.updateDotStatus(`input-${type}-${num}`, `dot-${type}-${num}`, color);
+        },
+
+        setNow(inputId, fieldKey) {
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            document.getElementById(inputId).value = timeStr;
+            this.saveTime(fieldKey, timeStr);
+        },
+
+        saveFlags() {
+            this.currentItem.isRecovery = document.getElementById('check-recuperacion').checked;
+            this.currentItem.isExtraTime = document.getElementById('check-extra').checked;
+            this.currentItem.isAbsent = document.getElementById('check-falta').checked;
+            this.persistChanges();
+        },
+
+        saveComments(val) {
+            this.currentItem.comments = val;
+            this.persistChanges();
+        },
+
+        persistChanges() {
+            const allAssignments = window.RegAs.assignments.getAll();
+            const idx = allAssignments.findIndex(a => a.elementId === this.currentItem.elementId && a.date === this.currentItem.date);
+            if (idx !== -1) {
+                allAssignments[idx] = { ...allAssignments[idx], ...this.currentItem };
+                window.RegAs.assignments.save(allAssignments);
+            }
+        },
+
+        updateDotStatus(inputId, dotId, color) {
+            const val = document.getElementById(inputId).value;
+            const dot = document.getElementById(dotId);
+            if(val) {
+                dot.className = `absolute -left-[23px] top-2.5 w-2.5 h-2.5 rounded-full border-2 z-10 transition-colors bg-${color}-500 border-${color}-600 shadow-sm`;
+            } else {
+                dot.className = `absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors`;
+            }
+        },
+
+        setTab(tabName) {
+            ['turno', 'incidencias', 'bitacora'].forEach(t => {
+                const btn = document.getElementById(`side-tab-${t}`);
+                const content = document.getElementById(`side-content-${t}`);
+                if (t === tabName) {
+                    btn.className = "flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide";
+                    if(content) content.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide";
+                    if(content) content.classList.add('hidden');
+                }
+            });
+        }
+    };
+</script>
