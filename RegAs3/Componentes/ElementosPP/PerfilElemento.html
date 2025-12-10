@@ -1,219 +1,587 @@
 <!-- PANEL DE PERFIL (OCUPA TODO EL BODY) -->
-<div class="min-h-screen bg-slate-50 flex flex-col">
+<div class="min-h-screen bg-slate-50 flex flex-col animate-fade-in">
     
     <!-- Header del Perfil -->
     <div class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <button onclick="window.closeElementProfile()" class="text-slate-500 hover:text-slate-800 flex items-center gap-2 font-medium">
-                    <i class="fa-solid fa-arrow-left"></i> Volver al listado
+                    <i class="fa-solid fa-arrow-left"></i> Volver
                 </button>
-                <h1 class="text-lg font-bold text-slate-900">Perfil del Elemento</h1>
-                <div class="w-20"></div> <!-- Espaciador -->
+                <div class="flex items-center gap-3">
+                    <!-- Avatar Header -->
+                    <div id="header-avatar" class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-100"></div>
+                    <h1 class="text-lg font-bold text-slate-900" id="header-name">Cargando...</h1>
+                </div>
+                <div class="w-20"></div> 
+            </div>
+            
+            <!-- SISTEMA DE PESTAÑAS -->
+            <div class="flex space-x-8 -mb-px overflow-x-auto">
+                <button onclick="window.profileManager.switchTab('turnos')" id="tab-btn-turnos" class="tab-btn whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm border-brand-600 text-brand-600">
+                    Gestión de Turnos
+                </button>
+                <button onclick="window.profileManager.switchTab('info')" id="tab-btn-info" class="tab-btn whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
+                    Información General
+                </button>
+                <button onclick="window.profileManager.switchTab('historial')" id="tab-btn-historial" class="tab-btn whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
+                    Historial Completo
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Contenido Principal -->
-    <div class="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- PESTAÑA 1: GESTIÓN DE TURNOS -->
+        <div id="tab-turnos" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- 1. Tarjeta de Información -->
-            <div class="md:col-span-1">
-                <div class="bg-white rounded-xl shadow p-6 border border-slate-100 text-center relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-brand-500 to-brand-700"></div>
-                    
-                    <div class="relative mt-12 mb-4">
-                        <div id="profile-icon-container" class="w-24 h-24 mx-auto bg-white rounded-full border-4 border-white shadow-lg flex items-center justify-center text-4xl text-slate-400">
-                            <!-- Icono dinámico -->
-                        </div>
-                    </div>
-                    
-                    <h2 id="profile-name" class="text-xl font-bold text-slate-800 mb-1">Cargando...</h2>
-                    <p id="profile-id" class="text-sm text-slate-500 font-mono mb-4">ID: ---</p>
-                    <span id="profile-area" class="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold mb-6">---</span>
-                    
-                    <div class="border-t border-slate-100 pt-4 text-left">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Estadísticas</h4>
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm text-slate-600">Turnos este mes</span>
-                            <span class="font-bold text-brand-600">0</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-slate-600">Asistencia</span>
-                            <span class="font-bold text-green-600">100%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Panel de Asignaciones (Calendario/Lista) -->
-            <div class="md:col-span-2 space-y-6">
+            <!-- A. CONFIGURADOR DE TURNOS (Izquierda) -->
+            <div class="lg:col-span-2 space-y-6">
                 
-                <!-- Formulario de Asignación Rápida -->
-                <div class="bg-white rounded-xl shadow p-6 border border-slate-100">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center">
-                        <i class="fa-solid fa-calendar-plus text-brand-600 mr-2"></i> Asignar Turno
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Fecha</label>
-                            <input type="date" id="assign-date" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+                <div class="bg-white rounded-xl shadow border border-slate-100 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-slate-800 flex items-center text-lg">
+                            <i class="fa-solid fa-calendar-plus text-brand-600 mr-2"></i> Asignar Turno o Patrón
+                        </h3>
+                        <!-- Switch Modo -->
+                        <div class="flex bg-slate-100 rounded-lg p-1">
+                            <button onclick="window.profileManager.setMode('single')" id="mode-single" class="px-3 py-1 text-xs font-semibold rounded shadow bg-white text-slate-800 transition-all">Día Único</button>
+                            <button onclick="window.profileManager.setMode('pattern')" id="mode-pattern" class="px-3 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition-all">Patrón / Rango</button>
                         </div>
+                    </div>
+
+                    <!-- 1. SELECCIÓN DE ORIGEN (NUEVO: Acceso Directo a Plantillas) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-slate-100">
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Turno / Horario</label>
-                            <select id="assign-shift" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
-                                <option value="Matutino">Matutino (06:00 - 14:00)</option>
-                                <option value="Vespertino">Vespertino (14:00 - 22:00)</option>
-                                <option value="Nocturno">Nocturno (22:00 - 06:00)</option>
-                                <option value="12x12">Jornada 12x12</option>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Origen del Turno</label>
+                            <select id="shift-source" onchange="window.profileManager.toggleSource()" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                <option value="custom">Personalizado</option>
+                                <option value="template">Usar Plantilla Guardada</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-2">
-                            <button onclick="window.profileManager.addAssignment()" class="w-full bg-brand-600 text-white hover:bg-brand-700 font-medium py-2 rounded-md shadow-sm transition-colors">
-                                Confirmar Asignación
-                            </button>
+                        <div id="template-selector-container" class="hidden">
+                            <label class="block text-xs font-medium text-slate-700 mb-1 flex justify-between">
+                                Seleccionar Plantilla
+                                <!-- ACCESO DIRECTO AL GESTOR DE TURNOS -->
+                                <button onclick="window.closeElementProfile(); window.openConfigModal('ConfigGestionar_Turnos');" class="text-brand-600 hover:text-brand-800 underline cursor-pointer" title="Ir a Gestionar Turnos">
+                                    <i class="fa-solid fa-gear mr-1"></i>Gestionar
+                                </button>
+                            </label>
+                            <select id="shift-template" onchange="window.profileManager.loadTemplateData()" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                <option value="">-- Seleccione --</option>
+                                <!-- Se llena dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 2. DETALLES DEL TURNO (Inputs) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Tipo de Jornada</label>
+                            <select id="shift-type" onchange="window.profileManager.updateDefaultTime()" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                <option value="Diurno">Diurno (Mañana)</option>
+                                <option value="Vespertino">Vespertino (Tarde)</option>
+                                <option value="Nocturno">Nocturno (Noche)</option>
+                                <option value="Mixto">Mixto / Otro</option>
+                                <option value="Descanso">Descanso</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Hora Inicio</label>
+                            <input type="time" id="start-time" onchange="window.profileManager.calculateEndTime()" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="w-1/2">
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Duración (Hrs)</label>
+                                <input type="number" id="duration" value="8" min="0" max="24" onchange="window.profileManager.calculateEndTime()" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Término</label>
+                                <input type="time" id="end-time" readonly class="w-full rounded-md border-slate-200 bg-slate-50 text-slate-500 text-sm cursor-not-allowed">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. FECHAS Y PATRONES -->
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4">
+                        
+                        <!-- MODO DÍA ÚNICO -->
+                        <div id="date-single-container">
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Fecha de Aplicación</label>
+                            <input type="date" id="single-date" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+
+                        <!-- MODO PATRÓN / RANGO -->
+                        <div id="date-range-container" class="hidden">
+                            <h4 class="text-xs font-bold text-brand-600 uppercase mb-2 border-b border-slate-200 pb-1">1. Definir Rango de Fechas</h4>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">Desde</label>
+                                    <input type="date" id="range-start" class="w-full rounded-md border-slate-300 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">Hasta</label>
+                                    <input type="date" id="range-end" class="w-full rounded-md border-slate-300 text-sm">
+                                </div>
+                            </div>
+                            
+                            <!-- Constructor de Secuencia -->
+                            <div class="bg-white p-3 rounded border border-slate-200">
+                                <h4 class="text-xs font-bold text-brand-600 uppercase mb-2">2. Construir Secuencia del Patrón</h4>
+                                <p class="text-xs text-slate-500 mb-3">Configura el turno arriba y haz clic en "Agregar Paso" para armar la secuencia.</p>
+                                
+                                <div class="flex gap-2 mb-3">
+                                    <button onclick="window.profileManager.addPatternStep()" class="flex-grow bg-slate-800 text-white text-xs font-bold py-2 px-3 rounded hover:bg-slate-700 transition-colors">
+                                        <i class="fa-solid fa-plus mr-1"></i> Agregar Paso
+                                    </button>
+                                    <button onclick="window.profileManager.clearPattern()" class="text-red-500 hover:text-red-700 text-xs px-2 border border-red-200 rounded hover:bg-red-50">
+                                        Limpiar
+                                    </button>
+                                </div>
+
+                                <!-- Visualización de la Secuencia -->
+                                <div id="pattern-visualizer" class="flex flex-wrap gap-2 min-h-[40px] items-center p-2 bg-slate-50 rounded border border-dashed border-slate-300">
+                                    <span class="text-xs text-slate-400 italic w-full text-center">Patrón vacío. Agrega pasos arriba.</span>
+                                </div>
+                                <input type="hidden" id="pattern-steps-data" value="[]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="window.profileManager.submitAssignment()" class="w-full bg-brand-600 text-white hover:bg-brand-700 font-medium py-3 rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-check-circle"></i> Confirmar Asignación
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- B. RESUMEN Y PRÓXIMOS (Derecha) -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Tarjeta Resumen -->
+                <div class="bg-white rounded-xl shadow p-6 border border-slate-100 text-center">
+                    <!-- Avatar Grande -->
+                    <div id="mini-profile-icon" class="w-16 h-16 mx-auto bg-slate-100 rounded-full overflow-hidden mb-3 shadow-sm border border-slate-200"></div>
+                    
+                    <h2 id="mini-profile-name" class="font-bold text-slate-800">Elemento</h2>
+                    <p id="mini-profile-id" class="text-xs text-slate-500 font-mono mb-4">ID: ---</p>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-left bg-slate-50 p-3 rounded-lg">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase">Horas Sem</p>
+                            <p class="font-bold text-slate-700">--</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase">Turno Actual</p>
+                            <p class="font-bold text-brand-600">--</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Historial de Asignaciones -->
-                <div class="bg-white rounded-xl shadow border border-slate-100 overflow-hidden">
-                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                        <h3 class="font-bold text-slate-700 text-sm">Próximos Turnos Asignados</h3>
+                <!-- Lista Próximos -->
+                <div class="bg-white rounded-xl shadow border border-slate-100 overflow-hidden flex flex-col h-[400px]">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                        <h3 class="font-bold text-slate-700 text-xs uppercase">Agenda Programada</h3>
                     </div>
-                    <ul id="assignments-list" class="divide-y divide-slate-100 max-h-64 overflow-y-auto">
-                        <!-- Lista dinámica -->
-                        <li class="p-6 text-center text-slate-400 text-sm">No hay turnos asignados.</li>
+                    <ul id="assignments-list" class="divide-y divide-slate-100 overflow-y-auto flex-grow">
+                        <!-- JS -->
                     </ul>
                 </div>
-
             </div>
         </div>
+
+        <!-- OTRAS PESTAÑAS (Placeholders) -->
+        <div id="tab-info" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow p-8 text-center text-slate-500">
+                <i class="fa-regular fa-id-card text-4xl mb-4 text-slate-300"></i>
+                <h3 class="text-lg font-bold text-slate-700">Información General</h3>
+            </div>
+        </div>
+        <div id="tab-historial" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow p-8 text-center text-slate-500">
+                <i class="fa-solid fa-clock-rotate-left text-4xl mb-4 text-slate-300"></i>
+                <h3 class="text-lg font-bold text-slate-700">Historial</h3>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
+    // --- PERSISTENCIA GLOBAL CENTRALIZADA ---
+    window.RegAs = window.RegAs || {};
+    
+    // Store de Asignaciones (API Global)
+    window.RegAs.assignments = {
+        STORAGE_KEY: 'regas_assignments',
+        
+        getAll() {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+        },
+        
+        save(data) {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            // Disparar evento para que otras vistas se actualicen
+            window.dispatchEvent(new CustomEvent('regas:assignments-updated'));
+        },
+        
+        addMany(newAssignments) {
+            const all = this.getAll();
+            let count = 0;
+            
+            newAssignments.forEach(newA => {
+                // Eliminar conflicto (mismo elemento, misma fecha)
+                const idx = all.findIndex(a => a.elementId === newA.elementId && a.date === newA.date);
+                if (idx !== -1) all.splice(idx, 1);
+                
+                all.push(newA);
+                count++;
+            });
+            
+            this.save(all);
+            return count;
+        },
+        
+        remove(elementId, date) {
+            let all = this.getAll();
+            all = all.filter(a => !(a.elementId === elementId && a.date === date));
+            this.save(all);
+        },
+        
+        getByElement(elementId) {
+            const all = this.getAll();
+            return all.filter(a => a.elementId === elementId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+    };
+
+    // --- PROFILE MANAGER ---
     window.profileManager = {
         currentElementId: null,
         currentElement: null,
-        assignmentsKey: 'regas_assignments',
         configKey: 'regas_epp_config',
+        mode: 'single', // single | pattern
+        patternSteps: [], 
 
         init(elementId) {
             this.currentElementId = elementId;
-            // Cargar datos del elemento
             const config = JSON.parse(localStorage.getItem(this.configKey) || '[]');
             this.currentElement = config.find(el => el.id === elementId);
 
             if (!this.currentElement) {
-                alert("Elemento no encontrado");
+                alert("Error: Elemento no encontrado");
                 window.closeElementProfile();
                 return;
             }
 
-            this.renderProfileInfo();
+            this.renderHeader();
             this.renderAssignments();
+            this.loadTemplates(); // Cargar plantillas reales
             
-            // Set date picker to today
-            document.getElementById('assign-date').valueAsDate = new Date();
+            // Fechas predeterminadas
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('single-date').value = today;
+            document.getElementById('range-start').value = today;
+            document.getElementById('range-end').value = today; 
+
+            // Horarios predeterminados
+            this.updateDefaultTime();
         },
 
-        renderProfileInfo() {
+        renderHeader() {
             const el = this.currentElement;
-            document.getElementById('profile-name').textContent = el.name || el.title;
-            document.getElementById('profile-id').textContent = `ID: ${el.id}`;
-            document.getElementById('profile-area').textContent = el.area || 'Área no asignada';
+            const name = el.name || el.title;
+            document.getElementById('header-name').textContent = name;
+            document.getElementById('mini-profile-name').textContent = name;
+            document.getElementById('mini-profile-id').textContent = el.id;
+
+            // RUTA LOCAL DE FOTOS (CON FALLBACK)
+            const localPhotoPath = `FotosElementosPP/${el.id}.jpg`;
+            const fallbackIcon = el.icon || 'fa-user';
+
+            // 1. Header Avatar (Pequeño)
+            // Usa onerror para reemplazar la imagen rota con un div con icono
+            const headerHtml = `
+                <img src="${localPhotoPath}" class="w-full h-full object-cover" 
+                    onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-slate-500\\'><i class=\\'fa-solid ${fallbackIcon}\\'></i></div>'">
+            `;
+            document.getElementById('header-avatar').innerHTML = headerHtml;
+
+            // 2. Mini Profile Avatar (Grande)
+            // Re-aplicamos clases para asegurar consistencia
+            const miniContainer = document.getElementById('mini-profile-icon');
+            miniContainer.className = "w-16 h-16 mx-auto bg-slate-100 rounded-full overflow-hidden mb-3 shadow-sm border border-slate-200"; 
             
-            const iconContainer = document.getElementById('profile-icon-container');
-            const icon = el.icon || 'fa-user';
-            
-            if(icon.includes('http')) {
-                iconContainer.innerHTML = `<img src="${icon}" class="w-full h-full object-cover rounded-full">`;
+            const miniHtml = `
+                <img src="${localPhotoPath}" class="w-full h-full object-cover" 
+                    onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-slate-400 text-2xl\\'><i class=\\'fa-solid ${fallbackIcon}\\'></i></div>'">
+            `;
+            miniContainer.innerHTML = miniHtml;
+        },
+
+        switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-brand-600', 'text-brand-600');
+                el.classList.add('border-transparent', 'text-slate-500');
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const btn = document.getElementById(`tab-btn-${tabName}`);
+            btn.classList.remove('border-transparent', 'text-slate-500');
+            btn.classList.add('border-brand-600', 'text-brand-600');
+        },
+
+        setMode(mode) {
+            this.mode = mode;
+            const btnSingle = document.getElementById('mode-single');
+            const btnPattern = document.getElementById('mode-pattern');
+            const divSingle = document.getElementById('date-single-container');
+            const divRange = document.getElementById('date-range-container');
+
+            if (mode === 'single') {
+                btnSingle.className = "px-3 py-1 text-xs font-semibold rounded shadow bg-white text-slate-800 transition-all";
+                btnPattern.className = "px-3 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition-all";
+                divSingle.classList.remove('hidden');
+                divRange.classList.add('hidden');
             } else {
-                iconContainer.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+                btnSingle.className = "px-3 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition-all";
+                btnPattern.className = "px-3 py-1 text-xs font-semibold rounded shadow bg-white text-slate-800 transition-all";
+                divSingle.classList.add('hidden');
+                divRange.classList.remove('hidden');
             }
+        },
+
+        toggleSource() {
+            const source = document.getElementById('shift-source').value;
+            const tplContainer = document.getElementById('template-selector-container');
+            if(source === 'template') {
+                tplContainer.classList.remove('hidden');
+                this.loadTemplates(); // Recargar por si hubo cambios
+            } else {
+                tplContainer.classList.add('hidden');
+                this.updateDefaultTime(); // Restaurar defaults
+            }
+        },
+
+        loadTemplates() {
+            const templates = JSON.parse(localStorage.getItem('regas_shift_templates') || '[]');
+            const select = document.getElementById('shift-template');
+            
+            // Guardar selección actual si existe
+            const currentVal = select.value;
+            
+            select.innerHTML = '<option value="">-- Seleccione --</option>';
+            
+            if (templates.length === 0) {
+                // Opción informativa si no hay plantillas
+                const opt = document.createElement('option');
+                opt.disabled = true;
+                opt.textContent = "Sin plantillas (Crear en Gestionar)";
+                select.appendChild(opt);
+            } else {
+                templates.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify(t);
+                    opt.textContent = t.name;
+                    select.appendChild(opt);
+                });
+            }
+            
+            // Restaurar selección si es válida
+            if(currentVal) select.value = currentVal;
+        },
+
+        loadTemplateData() {
+            const val = document.getElementById('shift-template').value;
+            if(!val) return;
+            
+            const data = JSON.parse(val);
+            document.getElementById('shift-type').value = data.type;
+            document.getElementById('start-time').value = data.start;
+            document.getElementById('duration').value = data.duration;
+            this.calculateEndTime();
+        },
+
+        updateDefaultTime() {
+            const type = document.getElementById('shift-type').value;
+            const startInput = document.getElementById('start-time');
+            const durationInput = document.getElementById('duration');
+
+            durationInput.value = 8;
+            if (type === 'Diurno') startInput.value = '07:00';
+            else if (type === 'Vespertino') startInput.value = '14:00';
+            else if (type === 'Nocturno') startInput.value = '21:00';
+            else if (type === 'Descanso') {
+                startInput.value = '';
+                durationInput.value = 0;
+            }
+            this.calculateEndTime();
+        },
+
+        calculateEndTime() {
+            const start = document.getElementById('start-time').value;
+            const duration = parseFloat(document.getElementById('duration').value);
+            
+            if(!start) {
+                document.getElementById('end-time').value = "--:--";
+                return;
+            }
+
+            const [h, m] = start.split(':').map(Number);
+            let endH = h + Math.floor(duration);
+            let endM = m + (duration % 1) * 60;
+            if (endM >= 60) { endH += Math.floor(endM / 60); endM = endM % 60; }
+
+            const displayH = endH % 24;
+            let result = `${String(displayH).padStart(2, '0')}:${String(Math.round(endM)).padStart(2, '0')}`;
+            if (endH >= 24) result += " (+1 día)";
+            
+            document.getElementById('end-time').value = result;
+        },
+
+        addPatternStep() {
+            const type = document.getElementById('shift-type').value;
+            const start = document.getElementById('start-time').value;
+            const duration = document.getElementById('duration').value;
+            
+            if (type !== 'Descanso' && !start) return alert("Define una hora de inicio.");
+
+            this.patternSteps.push({ type, start, duration });
+            this.renderPatternSteps();
+        },
+
+        clearPattern() {
+            this.patternSteps = [];
+            this.renderPatternSteps();
+        },
+
+        renderPatternSteps() {
+            const container = document.getElementById('pattern-visualizer');
+            if (this.patternSteps.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400 italic w-full text-center">Patrón vacío. Agrega pasos arriba.</span>';
+                return;
+            }
+            container.innerHTML = '';
+            this.patternSteps.forEach((step, index) => {
+                const el = document.createElement('div');
+                el.className = "flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-1 text-xs shadow-sm";
+                let colorClass = step.type === 'Diurno' ? "text-blue-600" : step.type === 'Nocturno' ? "text-slate-800" : step.type === 'Descanso' ? "text-green-600" : "text-slate-600";
+                
+                el.innerHTML = `
+                    <span class="font-bold text-slate-400 mr-1">${index + 1}.</span>
+                    <span class="font-bold ${colorClass}">${step.type}</span>
+                    ${step.type !== 'Descanso' ? `<span class="text-slate-400 ml-1">(${step.duration}h)</span>` : ''}
+                `;
+                container.appendChild(el);
+            });
+        },
+
+        submitAssignment() {
+            let assignmentsToAdd = [];
+
+            if (this.mode === 'single') {
+                const date = document.getElementById('single-date').value;
+                const type = document.getElementById('shift-type').value;
+                const start = document.getElementById('start-time').value;
+                const duration = document.getElementById('duration').value;
+                const end = document.getElementById('end-time').value;
+
+                if(!date) return alert("Seleccione fecha");
+                if(type !== 'Descanso' && !start) return alert("Seleccione hora de inicio");
+
+                assignmentsToAdd.push({
+                    elementId: this.currentElementId,
+                    date: date,
+                    shift: type,
+                    startTime: start,
+                    duration: duration,
+                    endTime: end,
+                    timestamp: Date.now()
+                });
+            } else {
+                // Modo Rango/Patrón
+                const rStart = document.getElementById('range-start').value;
+                const rEnd = document.getElementById('range-end').value;
+                
+                if(!rStart || !rEnd) return alert("Defina el rango");
+                if(rStart > rEnd) return alert("Inicio debe ser menor a fin");
+                if(this.patternSteps.length === 0) return alert("El patrón está vacío");
+
+                let currDate = new Date(rStart + 'T12:00:00'); 
+                const lastDate = new Date(rEnd + 'T12:00:00');
+                let stepIndex = 0; 
+
+                while(currDate <= lastDate) {
+                    const dateStr = currDate.toISOString().split('T')[0];
+                    const step = this.patternSteps[stepIndex % this.patternSteps.length];
+                    
+                    assignmentsToAdd.push({
+                        elementId: this.currentElementId,
+                        date: dateStr,
+                        shift: step.type,
+                        startTime: step.start,
+                        duration: step.duration,
+                        endTime: "", 
+                        timestamp: Date.now()
+                    });
+                    currDate.setDate(currDate.getDate() + 1);
+                    stepIndex++;
+                }
+            }
+
+            // Usar Store Global
+            const count = window.RegAs.assignments.addMany(assignmentsToAdd);
+            
+            alert(`Se programaron ${count} días correctamente.`);
+            this.renderAssignments();
         },
 
         renderAssignments() {
             const list = document.getElementById('assignments-list');
-            const allAssignments = JSON.parse(localStorage.getItem(this.assignmentsKey) || '[]');
-            // Filtrar asignaciones SOLO para este ID
-            const myAssignments = allAssignments.filter(a => a.elementId === this.currentElementId);
-            
-            // Ordenar por fecha desc
-            myAssignments.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Leer desde Store Global
+            const myAssignments = window.RegAs.assignments.getByElement(this.currentElementId);
 
             list.innerHTML = '';
             
             if(myAssignments.length === 0) {
-                list.innerHTML = '<li class="p-6 text-center text-slate-400 text-sm italic">No hay turnos asignados aún.</li>';
+                list.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm"><i class="fa-regular fa-calendar-xmark mb-2 text-2xl"></i><br>Sin asignaciones</div>';
                 return;
             }
 
-            myAssignments.forEach((assign, index) => {
+            myAssignments.forEach(assign => {
                 const li = document.createElement('li');
-                li.className = "px-6 py-4 hover:bg-slate-50 flex justify-between items-center";
+                li.className = "px-4 py-3 hover:bg-slate-50 flex justify-between items-center group";
                 
-                // Formato Fecha amigable
-                const dateObj = new Date(assign.date + 'T12:00:00'); // Hack para evitar problema timezone
-                const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const dateObj = new Date(assign.date + 'T12:00:00');
+                const dateStr = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', weekday: 'short' });
+
+                let badgeColor = "bg-slate-100 text-slate-600";
+                if(assign.shift === 'Diurno') badgeColor = "bg-blue-50 text-blue-700 border-blue-100";
+                if(assign.shift === 'Nocturno') badgeColor = "bg-slate-800 text-slate-200 border-slate-700";
+                if(assign.shift === 'Descanso') badgeColor = "bg-green-50 text-green-700 border-green-100";
+                if(assign.shift === 'Vespertino') badgeColor = "bg-orange-50 text-orange-700 border-orange-100";
+
+                const timeText = assign.shift === 'Descanso' ? 'Día Libre' : `${assign.startTime} (${assign.duration}h)`;
 
                 li.innerHTML = `
                     <div>
                         <p class="text-sm font-bold text-slate-800 capitalize">${dateStr}</p>
-                        <p class="text-xs text-slate-500 mt-0.5"><i class="fa-regular fa-clock mr-1"></i> ${assign.shift}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${badgeColor}">${assign.shift}</span>
+                            <span class="text-xs text-slate-400 font-mono">${timeText}</span>
+                        </div>
                     </div>
-                    <button onclick="window.profileManager.deleteAssignment('${assign.date}', '${assign.shift}')" class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar asignación">
-                        <i class="fa-solid fa-trash-can"></i>
+                    <button onclick="window.profileManager.deleteAssignment('${assign.date}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 `;
                 list.appendChild(li);
             });
         },
 
-        addAssignment() {
-            const date = document.getElementById('assign-date').value;
-            const shift = document.getElementById('assign-shift').value;
-            
-            if(!date) return alert("Selecciona una fecha");
-
-            const allAssignments = JSON.parse(localStorage.getItem(this.assignmentsKey) || '[]');
-            
-            // Evitar duplicados exactos (mismo ID, fecha y turno)
-            const exists = allAssignments.some(a => a.elementId === this.currentElementId && a.date === date && a.shift === shift);
-            if(exists) return alert("Ya existe este turno asignado para esta fecha.");
-
-            // Guardar
-            allAssignments.push({
-                elementId: this.currentElementId,
-                date: date,
-                shift: shift,
-                timestamp: Date.now()
-            });
-
-            localStorage.setItem(this.assignmentsKey, JSON.stringify(allAssignments));
-            this.renderAssignments();
-            
-            // Feedback
-            const btn = document.querySelector('button[onclick*="addAssignment"]');
-            const originalText = btn.textContent;
-            btn.textContent = "Asignado con éxito";
-            btn.classList.add('bg-green-600');
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.classList.remove('bg-green-600');
-            }, 1500);
-        },
-        
-        deleteAssignment(date, shift) {
-            if(!confirm("¿Eliminar esta asignación?")) return;
-            
-            let allAssignments = JSON.parse(localStorage.getItem(this.assignmentsKey) || '[]');
-            allAssignments = allAssignments.filter(a => !(a.elementId === this.currentElementId && a.date === date && a.shift === shift));
-            
-            localStorage.setItem(this.assignmentsKey, JSON.stringify(allAssignments));
+        deleteAssignment(date) {
+            if(!confirm("¿Eliminar turno?")) return;
+            window.RegAs.assignments.remove(this.currentElementId, date);
             this.renderAssignments();
         }
     };

@@ -32,166 +32,124 @@
 
     <!-- 2. Pestañas -->
     <div class="flex border-b border-slate-200 bg-white shrink-0 sticky top-0 z-10">
-        <button onclick="window.profileSidePanelManager.setTab('turno')" id="side-tab-turno" class="flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide">Turno</button>
-        <button onclick="window.profileSidePanelManager.setTab('incidencias')" id="side-tab-incidencias" class="flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide">Incidencias</button>
+        <button onclick="window.profileSidePanelManager.setTab('turno')" id="side-tab-turno" class="flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide">Gestión Turno</button>
         <button onclick="window.profileSidePanelManager.setTab('bitacora')" id="side-tab-bitacora" class="flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide" disabled>Bitácora</button>
     </div>
 
     <!-- 3. Contenido Scrollable -->
     <div class="flex-grow overflow-y-auto p-5 bg-slate-50 custom-scrollbar">
         
-        <!-- VISTA: TURNO -->
+        <!-- VISTA: GESTIÓN TURNO -->
         <div id="side-content-turno" class="animate-fade-in">
             
-            <!-- TARJETA DE CONFIGURACIÓN DE TURNO -->
-            <div id="shift-config-card" class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden">
+            <!-- TARJETA DE ESTADO ACTUAL -->
+            <div id="shift-config-card" class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden transition-all duration-300">
                 
-                <!-- Modo Visualización -->
-                <div id="shift-view-mode" class="p-3">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Asignación Actual</span>
-                        <button onclick="window.profileSidePanelManager.toggleEditMode(true)" class="text-brand-600 hover:text-brand-700 text-xs font-bold hover:bg-brand-50 px-2 py-1 rounded transition-colors">
-                            <i class="fa-solid fa-pen mr-1"></i> Editar
-                        </button>
+                <!-- CABECERA: CONFIGURACIÓN BÁSICA -->
+                <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-700" id="view-shift-name">--</span>
+                            <button onclick="window.profileSidePanelManager.toggleEditMode(true)" class="text-[10px] text-brand-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-mono" id="view-shift-time">--:--</p>
                     </div>
+                    <!-- ESTATUS DINÁMICO -->
+                    <div id="status-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-500 shadow-sm">
+                        Cargando...
+                    </div>
+                </div>
+
+                <!-- MODO VISUALIZACIÓN OPERATIVA -->
+                <div id="shift-view-mode" class="p-4 relative">
                     
-                    <!-- Turno 1 -->
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm"><i class="fa-regular fa-clock"></i></div>
-                        <div>
-                            <p class="text-sm font-bold text-slate-700" id="view-shift-1-name">--</p>
-                            <p class="text-xs text-slate-500 font-mono" id="view-shift-1-time">--:-- - --:--</p>
-                        </div>
+                    <!-- TIMELINE OPERATIVO -->
+                    <div id="operational-timeline" class="border-l-2 border-slate-200 pl-5 ml-1 space-y-6 my-2 relative z-0">
+                        <!-- Se llena dinámicamente con JS -->
                     </div>
 
-                    <!-- Turno 2 (Condicional) -->
-                    <div id="view-shift-2-container" class="hidden border-t border-slate-100 pt-2 mt-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <div>
-                                <p class="text-sm font-bold text-slate-700" id="view-shift-2-name">--</p>
-                                <p class="text-xs text-slate-500 font-mono" id="view-shift-2-time">--:-- - --:--</p>
+                    <!-- CONTROLES RÁPIDOS (Retardo y Ausentismo) -->
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-3 justify-between items-center">
+                        <label class="flex items-center gap-2 cursor-pointer group select-none">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="quick-check-late" onchange="window.profileSidePanelManager.toggleLate(this.checked)" class="peer h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 transition-all cursor-pointer">
                             </div>
-                        </div>
-                    </div>
-                </div>
+                            <span class="text-xs font-bold text-slate-500 group-hover:text-orange-600 transition-colors">Retardo</span>
+                        </label>
 
-                <!-- Modo Edición -->
-                <div id="shift-edit-mode" class="hidden bg-slate-50 p-3 border-t border-brand-100">
-                    <div class="space-y-3">
-                        <!-- Turno 1 -->
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Turno Principal</label>
-                            <select id="edit-template-1" onchange="window.profileSidePanelManager.applyTemplate(1)" class="w-full text-xs rounded border-slate-300 mb-2 focus:ring-brand-500">
-                                <option value="">-- Personalizado --</option>
-                                <!-- Se llena dinámicamente -->
+                        <div class="relative">
+                            <select id="quick-absence-select" onchange="window.profileSidePanelManager.setAbsence(this.value)" class="appearance-none bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-600 text-xs rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500/20 cursor-pointer font-medium transition-colors">
+                                <option value="">Marcar Ausencia...</option>
+                                <option value="Falta">❌ Falta</option>
+                                <option value="Descanso">💤 Descanso</option>
+                                <option value="Permiso">📄 Permiso</option>
+                                <option value="Incapacidad">🚑 Incapacidad</option>
+                                <option value="Vacaciones">✈️ Vacaciones</option>
                             </select>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="col-span-1">
-                                    <input type="text" id="edit-type-1" placeholder="Nombre" class="w-full text-xs rounded border-slate-300">
-                                </div>
-                                <div>
-                                    <input type="time" id="edit-start-1" class="w-full text-xs rounded border-slate-300">
-                                </div>
-                                <div>
-                                    <input type="number" id="edit-dur-1" placeholder="Hrs" class="w-full text-xs rounded border-slate-300">
-                                </div>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Turno 2 -->
-                        <div id="edit-shift-2-wrapper" class="hidden border-t border-slate-200 pt-2">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Turno Adicional</label>
-                                <button onclick="window.profileSidePanelManager.toggleSecondShift(false)" class="text-[10px] text-red-500 hover:underline">Quitar</button>
+                <!-- MODO EDICIÓN COMPLETA (OCULTO) -->
+                <div id="shift-edit-mode" class="hidden bg-white p-4">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex justify-between items-center">
+                        Editar Asignación
+                        <button onclick="window.profileSidePanelManager.deleteAssignment()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 transition-colors">
+                            <i class="fa-solid fa-trash mr-1"></i> Eliminar
+                        </button>
+                    </h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Cambiar Área</label>
+                            <select id="edit-area-select" class="w-full text-xs rounded border-slate-300 focus:ring-brand-500"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Entrada Prog.</label>
+                                <input type="time" id="edit-start-time" class="w-full text-xs rounded border-slate-300">
                             </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="col-span-1">
-                                    <input type="text" id="edit-type-2" value="Extra" class="w-full text-xs rounded border-slate-300">
-                                </div>
-                                <div>
-                                    <input type="time" id="edit-start-2" class="w-full text-xs rounded border-slate-300">
-                                </div>
-                                <div>
-                                    <input type="number" id="edit-dur-2" value="4" class="w-full text-xs rounded border-slate-300">
-                                </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Duración</label>
+                                <input type="number" id="edit-duration" class="w-full text-xs rounded border-slate-300">
                             </div>
                         </div>
-
-                        <!-- Botones Acción -->
-                        <div class="flex gap-2 pt-1">
-                            <button id="btn-add-shift-2" onclick="window.profileSidePanelManager.toggleSecondShift(true)" class="flex-1 py-1.5 border border-dashed border-slate-300 text-slate-500 text-xs rounded hover:bg-white hover:text-brand-600 transition-colors">
-                                + Agregar Turno
-                            </button>
-                        </div>
-
-                        <div class="flex gap-2 mt-2">
-                            <button onclick="window.profileSidePanelManager.saveConfiguration()" class="flex-1 bg-brand-600 text-white text-xs font-bold py-1.5 rounded shadow-sm hover:bg-brand-700">Guardar</button>
-                            <button onclick="window.profileSidePanelManager.toggleEditMode(false)" class="px-3 bg-white border border-slate-300 text-slate-600 text-xs font-bold py-1.5 rounded hover:bg-slate-50">Cancelar</button>
+                        <div class="flex gap-2 mt-4 pt-2 border-t border-slate-100">
+                            <button onclick="window.profileSidePanelManager.saveConfigChanges()" class="flex-1 bg-brand-600 text-white text-xs font-bold py-2 rounded hover:bg-brand-700">Guardar</button>
+                            <button onclick="window.profileSidePanelManager.toggleEditMode(false)" class="px-3 bg-white border border-slate-300 text-slate-600 text-xs font-bold py-2 rounded hover:bg-slate-50">Cancelar</button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- TIMELINE DE ASISTENCIA -->
-            <div class="relative pl-4 border-l-2 border-slate-200 space-y-8 ml-2" id="timeline-container">
-                <!-- Se genera dinámicamente según 1 o 2 turnos -->
-            </div>
-        </div>
 
-        <!-- VISTA: INCIDENCIAS -->
-        <div id="side-content-incidencias" class="hidden animate-fade-in">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Registro de Excepciones</h3>
-            <div class="space-y-3">
-                <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-300 transition-colors group">
-                    <span class="text-sm font-medium text-slate-700">Recuperación de Turno</span>
-                    <input type="checkbox" id="check-recuperacion" class="form-checkbox h-5 w-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500" onchange="window.profileSidePanelManager.saveFlags()">
+            <!-- Comentarios Generales -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center gap-2">
+                    <i class="fa-regular fa-comment-dots"></i> Observaciones Generales
                 </label>
-                <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-300 transition-colors group">
-                    <span class="text-sm font-medium text-slate-700">Tiempo Extra Autorizado</span>
-                    <input type="checkbox" id="check-extra" class="form-checkbox h-5 w-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500" onchange="window.profileSidePanelManager.saveFlags()">
-                </label>
-                <label class="flex items-center justify-between p-3 bg-white border border-red-200 rounded-xl cursor-pointer hover:border-red-400 transition-colors group">
-                    <span class="text-sm font-medium text-red-700">Falta / Ausencia</span>
-                    <input type="checkbox" id="check-falta" class="form-checkbox h-5 w-5 text-red-600 rounded border-red-300 focus:ring-red-500" onchange="window.profileSidePanelManager.saveFlags()">
-                </label>
+                <textarea id="main-comments" rows="3" class="w-full text-sm border-slate-300 rounded-xl focus:border-brand-500 focus:ring-brand-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Escribe detalles adicionales sobre el turno o incidencia..." onchange="window.profileSidePanelManager.saveComments(this.value)"></textarea>
             </div>
-            <div class="mt-6">
-                <label class="block text-xs font-bold text-slate-500 mb-2">Observaciones</label>
-                <textarea id="input-observaciones" rows="4" class="w-full text-sm border-slate-300 rounded-xl focus:border-brand-500 focus:ring-brand-500" placeholder="Escribe detalles adicionales..." onchange="window.profileSidePanelManager.saveComments(this.value)"></textarea>
-            </div>
+
         </div>
     </div>
 </div>
 
-<!-- Disparador de seguridad para inicialización -->
+<!-- Disparador de seguridad -->
 <img src="x" onerror="if(!window.profileSidePanelManager && document.getElementById('script-baner-perfil')) eval(document.getElementById('script-baner-perfil').innerText);" style="display:none;">
 
 <script id="script-baner-perfil">
     window.profileSidePanelManager = {
         currentItem: null,
-        hasSecondShift: false,
 
         init(item) {
             this.currentItem = item;
-            
-            // 1. Header
             this.renderHeader(item);
-            
-            // 2. Determinar si hay 2 turnos
-            this.hasSecondShift = !!(item.shift2 && item.startTime2);
-
-            // 3. Renderizar Configuración (Vista y Edición)
-            this.renderConfigView();
+            this.renderMainCard();
             this.populateEditForm();
-            
-            // 4. Renderizar Timeline (Dinámico 1 o 2 turnos)
-            this.renderTimeline();
+            document.getElementById('main-comments').value = item.comments || '';
 
-            // 5. Incidencias
-            this.populateIncidents();
-
-            // 6. Configurar botón Expandir
             const btnExpand = document.getElementById('btn-expand-profile');
             btnExpand.onclick = () => {
                 window.toggleRightPanel(false); 
@@ -202,12 +160,10 @@
         renderHeader(item) {
             document.getElementById('side-p-name').textContent = item.name || 'Sin Nombre';
             document.getElementById('side-p-id').textContent = `ID: ${item.elementId || item.id}`;
-            document.getElementById('side-p-area').innerHTML = `<i class="fa-solid fa-map-pin mr-1"></i> ${item.area || 'N/A'}`;
-            
+            document.getElementById('side-p-area').innerHTML = `<i class="fa-solid fa-map-pin mr-1"></i> ${item.area || 'Sin Asignar'}`;
             const photoEl = document.getElementById('side-p-photo');
             const fallbackEl = document.getElementById('side-p-fallback');
             const localPhotoPath = `FotosElementosPP/${item.elementId || item.id}.jpg`;
-            
             photoEl.classList.remove('hidden');
             fallbackEl.classList.add('hidden');
             photoEl.src = localPhotoPath;
@@ -218,207 +174,205 @@
             };
         },
 
-        // --- GESTIÓN DE VISTA VS EDICIÓN ---
-        toggleEditMode(edit) {
-            const viewMode = document.getElementById('shift-view-mode');
-            const editMode = document.getElementById('shift-edit-mode');
-            if(edit) {
-                viewMode.classList.add('hidden');
-                editMode.classList.remove('hidden');
-            } else {
-                viewMode.classList.remove('hidden');
-                editMode.classList.add('hidden');
-            }
-        },
-
-        renderConfigView() {
-            // Turno 1
-            document.getElementById('view-shift-1-name').textContent = this.currentItem.shift || 'Por definir';
-            document.getElementById('view-shift-1-time').textContent = `${this.currentItem.startTime || '--:--'} - ${this.currentItem.duration || 0}h`;
-
-            // Turno 2
-            const container2 = document.getElementById('view-shift-2-container');
-            if(this.hasSecondShift) {
-                container2.classList.remove('hidden');
-                document.getElementById('view-shift-2-name').textContent = this.currentItem.shift2;
-                document.getElementById('view-shift-2-time').textContent = `${this.currentItem.startTime2} - ${this.currentItem.duration2}h`;
-            } else {
-                container2.classList.add('hidden');
-            }
-        },
-
-        populateEditForm() {
-            // Cargar plantillas
-            const templates = JSON.parse(localStorage.getItem('regas_shift_templates') || '[]');
-            const select = document.getElementById('edit-template-1');
-            select.innerHTML = '<option value="">-- Personalizado --</option>';
-            templates.forEach(t => {
-                select.innerHTML += `<option value='${JSON.stringify(t)}'>${t.name}</option>`;
-            });
-
-            // Llenar inputs T1
-            document.getElementById('edit-type-1').value = this.currentItem.shift || 'Diurno';
-            document.getElementById('edit-start-1').value = this.currentItem.startTime || '';
-            document.getElementById('edit-dur-1').value = this.currentItem.duration || 8;
-
-            // Estado T2
-            this.toggleSecondShift(this.hasSecondShift);
-            if(this.hasSecondShift) {
-                document.getElementById('edit-type-2').value = this.currentItem.shift2 || 'Extra';
-                document.getElementById('edit-start-2').value = this.currentItem.startTime2 || '';
-                document.getElementById('edit-dur-2').value = this.currentItem.duration2 || 4;
-            }
-        },
-
-        toggleSecondShift(show) {
-            const wrap = document.getElementById('edit-shift-2-wrapper');
-            const btn = document.getElementById('btn-add-shift-2');
-            if(show) {
-                wrap.classList.remove('hidden');
-                btn.classList.add('hidden');
-            } else {
-                wrap.classList.add('hidden');
-                btn.classList.remove('hidden');
-            }
-        },
-
-        applyTemplate(num) {
-            // Solo implementado para T1 por ahora simpleza
-            const val = document.getElementById('edit-template-1').value;
-            if(!val) return;
-            const t = JSON.parse(val);
-            document.getElementById('edit-type-1').value = t.type;
-            document.getElementById('edit-start-1').value = t.start;
-            document.getElementById('edit-dur-1').value = t.duration;
-        },
-
-        saveConfiguration() {
-            // Actualizar objeto local
-            this.currentItem.shift = document.getElementById('edit-type-1').value;
-            this.currentItem.startTime = document.getElementById('edit-start-1').value;
-            this.currentItem.duration = document.getElementById('edit-dur-1').value;
-
-            // Revisar si hay turno 2 activo en el form
-            const isT2Active = !document.getElementById('edit-shift-2-wrapper').classList.contains('hidden');
-            if(isT2Active) {
-                this.currentItem.shift2 = document.getElementById('edit-type-2').value;
-                this.currentItem.startTime2 = document.getElementById('edit-start-2').value;
-                this.currentItem.duration2 = document.getElementById('edit-dur-2').value;
-                this.hasSecondShift = true;
-            } else {
-                delete this.currentItem.shift2;
-                delete this.currentItem.startTime2;
-                delete this.currentItem.duration2;
-                this.hasSecondShift = false;
-            }
-
-            this.persistChanges();
-            this.renderConfigView();
-            this.renderTimeline();
-            this.toggleEditMode(false);
-        },
-
-        // --- TIMELINE BUILDER ---
-        renderTimeline() {
-            const container = document.getElementById('timeline-container');
-            container.innerHTML = ''; // Limpiar
-
-            // --- BLOQUE TURNO 1 ---
-            this.createTimelineBlock(container, 1, this.currentItem.shift, this.currentItem.startTime, this.currentItem.checkInTime, this.currentItem.checkOutTime);
-
-            // --- BLOQUE TURNO 2 ---
-            if(this.hasSecondShift) {
-                // Separador visual
-                const sep = document.createElement('div');
-                sep.className = "py-2 text-center text-[10px] text-slate-300 font-bold uppercase tracking-widest";
-                sep.textContent = "- Cambio de Turno -";
-                container.appendChild(sep);
-
-                this.createTimelineBlock(container, 2, this.currentItem.shift2, this.currentItem.startTime2, this.currentItem.checkInTime2, this.currentItem.checkOutTime2);
-            }
-        },
-
-        createTimelineBlock(container, num, shiftName, startTime, checkIn, checkOut) {
-            const suffix = num === 1 ? '' : '2'; // Sufijo para campos de datos (checkInTime2)
+        renderMainCard() {
+            const item = this.currentItem;
+            document.getElementById('view-shift-name').textContent = item.shift;
+            document.getElementById('view-shift-time').textContent = `${item.startTime || '--:--'} - ${item.duration || 0} hrs`;
             
-            const html = `
-                <div class="relative group">
-                    <div class="absolute -left-[23px] top-0 w-3.5 h-3.5 ${num === 1 ? 'bg-blue-600' : 'bg-purple-600'} rounded-full border-2 border-white ring-1 ring-slate-200 z-10"></div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1 block">${shiftName} (${startTime})</label>
-                    
-                    <!-- Entrada -->
-                    <div class="mb-4 relative">
-                        <div id="dot-in-${num}" class="absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors"></div>
-                        <div class="flex gap-2">
-                            <input type="time" id="input-in-${num}" value="${checkIn || ''}" class="w-full text-xs border-slate-300 rounded focus:ring-brand-500 h-8" onchange="window.profileSidePanelManager.saveTime('in${suffix}', this.value)">
-                            <button onclick="window.profileSidePanelManager.setNow('input-in-${num}', 'in${suffix}')" class="bg-white border border-slate-200 text-slate-400 hover:text-green-600 hover:border-green-500 rounded px-2 h-8 transition-colors"><i class="fa-solid fa-stopwatch"></i></button>
-                        </div>
-                    </div>
+            const status = this.calculateStatus(item);
+            const badge = document.getElementById('status-badge');
+            badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${status.bg} ${status.text}`;
+            badge.innerHTML = status.label;
 
-                    <!-- Salida -->
-                    <div class="relative">
-                        <div id="dot-out-${num}" class="absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors"></div>
+            this.renderTimeline();
+            document.getElementById('quick-check-late').checked = !!item.isLate;
+            const absSelect = document.getElementById('quick-absence-select');
+            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift);
+            absSelect.value = isAbsent ? item.shift : "";
+        },
+
+        calculateStatus(item) {
+            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift) || item.isAbsent;
+            if (isAbsent) return { label: `<i class="fa-solid fa-user-slash mr-1"></i> ${item.shift}`, bg: 'bg-slate-200', text: 'text-slate-500' };
+            if (item.checkOutTime) return { label: '<i class="fa-solid fa-check-double mr-1"></i> Finalizado', bg: 'bg-slate-100', text: 'text-slate-500' };
+            if (item.checkInTime) return { label: '<i class="fa-solid fa-circle-check mr-1"></i> En Turno', bg: 'bg-green-100', text: 'text-green-600' };
+            const now = new Date();
+            const [h, m] = (item.startTime || "00:00").split(':').map(Number);
+            const startMinutes = h * 60 + m;
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            if (currentMinutes > startMinutes + 15) return { label: '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Retardo', bg: 'bg-orange-100', text: 'text-orange-600' };
+            return { label: '<i class="fa-solid fa-hourglass-start mr-1"></i> Por Ingresar', bg: 'bg-blue-100', text: 'text-blue-600' };
+        },
+
+        getAreaOptionsHTML(selectedArea) {
+            const areasConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
+            let options = '<option value="">-- Área --</option>';
+            if(areasConfig.categories) {
+                areasConfig.categories.forEach(cat => {
+                    if(cat.areas) cat.areas.forEach(a => {
+                        const sel = a.name === selectedArea ? 'selected' : '';
+                        options += `<option value="${a.name}" ${sel}>${a.name}</option>`;
+                    });
+                });
+            }
+            return options;
+        },
+
+        renderTimeline() {
+            const container = document.getElementById('operational-timeline');
+            const item = this.currentItem;
+            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift);
+            if (isAbsent) {
+                container.innerHTML = `<div class="p-3 bg-slate-50 border border-dashed border-slate-200 rounded text-center text-xs text-slate-400 italic">No se requieren registros para este estado.</div>`;
+                return;
+            }
+
+            const checkIn = item.checkInTime || '';
+            const checkOut = item.checkOutTime || '';
+            const movementExists = !!item.movementTime;
+
+            let html = `
+                <div class="relative group">
+                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkIn ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10 transition-colors shadow-sm"></div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1 flex justify-between">Entrada ${item.isLate ? '<span class="text-orange-500 text-[9px] font-bold ml-2">RETARDO</span>' : ''}</label>
+                    <div class="flex flex-col gap-2">
                         <div class="flex gap-2">
-                            <input type="time" id="input-out-${num}" value="${checkOut || ''}" class="w-full text-xs border-slate-300 rounded focus:ring-brand-500 h-8" onchange="window.profileSidePanelManager.saveTime('out${suffix}', this.value)">
-                            <button onclick="window.profileSidePanelManager.setNow('input-out-${num}', 'out${suffix}')" class="bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-500 rounded px-2 h-8 transition-colors"><i class="fa-solid fa-stopwatch"></i></button>
+                            <input type="time" id="input-checkin" value="${checkIn}" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 h-9 bg-slate-50 focus:bg-white font-mono" onchange="window.profileSidePanelManager.saveTime('checkInTime', this.value)">
+                            <button onclick="window.profileSidePanelManager.setNow('input-checkin', 'checkInTime')" class="bg-white border border-slate-200 text-slate-400 hover:text-green-600 rounded-lg px-3 h-9 shadow-sm"><i class="fa-solid fa-stopwatch"></i></button>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap px-1">Ingresa a:</span>
+                            <select onchange="window.profileSidePanelManager.saveField('checkInArea', this.value)" class="w-full text-[10px] py-0.5 px-2 border-none bg-transparent text-slate-700 font-medium focus:ring-0 cursor-pointer">
+                                ${this.getAreaOptionsHTML(item.checkInArea || item.area)}
+                            </select>
                         </div>
                     </div>
                 </div>
+                <div class="absolute left-[-22px] top-10 ${movementExists ? 'bottom-28' : 'bottom-10'} w-0.5 bg-slate-200 -z-0"></div>
             `;
-            
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = html;
-            container.appendChild(wrapper);
-            
-            // Actualizar dots visuales
-            this.updateDotStatus(`input-in-${num}`, `dot-in-${num}`, 'green');
-            this.updateDotStatus(`input-out-${num}`, `dot-out-${num}`, 'red');
+
+            if (movementExists) {
+                html += `
+                    <div class="relative group mt-6 mb-6">
+                        <div class="absolute -left-[27px] top-2.5 w-3 h-3 bg-purple-500 border-purple-600 rounded-full border-2 z-10 transition-colors shadow-sm"></div>
+                        <div class="flex justify-between items-center mb-1 ml-1">
+                            <label class="text-[10px] font-bold text-purple-600 uppercase">Se mueve a</label>
+                            <button onclick="window.profileSidePanelManager.removeMovement()" class="text-[9px] text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex gap-2">
+                                <input type="time" value="${item.movementTime || ''}" onchange="window.profileSidePanelManager.saveField('movementTime', this.value)" class="w-full text-xs border-purple-200 rounded focus:ring-purple-500 text-purple-700 h-8">
+                            </div>
+                            <div class="bg-purple-50 p-1.5 rounded border border-purple-100">
+                                <select onchange="window.profileSidePanelManager.saveField('movementArea', this.value)" class="w-full text-[10px] py-0.5 px-2 border-none bg-transparent text-purple-800 font-bold focus:ring-0">
+                                    ${this.getAreaOptionsHTML(item.movementArea)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute left-[-22px] bottom-10 top-auto h-16 w-0.5 bg-slate-200 -z-0"></div>
+                `;
+            } else {
+                html += `
+                    <div class="relative my-4 ml-[-12px]">
+                        <button onclick="window.profileSidePanelManager.addMovement()" class="text-[9px] bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-300 px-2 py-0.5 rounded-full shadow-sm transition-all z-20 relative">
+                            + Rotación
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="relative group mt-2">
+                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkOut ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10 transition-colors shadow-sm"></div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Salida</label>
+                    <div class="flex gap-2">
+                        <input type="time" id="input-checkout" value="${checkOut}" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 h-9 bg-slate-50 focus:bg-white font-mono" onchange="window.profileSidePanelManager.saveTime('checkOutTime', this.value)">
+                        <button onclick="window.profileSidePanelManager.setNow('input-checkout', 'checkOutTime')" class="bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg px-3 h-9 shadow-sm"><i class="fa-solid fa-stopwatch"></i></button>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
         },
 
-        // --- INCIDENCIAS ---
-        populateIncidents() {
-            document.getElementById('check-recuperacion').checked = !!this.currentItem.isRecovery;
-            document.getElementById('check-extra').checked = !!this.currentItem.isExtraTime;
-            document.getElementById('check-falta').checked = !!this.currentItem.isAbsent;
-            document.getElementById('input-observaciones').value = this.currentItem.comments || '';
-        },
-
-        // --- GUARDADO GENÉRICO ---
-        saveTime(fieldKey, value) {
-            // Mapeo simple: in -> checkInTime, out2 -> checkOutTime2
-            const map = {
-                'in': 'checkInTime', 'out': 'checkOutTime',
-                'in2': 'checkInTime2', 'out2': 'checkOutTime2'
-            };
-            this.currentItem[map[fieldKey]] = value;
+        saveTime(field, val) { this.currentItem[field] = val; this.persistChanges(); this.renderMainCard(); },
+        saveField(field, val) { this.currentItem[field] = val; this.persistChanges(); },
+        addMovement() {
+            const now = new Date();
+            this.currentItem.movementTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            this.currentItem.movementArea = this.currentItem.area;
             this.persistChanges();
-            
-            // Actualizar visuales
-            const num = fieldKey.includes('2') ? 2 : 1;
-            const type = fieldKey.includes('in') ? 'in' : 'out';
-            const color = type === 'in' ? 'green' : 'red';
-            this.updateDotStatus(`input-${type}-${num}`, `dot-${type}-${num}`, color);
+            this.renderMainCard();
         },
-
-        setNow(inputId, fieldKey) {
+        removeMovement() {
+            this.currentItem.movementTime = null; 
+            this.currentItem.movementArea = null;
+            this.persistChanges();
+            this.renderMainCard();
+        },
+        setNow(inputId, field) {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
             document.getElementById(inputId).value = timeStr;
-            this.saveTime(fieldKey, timeStr);
+            this.saveTime(field, timeStr);
         },
-
-        saveFlags() {
-            this.currentItem.isRecovery = document.getElementById('check-recuperacion').checked;
-            this.currentItem.isExtraTime = document.getElementById('check-extra').checked;
-            this.currentItem.isAbsent = document.getElementById('check-falta').checked;
+        toggleLate(checked) { this.currentItem.isLate = checked; this.persistChanges(); this.renderMainCard(); },
+        setAbsence(type) {
+            if (!type) return; 
+            if (confirm(`¿Cambiar turno a ${type}? Esto borrará los registros de hora actuales.`)) {
+                this.currentItem.shift = type;
+                this.currentItem.isAbsent = (type === 'Falta');
+                this.currentItem.checkInTime = null;
+                this.currentItem.checkOutTime = null;
+                this.currentItem.startTime = null;
+                this.currentItem.duration = 0;
+                this.currentItem.movementTime = null;
+                this.currentItem.movementArea = null;
+                this.currentItem.checkInArea = null;
+                this.persistChanges();
+                this.init(this.currentItem);
+            } else {
+                document.getElementById('quick-absence-select').value = "";
+            }
+        },
+        toggleEditMode(edit) {
+            const view = document.getElementById('shift-view-mode');
+            const editor = document.getElementById('shift-edit-mode');
+            if(edit) {
+                view.classList.add('hidden');
+                editor.classList.remove('hidden');
+                this.populateEditForm();
+            } else {
+                view.classList.remove('hidden');
+                editor.classList.add('hidden');
+            }
+        },
+        populateEditForm() {
+            document.getElementById('edit-area-select').innerHTML = this.getAreaOptionsHTML(this.currentItem.area);
+            document.getElementById('edit-start-time').value = this.currentItem.startTime || '';
+            document.getElementById('edit-duration').value = this.currentItem.duration || 8;
+        },
+        saveConfigChanges() {
+            this.currentItem.area = document.getElementById('edit-area-select').value;
+            this.currentItem.startTime = document.getElementById('edit-start-time').value;
+            this.currentItem.duration = document.getElementById('edit-duration').value;
+            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(this.currentItem.shift);
+            if(isAbsent && this.currentItem.startTime) { this.currentItem.shift = 'Diurno'; }
             this.persistChanges();
+            this.init(this.currentItem);
+            this.toggleEditMode(false);
         },
-
-        saveComments(val) {
-            this.currentItem.comments = val;
-            this.persistChanges();
+        deleteAssignment() {
+            if(confirm("¿Estás seguro de que quieres eliminar este turno? La asignación se borrará del día.")) {
+                if(window.RegAs && window.RegAs.assignments && window.RegAs.assignments.remove) {
+                    window.RegAs.assignments.remove(this.currentItem.elementId, this.currentItem.date);
+                    window.toggleRightPanel(false);
+                } else {
+                    alert("Error: No se pudo conectar con la base de datos.");
+                }
+            }
         },
-
+        saveComments(val) { this.currentItem.comments = val; this.persistChanges(); },
         persistChanges() {
             const allAssignments = window.RegAs.assignments.getAll();
             const idx = allAssignments.findIndex(a => a.elementId === this.currentItem.elementId && a.date === this.currentItem.date);
@@ -427,20 +381,10 @@
                 window.RegAs.assignments.save(allAssignments);
             }
         },
-
-        updateDotStatus(inputId, dotId, color) {
-            const val = document.getElementById(inputId).value;
-            const dot = document.getElementById(dotId);
-            if(val) {
-                dot.className = `absolute -left-[23px] top-2.5 w-2.5 h-2.5 rounded-full border-2 z-10 transition-colors bg-${color}-500 border-${color}-600 shadow-sm`;
-            } else {
-                dot.className = `absolute -left-[23px] top-2.5 w-2.5 h-2.5 bg-white rounded-full border-2 border-slate-300 z-10 transition-colors`;
-            }
-        },
-
         setTab(tabName) {
-            ['turno', 'incidencias', 'bitacora'].forEach(t => {
+            ['turno', 'bitacora'].forEach(t => {
                 const btn = document.getElementById(`side-tab-${t}`);
+                if(!btn) return;
                 const content = document.getElementById(`side-content-${t}`);
                 if (t === tabName) {
                     btn.className = "flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide";

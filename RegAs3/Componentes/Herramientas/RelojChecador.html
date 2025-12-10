@@ -1,0 +1,111 @@
+<div class="flex flex-col h-full items-center justify-center p-6 animate-fade-in bg-slate-50">
+    
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 w-full max-w-md text-center">
+        <div class="mb-6">
+            <div class="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-600">
+                <i class="fa-solid fa-fingerprint text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Reloj Checador</h2>
+            <p class="text-slate-500 text-sm">Ingresa tu ID para registrar asistencia</p>
+        </div>
+
+        <div class="mb-6">
+            <div class="text-4xl font-mono font-bold text-slate-700 tracking-wider mb-2" id="live-clock">00:00:00</div>
+            <p class="text-xs text-slate-400 uppercase font-bold" id="live-date">--/--/----</p>
+        </div>
+
+        <form onsubmit="window.timeClock.register(event)" class="space-y-4">
+            <input type="text" id="employee-id" class="w-full text-center text-2xl font-bold border-2 border-slate-200 rounded-xl py-3 focus:border-brand-500 focus:ring-0 outline-none transition-colors" placeholder="ID Personal" autofocus autocomplete="off">
+            
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-brand-500/30 transition-all active:scale-95">
+                <i class="fa-solid fa-check-to-slot mr-2"></i> Registrar
+            </button>
+        </form>
+
+        <div id="clock-message" class="mt-6 hidden p-4 rounded-xl text-sm font-medium animate-fade-in"></div>
+    </div>
+
+</div>
+
+<img src="x" onerror="if(!window.timeClock && document.getElementById('script-reloj')) eval(document.getElementById('script-reloj').innerText);" style="display:none;" />
+
+<script id="script-reloj">
+    setInterval(() => {
+        const now = new Date();
+        const clock = document.getElementById('live-clock');
+        const date = document.getElementById('live-date');
+        if(clock) clock.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+        if(date) date.textContent = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }, 1000);
+
+    window.timeClock = {
+        register(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('employee-id');
+            const msgBox = document.getElementById('clock-message');
+            const id = idInput.value.trim();
+            
+            if(!id) return;
+
+            const config = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            const assignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+            const user = config.find(u => u.id === id);
+
+            if(!user) {
+                this.showMessage('error', 'ID no encontrado en el sistema.');
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            // Buscar asignación de hoy
+            let assignIndex = assignments.findIndex(a => a.elementId === id && a.date === dateStr);
+            let action = "";
+
+            if(assignIndex === -1) {
+                // Crear asignación automática si no existe
+                const newAssign = {
+                    elementId: id,
+                    date: dateStr,
+                    shift: 'Diurno', // Default
+                    startTime: '07:00',
+                    duration: 8,
+                    checkInTime: timeStr,
+                    timestamp: Date.now()
+                };
+                assignments.push(newAssign);
+                action = "Entrada (Turno Creado)";
+            } else {
+                const assign = assignments[assignIndex];
+                if(!assign.checkInTime) {
+                    assign.checkInTime = timeStr;
+                    action = "Entrada Registrada";
+                } else if (!assign.checkOutTime) {
+                    assign.checkOutTime = timeStr;
+                    action = "Salida Registrada";
+                } else {
+                    this.showMessage('warning', `Ya registraste entrada y salida hoy (${user.name}).`);
+                    idInput.value = '';
+                    return;
+                }
+                assignments[assignIndex] = assign;
+            }
+
+            localStorage.setItem('regas_assignments', JSON.stringify(assignments));
+            window.dispatchEvent(new CustomEvent('regas:assignments-updated')); // Notificar al sistema
+            
+            this.showMessage('success', `¡Éxito! ${action} para ${user.name} a las ${timeStr}.`);
+            idInput.value = '';
+        },
+
+        showMessage(type, text) {
+            const box = document.getElementById('clock-message');
+            box.textContent = text;
+            box.className = `mt-6 p-4 rounded-xl text-sm font-bold animate-fade-in ${type === 'error' ? 'bg-red-100 text-red-700' : type === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 4000);
+        }
+    };
+</script>

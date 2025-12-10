@@ -1,0 +1,131 @@
+<div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+    
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-slate-100 bg-white flex justify-between items-center shrink-0">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-walkie-talkie text-brand-600"></i> Radio Mensajero
+            </h2>
+            <p class="text-xs text-slate-500">Comunicación interna por áreas.</p>
+        </div>
+        <select id="chat-channel" onchange="window.messenger.setChannel(this.value)" class="text-sm border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500">
+            <!-- Canales dinámicos -->
+        </select>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-messages" class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50 custom-scrollbar">
+        <!-- Mensajes -->
+    </div>
+
+    <!-- Input -->
+    <div class="p-4 bg-white border-t border-slate-200 shrink-0">
+        <form onsubmit="window.messenger.send(event)" class="flex gap-2">
+            <input type="text" id="chat-input" class="flex-grow border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="Escribe un mensaje..." autocomplete="off">
+            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white w-12 rounded-lg shadow-sm transition-colors flex items-center justify-center">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<img src="x" onerror="if(!window.messenger && document.getElementById('script-messenger')) eval(document.getElementById('script-messenger').innerText);" style="display:none;" />
+
+<script id="script-messenger">
+    window.messenger = {
+        currentChannel: 'General',
+        messages: [],
+
+        init() {
+            // Cargar Canales (Áreas)
+            const areasConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
+            const select = document.getElementById('chat-channel');
+            select.innerHTML = '<option value="General">📢 Canal General</option>';
+            
+            if(areasConfig.categories) {
+                areasConfig.categories.forEach(cat => {
+                    if(cat.areas) cat.areas.forEach(a => {
+                        select.innerHTML += `<option value="${a.name}">📍 ${a.name}</option>`;
+                    });
+                });
+            }
+
+            // Cargar Mensajes
+            this.messages = JSON.parse(localStorage.getItem('regas_chat_messages') || '[]');
+            this.renderMessages();
+        },
+
+        setChannel(channel) {
+            this.currentChannel = channel;
+            this.renderMessages();
+        },
+
+        send(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const msg = {
+                id: Date.now(),
+                channel: this.currentChannel,
+                text: text,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                user: 'Operador', // Simulado
+                isMe: true
+            };
+
+            this.messages.push(msg);
+            
+            // Simular respuesta automática a veces
+            if(Math.random() > 0.7) {
+                setTimeout(() => {
+                    this.messages.push({
+                        id: Date.now() + 1,
+                        channel: this.currentChannel,
+                        text: "Enterado.",
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        user: 'Central',
+                        isMe: false
+                    });
+                    this.saveAndRender();
+                }, 1000);
+            }
+
+            this.saveAndRender();
+            input.value = '';
+        },
+
+        saveAndRender() {
+            localStorage.setItem('regas_chat_messages', JSON.stringify(this.messages));
+            this.renderMessages();
+        },
+
+        renderMessages() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            
+            const filtered = this.messages.filter(m => m.channel === this.currentChannel);
+            
+            if(filtered.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-400 text-xs mt-10">Inicio del canal ' + this.currentChannel + '</div>';
+                return;
+            }
+
+            filtered.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `flex flex-col ${m.isMe ? 'items-end' : 'items-start'}`;
+                div.innerHTML = `
+                    <div class="max-w-[80%] rounded-2xl px-4 py-2 ${m.isMe ? 'bg-brand-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'}">
+                        <p class="text-sm">${m.text}</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 px-1">${m.user} • ${m.time}</span>
+                `;
+                container.appendChild(div);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+    };
+    window.messenger.init();
+</script>

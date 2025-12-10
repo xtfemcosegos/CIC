@@ -4,7 +4,7 @@
     <div class="w-full md:w-1/3 border-r border-slate-200 pr-0 md:pr-4 flex flex-col h-[60vh] md:h-full">
         <div class="flex justify-between items-center mb-4 sticky top-0 bg-white z-10 py-2">
             <h4 class="font-bold text-slate-700">Elementos</h4>
-            <button onclick="window.itemManager.createNew()" class="text-xs bg-brand-100 text-brand-700 hover:bg-brand-200 px-2 py-1 rounded transition-colors">
+            <button onclick="if(window.itemManager) window.itemManager.createNew(); else alert('Cargando sistema... intenta de nuevo.')" class="text-xs bg-brand-100 text-brand-700 hover:bg-brand-200 px-2 py-1 rounded transition-colors shadow-sm">
                 <i class="fa-solid fa-plus mr-1"></i>Nuevo
             </button>
         </div>
@@ -86,25 +86,32 @@
     </div>
 </div>
 
-<script>
+<!-- 
+  Mecanismo de seguridad: Esta imagen falla al cargar y ejecuta el JS si el <script> normal fue ignorado.
+  Esto garantiza que itemManager exista incluso si el cargador padre no reinjectó los scripts.
+-->
+<img src="x" onerror="if(!window.itemManager && document.getElementById('config-elements-script')) { console.log('Autoejecutando script de Configuración...'); eval(document.getElementById('config-elements-script').innerText); }" style="display:none;" />
+
+<script id="config-elements-script">
+    // Se ejecuta cada vez que el modal carga este HTML
+    console.log("Componente Cargado: Gestión de Elementos (Script OK)");
+
     // --- LÓGICA DE GESTIÓN (ITEM MANAGER) ---
-    // Cambio importante: Asignar a window para garantizar acceso global desde onclick
     window.itemManager = {
         data: [],
         currentId: null,
         storageKey: 'regas_epp_config',
 
         init() {
-            // 1. Cargar datos de LocalStorage o usar Defaults
+            // Cargar datos
             const stored = localStorage.getItem(this.storageKey);
             if (stored) {
                 this.data = JSON.parse(stored);
             } else {
-                // Datos de ejemplo iniciales (Los mismos del Vistas/ElementosPP.html)
+                // Datos Default
                 this.data = [
                     { id: 'CCTV', name: 'Cámaras CCTV', icon: 'fa-video', sections: [] },
-                    { id: 'RADIO', name: 'Radios de Comunicación', icon: 'fa-walkie-talkie', sections: [] },
-                    { id: 'ACCESO', name: 'Control de Accesos', icon: 'fa-id-card', sections: [] }
+                    { id: 'RADIO', name: 'Radios', icon: 'fa-walkie-talkie', sections: [] }
                 ];
                 this.saveToLS();
             }
@@ -113,28 +120,22 @@
 
         saveToLS() {
             localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-            // Disparar evento para que otras vistas se actualicen si fuera necesario
-            window.dispatchEvent(new Event('regasDataUpdated'));
         },
 
         renderList() {
             const list = document.getElementById('items-list');
+            if(!list) return;
             list.innerHTML = '';
             
             this.data.forEach(item => {
                 const isActive = item.id === this.currentId;
                 const el = document.createElement('div');
-                // Estilo del item de lista
                 el.className = `p-3 rounded-lg cursor-pointer flex items-center gap-3 transition-all border ${isActive ? 'bg-brand-50 border-brand-200 ring-1 ring-brand-200' : 'bg-white border-slate-100 hover:border-slate-300'}`;
                 el.onclick = () => this.selectItem(item.id);
                 
-                // Icono o Imagen
-                let iconHtml = '';
-                if (item.icon.includes('http')) {
-                    iconHtml = `<img src="${item.icon}" class="w-8 h-8 rounded object-cover">`;
-                } else {
-                    iconHtml = `<div class="w-8 h-8 rounded bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fa-solid ${item.icon || 'fa-cube'}"></i></div>`;
-                }
+                let iconHtml = item.icon.includes('http') 
+                    ? `<img src="${item.icon}" class="w-8 h-8 rounded object-cover">`
+                    : `<div class="w-8 h-8 rounded bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fa-solid ${item.icon || 'fa-cube'}"></i></div>`;
 
                 el.innerHTML = `
                     ${iconHtml}
@@ -150,100 +151,78 @@
 
         selectItem(id) {
             this.currentId = id;
-            const item = this.data.find(i => i.id === id);
-            this.renderList(); // Para actualizar estilo activo
-            this.loadEditor(item);
+            this.renderList(); 
+            this.loadEditor(this.data.find(i => i.id === id));
         },
 
         createNew() {
+            console.log("Creando nuevo elemento...");
             this.currentId = null;
-            this.renderList(); // Quitar selección
+            this.renderList();
             this.loadEditor(null);
         },
 
         loadEditor(item) {
             const emptyState = document.getElementById('editor-empty');
             const formState = document.getElementById('editor-form');
-            const btnDelete = document.getElementById('btn-delete');
             const title = document.getElementById('editor-title');
-
+            
             emptyState.classList.add('hidden');
             formState.classList.remove('hidden');
             formState.classList.add('flex');
 
             if (item) {
-                // Modo Edición
                 title.textContent = "Editar: " + item.name;
                 document.getElementById('input-id').value = item.id;
-                document.getElementById('input-id').disabled = true; // No cambiar ID en edición
+                document.getElementById('input-id').disabled = true;
                 document.getElementById('input-id').classList.add('bg-slate-100');
                 document.getElementById('input-name').value = item.name;
                 document.getElementById('input-icon').value = item.icon || '';
+                document.getElementById('btn-delete').classList.remove('hidden');
                 this.updateIconPreview(item.icon);
-                btnDelete.classList.remove('hidden');
-                
-                // Cargar Secciones
                 window.formBuilder.renderSections(item.sections || []);
             } else {
-                // Modo Nuevo
                 title.textContent = "Nuevo Elemento";
                 document.getElementById('input-id').value = '';
                 document.getElementById('input-id').disabled = false;
                 document.getElementById('input-id').classList.remove('bg-slate-100');
                 document.getElementById('input-name').value = '';
                 document.getElementById('input-icon').value = '';
+                document.getElementById('btn-delete').classList.add('hidden');
                 this.updateIconPreview('');
-                btnDelete.classList.add('hidden');
-                
-                // Limpiar Secciones
                 window.formBuilder.renderSections([]);
             }
         },
 
         save() {
-            const idInput = document.getElementById('input-id');
-            const id = idInput.value.trim();
+            const id = document.getElementById('input-id').value.trim();
             const name = document.getElementById('input-name').value.trim();
             const icon = document.getElementById('input-icon').value.trim();
             
-            if (!id || !name) {
-                alert("El ID y el Nombre son obligatorios");
-                return;
-            }
+            if (!id || !name) { alert("ID y Nombre requeridos"); return; }
 
-            // Obtener estructura del constructor
             const sections = window.formBuilder.getStructure();
-
             const newItem = { id, name, icon, sections };
 
             if (this.currentId) {
-                // Actualizar existente
                 const index = this.data.findIndex(i => i.id === this.currentId);
-                if (index !== -1) {
-                    this.data[index] = newItem;
-                }
+                if (index !== -1) this.data[index] = newItem;
             } else {
-                // Crear nuevo (validar ID único)
-                if (this.data.some(i => i.id === id)) {
-                    alert("Este ID ya existe. Por favor usa otro.");
-                    return;
-                }
+                if (this.data.some(i => i.id === id)) { alert("ID duplicado"); return; }
                 this.data.push(newItem);
-                this.currentId = id; // Seleccionarlo
+                this.currentId = id;
             }
 
             this.saveToLS();
             this.renderList();
             
-            // Feedback visual simple
             const saveBtn = document.querySelector('#editor-form button i.fa-save');
             saveBtn.className = "fa-solid fa-check mr-1";
             setTimeout(() => saveBtn.className = "fa-solid fa-save mr-1", 1000);
         },
 
         deleteCurrent() {
-            if (!this.currentId) return;
-            if (confirm("¿Estás seguro de eliminar este elemento? Esta acción no se puede deshacer.")) {
+            if (confirm("¿Eliminar elemento?")) {
                 this.data = this.data.filter(i => i.id !== this.currentId);
                 this.saveToLS();
                 this.currentId = null;
@@ -256,26 +235,19 @@
 
         updateIconPreview(val) {
             const container = document.getElementById('icon-preview');
-            if (!val) {
-                container.innerHTML = '<i class="fa-solid fa-cube"></i>';
-                return;
-            }
-            if (val.includes('http')) {
-                container.innerHTML = `<img src="${val}" class="w-full h-full object-cover rounded">`;
-            } else {
-                container.innerHTML = `<i class="fa-solid ${val}"></i>`;
-            }
+            container.innerHTML = val && val.includes('http') 
+                ? `<img src="${val}" class="w-full h-full object-cover rounded">` 
+                : `<i class="fa-solid ${val || 'fa-cube'}"></i>`;
         }
     };
 
-    // --- LÓGICA DEL CONSTRUCTOR DE FORMULARIOS (FORM BUILDER) ---
-    // Cambio importante: Asignar a window
+    // --- FORM BUILDER ---
     window.formBuilder = {
         container: document.getElementById('sections-container'),
 
         renderSections(sections) {
             this.container.innerHTML = '';
-            sections.forEach(section => this.addSectionUI(section));
+            sections.forEach(s => this.addSectionUI(s));
         },
 
         addSection() {
@@ -283,93 +255,52 @@
         },
 
         addSectionUI(data) {
-            const sectionId = 'section-' + Date.now();
             const div = document.createElement('div');
             div.className = "bg-white border border-slate-200 rounded-lg p-3 relative group section-block";
             div.innerHTML = `
-                <!-- Cabecera Sección -->
                 <div class="flex items-center gap-2 mb-3">
-                    <div class="cursor-move text-slate-300 hover:text-slate-500"><i class="fa-solid fa-grip-vertical"></i></div>
-                    <input type="text" value="${data.title}" class="section-title-input font-bold text-slate-700 border-none focus:ring-0 p-0 w-full placeholder-slate-300" placeholder="Nombre de la Sección (ej: Mantenimiento)">
-                    <button onclick="this.closest('.section-block').remove()" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="cursor-move text-slate-300"><i class="fa-solid fa-grip-vertical"></i></div>
+                    <input type="text" value="${data.title}" class="section-title-input font-bold text-slate-700 border-none focus:ring-0 p-0 w-full placeholder-slate-300" placeholder="Nombre Sección">
+                    <button onclick="this.closest('.section-block').remove()" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
-                
-                <!-- Contenedor Campos -->
-                <div class="fields-container space-y-2 pl-4 border-l-2 border-slate-100">
-                    <!-- Campos aquí -->
-                </div>
-
-                <!-- Botón Añadir Campo -->
+                <div class="fields-container space-y-2 pl-4 border-l-2 border-slate-100"></div>
                 <div class="mt-3 pl-4">
                     <button onclick="window.formBuilder.addFieldUI(this.closest('.section-block').querySelector('.fields-container'))" class="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> Añadir Campo
                     </button>
-                </div>
-            `;
-            
+                </div>`;
             this.container.appendChild(div);
-
-            // Renderizar campos existentes
-            const fieldsContainer = div.querySelector('.fields-container');
-            if (data.fields && data.fields.length > 0) {
-                data.fields.forEach(field => this.addFieldUI(fieldsContainer, field));
-            } else {
-                // Añadir un campo vacío por defecto si es nueva sección
-                if(!data.title) this.addFieldUI(fieldsContainer); 
-            }
+            
+            const fc = div.querySelector('.fields-container');
+            if (data.fields?.length) data.fields.forEach(f => this.addFieldUI(fc, f));
+            else if(!data.title) this.addFieldUI(fc);
         },
 
         addFieldUI(container, data = { label: '', type: 'text' }) {
             const div = document.createElement('div');
             div.className = "flex items-center gap-2 field-row bg-slate-50 p-2 rounded";
+            const types = [{v:'text',l:'Texto'}, {v:'number',l:'Número'}, {v:'date',l:'Fecha'}, {v:'boolean',l:'Sí/No'}, {v:'photo',l:'Foto'}];
+            const opts = types.map(t => `<option value="${t.v}" ${data.type === t.v ? 'selected' : ''}>${t.l}</option>`).join('');
             
-            // Opciones de tipo de campo
-            const types = [
-                {val: 'text', label: 'Texto'},
-                {val: 'number', label: 'Número'},
-                {val: 'date', label: 'Fecha'},
-                {val: 'boolean', label: 'Sí/No'},
-                {val: 'photo', label: 'Foto'},
-            ];
-            
-            const optionsHtml = types.map(t => `<option value="${t.val}" ${data.type === t.val ? 'selected' : ''}>${t.label}</option>`).join('');
-
             div.innerHTML = `
-                <input type="text" value="${data.label}" class="field-label-input text-xs border border-slate-300 rounded px-2 py-1 w-1/2 focus:border-brand-500 focus:ring-brand-500" placeholder="Nombre del Campo">
-                <select class="field-type-select text-xs border border-slate-300 rounded px-2 py-1 w-1/3 focus:border-brand-500 focus:ring-brand-500">
-                    ${optionsHtml}
-                </select>
+                <input type="text" value="${data.label}" class="field-label-input text-xs border border-slate-300 rounded px-2 py-1 w-1/2" placeholder="Nombre Campo">
+                <select class="field-type-select text-xs border border-slate-300 rounded px-2 py-1 w-1/3">${opts}</select>
                 <button onclick="this.closest('.field-row').remove()" class="text-slate-400 hover:text-red-500 ml-auto"><i class="fa-solid fa-times"></i></button>
             `;
             container.appendChild(div);
         },
 
         getStructure() {
-            const sections = [];
-            const sectionBlocks = this.container.querySelectorAll('.section-block');
-            
-            sectionBlocks.forEach(block => {
-                const title = block.querySelector('.section-title-input').value.trim();
-                if (!title) return; 
-
-                const fields = [];
-                const fieldRows = block.querySelectorAll('.field-row');
-                
-                fieldRows.forEach(row => {
-                    const label = row.querySelector('.field-label-input').value.trim();
-                    const type = row.querySelector('.field-type-select').value;
-                    if (label) {
-                        fields.push({ label, type });
-                    }
-                });
-
-                sections.push({ title, fields });
-            });
-            return sections;
+            return Array.from(this.container.querySelectorAll('.section-block')).map(block => ({
+                title: block.querySelector('.section-title-input').value.trim(),
+                fields: Array.from(block.querySelectorAll('.field-row')).map(row => ({
+                    label: row.querySelector('.field-label-input').value.trim(),
+                    type: row.querySelector('.field-type-select').value
+                })).filter(f => f.label)
+            })).filter(s => s.title);
         }
     };
 
-    // Inicializar
+    // Inicializar inmediatamente
     window.itemManager.init();
-
 </script>

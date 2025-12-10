@@ -1,0 +1,303 @@
+<div class="flex flex-col h-full bg-white rounded-xl shadow-sm relative animate-fade-in p-6">
+    
+    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Importador de Histórico</h2>
+            <p class="text-sm text-slate-500">Procesa archivo 'RegAs' con Ausentismos y Motivos.</p>
+        </div>
+        <button onclick="window.toggleRightPanel(false)" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+
+    <!-- Zona de Carga -->
+    <div class="flex-grow flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-8 text-center transition-colors hover:border-brand-300 hover:bg-brand-50/30" id="drop-zone">
+        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+            <i class="fa-solid fa-file-csv text-3xl text-green-600"></i>
+        </div>
+        <h3 class="font-bold text-slate-700 mb-2">Cargar archivo RegAs.csv</h3>
+        <p class="text-xs text-slate-400 max-w-xs mb-6">Arrastra tu archivo aquí o haz clic para buscar. El sistema detectará automáticamente turnos, áreas y motivos de ausencia.</p>
+        
+        <input type="file" id="csv-input" accept=".csv" class="hidden" onchange="window.regasImporter.handleFile(this.files[0])">
+        <button onclick="document.getElementById('csv-input').click()" class="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors">Seleccionar Archivo</button>
+    </div>
+
+    <!-- Estado de Importación -->
+    <div id="import-status" class="mt-6 hidden">
+        <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
+            <span id="status-label">Analizando...</span>
+            <span id="progress-text">0%</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+            <div id="progress-bar" class="bg-brand-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        
+        <!-- Resultados -->
+        <div id="import-results" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg hidden animate-fade-in">
+            <h4 class="text-green-800 font-bold text-sm mb-2"><i class="fa-solid fa-check-circle mr-1"></i> Análisis Completado</h4>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div class="bg-white p-2 rounded border border-green-100 text-center">
+                    <p class="text-[10px] text-green-600 uppercase font-bold">Personal</p>
+                    <p class="text-lg font-bold text-slate-700" id="count-users">0</p>
+                </div>
+                <div class="bg-white p-2 rounded border border-green-100 text-center">
+                    <p class="text-[10px] text-green-600 uppercase font-bold">Turnos</p>
+                    <p class="text-lg font-bold text-slate-700" id="count-shifts">0</p>
+                </div>
+                <div class="bg-white p-2 rounded border border-green-100 text-center">
+                    <p class="text-[10px] text-green-600 uppercase font-bold">Áreas</p>
+                    <p class="text-lg font-bold text-slate-700" id="count-areas">0</p>
+                </div>
+            </div>
+            <button onclick="window.regasImporter.applyImport()" class="w-full bg-green-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-sm">
+                Guardar en Base de Datos
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.regasImporter = {
+        parsedData: null,
+
+        handleFile(file) {
+            if (!file) return;
+            
+            const status = document.getElementById('import-status');
+            const dropZone = document.getElementById('drop-zone');
+            status.classList.remove('hidden');
+            dropZone.classList.add('opacity-50', 'pointer-events-none');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                setTimeout(() => this.processCSV(text), 100);
+            };
+            // CORRECCIÓN CRÍTICA: 'ISO-8859-1' para soportar acentos de Excel en Español
+            reader.readAsText(file, 'ISO-8859-1');
+        },
+
+        processCSV(csvText) {
+            const lines = csvText.split(/\r\n|\n/); // Regex para mayor compatibilidad de saltos de línea
+            if (lines.length < 2) return alert("Archivo vacío o formato inválido");
+
+            // Limpieza básica de headers para evitar errores por BOM o espacios
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\ufeff/, ''));
+            
+            // Función auxiliar para encontrar índice ignorando mayúsculas
+            const getIdx = (name) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase() || h.toLowerCase().includes(name.toLowerCase()));
+            
+            const idxID = getIdx('ID');
+            const idxName = getIdx('Nombre');
+            const idxDate = getIdx('Fecha');
+            
+            // Turno 1
+            const idxT1 = headers.findIndex(h => h === 'Turno1' || h === 'Turno');
+            const idxCaseta1 = headers.findIndex(h => h === 'Caseta1' || h === 'Caseta');
+            const idxIn1 = headers.findIndex(h => h === 'Entrada1' || h === 'Entrada');
+            const idxOut1 = headers.findIndex(h => h === 'Salida1' || h === 'Salida');
+            
+            // Turno 2
+            const idxT2 = headers.findIndex(h => h === 'Turno2');
+            const idxCaseta2 = headers.findIndex(h => h === 'Caseta2');
+            const idxIn2 = headers.findIndex(h => h === 'Entrada2');
+            const idxOut2 = headers.findIndex(h => h === 'Salida2');
+            
+            // Ausentismo y Motivo
+            const idxAbsent = getIdx('Ausentismo');
+            const idxMotivo = getIdx('Motivo');
+
+            const assignments = [];
+            const usersMap = new Map();
+            const areasSet = new Set();
+            
+            // Estadísticas para inferir horarios (Arrays de horas decimales)
+            const shiftStats = { 'Diurno': [], 'Vespertino': [], 'Nocturno': [] };
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                // Parseo CSV simple
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                
+                // Validación para evitar filas vacías o mal formadas
+                if (!row[idxID] && !row[idxDate]) continue;
+
+                const id = row[idxID];
+                const name = row[idxName];
+                const rawDate = row[idxDate];
+                
+                if (!id || !rawDate) continue;
+
+                // 1. Recolectar Áreas y Usuarios
+                const area1 = row[idxCaseta1];
+                const area2 = row[idxCaseta2];
+                
+                if(area1 && area1 !== 'undefined') areasSet.add(area1);
+                if(idxCaseta2 !== -1 && area2 && area2 !== 'undefined') areasSet.add(area2);
+
+                // Guardar usuario (Usamos el área del turno 1 como principal por defecto)
+                if (!usersMap.has(id)) {
+                    usersMap.set(id, {
+                        id: id,
+                        name: name,
+                        area: area1 || 'General',
+                        icon: 'fa-user'
+                    });
+                }
+
+                // Datos comunes de la fila
+                const absentVal = row[idxAbsent];
+                const motivoVal = row[idxMotivo];
+                // Lógica de ausentismo mejorada para detectar SI/TRUE/1
+                const isAbsent = (absentVal && (absentVal.toLowerCase() === 'true' || absentVal === '1' || absentVal.toLowerCase() === 'si'));
+                
+                // 2. Procesar Turno 1
+                if (row[idxT1]) {
+                    this.addAssignment(assignments, id, rawDate, row[idxT1], area1, row[idxIn1], row[idxOut1], isAbsent, motivoVal, shiftStats);
+                }
+                
+                // 3. Procesar Turno 2 (Si existe)
+                if (idxT2 !== -1 && row[idxT2]) {
+                    this.addAssignment(assignments, id, rawDate, row[idxT2], area2, row[idxIn2], row[idxOut2], isAbsent, motivoVal, shiftStats);
+                }
+
+                if (i % 100 === 0) this.updateProgress(Math.round((i / lines.length) * 100));
+            }
+
+            this.updateProgress(100);
+
+            // 4. Generar Plantillas de Turnos (Inferencia Estadística)
+            const shiftTemplates = this.generateShiftTemplates(shiftStats);
+            localStorage.setItem('regas_shift_templates', JSON.stringify(shiftTemplates));
+
+            // 5. Estructura de Áreas
+            const areasConfig = {
+                categories: [{
+                    id: 'cat_general',
+                    name: 'General',
+                    areas: Array.from(areasSet).sort().map((name, i) => ({
+                        id: `area_${i}_${Date.now()}`,
+                        name: name,
+                        order: i
+                    }))
+                }]
+            };
+
+            this.parsedData = {
+                users: Array.from(usersMap.values()),
+                assignments: assignments,
+                areas: areasConfig
+            };
+
+            this.showResults();
+        },
+
+        addAssignment(list, id, date, shiftRaw, area, inTime, outTime, isAbsent, motivo, stats) {
+            if (!shiftRaw) return;
+
+            // Normalización de Turno
+            let shift = 'Diurno';
+            const sLower = shiftRaw.toLowerCase();
+            if (sLower.includes('noch') || sLower.includes('noct') || sLower.includes('3ra')) shift = 'Nocturno';
+            else if (sLower.includes('tard') || sLower.includes('vesp') || sLower.includes('2da')) shift = 'Vespertino';
+            else if (sLower.includes('desc')) shift = 'Descanso';
+            else if (sLower.includes('día') || sLower.includes('dia') || sLower.includes('matu')) shift = 'Diurno';
+
+            // Normalización de Fecha (YYYY-MM-DD)
+            let dateStr = date;
+            if (date.includes('/')) {
+                const parts = date.split('/');
+                if (parts.length === 3) {
+                     // Asume formato DD/MM/YYYY si el primer dígito es > 12 o por defecto en español
+                    dateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                }
+            }
+
+            // Normalización de Horas (HH:MM)
+            const cleanTime = (t) => t ? t.substring(0, 5) : "";
+            const startTime = cleanTime(inTime);
+
+            // Recolectar datos para estadística (solo si hay hora de entrada válida)
+            if (startTime && shift !== 'Descanso') {
+                const [h, m] = startTime.split(':').map(Number);
+                if (!isNaN(h)) stats[shift].push(h + (m/60)); // Guardar hora decimal
+            }
+
+            list.push({
+                elementId: id,
+                date: dateStr,
+                shift: shift,
+                area: area || 'Sin Asignar',
+                startTime: startTime || this.getDefaultStart(shift),
+                duration: 8, 
+                checkInTime: isAbsent ? "FALTA" : startTime, 
+                checkOutTime: cleanTime(outTime),
+                isAbsent: isAbsent,
+                comments: (isAbsent && motivo) ? `Motivo: ${motivo}` : "", 
+                timestamp: Date.now()
+            });
+        },
+
+        getDefaultStart(shift) {
+            if (shift === 'Diurno') return '07:00';
+            if (shift === 'Vespertino') return '14:00';
+            if (shift === 'Nocturno') return '21:00';
+            return '';
+        },
+
+        generateShiftTemplates(stats) {
+            // Función para encontrar la hora más común (Moda) redondeada
+            const calculateModeHour = (timesArray) => {
+                if (timesArray.length === 0) return null;
+                const rounded = timesArray.map(t => Math.round(t));
+                const counts = {};
+                let maxCount = 0;
+                let mode = rounded[0];
+                for (const t of rounded) {
+                    counts[t] = (counts[t] || 0) + 1;
+                    if (counts[t] > maxCount) {
+                        maxCount = counts[t];
+                        mode = t;
+                    }
+                }
+                const hour = mode % 24;
+                return String(hour).padStart(2, '0') + ":00";
+            };
+
+            const startDia = calculateModeHour(stats['Diurno']) || '07:00';
+            const startTar = calculateModeHour(stats['Vespertino']) || '14:00';
+            const startNoc = calculateModeHour(stats['Nocturno']) || '21:00';
+
+            return [
+                { id: 't_dia', name: `Diurno Estándar (${startDia})`, type: 'Diurno', color: 'blue', start: startDia, duration: 8 },
+                { id: 't_tar', name: `Vespertino Estándar (${startTar})`, type: 'Vespertino', color: 'orange', start: startTar, duration: 8 },
+                { id: 't_noc', name: `Nocturno Estándar (${startNoc})`, type: 'Nocturno', color: 'slate', start: startNoc, duration: 8 }
+            ];
+        },
+
+        updateProgress(pct) {
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').textContent = `${pct}%`;
+        },
+
+        showResults() {
+            document.getElementById('count-users').textContent = this.parsedData.users.length;
+            document.getElementById('count-shifts').textContent = this.parsedData.assignments.length;
+            document.getElementById('count-areas').textContent = this.parsedData.areas.categories[0].areas.length;
+            document.getElementById('status-label').textContent = "Listo";
+            document.getElementById('import-results').classList.remove('hidden');
+        },
+
+        applyImport() {
+            if (!this.parsedData) return;
+            if (confirm("ADVERTENCIA: Se reemplazarán los datos actuales. ¿Continuar?")) {
+                localStorage.setItem('regas_epp_config', JSON.stringify(this.parsedData.users));
+                localStorage.setItem('regas_assignments', JSON.stringify(this.parsedData.assignments));
+                localStorage.setItem('regas_areas_config', JSON.stringify(this.parsedData.areas));
+                localStorage.setItem('regas_shift_templates', JSON.stringify(JSON.parse(localStorage.getItem('regas_shift_templates'))));
+                
+                alert("Datos importados correctamente.");
+                window.location.reload();
+            }
+        }
+    };
+</script>

@@ -1,0 +1,77 @@
+<div class="h-full flex flex-col p-6 animate-fade-in">
+    <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        </div>
+        Contador de Ingresos
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
+        
+        <!-- Personas -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center">
+            <div class="text-slate-400 uppercase font-bold tracking-widest text-xs mb-4">Personas / Peatonal</div>
+            <div class="text-6xl font-mono font-bold text-slate-800 mb-6" id="counter-people">0</div>
+            <div class="flex gap-4 w-full">
+                <button onclick="window.counterManager.update('people', -1)" class="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors text-xl font-bold"><i class="fa-solid fa-minus"></i></button>
+                <button onclick="window.counterManager.update('people', 1)" class="flex-1 py-4 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-all active:scale-95 text-xl font-bold"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+
+        <!-- Vehículos -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center">
+            <div class="text-slate-400 uppercase font-bold tracking-widest text-xs mb-4">Vehículos</div>
+            <div class="text-6xl font-mono font-bold text-slate-800 mb-6" id="counter-vehicles">0</div>
+            <div class="flex gap-4 w-full">
+                <button onclick="window.counterManager.update('vehicles', -1)" class="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors text-xl font-bold"><i class="fa-solid fa-minus"></i></button>
+                <button onclick="window.counterManager.update('vehicles', 1)" class="flex-1 py-4 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-all active:scale-95 text-xl font-bold"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-8 text-center">
+        <button onclick="window.counterManager.reset()" class="text-red-500 hover:text-red-700 font-bold text-sm bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg transition-colors">
+            <i class="fa-solid fa-rotate-right mr-2"></i> Reiniciar Contadores
+        </button>
+    </div>
+</div>
+
+<img src="x" onerror="if(!window.counterManager && document.getElementById('script-counter')) eval(document.getElementById('script-counter').innerText);" style="display:none;" />
+
+<script id="script-counter">
+    window.counterManager = {
+        counts: { people: 0, vehicles: 0 },
+
+        init() {
+            const saved = JSON.parse(localStorage.getItem('regas_counters') || '{"people":0,"vehicles":0}');
+            this.counts = saved;
+            this.render();
+        },
+
+        update(type, delta) {
+            this.counts[type] += delta;
+            if(this.counts[type] < 0) this.counts[type] = 0;
+            this.save();
+            this.render();
+        },
+
+        reset() {
+            if(confirm("¿Reiniciar contadores a cero?")) {
+                this.counts = { people: 0, vehicles: 0 };
+                this.save();
+                this.render();
+            }
+        },
+
+        save() {
+            localStorage.setItem('regas_counters', JSON.stringify(this.counts));
+        },
+
+        render() {
+            document.getElementById('counter-people').textContent = this.counts.people;
+            document.getElementById('counter-vehicles').textContent = this.counts.vehicles;
+        }
+    };
+    window.counterManager.init();
+</script>

@@ -1,114 +1,303 @@
-<div class="bg-white shadow-xl rounded-2xl p-6 sm:p-10 border border-gray-100 my-8 w-full max-w-4xl mx-auto">
-    <h2 class="text-3xl font-extrabold text-red-800 text-center mb-6 border-b border-red-700 pb-3">
-        Configuración del Sistema
-    </h2>
-    <p class="text-center text-gray-500 mb-8">
-        Administre la configuración de usuarios, horarios y apariencia de la plataforma.
-    </p>
-
-    <!-- Navegación de Pestañas -->
-    <div class="border-b border-gray-200">
-        <nav class="flex space-x-2 sm:space-x-4 -mb-px" role="tablist">
-            <button id="tab-personal" 
-                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-red-700 text-red-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
-                    data-tab="personal" aria-selected="true" type="button">
-                Personal
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full animate-fade-in overflow-hidden">
+    
+    <!-- Encabezado y Pestañas -->
+    <div class="bg-white shrink-0 border-b border-slate-100">
+        <div class="px-6 py-5 flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Configuración</h2>
+                <p class="text-sm text-slate-500 mt-1">Administración del sistema y preferencias.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.settingsManager.saveAll()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+        
+        <!-- Navegación de Pestañas -->
+        <div class="flex px-6 gap-6">
+            <button onclick="window.settingsManager.setTab('system')" id="tab-btn-system" class="pb-3 text-sm font-bold border-b-2 border-brand-600 text-brand-600 transition-colors">
+                <i class="fa-solid fa-sliders mr-2"></i>Sistema
             </button>
-            <button id="tab-turnos" 
-                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
-                    data-tab="turnos" aria-selected="false" type="button">
-                Turnos y Áreas
+            <button onclick="window.settingsManager.setTab('appearance')" id="tab-btn-appearance" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors">
+                <i class="fa-solid fa-palette mr-2"></i>Apariencia
             </button>
-            <button id="tab-temas" 
-                    class="tab-button py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap focus:outline-none transition duration-150 ease-in-out" 
-                    data-tab="temas" aria-selected="false" type="button">
-                Temas
-            </button>
-        </nav>
+        </div>
     </div>
 
-    <!-- Contenido de las Pestañas -->
-    <div id="tab-content" class="pt-6 space-y-6">
-        
-        <!-- Pestaña 1: Personal -->
-        <div id="content-personal" class="tab-pane">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Gestión de Personal</h3>
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p class="text-gray-600">Aquí se listarían y editarían los datos completos de los colaboradores, roles y permisos de acceso al sistema (CRUD de usuarios).</p>
-                <button class="mt-4 px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 transition">Ver Listado de Usuarios</button>
-            </div>
-        </div>
-        
-        <!-- Pestaña 2: Turnos y Áreas -->
-        <div id="content-turnos" class="tab-pane hidden">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Configuración de Turnos y Áreas</h3>
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p class="text-gray-600">Definición de horarios laborales, turnos rotativos y estructura organizacional por departamentos o áreas.</p>
-                <div class="mt-4 space-y-2">
-                    <input type="text" placeholder="Nombre de nueva área..." class="w-full p-2 border border-gray-300 rounded-lg focus:ring-red-700 focus:border-red-700 text-sm">
-                    <button class="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 transition">Añadir Área</button>
+    <!-- Contenido Scrollable -->
+    <div class="flex-grow overflow-y-auto custom-scrollbar p-6 bg-slate-50">
+        <div class="max-w-5xl mx-auto">
+            
+            <!-- VISTA: SISTEMA (Áreas, Turnos, Datos) -->
+            <div id="view-system" class="space-y-8 animate-fade-in">
+                
+                <!-- 1. ÁREAS / CASETAS -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-brand-500"></i> Estructura de Áreas
+                        </h3>
+                        <button onclick="window.settingsManager.addArea()" class="text-xs bg-white border border-slate-300 text-slate-600 px-2 py-1 rounded hover:text-brand-600 hover:border-brand-300 transition-colors">+ Agregar Área</button>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-xs text-slate-400 mb-4">Ubicaciones físicas disponibles para asignar personal (ej. Caseta Norte, Almacén).</p>
+                        <div id="areas-list" class="space-y-2">
+                            <!-- Lista dinámica -->
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Pestaña 3: Temas -->
-        <div id="content-temas" class="tab-pane hidden">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Apariencia y Temas</h3>
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p class="text-gray-600 mb-4">Permite al usuario elegir entre diferentes esquemas de color o modos de visualización (claro/oscuro).</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-700">Modo Oscuro</span>
-                    <!-- Toggle Switch simple -->
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-700"></div>
-                    </label>
-                </div>
-            </div>
-        </div>
 
+                <!-- 2. PLANTILLAS DE TURNOS -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                            <i class="fa-regular fa-clock text-blue-500"></i> Plantillas de Horarios
+                        </h3>
+                        <button onclick="window.settingsManager.addShiftTemplate()" class="text-xs bg-white border border-slate-300 text-slate-600 px-2 py-1 rounded hover:text-blue-600 hover:border-blue-300 transition-colors">+ Nueva Plantilla</button>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-xs text-slate-400 mb-4">Horarios predefinidos para agilizar la asignación diaria.</p>
+                        <div id="shifts-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Lista dinámica -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ZONA DE PELIGRO -->
+                <div class="bg-red-50 rounded-xl border border-red-100 p-6 flex items-center gap-4">
+                    <div class="bg-red-100 p-3 rounded-full text-red-500">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-red-800">Restablecer Sistema</h4>
+                        <p class="text-xs text-red-600 mt-0.5">Elimina toda la base de datos local y restaura la configuración de fábrica.</p>
+                    </div>
+                    <button onclick="if(confirm('ADVERTENCIA: Se borrarán TODOS los datos (Personal, Asistencias, Configuración). ¿Continuar?')) { localStorage.clear(); location.reload(); }" class="bg-white border border-red-300 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                        Borrar Todo
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA: APARIENCIA (Temas) -->
+            <div id="view-appearance" class="hidden animate-fade-in">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <!-- Los temas se generan aquí -->
+                    <div id="theme-grid" class="contents"></div>
+                </div>
+                <div class="mt-8 p-4 bg-white rounded-lg border border-slate-200 text-center">
+                    <p class="text-xs text-slate-400">El tema seleccionado se aplica instantáneamente a todos los módulos.</p>
+                    <button onclick="window.settingsManager.applyTheme('default')" class="mt-2 text-xs text-slate-500 hover:text-slate-800 underline">Restaurar Tema Original</button>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabs = document.querySelectorAll('.tab-button');
-        const contents = document.querySelectorAll('.tab-pane');
+<!-- Trigger Script -->
+<img src="x" onerror="if(!window.settingsManager && document.getElementById('script-settings')) eval(document.getElementById('script-settings').innerText);" style="display:none;" />
 
-        function activateTab(tabId) {
-            // 1. Desactivar todos los botones y contenidos
-            tabs.forEach(tab => {
-                tab.classList.remove('border-red-700', 'text-red-700');
-                tab.classList.add('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
-                tab.setAttribute('aria-selected', 'false');
-            });
+<script id="script-settings">
+    window.settingsManager = {
+        // Data Stores
+        areasConfig: {},
+        shiftTemplates: [],
+        
+        // Themes Data
+        themes: [
+            { id: 'default', name: 'Rojo RegAs', palette: { 50:'#fef2f2', 100:'#fee2e2', 200:'#fecaca', 300:'#fca5a5', 400:'#f87171', 500:'#dc2626', 600:'#b91c1c', 700:'#991b1b', 800:'#7f1d1d', 900:'#450a0a' } },
+            { id: 'blue', name: 'Azul Pro', palette: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' } },
+            { id: 'emerald', name: 'Esmeralda', palette: { 50:'#ecfdf5', 100:'#d1fae5', 200:'#a7f3d0', 300:'#6ee7b7', 400:'#34d399', 500:'#10b981', 600:'#059669', 700:'#047857', 800:'#065f46', 900:'#064e3b' } },
+            { id: 'violet', name: 'Violeta', palette: { 50:'#f5f3ff', 100:'#ede9fe', 200:'#ddd6fe', 300:'#c4b5fd', 400:'#a78bfa', 500:'#8b5cf6', 600:'#7c3aed', 700:'#6d28d9', 800:'#5b21b6', 900:'#4c1d95' } },
+            { id: 'orange', name: 'Naranja', palette: { 50:'#fff7ed', 100:'#ffedd5', 200:'#fed7aa', 300:'#fdba74', 400:'#fb923c', 500:'#f97316', 600:'#ea580c', 700:'#c2410c', 800:'#9a3412', 900:'#7c2d12' } },
+            { id: 'slate', name: 'Gris Oscuro', palette: { 50:'#f8fafc', 100:'#f1f5f9', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#475569', 700:'#334155', 800:'#1e293b', 900:'#0f172a' } },
+            { id: 'rose', name: 'Rosa', palette: { 50:'#fff1f2', 100:'#ffe4e6', 200:'#fecdd3', 300:'#fda4af', 400:'#fb7185', 500:'#f43f5e', 600:'#e11d48', 700:'#be123c', 800:'#9f1239', 900:'#881337' } },
+            { id: 'cyan', name: 'Cian', palette: { 50:'#ecfeff', 100:'#cffafe', 200:'#a5f3fc', 300:'#67e8f9', 400:'#22d3ee', 500:'#06b6d4', 600:'#0891b2', 700:'#0e7490', 800:'#155e75', 900:'#164e63' } },
+            { id: 'amber', name: 'Ámbar', palette: { 50:'#fffbeb', 100:'#fef3c7', 200:'#fde68a', 300:'#fcd34d', 400:'#fbbf24', 500:'#f59e0b', 600:'#d97706', 700:'#b45309', 800:'#92400e', 900:'#78350f' } },
+            { id: 'indigo', name: 'Índigo', palette: { 50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81' } }
+        ],
 
-            contents.forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            // 2. Activar el botón y contenido seleccionados
-            const activeTabButton = document.querySelector(`[data-tab="${tabId}"]`);
-            const activeTabContent = document.getElementById(`content-${tabId}`);
+        init() {
+            // Cargar Configuración
+            this.areasConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[{"id":"cat_gen","name":"General","areas":[]}]}');
+            this.shiftTemplates = JSON.parse(localStorage.getItem('regas_shift_templates') || '[]');
             
-            if (activeTabButton && activeTabContent) {
-                activeTabButton.classList.add('border-red-700', 'text-red-700');
-                activeTabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
-                activeTabButton.setAttribute('aria-selected', 'true');
-                
-                activeTabContent.classList.remove('hidden');
+            // Inicializar UI
+            this.renderAreas();
+            this.renderShifts();
+            this.renderThemeGrid();
+            
+            // Cargar tema activo si existe (para refrescar visual en grid)
+            const activeTheme = localStorage.getItem('regas_theme_id');
+            if(activeTheme) this.applyTheme(activeTheme, false);
+        },
+
+        // --- GESTIÓN DE PESTAÑAS ---
+        setTab(tabName) {
+            const views = ['system', 'appearance'];
+            views.forEach(v => {
+                const content = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`tab-btn-${v}`);
+                if (v === tabName) {
+                    content.classList.remove('hidden');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                    btn.classList.add('border-brand-600', 'text-brand-600', 'font-bold');
+                } else {
+                    content.classList.add('hidden');
+                    btn.classList.remove('border-brand-600', 'text-brand-600', 'font-bold');
+                    btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
+                }
+            });
+        },
+
+        // --- MÓDULO: SISTEMA (Áreas) ---
+        renderAreas() {
+            const container = document.getElementById('areas-list');
+            container.innerHTML = '';
+            const cat = this.areasConfig.categories[0];
+            
+            if(!cat || !cat.areas.length) {
+                container.innerHTML = '<div class="text-center text-slate-400 text-xs italic py-2">No hay áreas configuradas.</div>';
+                return;
+            }
+
+            cat.areas.forEach((area, i) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-200";
+                div.innerHTML = `
+                    <div class="w-6 h-6 bg-white rounded border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold">${i+1}</div>
+                    <input type="text" value="${area.name}" onchange="window.settingsManager.updateArea(${i}, this.value)" class="flex-grow bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 p-0">
+                    <button onclick="window.settingsManager.deleteArea(${i})" class="text-slate-300 hover:text-red-500 px-2"><i class="fa-solid fa-trash text-xs"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        addArea() {
+            if(!this.areasConfig.categories[0]) this.areasConfig.categories.push({id:"cat_gen", name:"General", areas:[]});
+            this.areasConfig.categories[0].areas.push({ id: `area_${Date.now()}`, name: "Nueva Área", order: 99 });
+            this.renderAreas();
+        },
+
+        updateArea(index, val) { this.areasConfig.categories[0].areas[index].name = val; },
+        deleteArea(index) {
+            if(confirm("¿Eliminar área?")) {
+                this.areasConfig.categories[0].areas.splice(index, 1);
+                this.renderAreas();
+            }
+        },
+
+        // --- MÓDULO: SISTEMA (Turnos) ---
+        renderShifts() {
+            const container = document.getElementById('shifts-list');
+            container.innerHTML = '';
+            
+            if(!this.shiftTemplates.length) {
+                container.innerHTML = '<div class="col-span-1 md:col-span-2 text-center text-slate-400 text-xs italic py-2">No hay plantillas.</div>';
+                return;
+            }
+
+            this.shiftTemplates.forEach((shift, i) => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-3 rounded-lg border border-slate-200 relative group hover:shadow-sm";
+                div.innerHTML = `
+                    <button onclick="window.settingsManager.deleteShift(${i})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fa-solid fa-times text-xs"></i></button>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-[9px] text-slate-400 font-bold uppercase block">Nombre</label>
+                            <input type="text" value="${shift.name}" onchange="window.settingsManager.updateShift(${i}, 'name', this.value)" class="w-full text-xs font-bold border-slate-200 rounded px-2 py-1">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[9px] text-slate-400 font-bold uppercase block">Tipo</label>
+                                <select onchange="window.settingsManager.updateShift(${i}, 'type', this.value)" class="w-full text-xs border-slate-200 rounded px-1 py-1 bg-slate-50">
+                                    <option value="Diurno" ${shift.type==='Diurno'?'selected':''}>Diurno</option>
+                                    <option value="Vespertino" ${shift.type==='Vespertino'?'selected':''}>Vespertino</option>
+                                    <option value="Nocturno" ${shift.type==='Nocturno'?'selected':''}>Nocturno</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 font-bold uppercase block">Inicio</label>
+                                <input type="time" value="${shift.start}" onchange="window.settingsManager.updateShift(${i}, 'start', this.value)" class="w-full text-xs border-slate-200 rounded px-1 py-1">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        addShiftTemplate() {
+            this.shiftTemplates.push({ id:`t_${Date.now()}`, name:"Turno Nuevo", type:"Diurno", start:"07:00", duration:8 });
+            this.renderShifts();
+        },
+        updateShift(i, f, v) { this.shiftTemplates[i][f] = v; },
+        deleteShift(i) { if(confirm("¿Eliminar plantilla?")) { this.shiftTemplates.splice(i, 1); this.renderShifts(); } },
+
+        // --- GLOBAL SAVE ---
+        saveAll() {
+            localStorage.setItem('regas_areas_config', JSON.stringify(this.areasConfig));
+            localStorage.setItem('regas_shift_templates', JSON.stringify(this.shiftTemplates));
+            alert("Configuración del sistema guardada.");
+        },
+
+        // --- MÓDULO: APARIENCIA (Temas) ---
+        renderThemeGrid() {
+            const container = document.getElementById('theme-grid');
+            container.innerHTML = '';
+            const activeId = localStorage.getItem('regas_theme_id') || 'default';
+
+            this.themes.forEach(theme => {
+                const isActive = theme.id === activeId;
+                const div = document.createElement('div');
+                div.className = `cursor-pointer group relative rounded-xl overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-brand-600 ring-2 ring-brand-200 scale-[1.02]' : 'border-white hover:border-slate-300 hover:scale-[1.01]'}`;
+                div.onclick = () => this.applyTheme(theme.id);
+
+                div.innerHTML = `
+                    <div class="h-20 bg-gradient-to-br from-white to-slate-50 p-3 flex flex-col justify-between relative">
+                        <div class="flex gap-1.5">
+                            <div class="w-6 h-6 rounded-full shadow-sm" style="background-color: ${theme.palette[600]}"></div>
+                            <div class="w-6 h-6 rounded-full shadow-sm" style="background-color: ${theme.palette[400]}"></div>
+                            <div class="w-6 h-6 rounded-full shadow-sm" style="background-color: ${theme.palette[100]}"></div>
+                        </div>
+                        ${isActive ? `<div class="absolute top-2 right-2 bg-white text-green-500 rounded-full w-5 h-5 flex items-center justify-center shadow-sm"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+                    </div>
+                    <div class="bg-white p-3 border-t border-slate-100">
+                        <h3 class="font-bold text-slate-700 text-xs">${theme.name}</h3>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        applyTheme(themeId, save = true) {
+            const theme = this.themes.find(t => t.id === themeId) || this.themes[0];
+            let style = '';
+            Object.keys(theme.palette).forEach(shade => {
+                const color = theme.palette[shade];
+                style += `.text-brand-${shade} { color: ${color} !important; }`;
+                style += `.bg-brand-${shade} { background-color: ${color} !important; }`;
+                style += `.border-brand-${shade} { border-color: ${color} !important; }`;
+                style += `.ring-brand-${shade} { --tw-ring-color: ${color} !important; }`;
+                style += `.from-brand-${shade} { --tw-gradient-from: ${color} !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }`;
+                style += `.to-brand-${shade} { --tw-gradient-to: ${color} !important; }`;
+            });
+
+            let styleEl = document.getElementById('theme-overrides');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'theme-overrides';
+                document.head.appendChild(styleEl);
+            }
+            styleEl.innerHTML = style;
+
+            if (save) {
+                localStorage.setItem('regas_theme_id', themeId);
+                this.renderThemeGrid();
             }
         }
+    };
 
-        // Asignar listeners de clic a los botones
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                activateTab(tabId);
-            });
-        });
-
-        // Asegurar que la primera pestaña ('personal') esté activa por defecto
-        activateTab('personal');
-    });
+    window.settingsManager.init();
 </script>

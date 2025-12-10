@@ -1,124 +1,205 @@
-<!-- CONTENIDO DEL MÓDULO -->
-<div class="flex-grow py-8 bg-slate-50 animate-fade-in">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<!-- CONTENIDO DEL MÓDULO (CON ID ÚNICO PARA PREVENIR RECURSIÓN) -->
+<div id="module-epp-root" class="flex-grow bg-slate-50 animate-fade-in relative h-full flex flex-col">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex flex-col">
         
-        <!-- Header del Módulo -->
-        <div class="pb-6 border-b border-slate-200 mb-8 flex justify-between items-center">
-            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate">
-                <i class="fa-solid fa-helmet-safety text-brand-600 mr-2"></i>
-                Elementos de Protección Personal (EPP)
-            </h2>
-            <button class="text-sm text-brand-600 hover:text-brand-800 font-medium">
-                <i class="fa-solid fa-plus mr-1"></i> Nuevo Elemento
-            </button>
+        <!-- HEADER PEGAJOSO (Título + Acciones) -->
+        <div class="sticky top-0 z-40 bg-slate-50 pt-3 pb-2 transition-all shadow-sm md:shadow-none -mx-4 px-4 md:mx-0 md:px-0">
+            
+            <!-- Título Compacto -->
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-base font-bold leading-tight text-slate-900 sm:truncate flex items-center">
+                    <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center mr-2 text-brand-600">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    Elementos de Protección Patrimonial (EPP)
+                </h2>
+            </div>
+
+            <!-- Cinta de Opciones Compacta -->
+            <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-1 flex flex-col md:flex-row justify-between items-center gap-2">
+                
+                <!-- Izquierda: Menú de Gestión -->
+                <div class="flex space-x-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
+                    <button onclick="window.toggleElementList(this)" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-md shadow hover:bg-brand-700 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye"></i> <span id="btn-view-text">Ver</span>
+                        <i id="btn-view-icon" class="fa-solid fa-chevron-down text-[10px] ml-0.5 transition-transform"></i>
+                    </button>
+                    <div class="w-px h-6 bg-slate-100 mx-1"></div>
+                    <button onclick="openConfigModal('ConfigGestionar_Elementos')" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 rounded-md transition-colors border border-transparent hover:border-slate-200">
+                        <i class="fa-solid fa-list-check mr-1.5"></i>Elementos
+                    </button>
+                    <button onclick="openConfigModal('ConfigGestionar_Turnos')" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 rounded-md transition-colors border border-transparent hover:border-slate-200">
+                        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Turnos
+                    </button>
+                    <button onclick="openConfigModal('ConfigGestionar_Areas')" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 rounded-md transition-colors border border-transparent hover:border-slate-200">
+                        <i class="fa-solid fa-map-location-dot mr-1.5"></i>Áreas
+                    </button>
+                </div>
+
+                <!-- Derecha: Selector de Vistas -->
+                <div class="flex items-center bg-slate-100 rounded-md p-0.5 flex-shrink-0">
+                    <button onclick="loadPlanView('Dia')" class="px-3 py-1 text-[11px] font-bold text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm rounded transition-all">Día</button>
+                    <button onclick="loadPlanView('Semana')" class="px-3 py-1 text-[11px] font-bold text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm rounded transition-all">Semana</button>
+                    <button onclick="loadPlanView('Mes')" class="px-3 py-1 text-[11px] font-bold text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm rounded transition-all">Mes</button>
+                </div>
+            </div>
+            
+            <!-- CONTENEDOR DESPLEGABLE (LISTA DE ELEMENTOS) - Dentro del sticky para que desplace el contenido al abrirse pero se quede arriba -->
+            <div id="collapsible-list-container" class="hidden mt-2 transition-all duration-300 ease-in-out origin-top transform border-t border-slate-200 pt-2"></div>
         </div>
 
-        <!-- Contenedor de Tarjetas (Grid) -->
-        <div id="epp-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Se llenará con JS -->
+        <!-- CONTENEDOR PRINCIPAL (Aquí se carga PlanDia.html) -->
+        <div id="epp-container-main" class="flex-grow min-h-0 flex flex-col relative mt-2">
+            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600 mb-2"></i>
+                <p class="text-xs">Cargando vista...</p>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- FOOTER DEL MÓDULO -->
-<footer class="bg-slate-900 text-slate-300 mt-auto w-full">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-            <div class="mb-4 md:mb-0">
-                <span class="font-bold text-xl text-white">Reg<span class="text-brand-500">As</span></span>
-                <p class="text-xs text-slate-500 mt-1">Módulo cargado: EPP</p>
-            </div>
-            <div class="flex space-x-6 text-sm">
-                <a href="#" class="hover:text-white">Inventario</a>
-                <a href="#" class="hover:text-white">Asignaciones</a>
-                <p class="text-slate-500">&copy; 2023 RegAs Inc.</p>
+<!-- PANEL DE PERFIL -->
+<div id="full-profile-panel" class="fixed inset-0 z-[200] bg-white hidden overflow-y-auto animate-fade-in"></div>
+
+<!-- MODAL GENÉRICO -->
+<div id="config-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 w-[90%] md:w-[80%] max-w-none h-[80vh] flex flex-col">
+                <div class="bg-slate-50 px-4 py-3 sm:px-6 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+                    <h3 class="text-lg font-semibold leading-6 text-slate-900" id="modal-title">Gestión</h3>
+                    <button type="button" onclick="closeConfigModal()" class="rounded-md bg-white text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div id="config-modal-content" class="flex-grow p-6 overflow-y-auto bg-white relative"></div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-200 flex-shrink-0">
+                    <button type="button" onclick="closeConfigModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
-</footer>
+</div>
 
-<!-- LÓGICA ESPECÍFICA DE ESTE MÓDULO -->
-<script>
-    (function() {
-        console.log("Cargando lógica de EPP...");
-        
-        // Datos específicos para Elementos de Protección
-        // He adaptado los datos anteriores para que tengan sentido en este contexto
-        const eppModules = [
-            {
-                title: "Cascos de Seguridad",
-                desc: "Inventario de cascos dieléctricos y de protección general. Normativa ANSI Z89.1.",
-                icon: "fa-helmet-safety",
-                color: "bg-yellow-100 text-yellow-800"
-            },
-            {
-                title: "Guantes Industriales",
-                desc: "Control de stock de guantes de nitrilo, cuero y carnaza para manipulación.",
-                icon: "fa-hands", // Usando un icono genérico cercano
-                color: "bg-blue-100 text-blue-800"
-            },
-            {
-                title: "Botas de Seguridad",
-                desc: "Registro de tallas y asignación de calzado con punta de acero.",
-                icon: "fa-shoe-prints",
-                color: "bg-stone-200 text-stone-700"
-            },
-            {
-                title: "Protección Auditiva",
-                desc: "Gestión de orejeras y tapones auditivos para zonas de alto ruido.",
-                icon: "fa-ear-listen",
-                color: "bg-green-100 text-green-800"
-            },
-            {
-                title: "Gafas Protectoras",
-                desc: "Lentes de seguridad anti-empañantes y con filtro UV.",
-                icon: "fa-glasses",
-                color: "bg-indigo-100 text-indigo-800"
-            },
-            {
-                title: "Chalecos Reflectivos",
-                desc: "Dotación de ropa de alta visibilidad para trabajo nocturno o en vía.",
-                icon: "fa-vest",
-                color: "bg-orange-100 text-orange-800"
-            }
-        ];
+<script id="script-elementos-pp">
+    // Comprobar si ya estamos ejecutando este módulo para evitar bucles
+    if (document.querySelectorAll('#module-epp-root').length > 1) {
+        console.warn("Detectada carga recursiva de ElementosPP. Deteniendo ejecución.");
+    } else {
+        console.log("Cargando Script Elementos PP...");
 
-        const gridContainer = document.getElementById('epp-grid');
-        
-        if (gridContainer) {
-            gridContainer.innerHTML = ''; // Limpiar por si acaso
+        // --- DEFINICIONES GLOBALES ---
+        window.loadPlanView = async function(seleccion) {
+            const container = document.getElementById('epp-container-main');
+            if(!container) return;
             
-            eppModules.forEach((feature, index) => {
-                const card = document.createElement('div');
-                card.className = "bg-white overflow-hidden shadow rounded-2xl p-6 hover-scale border border-slate-100 flex flex-col h-full";
+            // Limpiar contenedor
+            container.innerHTML = `<div class="flex-grow flex items-center justify-center h-full text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600"></i></div>`;
+            
+            try {
+                const url = `Componentes/ElementosPP/Plan${seleccion}.html`;
+                const response = await fetch(url);
+                if(!response.ok) throw new Error("Vista no disponible: " + url);
                 
-                // Animación inline
-                card.style.opacity = '0';
-                card.style.animation = `fadeIn 0.5s ease-out forwards ${index * 0.1}s`;
+                const html = await response.text();
+                // Chequeo de seguridad simple
+                if(html.includes('id="module-epp-root"')) throw new Error("Recursión detectada.");
 
-                card.innerHTML = `
-                    <div class="flex items-center mb-4">
-                        <div class="flex-shrink-0">
-                            <div class="h-12 w-12 rounded-xl ${feature.color} flex items-center justify-center text-xl">
-                                <i class="fa-solid ${feature.icon}"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-lg font-bold text-slate-900">${feature.title}</h3>
-                        </div>
-                    </div>
-                    <p class="text-base text-slate-500 flex-grow">
-                        ${feature.desc}
-                    </p>
-                    <div class="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
-                        <span class="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-1 rounded">Stock: 120</span>
-                        <button class="text-sm font-medium text-brand-600 hover:text-brand-500 flex items-center gap-1">
-                            Gestionar <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                `;
-                gridContainer.appendChild(card);
-            });
-        }
-    })();
+                container.innerHTML = html;
+                
+                container.querySelectorAll("script").forEach(s => {
+                        const ns = document.createElement("script");
+                        Array.from(s.attributes).forEach(attr => ns.setAttribute(attr.name, attr.value));
+                        ns.appendChild(document.createTextNode(s.innerHTML));
+                        s.parentNode.replaceChild(ns, s);
+                });
+            } catch(e) { 
+                console.error("Error loadPlanView:", e);
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl mb-3 text-red-300"></i>
+                        <p class="text-red-500 font-bold mb-1">Error de Carga</p>
+                        <p class="text-xs text-slate-400 max-w-xs mx-auto">${e.message}</p>
+                        <button onclick="loadPlanView('${seleccion}')" class="mt-4 text-brand-600 hover:underline border border-brand-200 px-3 py-1 rounded">Reintentar</button>
+                    </div>`;
+            }
+        };
+
+        window.reloadEPPGrid = function() {
+            if(window.loadPlanView) window.loadPlanView('Dia');
+        };
+
+        // --- Toggle Lista ---
+        window.toggleElementList = async function(btn) {
+            const container = document.getElementById('collapsible-list-container');
+            const icon = document.getElementById('btn-view-icon');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+                container.innerHTML = `<div class="p-8 text-center text-slate-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando...</div>`;
+                try {
+                    const res = await fetch('Componentes/ElementosPP/ConfigVer_Elementos.html');
+                    if(!res.ok) throw new Error("Error HTTP " + res.status);
+                    container.innerHTML = await res.text();
+                    container.querySelectorAll("script").forEach(s => eval(s.innerText)); 
+                } catch (e) { 
+                    container.innerHTML = `<div class="p-4 text-red-500 bg-red-50 text-center rounded">Error: ${e.message}</div>`; 
+                }
+            } else {
+                container.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        };
+
+        // --- Perfil y Modales ---
+        window.openElementProfile = async function(elementId) {
+            const panel = document.getElementById('full-profile-panel');
+            panel.classList.remove('hidden');
+            panel.innerHTML = `<div class="h-screen flex items-center justify-center"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand-600"></i></div>`;
+            try {
+                const res = await fetch('Componentes/ElementosPP/PerfilElemento.html');
+                const html = await res.text();
+                panel.innerHTML = html;
+                panel.querySelectorAll("script").forEach(s => eval(s.innerText));
+                if(window.profileManager) window.profileManager.init(elementId);
+            } catch (e) {
+                panel.innerHTML = `<div class="p-8 text-center text-red-500">Error cargando perfil. <button onclick="window.closeElementProfile()" class="underline">Cerrar</button></div>`;
+            }
+        };
+
+        window.closeElementProfile = function() {
+            const panel = document.getElementById('full-profile-panel');
+            panel.classList.add('hidden');
+            panel.innerHTML = '';
+            // Recargar vista actual si es posible
+            if(window.loadPlanView) window.loadPlanView('Dia'); 
+        };
+
+        window.openConfigModal = async function(fileName) {
+            const modal = document.getElementById('config-modal');
+            const content = document.getElementById('config-modal-content');
+            document.getElementById('modal-title').textContent = fileName.replace('Config','').replace(/_/g,' ');
+            modal.classList.remove('hidden');
+            content.innerHTML = `<div class="h-64 flex items-center justify-center"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600"></i></div>`;
+            try {
+                const res = await fetch(`Componentes/ElementosPP/${fileName}.html`);
+                content.innerHTML = await res.text();
+                content.querySelectorAll("script").forEach(s => {
+                        const ns = document.createElement("script");
+                        ns.text = s.innerHTML;
+                        s.parentNode.replaceChild(ns, s);
+                });
+            } catch(e) {
+                content.innerHTML = '<div class="p-4 text-center text-red-500">Error al cargar modal</div>';
+            }
+        };
+        
+        window.closeConfigModal = () => document.getElementById('config-modal').classList.add('hidden');
+
+        // --- INICIALIZACIÓN ---
+        console.log("Iniciando Módulo EPP: Carga Inicial");
+        setTimeout(() => {
+            window.loadPlanView('Dia');
+        }, 50);
+    }
 </script>

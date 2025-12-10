@@ -1,0 +1,566 @@
+<div class="flex flex-col h-full relative animate-fade-in bg-white rounded-xl shadow-sm h-full">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 px-2 pt-2 flex-shrink-0">
+        <div>
+            <h2 class="text-2xl font-bold text-brand-900 tracking-tight">Estructura de Áreas</h2>
+            <p class="text-sm text-slate-500 mt-1">Organiza las ubicaciones y puestos de servicio.</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="window.areaManager.createCategory()" class="text-slate-600 hover:text-brand-700 hover:bg-brand-50 hover:border-brand-200 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border border-slate-200 shadow-sm flex items-center">
+                <i class="fa-solid fa-folder-plus mr-2 text-brand-500"></i> Nueva Categoría
+            </button>
+            <button onclick="window.areaManager.createArea()" class="bg-brand-600 text-white hover:bg-brand-700 hover:shadow-lg hover:-translate-y-0.5 px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all flex items-center">
+                <i class="fa-solid fa-plus mr-2"></i> Nueva Área
+            </button>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-8 h-full overflow-hidden px-2 pb-2">
+        
+        <!-- 1. ÁRBOL DE ÁREAS (Izquierda) -->
+        <div class="w-full md:w-1/3 overflow-y-auto pr-3 flex flex-col gap-5 custom-scrollbar" id="areas-tree">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- 2. EDITOR DE ÁREA (Derecha) -->
+        <div class="w-full md:w-2/3 bg-slate-50/50 rounded-2xl border border-slate-200 p-8 flex flex-col relative overflow-hidden shadow-inner">
+            
+            <!-- Estado Vacío -->
+            <div id="editor-empty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50/80 backdrop-blur-sm z-20 rounded-2xl">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                    <i class="fa-solid fa-map-location-dot text-5xl text-brand-200"></i>
+                </div>
+                <p class="text-lg font-medium text-slate-500">Selecciona un área para gestionar</p>
+            </div>
+
+            <!-- Formulario -->
+            <div id="editor-area" class="h-full flex flex-col hidden relative">
+                
+                <!-- Cabecera Editor (Fija) -->
+                <div class="flex justify-between items-start mb-6 border-b border-slate-200 pb-4 flex-shrink-0">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-2xl mb-1">Editar Área</h3>
+                        <div class="flex items-center gap-2 text-sm text-brand-600 font-medium bg-brand-50 px-3 py-1 rounded-full w-fit">
+                            <i class="fa-regular fa-folder-open"></i>
+                            <span id="editor-cat-name">General</span>
+                        </div>
+                    </div>
+                    <button onclick="window.areaManager.deleteCurrent()" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2.5 rounded-lg transition-colors border border-transparent hover:border-red-100" title="Eliminar Área">
+                        <i class="fa-solid fa-trash-can text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- CONTENIDO SCROLEABLE -->
+                <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 -mr-2">
+                    
+                    <!-- Campos -->
+                    <div class="space-y-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Nombre del Área</label>
+                            <input type="text" id="area-name" class="w-full rounded-lg border-slate-300 text-base focus:ring-brand-500 focus:border-brand-500 font-bold text-slate-800 py-3 shadow-sm bg-white">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Categoría</label>
+                                <select id="area-category" class="w-full rounded-lg border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500 py-2.5 bg-white shadow-sm">
+                                    <!-- Opciones dinámicas -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Orden</label>
+                                <div class="flex gap-2">
+                                    <button onclick="window.areaManager.moveOrder(-1)" class="flex-1 bg-white border border-slate-300 rounded-lg hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 text-slate-500 py-2 transition-colors shadow-sm"><i class="fa-solid fa-arrow-up"></i></button>
+                                    <button onclick="window.areaManager.moveOrder(1)" class="flex-1 bg-white border border-slate-300 rounded-lg hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 text-slate-500 py-2 transition-colors shadow-sm"><i class="fa-solid fa-arrow-down"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Personal Asignado -->
+                    <div class="h-96 flex flex-col bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm relative shrink-0 mb-2">
+                        <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 backdrop-blur-sm flex-shrink-0">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Personal Asignado (<span id="member-count" class="text-brand-600">0</span>)</h4>
+                            
+                            <!-- Añadir Personal -->
+                            <div class="relative group">
+                                <button class="text-brand-600 hover:text-brand-700 hover:bg-brand-50 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors border border-transparent hover:border-brand-100">
+                                    <i class="fa-solid fa-user-plus"></i> Agregar
+                                </button>
+                                <!-- Dropdown -->
+                                <div class="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 shadow-xl rounded-xl hidden group-hover:block z-50 max-h-64 overflow-y-auto p-2" id="add-member-dropdown">
+                                    <!-- Lista -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-y-auto flex-grow p-3 space-y-2 custom-scrollbar" id="members-list">
+                            <!-- Items de personal -->
+                        </div>
+
+                        <!-- MODAL DE REUBICACIÓN -->
+                        <div id="move-member-modal" class="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] z-30 hidden flex items-center justify-center p-4">
+                            <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm p-5 animate-fade-in">
+                                <h4 class="font-bold text-slate-800 text-lg mb-1">Reubicar Personal</h4>
+                                <p class="text-xs text-slate-500 mb-4">Selecciona la nueva área para <span id="move-member-name" class="font-bold text-brand-600">Nombre</span>.</p>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Nueva Área de Destino</label>
+                                    <select id="move-target-area" class="w-full rounded-lg border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500 bg-slate-50">
+                                        <!-- Se llena con JS -->
+                                    </select>
+                                </div>
+
+                                <div class="flex gap-2 justify-end">
+                                    <button onclick="document.getElementById('move-member-modal').classList.add('hidden')" class="px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                                    <button onclick="window.areaManager.confirmMove()" class="px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm transition-colors">Confirmar Cambio</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Botón Guardar -->
+                <div class="pt-4 mt-auto border-t border-slate-200 flex-shrink-0 bg-slate-50/50">
+                    <button onclick="window.areaManager.save()" class="w-full bg-slate-800 text-white hover:bg-slate-900 font-bold py-3.5 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-check"></i> Guardar Cambios
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.areaManager = {
+        KEYS: {
+            areas: 'regas_areas_config',
+            elements: 'regas_epp_config'
+        },
+        data: { categories: [] }, 
+        selectedAreaId: null,
+        selectedCatId: null,
+        memberToMove: null,
+        collapsedCategories: new Set(), // Estado de categorías colapsadas
+
+        init() {
+            const storedAreas = localStorage.getItem(this.KEYS.areas);
+            
+            if (storedAreas) {
+                this.data = JSON.parse(storedAreas);
+            } else {
+                this.initializeDefaults();
+            }
+            
+            this.renderTree();
+        },
+
+        initializeDefaults() {
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            const uniqueAreas = [...new Set(elements.map(e => e.area).filter(a => a))];
+            
+            this.data = {
+                categories: [
+                    {
+                        id: 'cat_general',
+                        name: 'General',
+                        areas: uniqueAreas.map((areaName, index) => ({
+                            id: 'area_' + index + '_' + Date.now(),
+                            name: areaName,
+                            order: index
+                        }))
+                    }
+                ]
+            };
+            this.saveToLS();
+        },
+
+        saveToLS() {
+            localStorage.setItem(this.KEYS.areas, JSON.stringify(this.data));
+        },
+
+        renderTree() {
+            const container = document.getElementById('areas-tree');
+            container.innerHTML = '';
+
+            this.data.categories.forEach(cat => {
+                const isCollapsed = this.collapsedCategories.has(cat.id);
+                const chevronRotation = isCollapsed ? '-rotate-90' : 'rotate-0';
+                const areasDisplay = isCollapsed ? 'hidden' : 'block';
+                const catEl = document.createElement('div');
+                catEl.className = "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md shrink-0";
+                
+                catEl.innerHTML = `
+                    <div class="bg-slate-50/80 px-4 py-3 border-b border-slate-100 flex justify-between items-center group cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.areaManager.toggleCategory('${cat.id}', event)">
+                        <div class="flex items-center gap-3 font-bold text-slate-800 text-base">
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200 ${chevronRotation}"></i>
+                            <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-brand-500 shadow-sm">
+                                <i class="fa-regular fa-folder-open"></i>
+                            </div>
+                            <span contenteditable="true" onblur="window.areaManager.renameCategory('${cat.id}', this.innerText)" onclick="event.stopPropagation()" class="focus:bg-white focus:ring-2 focus:ring-brand-200 rounded px-2 py-0.5 cursor-text outline-none hover:bg-white transition-colors border border-transparent focus:border-brand-300">${cat.name}</span>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                            <button onclick="window.areaManager.deleteCategory('${cat.id}'); event.stopPropagation();" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-2 space-y-1 bg-white min-h-[10px] ${areasDisplay}" id="cat-areas-${cat.id}"></div>
+                `;
+
+                const areasContainer = catEl.querySelector(`#cat-areas-${cat.id}`);
+                
+                if (cat.areas.length === 0) {
+                    areasContainer.innerHTML = '<p class="text-xs text-slate-400 text-center italic py-3">Sin áreas asignadas</p>';
+                } else {
+                    cat.areas.forEach(area => {
+                        const isActive = area.id === this.selectedAreaId;
+                        const btn = document.createElement('button');
+                        btn.onclick = () => this.selectArea(area.id, cat.id);
+                        
+                        const activeClasses = "bg-brand-50 text-brand-800 border-brand-200 shadow-sm font-bold";
+                        const inactiveClasses = "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-transparent hover:border-slate-200 font-medium";
+                        
+                        btn.className = `w-full text-left px-4 py-3 rounded-lg text-sm flex items-center justify-between transition-all border ${isActive ? activeClasses : inactiveClasses}`;
+                        
+                        const count = this.countMembers(area.name);
+                        
+                        btn.innerHTML = `
+                            <span class="flex items-center gap-3">
+                                <i class="fa-solid fa-location-dot ${isActive ? 'text-brand-600' : 'text-slate-300'}"></i> ${area.name}
+                            </span>
+                            <span class="bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-md text-xs font-mono shadow-sm">${count}</span>
+                        `;
+                        areasContainer.appendChild(btn);
+                    });
+                }
+
+                container.appendChild(catEl);
+            });
+        },
+
+        toggleCategory(catId, event) {
+            // Evitar toggle si se clickea en elementos interactivos dentro del header (aunque ya tienen stopPropagation)
+            if (event && (event.target.isContentEditable || event.target.closest('button'))) return;
+
+            if (this.collapsedCategories.has(catId)) {
+                this.collapsedCategories.delete(catId);
+            } else {
+                this.collapsedCategories.add(catId);
+            }
+            this.renderTree();
+        },
+
+        countMembers(areaName) {
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            return elements.filter(e => e.area === areaName).length;
+        },
+
+        selectArea(areaId, catId) {
+            this.selectedAreaId = areaId;
+            this.selectedCatId = catId;
+            this.renderTree(); 
+            
+            const cat = this.data.categories.find(c => c.id === catId);
+            const area = cat.areas.find(a => a.id === areaId);
+            
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('editor-area').classList.remove('hidden');
+            
+            document.getElementById('area-name').value = area.name;
+            document.getElementById('editor-cat-name').textContent = cat.name;
+            
+            const catSelect = document.getElementById('area-category');
+            catSelect.innerHTML = '';
+            this.data.categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                if(c.id === catId) opt.selected = true;
+                catSelect.appendChild(opt);
+            });
+
+            this.renderMembers(area.name);
+            this.renderAddDropdown(area.name);
+        },
+
+        renderMembers(areaName) {
+            const list = document.getElementById('members-list');
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            const members = elements.filter(e => e.area === areaName);
+            
+            document.getElementById('member-count').textContent = members.length;
+            list.innerHTML = '';
+
+            if (members.length === 0) {
+                list.innerHTML = '<div class="text-center py-10 text-slate-300 text-sm"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-users-slash text-2xl text-slate-200"></i></div><p>No hay personal asignado</p></div>';
+                return;
+            }
+
+            members.forEach(m => {
+                const el = document.createElement('div');
+                el.className = "flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg group border border-transparent hover:border-slate-100 transition-colors";
+                
+                let avatar = m.icon?.includes('http') 
+                    ? `<img src="${m.icon}" class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm">`
+                    : `<div class="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 text-sm shadow-sm"><i class="fa-solid ${m.icon || 'fa-user'}"></i></div>`;
+
+                el.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        ${avatar}
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-700 truncate">${m.name || m.title}</p>
+                            <p class="text-xs text-slate-400 font-mono bg-slate-100 px-1.5 rounded w-fit mt-0.5">${m.id}</p>
+                        </div>
+                    </div>
+                    <!-- BOTÓN CAMBIAR ÁREA -->
+                    <button onclick="window.areaManager.openMoveModal('${m.id}', '${m.name || m.title}')" class="text-slate-300 hover:text-brand-600 hover:bg-brand-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all" title="Mover a otra área">
+                        <i class="fa-solid fa-right-left text-lg"></i>
+                    </button>
+                `;
+                list.appendChild(el);
+            });
+        },
+
+        renderAddDropdown(currentAreaName) {
+            const container = document.getElementById('add-member-dropdown');
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            const candidates = elements.filter(e => e.area !== currentAreaName);
+            
+            container.innerHTML = '';
+            
+            if (candidates.length === 0) {
+                container.innerHTML = '<div class="p-3 text-xs text-slate-400 text-center italic">No hay empleados disponibles.</div>';
+                return;
+            }
+
+            const searchInput = document.createElement('input');
+            searchInput.type = "text";
+            searchInput.placeholder = "Buscar empleado...";
+            searchInput.className = "w-full text-xs border border-slate-200 rounded-md p-2 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-200 mb-2 sticky top-0 bg-slate-50";
+            searchInput.onkeyup = (e) => {
+                const term = e.target.value.toLowerCase();
+                container.querySelectorAll('.candidate-item').forEach(item => {
+                    const txt = item.innerText.toLowerCase();
+                    item.style.display = txt.includes(term) ? 'flex' : 'none';
+                });
+            };
+            container.appendChild(searchInput);
+
+            candidates.forEach(c => {
+                const item = document.createElement('button');
+                item.className = "candidate-item w-full text-left px-3 py-2 hover:bg-brand-50 hover:text-brand-800 text-xs flex items-center justify-between gap-2 rounded-lg mb-1 group transition-colors";
+                item.onclick = () => this.addMember(c.id);
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-[10px]"><i class="fa-solid fa-user"></i></div>
+                        <span class="font-bold truncate text-slate-700 group-hover:text-brand-700">${c.name || c.title}</span>
+                    </div>
+                    <span class="text-slate-400 text-[9px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate max-w-[80px]">${c.area || 'Sin área'}</span>
+                `;
+                container.appendChild(item);
+            });
+        },
+
+        openMoveModal(memberId, memberName) {
+            this.memberToMove = memberId;
+            document.getElementById('move-member-name').textContent = memberName;
+            
+            const select = document.getElementById('move-target-area');
+            const currentAreaName = document.getElementById('area-name').value;
+            select.innerHTML = '';
+
+            this.data.categories.forEach(cat => {
+                if(cat.areas.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = cat.name;
+                    cat.areas.forEach(area => {
+                        if (area.name !== currentAreaName) {
+                            const option = document.createElement('option');
+                            option.value = area.name;
+                            option.textContent = area.name;
+                            optgroup.appendChild(option);
+                        }
+                    });
+                    if (optgroup.children.length > 0) select.appendChild(optgroup);
+                }
+            });
+
+            document.getElementById('move-member-modal').classList.remove('hidden');
+        },
+
+        confirmMove() {
+            if (!this.memberToMove) return;
+            const targetArea = document.getElementById('move-target-area').value;
+            if (!targetArea) return alert("Selecciona un área destino");
+
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            const idx = elements.findIndex(e => e.id === this.memberToMove);
+            
+            if (idx !== -1) {
+                elements[idx].area = targetArea;
+                localStorage.setItem(this.KEYS.elements, JSON.stringify(elements));
+                
+                const currentAreaName = document.getElementById('area-name').value;
+                this.renderMembers(currentAreaName);
+                this.renderAddDropdown(currentAreaName); 
+                this.renderTree();
+            }
+
+            document.getElementById('move-member-modal').classList.add('hidden');
+            this.memberToMove = null;
+        },
+
+        createCategory() {
+            const name = prompt("Nombre de la nueva categoría:", "Nueva Categoría");
+            if (!name) return;
+            
+            const newCat = {
+                id: 'cat_' + Date.now(),
+                name: name,
+                areas: []
+            };
+            this.data.categories.push(newCat);
+            this.saveToLS();
+            this.renderTree();
+        },
+
+        createArea() {
+            const targetCatId = this.selectedCatId || (this.data.categories[0]?.id);
+            if (!targetCatId) return alert("Crea una categoría primero");
+
+            const name = prompt("Nombre de la nueva área:", "Nueva Área");
+            if (!name) return;
+
+            const targetCat = this.data.categories.find(c => c.id === targetCatId);
+            const newArea = {
+                id: 'area_' + Date.now(),
+                name: name,
+                order: targetCat.areas.length
+            };
+            
+            targetCat.areas.push(newArea);
+            this.saveToLS();
+            this.selectArea(newArea.id, targetCatId);
+        },
+
+        renameCategory(catId, newName) {
+            const cat = this.data.categories.find(c => c.id === catId);
+            if(cat && newName.trim() !== "") {
+                cat.name = newName.trim();
+                this.saveToLS();
+            } else {
+                this.renderTree(); 
+            }
+        },
+
+        deleteCategory(catId) {
+            if (!confirm("¿Eliminar categoría? Las áreas dentro también se eliminarán.")) return;
+            this.data.categories = this.data.categories.filter(c => c.id !== catId);
+            this.selectedAreaId = null;
+            this.saveToLS();
+            this.renderTree();
+            document.getElementById('editor-area').classList.add('hidden');
+            document.getElementById('editor-empty').classList.remove('hidden');
+        },
+
+        save() {
+            const newName = document.getElementById('area-name').value;
+            const newCatId = document.getElementById('area-category').value;
+            
+            let oldAreaObj = null;
+            for (let cat of this.data.categories) {
+                const idx = cat.areas.findIndex(a => a.id === this.selectedAreaId);
+                if (idx !== -1) {
+                    oldAreaObj = cat.areas[idx];
+                    
+                    if (oldAreaObj.name !== newName) {
+                        this.updateAllMembersAreaName(oldAreaObj.name, newName);
+                        oldAreaObj.name = newName;
+                    }
+
+                    if (cat.id !== newCatId) {
+                        cat.areas.splice(idx, 1); 
+                        const newCat = this.data.categories.find(c => c.id === newCatId);
+                        newCat.areas.push(oldAreaObj); 
+                    }
+                    break;
+                }
+            }
+
+            this.saveToLS();
+            this.selectArea(this.selectedAreaId, newCatId); 
+            
+            const btn = document.querySelector('#editor-area button.bg-slate-800');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> ¡Guardado!';
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            btn.classList.remove('bg-slate-800', 'hover:bg-slate-900');
+            
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-slate-800', 'hover:bg-slate-900');
+            }, 1500);
+        },
+
+        deleteCurrent() {
+            if(!confirm("¿Eliminar esta área? Los empleados asignados quedarán 'Sin Asignar'.")) return;
+            
+            const cat = this.data.categories.find(c => c.id === this.selectedCatId);
+            const area = cat.areas.find(a => a.id === this.selectedAreaId);
+            
+            this.updateAllMembersAreaName(area.name, "");
+
+            cat.areas = cat.areas.filter(a => a.id !== this.selectedAreaId);
+            
+            this.saveToLS();
+            this.selectedAreaId = null;
+            this.renderTree();
+            document.getElementById('editor-area').classList.add('hidden');
+            document.getElementById('editor-empty').classList.remove('hidden');
+        },
+
+        moveOrder(direction) {
+            const cat = this.data.categories.find(c => c.id === this.selectedCatId);
+            const idx = cat.areas.findIndex(a => a.id === this.selectedAreaId);
+            
+            if (direction === -1 && idx > 0) {
+                [cat.areas[idx], cat.areas[idx-1]] = [cat.areas[idx-1], cat.areas[idx]];
+            } else if (direction === 1 && idx < cat.areas.length - 1) {
+                [cat.areas[idx], cat.areas[idx+1]] = [cat.areas[idx+1], cat.areas[idx]];
+            }
+            
+            this.saveToLS();
+            this.renderTree();
+        },
+
+        addMember(elementId) {
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            const elementIdx = elements.findIndex(e => e.id === elementId);
+            if (elementIdx !== -1) {
+                const areaName = document.getElementById('area-name').value;
+                elements[elementIdx].area = areaName;
+                localStorage.setItem(this.KEYS.elements, JSON.stringify(elements));
+                this.renderMembers(areaName);
+                this.renderAddDropdown(areaName);
+                this.renderTree();
+            }
+        },
+
+        updateAllMembersAreaName(oldName, newName) {
+            const elements = JSON.parse(localStorage.getItem(this.KEYS.elements) || '[]');
+            let changed = false;
+            elements.forEach(e => {
+                if (e.area === oldName) {
+                    e.area = newName;
+                    changed = true;
+                }
+            });
+            if(changed) localStorage.setItem(this.KEYS.elements, JSON.stringify(elements));
+        }
+    };
+
+    window.areaManager.init();
+</script>

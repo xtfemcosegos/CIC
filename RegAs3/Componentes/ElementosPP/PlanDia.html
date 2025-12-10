@@ -1,13 +1,13 @@
-<!-- VISTA DE PLANIFICACIÓN DIARIA (PESTAÑAS) -->
+<!-- VISTA DE PLANIFICACIÓN DIARIA -->
 <div class="bg-white rounded-xl shadow border border-slate-200 overflow-hidden flex flex-col h-[calc(100vh-140px)] animate-fade-in relative">
     
-    <!-- 1. BARRA SUPERIOR -->
-    <div class="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0 z-10">
+    <!-- 1. BARRA SUPERIOR (FECHA) -->
+    <div class="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0 z-20 shadow-sm relative">
         <div class="flex items-center gap-4 bg-slate-50 p-1 rounded-lg border border-slate-200 shadow-sm">
             <button onclick="window.dayViewManager.changeDate(-1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 bg-white rounded shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="text-center min-w-[140px]">
                 <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1" id="day-label">HOY</span>
-                <input type="date" id="current-date-picker" class="bg-transparent border-none p-0 text-sm font-bold text-slate-800 text-center h-5 w-full focus:ring-0" onchange="window.dayViewManager.setDate(this.value)">
+                <input type="date" id="current-date-picker" class="bg-transparent border-none p-0 text-sm font-bold text-slate-800 text-center h-5 w-full focus:ring-0 cursor-pointer" onchange="window.dayViewManager.setDate(this.value)">
             </div>
             <button onclick="window.dayViewManager.changeDate(1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 bg-white rounded shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
@@ -18,40 +18,87 @@
         </div>
     </div>
 
-    <!-- 2. NAVEGACIÓN -->
-    <div class="flex border-b border-slate-200 bg-slate-50/50">
-        <button onclick="window.dayViewManager.setTab('Diurno')" id="tab-diurno" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-blue-600 flex justify-center items-center gap-2"><i class="fa-regular fa-sun"></i> Diurno</button>
-        <button onclick="window.dayViewManager.setTab('Vespertino')" id="tab-vespertino" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-orange-600 flex justify-center items-center gap-2"><i class="fa-solid fa-cloud-sun"></i> Vespertino</button>
-        <button onclick="window.dayViewManager.setTab('Nocturno')" id="tab-nocturno" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 flex justify-center items-center gap-2"><i class="fa-solid fa-moon"></i> Nocturno</button>
+    <!-- 3. NAVEGACIÓN -->
+    <div class="flex border-b border-slate-200 bg-white shadow-sm z-10 flex-shrink-0">
+        <button onclick="window.dayViewManager.setTab('Diurno')" id="tab-diurno" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-blue-600 transition-all"><i class="fa-regular fa-sun mr-2"></i> Diurno</button>
+        <button onclick="window.dayViewManager.setTab('Vespertino')" id="tab-vespertino" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-orange-600 transition-all"><i class="fa-solid fa-cloud-sun mr-2"></i> Vespertino</button>
+        <button onclick="window.dayViewManager.setTab('Nocturno')" id="tab-nocturno" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition-all"><i class="fa-solid fa-moon mr-2"></i> Nocturno</button>
     </div>
 
-    <!-- 3. CONTENIDO SCROLLABLE -->
-    <div class="flex-grow overflow-y-auto bg-slate-50 p-4 custom-scrollbar">
-        <div id="active-shift-container" class="space-y-6 min-h-[200px]"></div>
+    <!-- 4. CONTENIDO -->
+    <div class="flex-grow overflow-y-auto bg-slate-50 p-4 custom-scrollbar relative">
+        <div class="mb-6">
+            <button onclick="window.dayViewManager.openAddModal()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:text-brand-600 hover:border-brand-400 hover:bg-white transition-all text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2 group shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-plus bg-slate-200 group-hover:bg-brand-100 p-1 rounded-full w-6 h-6 flex items-center justify-center"></i>
+                Agregar a Turno <span id="btn-add-shift-name" class="ml-1 text-slate-800">Actual</span>
+            </button>
+        </div>
+
+        <div id="active-shift-container" class="space-y-6 min-h-[100px]"></div>
         
         <div class="mt-8 pt-6 border-t-2 border-slate-200 border-dashed">
-            <div class="flex items-center justify-between mb-4 cursor-pointer" onclick="document.getElementById('absences-list').classList.toggle('hidden');">
-                <h3 class="font-bold text-slate-500 text-sm uppercase flex items-center gap-2"><i class="fa-solid fa-user-slash"></i> Ausentismo / Descansos <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs" id="count-absences">0</span></h3>
-                <i class="fa-solid fa-chevron-down text-slate-400"></i>
+            <div class="flex items-center justify-between mb-4 cursor-pointer group" onclick="document.getElementById('absences-list').classList.toggle('hidden'); document.getElementById('chevron-absences').classList.toggle('rotate-180');">
+                <h3 class="font-bold text-slate-500 text-sm uppercase flex items-center gap-2 group-hover:text-slate-700">
+                    <i class="fa-solid fa-user-slash"></i> Ausentismo / Descansos <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs" id="count-absences">0</span>
+                </h3>
+                <i id="chevron-absences" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
             </div>
             <div id="absences-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </div>
     </div>
+
+    <!-- MODAL AGREGAR -->
+    <div id="add-element-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target === this) window.dayViewManager.closeAddModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800">Asignar Personal <span id="add-modal-area-label" class="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded ml-2 hidden"></span></h3>
+                <button onclick="window.dayViewManager.closeAddModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-3 bg-white border-b border-slate-100">
+                <input type="text" placeholder="Buscar..." class="w-full pl-4 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50" onkeyup="window.dayViewManager.filterElementsList(this.value)">
+            </div>
+            <div id="elements-selection-list" class="flex-grow overflow-y-auto p-2 space-y-3 bg-slate-50 custom-scrollbar"></div>
+        </div>
+    </div>
 </div>
 
-<img src="x" onerror="if(window.dayViewManager) window.dayViewManager.init(); else if(document.getElementById('script-day-view')) eval(document.getElementById('script-day-view').innerText);" style="display:none;" />
+<!-- INTEGRIDAD: Trigger de Ejecución de Script -->
+<img src="x" onerror="if(!window.dayViewManager && document.getElementById('script-day-view')) eval(document.getElementById('script-day-view').innerText);" style="display:none;" />
 
 <script id="script-day-view">
+    window.RegAs = window.RegAs || {};
+    // Store simple de asignaciones
+    if (!window.RegAs.assignments) {
+        window.RegAs.assignments = {
+            STORAGE_KEY: 'regas_assignments',
+            getAll() { return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]'); },
+            save(data) { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data)); window.dispatchEvent(new CustomEvent('regas:assignments-updated')); },
+            addMany(newA) { const all = this.getAll(); newA.forEach(n => { const idx = all.findIndex(a => a.elementId === n.elementId && a.date === n.date); if(idx !== -1) all.splice(idx,1); all.push(n); }); this.save(all); },
+            remove(elementId, date) { let all = this.getAll(); all = all.filter(a => !(a.elementId === elementId && a.date === date)); this.save(all); }
+        };
+    }
+
     window.dayViewManager = {
         currentDate: new Date(),
         currentTab: 'Diurno',
-
+        alertInterval: null,
+        targetAreaForAdd: null,
+        
         init() {
             if (!this._listening) {
-                window.addEventListener('regas:assignments-updated', () => this.render());
+                window.addEventListener('regas:assignments-updated', () => {
+                    this.render();
+                    this.checkAlerts();
+                });
                 this._listening = true;
             }
             this.setDate(new Date().toISOString().split('T')[0]);
+            
+            this.checkAlerts();
+            if(this.alertInterval) clearInterval(this.alertInterval);
+            this.alertInterval = setInterval(() => this.checkAlerts(), 60000); // Revisar cada minuto
+            
+            console.log("DayViewManager Initialized");
         },
 
         setDate(dateStr) {
@@ -59,236 +106,254 @@
             this.currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
             const picker = document.getElementById('current-date-picker');
             if(picker) picker.value = dateStr;
-            document.getElementById('day-label').textContent = this.currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+            const isToday = this.currentDate.toDateString() === new Date().toDateString();
+            document.getElementById('day-label').textContent = isToday ? 'HOY' : this.currentDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
             this.render();
+            this.checkAlerts();
         },
 
-        changeDate(days) {
-            this.currentDate.setDate(this.currentDate.getDate() + days);
-            const dateStr = this.currentDate.getFullYear() + '-' + String(this.currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(this.currentDate.getDate()).padStart(2, '0');
-            this.setDate(dateStr);
-        },
-
-        setTab(tabName) {
-            this.currentTab = tabName;
-            this.render();
-        },
+        changeDate(d) { this.currentDate.setDate(this.currentDate.getDate() + d); this.setDate(this.formatDate(this.currentDate)); },
+        setTab(t) { this.currentTab = t; this.render(); },
+        formatDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); },
 
         render() {
-            const dateStr = this.currentDate.getFullYear() + '-' + String(this.currentDate.getMonth() + 1).padStart(2, '0') + '-' + String(this.currentDate.getDate()).padStart(2, '0');
-            const allAssignments = window.RegAs?.assignments?.getAll() || JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+            const dateStr = this.formatDate(this.currentDate);
+            document.getElementById('btn-add-shift-name').textContent = this.currentTab;
+            
+            const allAssignments = window.RegAs.assignments.getAll();
             const configElements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
-            const dayAssignments = allAssignments.filter(a => a.date === dateStr);
+            
+            const todayAssignments = allAssignments.filter(a => a.date === dateStr);
             const groups = { 'Diurno': [], 'Vespertino': [], 'Nocturno': [], 'Descanso': [] };
 
-            dayAssignments.forEach(assign => {
-                const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área', icon: 'fa-user' };
-                const item = { ...assign, ...elementInfo };
-                if (assign.shift === 'Descanso' || assign.type === 'Descanso') groups['Descanso'].push(item);
-                else if (groups[assign.shift]) groups[assign.shift].push(item);
-                else {
-                    const h = parseInt(assign.startTime?.split(':')[0] || 0);
-                    if (h >= 20 || h <= 5) groups['Nocturno'].push(item); else if (h >= 13) groups['Vespertino'].push(item); else groups['Diurno'].push(item);
-                }
+            todayAssignments.forEach(assign => {
+                const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
+                const item = { ...elementInfo, ...assign }; 
+                if (groups[assign.shift]) groups[assign.shift].push(item);
+                else groups['Diurno'].push(item); // Fallback
             });
 
-            document.getElementById('stat-diurno').textContent = groups['Diurno'].length;
-            document.getElementById('stat-vespertino').textContent = groups['Vespertino'].length;
-            document.getElementById('stat-nocturno').textContent = groups['Nocturno'].length;
-            document.getElementById('count-absences').textContent = groups['Descanso'].length;
+            ['Diurno','Vespertino','Nocturno'].forEach(t => {
+                const el = document.getElementById(`stat-${t.toLowerCase()}`);
+                if(el) el.textContent = groups[t].length;
+            });
+            const elAbs = document.getElementById('count-absences');
+            if(elAbs) elAbs.textContent = groups['Descanso'].length;
 
-            this.updateTabsUI();
-            this.renderActiveTabContent(groups[this.currentTab]);
+            ['Diurno','Vespertino','Nocturno'].forEach(t => {
+                const btn = document.getElementById(`tab-${t.toLowerCase()}`);
+                const active = this.currentTab === t;
+                btn.className = `flex-1 py-3 text-sm font-${active ? 'bold' : 'medium'} border-b-2 transition-all ${active ? (t==='Diurno'?'text-blue-600 border-blue-600 bg-blue-50': t==='Vespertino'?'text-orange-600 border-orange-600 bg-orange-50':'text-slate-800 border-slate-800 bg-slate-100') : 'text-slate-400 border-transparent hover:text-slate-600'}`;
+            });
+
+            this.renderContent(groups[this.currentTab]);
             this.renderAbsences(groups['Descanso']);
         },
 
-        updateTabsUI() {
-            ['Diurno', 'Vespertino', 'Nocturno'].forEach(tab => {
-                const btn = document.getElementById(`tab-${tab.toLowerCase()}`);
-                if (this.currentTab === tab) btn.className = `flex-1 py-3 text-sm font-bold border-b-2 transition-all flex justify-center items-center gap-2 ${this.getTabColor(tab, true)}`;
-                else btn.className = `flex-1 py-3 text-sm font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-all flex justify-center items-center gap-2`;
-            });
-        },
+        checkAlerts() {
+            const panel = document.getElementById('imminent-activity-panel');
+            const container = document.getElementById('alerts-container');
+            if (!panel || !container) return;
 
-        getTabColor(tab, active) {
-            if (!active) return "";
-            if (tab === 'Diurno') return "text-blue-700 border-blue-600 bg-blue-50";
-            if (tab === 'Vespertino') return "text-orange-700 border-orange-500 bg-orange-50";
-            if (tab === 'Nocturno') return "text-slate-800 border-slate-800 bg-slate-200";
-            return "";
-        },
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const updateTimeEl = document.getElementById('alert-last-update');
+            if(updateTimeEl) updateTimeEl.textContent = timeStr;
 
-        renderActiveTabContent(items) {
-            const container = document.getElementById('active-shift-container');
-            container.innerHTML = '';
-            if (items.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-48 text-slate-300"><i class="fa-regular fa-calendar-xmark text-4xl mb-3"></i><p class="text-sm">Sin personal asignado</p></div>`;
+            const dateStr = this.formatDate(this.currentDate);
+            if (dateStr !== this.formatDate(now)) {
+                panel.classList.add('hidden');
                 return;
             }
-            const areas = {};
-            items.forEach(item => { const area = item.area || 'Sin Asignar'; if (!areas[area]) areas[area] = []; areas[area].push(item); });
 
-            Object.keys(areas).sort().forEach(areaName => {
-                const areaItems = areas[areaName];
-                const groupEl = document.createElement('div');
-                groupEl.innerHTML = `<h4 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></span>${areaName}<span class="ml-2 text-[10px] bg-slate-200 px-1.5 rounded text-slate-500">${areaItems.length}</span></h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 area-grid"></div>`;
-                const grid = groupEl.querySelector('.area-grid');
-                areaItems.forEach(item => {
-                    const card = document.createElement('div');
-                    const itemData = encodeURIComponent(JSON.stringify(item));
-                    // CAMBIO: Ahora llama a la nueva lógica de panel global
-                    card.onclick = () => window.dayViewManager.openSidePanel(decodeURIComponent(itemData));
-                    
-                    let sideColor = "bg-slate-400";
-                    if(this.currentTab === 'Diurno') sideColor = "bg-blue-500";
-                    if(this.currentTab === 'Vespertino') sideColor = "bg-orange-500";
-                    if(this.currentTab === 'Nocturno') sideColor = "bg-slate-800";
-                    
-                    const localPhotoPath = `FotosElementosPP/${item.id}.jpg`;
-                    const avatar = `<img src="${localPhotoPath}" class="w-10 h-10 rounded-full object-cover border border-slate-100" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400\\'><i class=\\'fa-solid fa-user\\'></i></div>'">`;
+            const allAssignments = window.RegAs.assignments.getAll().filter(a => a.date === dateStr);
+            const configElements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            const alerts = [];
 
-                    card.className = "bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md hover:border-brand-300 transition-all cursor-pointer flex items-center gap-3 group relative overflow-hidden";
-                    card.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 ${sideColor}"></div>${avatar}<div class="flex-grow min-w-0"><h5 class="text-sm font-bold text-slate-800 truncate">${item.name}</h5><p class="text-xs text-slate-500 font-mono">${item.startTime} - ${item.duration}h</p></div><i class="fa-solid fa-chevron-right text-slate-300 opacity-0 group-hover:opacity-100 text-xs"></i>`;
-                    grid.appendChild(card);
-                });
-                container.appendChild(groupEl);
+            allAssignments.forEach(assign => {
+                if (assign.isAbsent || assign.shift === 'Descanso') return;
+                const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
+                const item = { ...elementInfo, ...assign };
+                const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+                const [startH, startM] = (assign.startTime || "00:00").split(':').map(Number);
+                const startMinutes = (startH * 60) + startM;
+                if (!assign.checkInTime && currentMinutes > (startMinutes + 15)) {
+                    alerts.push({ type: 'late_in', msg: 'Retardo de Entrada', color: 'red', icon: 'fa-user-clock', item });
+                } else if (!assign.checkInTime && currentMinutes >= (startMinutes - 15) && currentMinutes <= startMinutes) {
+                    alerts.push({ type: 'coming_soon', msg: 'Entrada Inminente', color: 'blue', icon: 'fa-person-walking-arrow-right', item });
+                }
+                const durationMinutes = (parseFloat(assign.duration || 8) * 60);
+                if (assign.checkInTime && !assign.checkOutTime && currentMinutes > (startMinutes + durationMinutes + 30)) {
+                    alerts.push({ type: 'late_out', msg: 'Salida Pendiente', color: 'orange', icon: 'fa-hourglass-end', item });
+                }
             });
+
+            container.innerHTML = '';
+            if (alerts.length === 0) {
+                panel.classList.add('hidden');
+                return;
+            }
+            panel.classList.remove('hidden');
+            alerts.forEach(alert => {
+                const card = document.createElement('div');
+                card.className = "w-full flex-shrink-0 bg-white border border-slate-200 rounded-lg p-2.5 hover:shadow-md transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden group mb-2";
+                const borderClass = `bg-${alert.color}-500`;
+                const textClass = `text-${alert.color}-600`;
+                const photo = `FotosElementosPP/${alert.item.id}.jpg`;
+                card.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 ${borderClass}"></div><img src="${photo}" class="w-8 h-8 rounded-full object-cover border border-slate-100 bg-slate-50" onerror="this.src='https://ui-avatars.com/api/?name=${alert.item.name}&background=random'"><div class="min-w-0 flex-grow"><div class="flex items-center gap-1.5 mb-0.5"><i class="fa-solid ${alert.icon} text-[10px] ${textClass}"></i><span class="text-[9px] font-bold ${textClass} uppercase tracking-wider leading-none">${alert.msg}</span></div><h5 class="text-xs font-bold text-slate-700 truncate leading-tight">${alert.item.name}</h5><p class="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5"><i class="fa-regular fa-clock text-[9px]"></i> ${alert.item.startTime} • ${alert.item.area || 'General'}</p></div><i class="fa-solid fa-chevron-right text-slate-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>`;
+                card.onclick = (e) => { e.stopPropagation(); window.dayViewManager.openSidePanel(alert.item); };
+                container.appendChild(card);
+            });
+        },
+
+        renderContent(items) {
+            const container = document.getElementById('active-shift-container');
+            container.innerHTML = '';
+            
+            // Build areas structure from config to include empty ones
+            const areas = {};
+            const areaConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
+            const areaOrder = {};
+            let orderCounter = 0;
+            if (areaConfig.categories) {
+                areaConfig.categories.forEach(cat => {
+                    if (cat.areas) {
+                        cat.areas.forEach(area => { 
+                            areaOrder[area.name] = orderCounter++; 
+                            areas[area.name] = []; // Initialize empty array
+                        });
+                    }
+                });
+            }
+            // Ensure 'General' or other unconfigured areas from items exist
+            items.forEach(i => { 
+                const a = i.area || 'General'; 
+                if(!areas[a]) areas[a]=[]; 
+                areas[a].push(i); 
+            });
+
+            const sortedAreaKeys = Object.keys(areas).sort((a, b) => {
+                const orderA = areaOrder[a] !== undefined ? areaOrder[a] : 9999;
+                const orderB = areaOrder[b] !== undefined ? areaOrder[b] : 9999;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.localeCompare(b);
+            });
+
+            sortedAreaKeys.forEach(area => {
+                const div = document.createElement('div');
+                div.innerHTML = `<h4 class="text-xs font-bold text-slate-500 uppercase mb-3 pl-1 flex items-center justify-between"><div class="flex items-center"><span class="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>${area}</div></h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 area-grid"></div>`;
+                const grid = div.querySelector('.area-grid');
+                
+                if (areas[area].length > 0) {
+                    areas[area].forEach(item => grid.appendChild(this.createCard(item)));
+                } else {
+                    // Empty State Card with Add Button
+                    const emptyCard = document.createElement('button');
+                    emptyCard.className = "border-2 border-dashed border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-brand-300 hover:text-brand-500 hover:bg-white transition-all h-[76px] group";
+                    emptyCard.innerHTML = `<i class="fa-solid fa-plus text-lg mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[10px] font-bold uppercase">Asignar aquí</span>`;
+                    emptyCard.onclick = () => window.dayViewManager.initiateAddToArea(area);
+                    grid.appendChild(emptyCard);
+                }
+                container.appendChild(div);
+            });
+        },
+
+        createCard(item) {
+            const card = document.createElement('div');
+            card.onclick = () => window.dayViewManager.openSidePanel(item);
+            
+            const isActive = item.checkInTime && !item.checkOutTime;
+            const color = this.currentTab==='Diurno'?'bg-blue-500':this.currentTab==='Vespertino'?'bg-orange-500':'bg-slate-800';
+            const photo = `FotosElementosPP/${item.id}.jpg`;
+            const imgClass = isActive ? "w-10 h-10 rounded-full object-cover border-2 border-green-500 shadow-sm" : "w-10 h-10 rounded-full object-cover border border-slate-100 bg-slate-100";
+            const activeIndicator = isActive ? `<div class="absolute top-2 right-2 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></div>` : '';
+            const statusIcon = isActive ? `<i class="fa-solid fa-circle-check text-green-500 ml-1 text-xs" title="Activo"></i>` : '';
+
+            card.className = "bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md hover:border-brand-300 transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden group";
+            card.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 ${color}"></div>${activeIndicator}<img src="${photo}" class="${imgClass}" onerror="this.src='https://ui-avatars.com/api/?name=${item.name}&background=random'"><div class="min-w-0 pr-2"><h5 class="text-sm font-bold text-slate-800 truncate flex items-center gap-1">${item.name} ${statusIcon}</h5><p class="text-xs text-slate-500 font-mono flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> ${item.startTime} - ${item.duration}h</p></div>`;
+            return card;
         },
 
         renderAbsences(items) {
             const container = document.getElementById('absences-list');
             container.innerHTML = '';
-            if (items.length === 0) { container.innerHTML = `<p class="text-xs text-slate-400 col-span-full italic ml-2">Sin ausencias.</p>`; return; }
             items.forEach(item => {
-                const el = document.createElement('div');
-                el.className = "bg-slate-100 border border-slate-200 rounded p-2 flex items-center gap-3 opacity-75";
-                const localPhotoPath = `FotosElementosPP/${item.id}.jpg`;
-                const avatar = `<img src="${localPhotoPath}" class="w-8 h-8 rounded-full object-cover grayscale" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex'"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs hidden"><i class="fa-solid fa-bed"></i></div>`;
-                el.innerHTML = `${avatar}<div><p class="text-xs font-bold text-slate-600 line-through decoration-slate-400">${item.name}</p><p class="text-[10px] text-slate-500">${item.area}</p></div>`;
-                container.appendChild(el);
+                const div = document.createElement('div');
+                div.className = "bg-slate-100 border border-slate-200 rounded-lg p-2 flex items-center gap-3 opacity-75 hover:opacity-100 cursor-pointer transition-opacity";
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-bed"></i></div><div><p class="text-xs font-bold text-slate-600 line-through">${item.name}</p><p class="text-[10px] text-slate-500">${item.area}</p></div>`;
+                div.onclick = () => window.dayViewManager.openSidePanel(item);
+                container.appendChild(div);
             });
         },
 
-        // --- LÓGICA DEL PANEL GLOBAL ---
-        openSidePanel(itemJson) {
-            const item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
-            
-            // Generamos el HTML del panel aquí
-            const localPhotoPath = `FotosElementosPP/${item.elementId || item.id}.jpg`;
-            const currentId = item.elementId || item.id;
+        initiateAddToArea(area) {
+            this.targetAreaForAdd = area;
+            const label = document.getElementById('add-modal-area-label');
+            label.textContent = `en ${area}`;
+            label.classList.remove('hidden');
+            this.openAddModal();
+        },
 
-            const html = `
-                <!-- Header: Foto Full Width -->
-                <div class="h-48 bg-slate-200 relative shrink-0 group">
-                    <img src="${localPhotoPath}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=random&size=256'">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent flex flex-col justify-end p-5">
-                        <div class="flex justify-between items-end w-full">
-                            <div>
-                                <h2 class="text-white font-bold text-xl leading-tight drop-shadow-md mb-1">${item.name}</h2>
-                                <p class="text-slate-300 text-xs font-mono drop-shadow-sm flex items-center gap-2">
-                                    <span class="bg-white/20 px-1.5 rounded text-[10px]">ID: ${currentId}</span>
-                                </p>
-                            </div>
-                            <!-- Botón Acceso Directo Perfil Completo -->
-                            <button onclick="if(window.openElementProfile) { window.toggleRightPanel(false); window.openElementProfile('${currentId}'); }" class="mb-1 text-white hover:text-brand-200 bg-white/20 hover:bg-white/30 border border-white/30 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
-                                <i class="fa-solid fa-expand"></i> <span class="hidden sm:inline">Perfil</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pestañas del Panel -->
-                <div class="flex border-b border-slate-200 bg-white shrink-0">
-                    <button class="flex-1 py-3 text-sm font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50">Turno</button>
-                    <button class="flex-1 py-3 text-sm font-medium text-slate-400 border-b-2 border-transparent" disabled>Incidencias</button>
-                    <button class="flex-1 py-3 text-sm font-medium text-slate-400 border-b-2 border-transparent" disabled>Bitácora</button>
-                </div>
-
-                <!-- Contenido Timeline -->
-                <div class="flex-grow overflow-y-auto p-6 bg-slate-50">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Proceso de Asistencia</h3>
-                    <div class="relative pl-4 border-l-2 border-slate-200 space-y-8">
-                        
-                        <!-- Asignación -->
-                        <div class="relative">
-                            <div class="absolute -left-[21px] top-0 w-3 h-3 bg-brand-600 rounded-full border-2 border-white shadow-sm ring-1 ring-brand-100"></div>
-                            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                <div class="flex justify-between items-start mb-1">
-                                    <span class="text-sm font-bold text-slate-700">Turno Asignado</span>
-                                    <span class="text-[10px] bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded border border-brand-100">${item.shift}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-xs font-mono text-slate-600 bg-slate-50 p-1.5 rounded">
-                                    <i class="fa-regular fa-clock"></i> <span>${item.startTime} - ${item.duration}h</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Entrada -->
-                        <div class="relative">
-                            <div class="absolute -left-[21px] top-2 w-3 h-3 bg-white rounded-full border-2 border-slate-300 shadow-sm" id="dot-checkin"></div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">Hora de Entrada</label>
-                                <div class="flex gap-2">
-                                    <input type="time" id="input-checkin" class="w-full text-sm border-slate-300 rounded-md focus:border-brand-500 focus:ring-brand-500" onchange="window.dayViewManager.updateTimelineStatus()">
-                                    <button class="bg-white border border-slate-300 text-slate-400 hover:text-green-600 hover:border-green-500 rounded-md px-3" onclick="window.dayViewManager.setNow('input-checkin')"><i class="fa-solid fa-stopwatch"></i></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Salida -->
-                        <div class="relative">
-                            <div class="absolute -left-[21px] top-2 w-3 h-3 bg-white rounded-full border-2 border-slate-300 shadow-sm" id="dot-checkout"></div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">Hora de Salida</label>
-                                <div class="flex gap-2">
-                                    <input type="time" id="input-checkout" class="w-full text-sm border-slate-300 rounded-md focus:border-brand-500 focus:ring-brand-500" onchange="window.dayViewManager.updateTimelineStatus()">
-                                    <button class="bg-white border border-slate-300 text-slate-400 hover:text-red-600 hover:border-red-500 rounded-md px-3" onclick="window.dayViewManager.setNow('input-checkout')"><i class="fa-solid fa-stopwatch"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Incidencias -->
-                    <div class="mt-8 pt-6 border-t border-slate-200 space-y-3">
-                        <label class="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300"><span class="text-sm text-slate-700">Es Recuperación</span></label>
-                        <label class="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300"><span class="text-sm text-slate-700">Tiempo Extra</span></label>
-                        <label class="flex items-center space-x-3 cursor-pointer group"><input type="checkbox" class="form-checkbox h-4 w-4 text-red-600 rounded border-slate-300"><span class="text-sm text-slate-700">Retardo / Salida Anticipada</span></label>
-                    </div>
-                </div>
-
-                <!-- Footer -->
-                <div class="p-4 border-t border-slate-200 bg-white">
-                    <button onclick="window.toggleRightPanel(false)" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg shadow-sm transition-colors text-sm">Guardar Asistencia</button>
-                </div>
-            `;
-
-            // INYECTAR EN INDEX
-            if(window.updateRightPanelContent) {
-                window.updateRightPanelContent(html);
-                window.toggleRightPanel(true);
-            } else {
-                console.error("Función del index no encontrada");
+        openAddModal() {
+            // If opening generically (without target area), hide the specific area label
+            if (!this.targetAreaForAdd) {
+                document.getElementById('add-modal-area-label').classList.add('hidden');
             }
+            document.getElementById('add-element-modal').classList.remove('hidden');
+            this.renderElementsList();
+        },
+        
+        closeAddModal() { 
+            document.getElementById('add-element-modal').classList.add('hidden'); 
+            this.targetAreaForAdd = null; // Reset
+        },
+        
+        filterElementsList(q) { this.renderElementsList(q.toLowerCase()); },
+        renderElementsList(filter='') {
+            const container = document.getElementById('elements-selection-list');
+            const elements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            container.innerHTML = '';
+
+            elements.filter(e => !filter || e.name.toLowerCase().includes(filter)).forEach(e => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left flex items-center gap-3 p-2 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-200";
+                btn.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">${e.name.charAt(0)}</div><div><p class="text-sm font-bold text-slate-700">${e.name}</p><p class="text-[10px] text-slate-400">${e.area || 'General'}</p></div>`;
+                btn.onclick = () => {
+                    const areaToAssign = this.targetAreaForAdd || e.area || 'General';
+                    window.RegAs.assignments.addMany([{ 
+                        elementId: e.id, 
+                        date: this.formatDate(this.currentDate), 
+                        shift: this.currentTab, 
+                        startTime: '07:00', 
+                        duration: 8,
+                        area: areaToAssign // Explicitly set area
+                    }]);
+                    this.closeAddModal();
+                };
+                container.appendChild(btn);
+            });
         },
 
-        setNow(inputId) {
-            const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            document.getElementById(inputId).value = timeStr;
-            this.updateTimelineStatus();
-        },
-
-        updateTimelineStatus() {
-            const checkin = document.getElementById('input-checkin').value;
-            const checkout = document.getElementById('input-checkout').value;
-            const dotIn = document.getElementById('dot-checkin');
-            const dotOut = document.getElementById('dot-checkout');
-
-            if(checkin) { dotIn.classList.remove('bg-white', 'border-slate-300'); dotIn.classList.add('bg-green-500', 'border-green-600'); }
-            else { dotIn.classList.add('bg-white', 'border-slate-300'); dotIn.classList.remove('bg-green-500', 'border-green-600'); }
-
-            if(checkout) { dotOut.classList.remove('bg-white', 'border-slate-300'); dotOut.classList.add('bg-red-500', 'border-red-600'); }
-            else { dotOut.classList.add('bg-white', 'border-slate-300'); dotOut.classList.remove('bg-red-500', 'border-red-600'); }
+        async openSidePanel(item) {
+            console.log("Solicitud de apertura de panel para:", item.name);
+            if (typeof window.loadComponent === 'function' && window.toggleRightPanel) {
+                if (!window.profileSidePanelManager) {
+                    console.log("Cargando Baner_Perfil.html en panel derecho...");
+                    await window.loadComponent('Componentes/Baner_Perfil.html', 'right-panel-content');
+                }
+                window.toggleRightPanel(true);
+                setTimeout(() => {
+                    if (window.profileSidePanelManager) {
+                        window.profileSidePanelManager.init(item);
+                    } else {
+                        const script = document.getElementById('script-baner-perfil');
+                        if(script) eval(script.innerText);
+                        if(window.profileSidePanelManager) window.profileSidePanelManager.init(item);
+                    }
+                }, 50);
+            } else {
+                console.error("Error de entorno: loadComponent o toggleRightPanel no definidos.");
+            }
         }
     };
 

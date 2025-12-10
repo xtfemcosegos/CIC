@@ -1,0 +1,443 @@
+<!-- GESTOR DE PLANTILLAS (TURNOS Y PATRONES) -->
+<div class="flex flex-col h-full relative animate-fade-in">
+    
+    <!-- Header y Selector de Modo -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-slate-100 gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Biblioteca de Horarios</h2>
+            <p class="text-xs text-slate-500">Define los bloques de tiempo y las secuencias de trabajo.</p>
+        </div>
+        
+        <!-- Selector de Tipo de Plantilla -->
+        <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner">
+            <button onclick="window.shiftManager.setMode('shift')" id="tab-mode-shift" class="px-4 py-2 text-sm font-semibold rounded-md shadow bg-white text-brand-600 transition-all">
+                <i class="fa-regular fa-clock mr-2"></i>Turnos
+            </button>
+            <button onclick="window.shiftManager.setMode('pattern')" id="tab-mode-pattern" class="px-4 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition-all">
+                <i class="fa-solid fa-layer-group mr-2"></i>Patrones
+            </button>
+        </div>
+
+        <button onclick="window.shiftManager.createNew()" class="bg-brand-600 text-white hover:bg-brand-700 px-4 py-2 rounded-lg text-sm shadow-sm transition-colors md:ml-auto">
+            <i class="fa-solid fa-plus mr-1"></i> <span id="btn-new-label">Nuevo Turno</span>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+        
+        <!-- 1. LISTA (Izquierda) -->
+        <div class="w-full md:w-1/3 overflow-y-auto pr-2 space-y-3" id="templates-list">
+            <!-- Se llena con JS -->
+        </div>
+
+        <!-- 2. EDITOR (Derecha) -->
+        <div class="w-full md:w-2/3 bg-slate-50 rounded-xl border border-slate-200 p-6 flex flex-col relative overflow-hidden">
+            
+            <!-- Estado Vacío -->
+            <div id="editor-empty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50 z-20 rounded-xl">
+                <i class="fa-solid fa-swatchbook text-4xl mb-3 text-slate-300"></i>
+                <p>Selecciona un elemento para editar</p>
+            </div>
+
+            <!-- FORMULARIO: TURNOS -->
+            <div id="editor-shift" class="h-full flex flex-col hidden">
+                <div class="flex items-center gap-2 mb-4 text-brand-700 bg-brand-50 p-3 rounded-lg border border-brand-100">
+                    <i class="fa-regular fa-clock text-lg"></i>
+                    <h3 class="font-bold">Configurar Turno Único</h3>
+                </div>
+                
+                <div class="space-y-4 flex-grow overflow-y-auto">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Nombre (Etiqueta)</label>
+                        <input type="text" id="shift-name" placeholder="Ej: Matutino A" class="w-full rounded-md border-slate-300 text-sm focus:ring-brand-500 focus:border-brand-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Tipo Jornada</label>
+                            <select id="shift-type" onchange="window.shiftManager.updateDefaults()" class="w-full rounded-md border-slate-300 text-sm">
+                                <option value="Diurno">Diurno</option>
+                                <option value="Vespertino">Vespertino</option>
+                                <option value="Nocturno">Nocturno</option>
+                                <option value="Mixto">Mixto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Color Visual</label>
+                            <select id="shift-color" class="w-full rounded-md border-slate-300 text-sm">
+                                <option value="blue">Azul (Diurno)</option>
+                                <option value="orange">Naranja (Vespertino)</option>
+                                <option value="slate">Gris (Nocturno)</option>
+                                <option value="purple">Morado (Mixto)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Hora Inicio</label>
+                            <input type="time" id="shift-start" class="w-full rounded-md border-slate-300 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Duración (Hrs)</label>
+                            <input type="number" id="shift-duration" class="w-full rounded-md border-slate-300 text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORMULARIO: PATRONES -->
+            <div id="editor-pattern" class="h-full flex flex-col hidden">
+                <div class="flex items-center gap-2 mb-4 text-purple-700 bg-purple-50 p-3 rounded-lg border border-purple-100">
+                    <i class="fa-solid fa-layer-group text-lg"></i>
+                    <h3 class="font-bold">Configurar Patrón de Secuencia</h3>
+                </div>
+
+                <div class="space-y-4 flex-grow overflow-y-auto pr-1">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Nombre del Patrón</label>
+                        <input type="text" id="pattern-name" placeholder="Ej: Jornada 4x3" class="w-full rounded-md border-slate-300 text-sm focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+
+                    <!-- Constructor de Pasos -->
+                    <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Agregar Paso a la Secuencia</h4>
+                        <div class="flex gap-2 mb-2">
+                            <select id="p-step-type" class="w-1/3 rounded text-xs border-slate-300">
+                                <option value="Diurno">Diurno</option>
+                                <option value="Nocturno">Nocturno</option>
+                                <option value="Vespertino">Vespertino</option>
+                                <option value="Descanso">Descanso</option>
+                            </select>
+                            <input type="time" id="p-step-start" value="07:00" class="w-1/4 rounded text-xs border-slate-300">
+                            <input type="number" id="p-step-duration" value="8" placeholder="Hrs" class="w-1/4 rounded text-xs border-slate-300">
+                            <button onclick="window.shiftManager.addPatternStep()" class="bg-purple-600 text-white rounded w-10 flex items-center justify-center hover:bg-purple-700">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visualizador de Pasos -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-xs font-medium text-slate-700">Secuencia Actual</label>
+                            <button onclick="window.shiftManager.clearPatternSteps()" class="text-[10px] text-red-500 hover:underline">Limpiar todo</button>
+                        </div>
+                        <div id="pattern-steps-container" class="space-y-2 min-h-[100px] bg-slate-100 p-2 rounded-lg border border-dashed border-slate-300">
+                            <!-- Steps renderizados aquí -->
+                            <p class="text-xs text-slate-400 text-center py-4">Agrega pasos arriba para crear la secuencia.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Común (Botones) -->
+            <div class="flex justify-between items-center pt-4 border-t border-slate-200 mt-auto z-30 bg-slate-50">
+                <button onclick="window.shiftManager.deleteCurrent()" id="btn-delete" class="text-red-500 hover:bg-red-50 px-3 py-2 rounded text-sm transition-colors hidden">
+                    <i class="fa-solid fa-trash mr-1"></i> Eliminar
+                </button>
+                <button onclick="window.shiftManager.save()" class="bg-slate-800 text-white hover:bg-slate-900 px-6 py-2 rounded shadow-sm text-sm font-medium transition-colors ml-auto">
+                    Guardar Cambios
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    window.shiftManager = {
+        KEYS: {
+            shift: 'regas_shift_templates',
+            pattern: 'regas_pattern_templates'
+        },
+        mode: 'shift', // 'shift' | 'pattern'
+        currentId: null,
+        currentPatternSteps: [],
+
+        init() {
+            // Cargar datos iniciales de ejemplo si no existen
+            if(!localStorage.getItem(this.KEYS.shift)) {
+                const shifts = [
+                    { id: 's1', name: 'Matutino (07-15)', type: 'Diurno', color: 'blue', start: '07:00', duration: 8 },
+                    { id: 's2', name: 'Vespertino (14-22)', type: 'Vespertino', color: 'orange', start: '14:00', duration: 8 },
+                    { id: 's3', name: 'Nocturno (21-05)', type: 'Nocturno', color: 'slate', start: '21:00', duration: 8 }
+                ];
+                localStorage.setItem(this.KEYS.shift, JSON.stringify(shifts));
+            }
+            if(!localStorage.getItem(this.KEYS.pattern)) {
+                const patterns = [
+                    { 
+                        id: 'p1', name: 'Jornada 4x3 (Día)', 
+                        steps: [
+                            {type:'Diurno', start:'07:00', duration:12}, 
+                            {type:'Diurno', start:'07:00', duration:12},
+                            {type:'Diurno', start:'07:00', duration:12},
+                            {type:'Diurno', start:'07:00', duration:12},
+                            {type:'Descanso', start:'', duration:0},
+                            {type:'Descanso', start:'', duration:0},
+                            {type:'Descanso', start:'', duration:0}
+                        ] 
+                    }
+                ];
+                localStorage.setItem(this.KEYS.pattern, JSON.stringify(patterns));
+            }
+            
+            this.setMode('shift'); // Iniciar en modo turnos
+        },
+
+        setMode(mode) {
+            this.mode = mode;
+            this.currentId = null;
+            
+            // Actualizar Tabs UI
+            const btnShift = document.getElementById('tab-mode-shift');
+            const btnPattern = document.getElementById('tab-mode-pattern');
+            const btnNew = document.getElementById('btn-new-label');
+            const editorShift = document.getElementById('editor-shift');
+            const editorPattern = document.getElementById('editor-pattern');
+            const editorEmpty = document.getElementById('editor-empty');
+
+            // Reset Editor Visibility
+            editorEmpty.classList.remove('hidden');
+            editorShift.classList.add('hidden');
+            editorPattern.classList.add('hidden');
+            document.getElementById('btn-delete').classList.add('hidden');
+
+            if (mode === 'shift') {
+                btnShift.className = "px-4 py-2 text-sm font-semibold rounded-md shadow bg-white text-brand-600 transition-all";
+                btnPattern.className = "px-4 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition-all";
+                btnNew.textContent = "Nuevo Turno";
+            } else {
+                btnShift.className = "px-4 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition-all";
+                btnPattern.className = "px-4 py-2 text-sm font-semibold rounded-md shadow bg-white text-purple-600 transition-all";
+                btnNew.textContent = "Nuevo Patrón";
+            }
+
+            this.renderList();
+        },
+
+        getData() {
+            return JSON.parse(localStorage.getItem(this.KEYS[this.mode]) || '[]');
+        },
+
+        renderList() {
+            const list = document.getElementById('templates-list');
+            list.innerHTML = '';
+            const data = this.getData();
+
+            if (data.length === 0) {
+                list.innerHTML = '<p class="text-center text-slate-400 text-xs mt-10">No hay plantillas creadas.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const isActive = item.id === this.currentId;
+                const el = document.createElement('div');
+                
+                // Estilos específicos por modo
+                let borderClass = isActive 
+                    ? (this.mode === 'shift' ? 'border-brand-500 ring-1 ring-brand-500' : 'border-purple-500 ring-1 ring-purple-500')
+                    : 'border-slate-200 hover:border-slate-300';
+                
+                el.className = `p-4 rounded-xl cursor-pointer border bg-white shadow-sm transition-all ${borderClass}`;
+                el.onclick = () => this.selectItem(item.id);
+
+                if (this.mode === 'shift') {
+                    // Render Item Turno
+                    let badgeColor = item.color === 'blue' ? 'bg-blue-100 text-blue-700' : item.color === 'slate' ? 'bg-slate-200 text-slate-700' : 'bg-orange-100 text-orange-700';
+                    el.innerHTML = `
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded ${badgeColor}">${item.type}</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
+                        <p class="text-xs text-slate-500 font-mono mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.start} (${item.duration}h)</p>
+                    `;
+                } else {
+                    // Render Item Patrón
+                    const stepsSummary = item.steps.map(s => s.type[0]).join('-'); // E.g. D-D-N-N
+                    el.innerHTML = `
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-700">Secuencia</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
+                        <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-shoe-prints mr-1"></i>${item.steps.length} Pasos: <span class="font-mono bg-slate-100 px-1 rounded">${stepsSummary}</span></p>
+                    `;
+                }
+                list.appendChild(el);
+            });
+        },
+
+        createNew() {
+            this.currentId = null;
+            this.renderList(); // Limpiar selección visual
+            
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('btn-delete').classList.add('hidden');
+
+            if (this.mode === 'shift') {
+                document.getElementById('editor-shift').classList.remove('hidden');
+                document.getElementById('editor-pattern').classList.add('hidden');
+                // Limpiar campos turno
+                document.getElementById('shift-name').value = '';
+                document.getElementById('shift-type').value = 'Diurno';
+                this.updateDefaults();
+            } else {
+                document.getElementById('editor-shift').classList.add('hidden');
+                document.getElementById('editor-pattern').classList.remove('hidden');
+                // Limpiar campos patrón
+                document.getElementById('pattern-name').value = '';
+                this.currentPatternSteps = [];
+                this.renderPatternStepsUI();
+            }
+        },
+
+        selectItem(id) {
+            this.currentId = id;
+            this.renderList();
+            
+            const data = this.getData();
+            const item = data.find(i => i.id === id);
+            
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('btn-delete').classList.remove('hidden');
+
+            if (this.mode === 'shift') {
+                document.getElementById('editor-shift').classList.remove('hidden');
+                document.getElementById('editor-pattern').classList.add('hidden');
+                
+                document.getElementById('shift-name').value = item.name;
+                document.getElementById('shift-type').value = item.type;
+                document.getElementById('shift-color').value = item.color;
+                document.getElementById('shift-start').value = item.start;
+                document.getElementById('shift-duration').value = item.duration;
+            } else {
+                document.getElementById('editor-shift').classList.add('hidden');
+                document.getElementById('editor-pattern').classList.remove('hidden');
+                
+                document.getElementById('pattern-name').value = item.name;
+                this.currentPatternSteps = JSON.parse(JSON.stringify(item.steps)); // Deep copy
+                this.renderPatternStepsUI();
+            }
+        },
+
+        // --- Lógica Turno Simple ---
+        updateDefaults() {
+            const type = document.getElementById('shift-type').value;
+            const start = document.getElementById('shift-start');
+            const color = document.getElementById('shift-color');
+            const duration = document.getElementById('shift-duration');
+
+            duration.value = 8;
+            if(type === 'Diurno') { start.value = '07:00'; color.value = 'blue'; }
+            if(type === 'Vespertino') { start.value = '14:00'; color.value = 'orange'; }
+            if(type === 'Nocturno') { start.value = '21:00'; color.value = 'slate'; }
+        },
+
+        // --- Lógica Patrones ---
+        addPatternStep() {
+            const type = document.getElementById('p-step-type').value;
+            const start = document.getElementById('p-step-start').value;
+            const duration = document.getElementById('p-step-duration').value;
+
+            if (type !== 'Descanso' && !start) return alert("Ingresa hora de inicio");
+
+            this.currentPatternSteps.push({
+                type, 
+                start: type === 'Descanso' ? '' : start, 
+                duration: type === 'Descanso' ? 0 : duration
+            });
+            this.renderPatternStepsUI();
+        },
+
+        clearPatternSteps() {
+            this.currentPatternSteps = [];
+            this.renderPatternStepsUI();
+        },
+
+        renderPatternStepsUI() {
+            const container = document.getElementById('pattern-steps-container');
+            if (this.currentPatternSteps.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Agrega pasos arriba para crear la secuencia.</p>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            this.currentPatternSteps.forEach((step, index) => {
+                const el = document.createElement('div');
+                el.className = "bg-white p-2 rounded border border-slate-200 flex justify-between items-center text-xs shadow-sm";
+                
+                let icon = step.type === 'Descanso' ? '<i class="fa-solid fa-mug-hot text-green-500"></i>' : '<i class="fa-solid fa-briefcase text-slate-400"></i>';
+                let details = step.type === 'Descanso' ? 'Descanso' : `${step.type} (${step.start}, ${step.duration}h)`;
+
+                el.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-300 w-4 text-center">${index+1}</span>
+                        ${icon}
+                        <span class="font-medium text-slate-700">${details}</span>
+                    </div>
+                    <button onclick="window.shiftManager.removeStep(${index})" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                container.appendChild(el);
+            });
+        },
+
+        removeStep(index) {
+            this.currentPatternSteps.splice(index, 1);
+            this.renderPatternStepsUI();
+        },
+
+        // --- Guardado Global ---
+        save() {
+            let newItem = { id: this.currentId || Date.now().toString() };
+            
+            if (this.mode === 'shift') {
+                const name = document.getElementById('shift-name').value;
+                if(!name) return alert("Nombre requerido");
+                
+                newItem = {
+                    ...newItem,
+                    name,
+                    type: document.getElementById('shift-type').value,
+                    color: document.getElementById('shift-color').value,
+                    start: document.getElementById('shift-start').value,
+                    duration: document.getElementById('shift-duration').value
+                };
+            } else {
+                const name = document.getElementById('pattern-name').value;
+                if(!name) return alert("Nombre requerido");
+                if(this.currentPatternSteps.length === 0) return alert("Agrega al menos un paso al patrón");
+
+                newItem = {
+                    ...newItem,
+                    name,
+                    steps: this.currentPatternSteps
+                };
+            }
+
+            const data = this.getData();
+            if (this.currentId) {
+                const idx = data.findIndex(i => i.id === this.currentId);
+                if(idx !== -1) data[idx] = newItem;
+            } else {
+                data.push(newItem);
+                this.currentId = newItem.id;
+            }
+
+            localStorage.setItem(this.KEYS[this.mode], JSON.stringify(data));
+            this.renderList();
+            alert("Guardado correctamente");
+        },
+
+        deleteCurrent() {
+            if(confirm("¿Eliminar plantilla permanentemente?")) {
+                let data = this.getData();
+                data = data.filter(i => i.id !== this.currentId);
+                localStorage.setItem(this.KEYS[this.mode], JSON.stringify(data));
+                this.createNew();
+            }
+        }
+    };
+
+    window.shiftManager.init();
+</script>

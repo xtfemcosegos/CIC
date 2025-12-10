@@ -1,0 +1,260 @@
+<div class="flex flex-col h-full bg-white rounded-xl shadow-sm relative animate-fade-in p-6 overflow-hidden">
+    
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-slate-100 gap-4 flex-shrink-0">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-file-contract text-brand-600"></i> Reporte Diario de Asistencia
+            </h2>
+            <p class="text-sm text-slate-500">Resumen de entradas, salidas y novedades por turno.</p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <!-- Selector de Fecha -->
+            <input type="date" id="report-date" class="border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-brand-500 outline-none" onchange="window.dailyReportManager.setDate(this.value)">
+            
+            <!-- Botón Imprimir -->
+            <button onclick="window.dailyReportManager.printReport()" class="bg-white border border-slate-200 text-slate-600 hover:text-brand-600 hover:border-brand-200 px-3 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm" title="Imprimir / Guardar PDF">
+                <i class="fa-solid fa-print"></i>
+            </button>
+
+            <!-- Cerrar -->
+            <button onclick="window.toggleRightPanel(false)" class="text-slate-400 hover:text-slate-600 p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- CONTENIDO DEL REPORTE (SCROLLABLE) -->
+    <div id="printable-area" class="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-8">
+        
+        <!-- HEADER IMPRESIÓN (Visible solo al imprimir) -->
+        <div class="hidden print:block text-center mb-6 border-b border-black pb-4">
+            <h1 class="text-2xl font-bold uppercase">Reporte de Asistencia</h1>
+            <p class="text-sm">Fecha: <span id="print-date-label">--/--/----</span></p>
+        </div>
+
+        <!-- 1. TURNO DIURNO -->
+        <div class="report-section">
+            <div class="flex items-center gap-2 mb-3 bg-blue-50 p-2 rounded-lg border-l-4 border-blue-500 print:bg-transparent print:border-0 print:p-0">
+                <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm print:hidden">
+                    <i class="fa-regular fa-sun"></i>
+                </div>
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider print:text-black">Turno Diurno</h3>
+                <span class="ml-auto text-xs font-bold bg-white px-2 py-1 rounded text-blue-600 print:hidden" id="count-diurno">0 Elementos</span>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg border border-slate-200 print:border-black">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-200 print:bg-gray-100 print:text-black print:border-black">
+                        <tr>
+                            <th class="px-4 py-3 w-1/3">Elemento</th>
+                            <th class="px-4 py-3 text-center w-24">Entrada</th>
+                            <th class="px-4 py-3 text-center w-24">Salida</th>
+                            <th class="px-4 py-3">Comentario / Novedad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-diurno" class="divide-y divide-slate-100 print:divide-gray-300">
+                        <!-- Filas dinámicas -->
+                    </tbody>
+                </table>
+                <div id="empty-diurno" class="hidden p-4 text-center text-slate-400 text-xs italic bg-slate-50">Sin registros para este turno.</div>
+            </div>
+        </div>
+
+        <!-- 2. TURNO VESPERTINO -->
+        <div class="report-section">
+            <div class="flex items-center gap-2 mb-3 bg-orange-50 p-2 rounded-lg border-l-4 border-orange-500 print:bg-transparent print:border-0 print:p-0">
+                <div class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm print:hidden">
+                    <i class="fa-solid fa-cloud-sun"></i>
+                </div>
+                <h3 class="text-sm font-bold text-orange-900 uppercase tracking-wider print:text-black">Turno Vespertino</h3>
+                <span class="ml-auto text-xs font-bold bg-white px-2 py-1 rounded text-orange-600 print:hidden" id="count-vespertino">0 Elementos</span>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg border border-slate-200 print:border-black">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-200 print:bg-gray-100 print:text-black print:border-black">
+                        <tr>
+                            <th class="px-4 py-3 w-1/3">Elemento</th>
+                            <th class="px-4 py-3 text-center w-24">Entrada</th>
+                            <th class="px-4 py-3 text-center w-24">Salida</th>
+                            <th class="px-4 py-3">Comentario / Novedad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-vespertino" class="divide-y divide-slate-100 print:divide-gray-300"></tbody>
+                </table>
+                <div id="empty-vespertino" class="hidden p-4 text-center text-slate-400 text-xs italic bg-slate-50">Sin registros para este turno.</div>
+            </div>
+        </div>
+
+        <!-- 3. TURNO NOCTURNO -->
+        <div class="report-section">
+            <div class="flex items-center gap-2 mb-3 bg-slate-100 p-2 rounded-lg border-l-4 border-slate-700 print:bg-transparent print:border-0 print:p-0">
+                <div class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm print:hidden">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider print:text-black">Turno Nocturno</h3>
+                <span class="ml-auto text-xs font-bold bg-white px-2 py-1 rounded text-slate-600 print:hidden" id="count-nocturno">0 Elementos</span>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg border border-slate-200 print:border-black">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-200 print:bg-gray-100 print:text-black print:border-black">
+                        <tr>
+                            <th class="px-4 py-3 w-1/3">Elemento</th>
+                            <th class="px-4 py-3 text-center w-24">Entrada</th>
+                            <th class="px-4 py-3 text-center w-24">Salida</th>
+                            <th class="px-4 py-3">Comentario / Novedad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-nocturno" class="divide-y divide-slate-100 print:divide-gray-300"></tbody>
+                </table>
+                <div id="empty-nocturno" class="hidden p-4 text-center text-slate-400 text-xs italic bg-slate-50">Sin registros para este turno.</div>
+            </div>
+        </div>
+
+        <!-- Footer Reporte -->
+        <div class="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 print:text-black print:mt-4 print:pt-2">
+            <p>Generado por Sistema RegAs Enterprise - <span id="generation-time"></span></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-area, #printable-area * {
+            visibility: visible;
+        }
+        #printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            overflow: visible;
+            padding: 20px;
+        }
+        .report-section {
+            break-inside: avoid;
+            margin-bottom: 20px;
+        }
+    }
+</style>
+
+<!-- TRIGGER DE INICIALIZACIÓN -->
+<img src="x" onerror="if(!window.dailyReportManager && document.getElementById('script-reporte-diario')) eval(document.getElementById('script-reporte-diario').innerText);" style="display:none;" />
+
+<script id="script-reporte-diario">
+    window.dailyReportManager = {
+        currentDate: new Date(),
+
+        init() {
+            // Establecer fecha hoy al iniciar
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('report-date').value = today;
+            this.setDate(today);
+        },
+
+        setDate(dateStr) {
+            const parts = dateStr.split('-');
+            this.currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            
+            // Actualizar label de impresión
+            const formatted = this.currentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const shortDate = this.currentDate.toLocaleDateString('es-ES');
+            document.getElementById('print-date-label').textContent = formatted;
+            document.getElementById('generation-time').textContent = new Date().toLocaleString('es-ES');
+
+            this.renderTables(dateStr);
+        },
+
+        renderTables(dateStr) {
+            const assignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+            const config = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            
+            // Filtrar por fecha exacta
+            const dayAssignments = assignments.filter(a => a.date === dateStr);
+
+            // Estructura de datos por turno
+            const groups = { 'Diurno': [], 'Vespertino': [], 'Nocturno': [] };
+
+            dayAssignments.forEach(assign => {
+                // Obtener nombre del elemento
+                const element = config.find(e => e.id === assign.elementId) || { name: 'Desconocido' };
+                const shift = assign.shift || 'Diurno';
+                
+                if (groups[shift]) {
+                    groups[shift].push({ ...assign, name: element.name });
+                }
+            });
+
+            // Renderizar cada tabla
+            ['Diurno', 'Vespertino', 'Nocturno'].forEach(shift => {
+                this.renderShiftTable(shift, groups[shift]);
+            });
+        },
+
+        renderShiftTable(shift, items) {
+            const tbody = document.getElementById(`table-body-${shift.toLowerCase()}`);
+            const countBadge = document.getElementById(`count-${shift.toLowerCase()}`);
+            const emptyMsg = document.getElementById(`empty-${shift.toLowerCase()}`);
+            
+            tbody.innerHTML = '';
+            countBadge.textContent = `${items.length} Elementos`;
+
+            if (items.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+
+            // Ordenar por hora de entrada
+            items.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 print:border-gray-300";
+                
+                // Estilos de estado
+                let entryClass = "text-slate-800 font-mono";
+                let exitClass = "text-slate-800 font-mono";
+                let nameClass = "font-bold text-slate-700";
+                
+                const entryText = item.checkInTime || '<span class="text-slate-300 text-xs italic">--:--</span>';
+                const exitText = item.checkOutTime || '<span class="text-slate-300 text-xs italic">--:--</span>';
+                
+                // Comentarios y badges
+                let commentsHtml = item.comments || '';
+                if(item.isAbsent) commentsHtml = `<span class="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded mr-1">FALTA</span> ` + commentsHtml;
+                else if(item.isExtraTime) commentsHtml = `<span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded mr-1">EXTRA</span> ` + commentsHtml;
+                else if(!item.comments) commentsHtml = '<span class="text-slate-300 text-xs italic">Sin novedades</span>';
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3">
+                        <div class="flex flex-col">
+                            <span class="${nameClass}">${item.name}</span>
+                            <span class="text-[10px] text-slate-400 font-mono print:text-gray-500">ID: ${item.elementId}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-center ${entryClass}">${entryText}</td>
+                    <td class="px-4 py-3 text-center ${exitClass}">${exitText}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600 print:text-black">
+                        ${commentsHtml}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        },
+
+        printReport() {
+            window.print();
+        }
+    };
+
+    // Inicializar
+    window.dailyReportManager.init();
+</script>
