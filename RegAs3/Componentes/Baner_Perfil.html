@@ -2,7 +2,8 @@
     
     <!-- 1. HEADER GRANDE (Scrollable) -->
     <div class="h-80 bg-slate-800 relative group shrink-0">
-        <img id="side-p-photo" src="" class="w-full h-full object-cover opacity-90" alt="Perfil">
+        <!-- RUTA CORREGIDA: Eliminado prefijo 'RegAs3/' para evitar duplicidad en el contexto actual -->
+        <img id="side-p-photo" src="" class="w-full h-full object-cover opacity-90 transition-opacity duration-300" alt="Perfil" onerror="this.style.display='none'; document.getElementById('side-p-fallback').classList.remove('hidden'); document.getElementById('side-p-fallback').classList.add('flex');">
         
         <!-- Fallback si no hay foto -->
         <div id="side-p-fallback" class="absolute inset-0 flex items-center justify-center bg-slate-700 hidden">
@@ -41,104 +42,27 @@
 
         <!-- Pestañas -->
         <div class="flex border-b border-slate-200">
-            <button onclick="window.profileSidePanelManager.setTab('turno')" id="side-tab-turno" class="flex-1 py-3 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide">Gestión Turno</button>
+            <button onclick="window.profileSidePanelManager.setTab('turno')" id="side-tab-turno" class="flex-1 py-3 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide">Gestión Turnos</button>
             <button onclick="window.profileSidePanelManager.setTab('bitacora')" id="side-tab-bitacora" class="flex-1 py-3 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide" disabled>Bitácora</button>
         </div>
     </div>
 
     <!-- 3. CONTENIDO PRINCIPAL -->
-    <div class="p-5 pb-20"> <!-- Padding bottom extra para scroll -->
+    <div class="p-5 pb-20">
         
         <!-- VISTA: GESTIÓN TURNO -->
-        <div id="side-content-turno" class="animate-fade-in">
+        <div id="side-content-turno" class="animate-fade-in space-y-6">
             
-            <!-- TARJETA DE ESTADO ACTUAL -->
-            <div id="shift-config-card" class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden transition-all duration-300">
-                
-                <!-- CABECERA: CONFIGURACIÓN BÁSICA -->
-                <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-700" id="view-shift-name">--</span>
-                            <button onclick="window.profileSidePanelManager.toggleEditMode(true)" class="text-[10px] text-brand-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
-                        </div>
-                        <p class="text-[10px] text-slate-400 font-mono" id="view-shift-time">--:--</p>
-                    </div>
-                    <div id="status-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-500 shadow-sm">
-                        Cargando...
-                    </div>
-                </div>
-
-                <!-- MODO VISUALIZACIÓN OPERATIVA -->
-                <div id="shift-view-mode" class="p-4 relative">
-                    <div id="operational-timeline" class="border-l-2 border-slate-200 pl-5 ml-1 space-y-6 my-2 relative z-0">
-                        <!-- Timeline dinámico -->
-                    </div>
-
-                    <!-- Controles Rápidos -->
-                    <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-3 justify-between items-center">
-                        <label class="flex items-center gap-2 cursor-pointer group select-none">
-                            <div class="relative flex items-center">
-                                <input type="checkbox" id="quick-check-late" onchange="window.profileSidePanelManager.toggleLate(this.checked)" class="peer h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 transition-all cursor-pointer">
-                            </div>
-                            <span class="text-xs font-bold text-slate-500 group-hover:text-orange-600 transition-colors">Retardo</span>
-                        </label>
-
-                        <div class="relative">
-                            <select id="quick-absence-select" onchange="window.profileSidePanelManager.setAbsence(this.value)" class="appearance-none bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-600 text-xs rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500/20 cursor-pointer font-medium transition-colors">
-                                <option value="">Marcar Ausencia...</option>
-                                <option value="Falta">❌ Falta</option>
-                                <option value="Descanso">💤 Descanso</option>
-                                <option value="Permiso">📄 Permiso</option>
-                                <option value="Incapacidad">🚑 Incapacidad</option>
-                                <option value="Vacaciones">✈️ Vacaciones</option>
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MODO EDICIÓN COMPLETA -->
-                <div id="shift-edit-mode" class="hidden bg-white p-4">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex justify-between items-center">
-                        Editar Asignación
-                        <button onclick="window.profileSidePanelManager.deleteAssignment()" class="text-[10px] text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 transition-colors hover:border-red-400 font-bold">
-                            <i class="fa-solid fa-trash mr-1"></i> Eliminar Turno
-                        </button>
-                    </h4>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Cambiar Área</label>
-                            <select id="edit-area-select" class="w-full text-xs rounded border-slate-300 focus:ring-brand-500"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Entrada Prog.</label>
-                                <input type="time" id="edit-start-time" class="w-full text-xs rounded border-slate-300">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Duración</label>
-                                <input type="number" id="edit-duration" class="w-full text-xs rounded border-slate-300">
-                            </div>
-                        </div>
-                        <div class="flex gap-2 mt-4 pt-2 border-t border-slate-100">
-                            <button onclick="window.profileSidePanelManager.saveConfigChanges()" class="flex-1 bg-brand-600 text-white text-xs font-bold py-2 rounded hover:bg-brand-700">Guardar</button>
-                            <button onclick="window.profileSidePanelManager.toggleEditMode(false)" class="px-3 bg-white border border-slate-300 text-slate-600 text-xs font-bold py-2 rounded hover:bg-slate-50">Cancelar</button>
-                        </div>
-                    </div>
-                </div>
+            <!-- Contenedor dinámico de turnos -->
+            <div id="shifts-container" class="space-y-6">
+                <!-- Las tarjetas de turno se generan aquí con JS -->
             </div>
 
-            <!-- Comentarios -->
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center gap-2">
-                    <i class="fa-regular fa-comment-dots"></i> Observaciones Generales
-                </label>
-                <textarea id="main-comments" rows="3" class="w-full text-sm border-slate-300 rounded-xl focus:border-brand-500 focus:ring-brand-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Escribe detalles adicionales sobre el turno o incidencia..." onchange="window.profileSidePanelManager.saveComments(this.value)"></textarea>
-            </div>
-
+            <!-- Botón Agregar Turno -->
+            <button onclick="window.profileSidePanelManager.addShift()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 font-bold hover:text-brand-600 hover:border-brand-400 hover:bg-white transition-all flex items-center justify-center gap-2 group">
+                <i class="fa-solid fa-plus-circle text-lg group-hover:scale-110 transition-transform"></i>
+                Agregar Segundo Turno
+            </button>
         </div>
     </div>
 </div>
@@ -157,41 +81,59 @@
 
 <script id="script-baner-perfil">
     window.profileSidePanelManager = {
-        currentItem: null,
+        baseItem: null, 
+        assignments: [], 
 
         init(item) {
-            this.currentItem = item;
+            this.baseItem = item;
             this.renderHeader(item);
-            this.renderMainCard();
-            this.populateEditForm();
-            document.getElementById('main-comments').value = item.comments || '';
+            this.loadAssignments();
             
-            // Configurar Scroll Listener para efecto Sticky
+            // Scroll Sticky
             const scrollContainer = document.getElementById('profile-scroll-container');
             const miniHeader = document.getElementById('mini-profile-header');
-            
-            scrollContainer.onscroll = () => {
-                if (scrollContainer.scrollTop > 280) { // Altura aprox del header grande
-                    miniHeader.classList.remove('hidden');
-                } else {
-                    miniHeader.classList.add('hidden');
-                }
-            };
+            if(scrollContainer && miniHeader) {
+                scrollContainer.onscroll = () => {
+                    if (scrollContainer.scrollTop > 280) miniHeader.classList.remove('hidden');
+                    else miniHeader.classList.add('hidden');
+                };
+            }
 
             const btnExpand = document.getElementById('btn-expand-profile');
-            btnExpand.onclick = () => {
-                window.toggleRightPanel(false); 
-                if(window.openElementProfile) window.openElementProfile(item.elementId || item.id);
-            };
+            if(btnExpand) {
+                btnExpand.onclick = () => {
+                    window.toggleRightPanel(false); 
+                    if(window.openElementProfile) window.openElementProfile(item.elementId || item.id);
+                };
+            }
+        },
+
+        loadAssignments() {
+            const all = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+            const id = this.baseItem.elementId || this.baseItem.id;
+            const date = this.baseItem.date;
+            this.assignments = all.filter(a => a.elementId === id && a.date === date);
+            
+            if (this.assignments.length === 0) {
+                if (this.baseItem.shift) {
+                    this.assignments = [this.baseItem];
+                } else {
+                    this.assignments = [{
+                        elementId: id, date: date, shift: 'Diurno', startTime: '07:00', duration: 8, area: 'General'
+                    }];
+                }
+            }
+            this.renderShifts();
         },
 
         renderHeader(item) {
             const name = item.name || 'Sin Nombre';
             const id = `ID: ${item.elementId || item.id}`;
             const area = `<i class="fa-solid fa-map-pin mr-1 text-red-400"></i> ${item.area || 'Sin Asignar'}`;
+            
+            // CORRECCIÓN RUTA FOTO: Ruta relativa simple (sin RegAs3/)
             const photoSrc = `FotosElementosPP/${item.elementId || item.id}.jpg`;
 
-            // Header Grande
             document.getElementById('side-p-name').textContent = name;
             document.getElementById('side-p-id').textContent = id;
             document.getElementById('side-p-area').innerHTML = area;
@@ -199,301 +141,307 @@
             const photoEl = document.getElementById('side-p-photo');
             const fallbackEl = document.getElementById('side-p-fallback');
             
+            // Resetear estado visual antes de cargar nueva imagen
+            photoEl.style.display = 'block';
             photoEl.classList.remove('hidden');
             fallbackEl.classList.add('hidden');
+            fallbackEl.classList.remove('flex');
+
             photoEl.src = photoSrc;
+            
+            // Manejador de error robusto
             photoEl.onerror = function() {
+                this.style.display = 'none';
                 this.classList.add('hidden');
                 fallbackEl.classList.remove('hidden');
                 fallbackEl.classList.add('flex');
-                document.getElementById('mini-p-photo').src = `https://ui-avatars.com/api/?name=${name}&background=random`;
+                
+                // Fallback para el mini header también
+                const miniPhoto = document.getElementById('mini-p-photo');
+                if(miniPhoto) miniPhoto.src = `https://ui-avatars.com/api/?name=${name}&background=random`;
             };
 
             // Mini Header
-            document.getElementById('mini-p-name').textContent = name;
-            document.getElementById('mini-p-photo').src = photoSrc;
+            const miniName = document.getElementById('mini-p-name');
+            const miniPhoto = document.getElementById('mini-p-photo');
+            if(miniName) miniName.textContent = name;
+            if(miniPhoto) miniPhoto.src = photoSrc;
         },
 
-        // --- ELIMINACIÓN ROBUSTA (BASE DE DATOS) ---
-        deleteAssignment() {
-            if(confirm("¿Estás seguro de eliminar este turno? La acción es irreversible.")) {
-                const id = this.currentItem.elementId || this.currentItem.id;
-                const date = this.currentItem.date;
+        // --- RENDERIZADO DINÁMICO DE TURNOS ---
+        renderShifts() {
+            const container = document.getElementById('shifts-container');
+            container.innerHTML = '';
 
-                // Intento 1: Usar gestor global si existe
-                if(window.RegAs && window.RegAs.assignments && typeof window.RegAs.assignments.remove === 'function') {
-                    window.RegAs.assignments.remove(id, date);
-                } 
-                // Intento 2: Manipulación directa de localStorage (Fallback)
-                else {
-                    console.warn("Usando fallback de eliminación local...");
-                    const all = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
-                    const newAll = all.filter(a => !(a.elementId === id && a.date === date));
-                    localStorage.setItem('regas_assignments', JSON.stringify(newAll));
-                    
-                    // Notificar cambios para que la vista se actualice
-                    window.dispatchEvent(new CustomEvent('regas:assignments-updated'));
-                }
+            this.assignments.forEach((assign, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 relative";
+                const label = this.assignments.length > 1 ? `Turno ${index + 1}` : "Turno Principal";
                 
-                // Cerrar panel
-                window.toggleRightPanel(false);
-            }
+                card.innerHTML = `
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${label}</span>
+                            ${this.assignments.length > 1 ? `<button onclick="window.profileSidePanelManager.deleteShift(${index})" class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar Turno"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                        </div>
+                        <div class="flex gap-1">
+                            ${this.renderFlagButton(index, 'isExtraTime', 'Extra', 'blue')}
+                            ${this.renderFlagButton(index, 'isRecovery', 'Recup.', 'purple')}
+                            ${this.renderFlagButton(index, 'isHoliday', 'Festivo', 'amber')}
+                        </div>
+                    </div>
+
+                    <div id="view-mode-${index}" class="p-4 relative">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800">${assign.shift}</h3>
+                                <p class="text-xs text-slate-500 font-mono">${assign.startTime || '--:--'} - ${assign.duration || 0} hrs</p>
+                                <p class="text-[11px] text-brand-600 font-medium mt-0.5"><i class="fa-solid fa-location-dot"></i> ${assign.area || 'General'}</p>
+                            </div>
+                            <button onclick="window.profileSidePanelManager.toggleEditMode(${index}, true)" class="text-xs font-bold text-brand-600 hover:bg-brand-50 px-2 py-1 rounded border border-transparent hover:border-brand-100 transition-colors">
+                                <i class="fa-solid fa-pen"></i> Editar
+                            </button>
+                        </div>
+                        
+                        <div class="border-l-2 border-slate-200 pl-5 ml-1 space-y-6 my-2 relative z-0">
+                            ${this.renderTimelineHTML(assign, index)}
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" onchange="window.profileSidePanelManager.updateField(${index}, 'isLate', this.checked)" ${assign.isLate ? 'checked' : ''} class="rounded text-orange-500 focus:ring-orange-500">
+                                <span class="text-xs font-bold text-slate-500">Retardo</span>
+                            </label>
+                            <select onchange="window.profileSidePanelManager.setAbsence(${index}, this.value)" class="text-xs border-slate-200 rounded-lg text-slate-600 py-1 pl-2 pr-6 bg-slate-50">
+                                <option value="">Marcar Ausencia...</option>
+                                <option value="Falta">❌ Falta</option>
+                                <option value="Descanso">💤 Descanso</option>
+                                <option value="Vacaciones">✈️ Vacaciones</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="edit-mode-${index}" class="hidden bg-white p-4 border-t border-brand-100">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">Área / Caseta</label>
+                                <select id="edit-area-${index}" class="w-full text-xs rounded border-slate-300 focus:ring-brand-500">
+                                    ${this.getAreaOptionsHTML(assign.area)}
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Entrada</label>
+                                    <input type="time" id="edit-start-${index}" value="${assign.startTime || ''}" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Duración</label>
+                                    <input type="number" id="edit-duration-${index}" value="${assign.duration || 8}" class="w-full text-xs rounded border-slate-300">
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="window.profileSidePanelManager.saveConfig(${index})" class="flex-1 bg-brand-600 text-white text-xs font-bold py-2 rounded">Guardar</button>
+                                <button onclick="window.profileSidePanelManager.toggleEditMode(${index}, false)" class="px-3 bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         },
 
-        // --- MAPA Y FOTOS ---
-        getEvidenceLinks(type) {
-            const photo = this.currentItem[type + 'Photo'];
-            const location = this.currentItem[type + 'Location'];
-            
-            let html = '<div class="flex gap-2 mt-1">';
-            let hasLink = false;
-
-            if (photo) {
-                html += `<button onclick="event.stopPropagation(); window.profileSidePanelManager.viewEvidencePhoto('${type}')" class="text-[9px] text-blue-500 hover:text-blue-700 font-bold flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 transition-colors"><i class="fa-solid fa-camera"></i> Foto</button>`;
-                hasLink = true;
-            }
-            
-            // Verificación robusta de objeto location
-            if (location && typeof location.lat === 'number' && typeof location.lng === 'number') {
-                html += `<button onclick="event.stopPropagation(); window.profileSidePanelManager.viewEvidenceLocation('${type}')" class="text-[9px] text-green-600 hover:text-green-800 font-bold flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded border border-green-100 transition-colors"><i class="fa-solid fa-map-location-dot"></i> Mapa</button>`;
-                hasLink = true;
-            } else if (location) {
-                // Debug si llega algo pero no los numeros
-                console.log("Datos de ubicación inválidos para", type, location);
-            }
-
-            html += '</div>';
-            return hasLink ? html : '';
-        },
-
-        viewEvidencePhoto(type) {
-            const photo = this.currentItem[type + 'Photo'];
-            if(photo) {
-                document.getElementById('evidence-img').src = photo;
-                document.getElementById('evidence-modal').classList.remove('hidden');
-            }
-        },
-
-        viewEvidenceLocation(type) {
-            const location = this.currentItem[type + 'Location'];
-            if(location && location.lat && location.lng) {
-                // URL Universal de Google Maps con marcador
-                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`;
-                window.open(mapUrl, '_blank');
-            } else {
-                alert("No hay coordenadas válidas registradas.");
-            }
-        },
-
-        // --- RENDERIZADO Y LÓGICA (Sin cambios mayores, solo integración) ---
-        renderMainCard() {
-            const item = this.currentItem;
-            document.getElementById('view-shift-name').textContent = item.shift;
-            document.getElementById('view-shift-time').textContent = `${item.startTime || '--:--'} - ${item.duration || 0} hrs`;
-            
-            const status = this.calculateStatus(item);
-            const badge = document.getElementById('status-badge');
-            badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${status.bg} ${status.text}`;
-            badge.innerHTML = status.label;
-
-            this.renderTimeline();
-            document.getElementById('quick-check-late').checked = !!item.isLate;
-            const absSelect = document.getElementById('quick-absence-select');
-            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift);
-            absSelect.value = isAbsent ? item.shift : "";
-        },
-
-        calculateStatus(item) {
-            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift) || item.isAbsent;
-            if (isAbsent) return { label: `<i class="fa-solid fa-user-slash mr-1"></i> ${item.shift}`, bg: 'bg-slate-200', text: 'text-slate-500' };
-            if (item.checkOutTime) return { label: '<i class="fa-solid fa-check-double mr-1"></i> Finalizado', bg: 'bg-slate-100', text: 'text-slate-500' };
-            if (item.checkInTime) return { label: '<i class="fa-solid fa-circle-check mr-1"></i> En Turno', bg: 'bg-green-100', text: 'text-green-600' };
-            const now = new Date();
-            const [h, m] = (item.startTime || "00:00").split(':').map(Number);
-            const startMinutes = h * 60 + m;
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            if (currentMinutes > startMinutes + 15) return { label: '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Retardo', bg: 'bg-orange-100', text: 'text-orange-600' };
-            return { label: '<i class="fa-solid fa-hourglass-start mr-1"></i> Por Ingresar', bg: 'bg-blue-100', text: 'text-blue-600' };
-        },
-
-        getAreaOptionsHTML(selectedArea) {
-            const areasConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
-            let options = '<option value="">-- Área --</option>';
-            if(areasConfig.categories) {
-                areasConfig.categories.forEach(cat => {
-                    if(cat.areas) cat.areas.forEach(a => {
-                        const sel = a.name === selectedArea ? 'selected' : '';
-                        options += `<option value="${a.name}" ${sel}>${a.name}</option>`;
-                    });
-                });
-            }
-            return options;
-        },
-
-        renderTimeline() {
-            const container = document.getElementById('operational-timeline');
-            const item = this.currentItem;
-            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(item.shift);
-            if (isAbsent) {
-                container.innerHTML = `<div class="p-3 bg-slate-50 border border-dashed border-slate-200 rounded text-center text-xs text-slate-400 italic">No se requieren registros para este estado.</div>`;
-                return;
-            }
-
-            const checkIn = item.checkInTime || '';
-            const checkOut = item.checkOutTime || '';
-            const movementExists = !!item.movementTime;
+        renderTimelineHTML(assign, idx) {
+            const checkIn = assign.checkInTime || '';
+            const checkOut = assign.checkOutTime || '';
+            const movement = assign.movementTime; 
 
             let html = `
                 <div class="relative group">
-                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkIn ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10 transition-colors shadow-sm"></div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1 flex justify-between">
-                        Entrada 
-                        ${item.isLate ? '<span class="text-orange-500 text-[9px] font-bold ml-2">RETARDO</span>' : ''}
-                    </label>
-                    <div class="flex flex-col gap-2">
-                        <div class="flex gap-2">
-                            <input type="time" id="input-checkin" value="${checkIn}" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 h-9 bg-slate-50 focus:bg-white font-mono" onchange="window.profileSidePanelManager.saveTime('checkInTime', this.value)">
-                            <button onclick="window.profileSidePanelManager.setNow('input-checkin', 'checkInTime')" class="bg-white border border-slate-200 text-slate-400 hover:text-green-600 hover:border-green-500 rounded-lg px-3 h-9 transition-all shadow-sm active:scale-95" title="Marcar Ahora"><i class="fa-solid fa-stopwatch"></i></button>
-                        </div>
-                        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap px-1">Ingresa a:</span>
-                            <select onchange="window.profileSidePanelManager.saveField('checkInArea', this.value)" class="w-full text-[10px] py-0.5 px-2 border-none bg-transparent text-slate-700 font-medium focus:ring-0 cursor-pointer">
-                                ${this.getAreaOptionsHTML(item.checkInArea || item.area)}
-                            </select>
-                        </div>
-                        ${this.getEvidenceLinks('checkIn')}
+                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkIn ? 'bg-green-500 border-green-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10"></div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1">Entrada</label>
+                    <div class="flex gap-2">
+                        <input type="time" value="${checkIn}" class="w-24 text-sm border-slate-300 rounded h-8 font-mono" onchange="window.profileSidePanelManager.updateField(${idx}, 'checkInTime', this.value)">
+                        <button onclick="window.profileSidePanelManager.setNow(${idx}, 'checkInTime')" class="bg-slate-100 hover:bg-green-100 text-slate-400 hover:text-green-600 rounded px-2 h-8"><i class="fa-solid fa-stopwatch"></i></button>
                     </div>
+                    ${this.getEvidenceLinks(assign, 'checkIn')}
                 </div>
-                <div class="absolute left-[-22px] top-10 ${movementExists ? 'bottom-28' : 'bottom-10'} w-0.5 bg-slate-200 -z-0"></div>
             `;
 
-            if (movementExists) {
+            if (movement) {
                 html += `
                     <div class="relative group mt-6 mb-6">
-                        <div class="absolute -left-[27px] top-2.5 w-3 h-3 bg-purple-500 border-purple-600 rounded-full border-2 z-10 transition-colors shadow-sm"></div>
-                        <div class="flex justify-between items-center mb-1 ml-1">
+                        <div class="absolute -left-[27px] top-2.5 w-3 h-3 bg-purple-500 border-purple-600 rounded-full border-2 z-10"></div>
+                        <div class="flex justify-between items-center mb-1">
                             <label class="text-[10px] font-bold text-purple-600 uppercase">Se mueve a</label>
-                            <button onclick="window.profileSidePanelManager.removeMovement()" class="text-[9px] text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="window.profileSidePanelManager.removeMovement(${idx})" class="text-[9px] text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
                         </div>
-                        <div class="flex flex-col gap-2">
+                        <div class="bg-purple-50 p-2 rounded-lg border border-purple-100 mb-2 space-y-2">
                             <div class="flex gap-2">
-                                <input type="time" value="${item.movementTime || ''}" onchange="window.profileSidePanelManager.saveField('movementTime', this.value)" class="w-full text-xs border-purple-200 rounded focus:ring-purple-500 text-purple-700 h-8">
-                            </div>
-                            <div class="bg-purple-50 p-1.5 rounded border border-purple-100">
-                                <select onchange="window.profileSidePanelManager.saveField('movementArea', this.value)" class="w-full text-[10px] py-0.5 px-2 border-none bg-transparent text-purple-800 font-bold focus:ring-0">
-                                    ${this.getAreaOptionsHTML(item.movementArea)}
+                                <input type="time" value="${movement}" onchange="window.profileSidePanelManager.updateField(${idx}, 'movementTime', this.value)" class="w-full text-xs border-purple-200 rounded text-purple-700 h-7">
+                                <select onchange="window.profileSidePanelManager.updateField(${idx}, 'movementArea', this.value)" class="w-full text-[10px] h-7 border-purple-200 rounded text-purple-800 font-bold">
+                                    ${this.getAreaOptionsHTML(assign.movementArea)}
                                 </select>
+                            </div>
+                            <div class="flex gap-1 justify-end">
+                                ${this.renderFlagButton(idx, 'movementIsExtra', 'Extra', 'blue', true)}
+                                ${this.renderFlagButton(idx, 'movementIsRecovery', 'Recup.', 'purple', true)}
+                                ${this.renderFlagButton(idx, 'movementIsHoliday', 'Festivo', 'amber', true)}
                             </div>
                         </div>
                     </div>
-                    <div class="absolute left-[-22px] bottom-10 top-auto h-16 w-0.5 bg-slate-200 -z-0"></div>
                 `;
             } else {
                 html += `
                     <div class="relative my-4 ml-[-12px]">
-                        <button onclick="window.profileSidePanelManager.addMovement()" class="text-[9px] bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-300 px-2 py-0.5 rounded-full shadow-sm transition-all z-20 relative">+ Rotación</button>
+                        <button onclick="window.profileSidePanelManager.addMovement(${idx})" class="text-[9px] bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-300 px-2 py-0.5 rounded-full shadow-sm transition-all z-20 relative">+ Rotación</button>
                     </div>
                 `;
             }
 
             html += `
                 <div class="relative group mt-2">
-                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkOut ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10 transition-colors shadow-sm"></div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Salida</label>
-                    <div class="flex flex-col gap-2">
-                        <div class="flex gap-2">
-                            <input type="time" id="input-checkout" value="${checkOut}" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 h-9 bg-slate-50 focus:bg-white font-mono" onchange="window.profileSidePanelManager.saveTime('checkOutTime', this.value)">
-                            <button onclick="window.profileSidePanelManager.setNow('input-checkout', 'checkOutTime')" class="bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg px-3 h-9 shadow-sm"><i class="fa-solid fa-stopwatch"></i></button>
-                        </div>
-                        ${this.getEvidenceLinks('checkOut')}
+                    <div class="absolute -left-[27px] top-2.5 w-3 h-3 ${checkOut ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-300'} rounded-full border-2 z-10"></div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1">Salida</label>
+                    <div class="flex gap-2">
+                        <input type="time" value="${checkOut}" class="w-24 text-sm border-slate-300 rounded h-8 font-mono" onchange="window.profileSidePanelManager.updateField(${idx}, 'checkOutTime', this.value)">
+                        <button onclick="window.profileSidePanelManager.setNow(${idx}, 'checkOutTime')" class="bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-600 rounded px-2 h-8"><i class="fa-solid fa-stopwatch"></i></button>
                     </div>
+                    ${this.getEvidenceLinks(assign, 'checkOut')}
                 </div>
             `;
-            container.innerHTML = html;
+            return html;
         },
 
-        saveTime(field, val) { this.currentItem[field] = val; this.persistChanges(); this.renderMainCard(); },
-        saveField(field, val) { this.currentItem[field] = val; this.persistChanges(); },
-        addMovement() {
-            const now = new Date();
-            this.currentItem.movementTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            this.currentItem.movementArea = this.currentItem.area;
-            this.persistChanges();
-            this.renderMainCard();
+        // --- MANEJO DE DATOS ---
+        addShift() {
+            const last = this.assignments[this.assignments.length - 1];
+            const newShift = {
+                elementId: this.baseItem.elementId || this.baseItem.id,
+                date: this.baseItem.date,
+                shift: 'Extra',
+                startTime: '18:00',
+                duration: 4,
+                area: last ? last.area : 'General',
+                timestamp: Date.now()
+            };
+            this.assignments.push(newShift);
+            this.saveAll();
         },
-        removeMovement() { this.currentItem.movementTime = null; this.currentItem.movementArea = null; this.persistChanges(); this.renderMainCard(); },
-        setNow(inputId, field) {
+
+        deleteShift(index) {
+            if(confirm("¿Eliminar este turno?")) {
+                this.assignments.splice(index, 1);
+                this.saveAll(true);
+            }
+        },
+
+        updateField(index, field, value) {
+            this.assignments[index][field] = value;
+            this.saveAll();
+        },
+
+        addMovement(index) {
+            const now = new Date();
+            this.assignments[index].movementTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            this.assignments[index].movementArea = this.assignments[index].area;
+            this.saveAll();
+        },
+
+        removeMovement(index) {
+            this.assignments[index].movementTime = null;
+            this.assignments[index].movementArea = null;
+            this.assignments[index].movementIsExtra = false;
+            this.assignments[index].movementIsRecovery = false;
+            this.assignments[index].movementIsHoliday = false;
+            this.saveAll();
+        },
+
+        saveConfig(index) {
+            this.assignments[index].area = document.getElementById(`edit-area-${index}`).value;
+            this.assignments[index].startTime = document.getElementById(`edit-start-${index}`).value;
+            this.assignments[index].duration = document.getElementById(`edit-duration-${index}`).value;
+            this.toggleEditMode(index, false);
+            this.saveAll();
+        },
+
+        setAbsence(index, type) {
+            if (!type) return;
+            if (confirm(`¿Cambiar turno a ${type}? Se borrarán registros.`)) {
+                const a = this.assignments[index];
+                a.shift = type;
+                a.isAbsent = (type === 'Falta');
+                a.checkInTime = null; a.checkOutTime = null;
+                a.movementTime = null;
+                this.saveAll();
+            }
+        },
+
+        // --- PERSISTENCIA GLOBAL ---
+        saveAll(allowEmpty = false) {
+            let all = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+            const id = this.baseItem.elementId || this.baseItem.id;
+            const date = this.baseItem.date;
+
+            // Limpiar previos
+            all = all.filter(a => !(a.elementId === id && a.date === date));
+
+            // Agregar actuales
+            if (this.assignments.length > 0) {
+                all = [...all, ...this.assignments];
+            }
+
+            localStorage.setItem('regas_assignments', JSON.stringify(all));
+            window.dispatchEvent(new CustomEvent('regas:assignments-updated'));
+            this.renderShifts();
+        },
+
+        toggleEditMode(index, edit) {
+            const view = document.getElementById(`view-mode-${index}`);
+            const editor = document.getElementById(`edit-mode-${index}`);
+            if(edit) { view.classList.add('hidden'); editor.classList.remove('hidden'); }
+            else { view.classList.remove('hidden'); editor.classList.add('hidden'); }
+        },
+
+        setNow(index, field) {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            document.getElementById(inputId).value = timeStr;
-            this.saveTime(field, timeStr);
+            this.updateField(index, field, timeStr);
         },
-        toggleLate(checked) { this.currentItem.isLate = checked; this.persistChanges(); this.renderMainCard(); },
-        setAbsence(type) {
-            if (!type) return; 
-            if (confirm(`¿Cambiar turno a ${type}? Esto borrará los registros de hora actuales.`)) {
-                this.currentItem.shift = type;
-                this.currentItem.isAbsent = (type === 'Falta');
-                this.currentItem.checkInTime = null;
-                this.currentItem.checkOutTime = null;
-                this.currentItem.startTime = null;
-                this.currentItem.duration = 0;
-                this.currentItem.movementTime = null;
-                this.currentItem.movementArea = null;
-                this.currentItem.checkInArea = null;
-                this.persistChanges();
-                this.init(this.currentItem);
-            } else {
-                document.getElementById('quick-absence-select').value = "";
-            }
+
+        renderFlagButton(index, field, label, color, isMovement = false) {
+            const isActive = this.assignments[index][field];
+            const bgClass = isActive ? `bg-${color}-100 text-${color}-700 border-${color}-200` : `bg-white text-slate-300 border-slate-100 hover:border-slate-300`;
+            const sizeClass = isMovement ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]";
+            
+            return `<button onclick="window.profileSidePanelManager.updateField(${index}, '${field}', ${!isActive})" class="${sizeClass} font-bold rounded border transition-colors ${bgClass}">${label}</button>`;
         },
-        toggleEditMode(edit) {
-            const view = document.getElementById('shift-view-mode');
-            const editor = document.getElementById('shift-edit-mode');
-            if(edit) {
-                view.classList.add('hidden');
-                editor.classList.remove('hidden');
-                this.populateEditForm();
-            } else {
-                view.classList.remove('hidden');
-                editor.classList.add('hidden');
-            }
+
+        getAreaOptionsHTML(selected) {
+            const config = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
+            let opts = '<option value="">-- Área --</option>';
+            config.categories?.forEach(cat => cat.areas?.forEach(a => {
+                opts += `<option value="${a.name}" ${a.name === selected ? 'selected' : ''}>${a.name}</option>`;
+            }));
+            return opts;
         },
-        populateEditForm() {
-            document.getElementById('edit-area-select').innerHTML = this.getAreaOptionsHTML(this.currentItem.area);
-            document.getElementById('edit-start-time').value = this.currentItem.startTime || '';
-            document.getElementById('edit-duration').value = this.currentItem.duration || 8;
+
+        getEvidenceLinks(assign, type) {
+            // Placeholder para evidencia si existe
+            return ''; 
         },
-        saveConfigChanges() {
-            this.currentItem.area = document.getElementById('edit-area-select').value;
-            this.currentItem.startTime = document.getElementById('edit-start-time').value;
-            this.currentItem.duration = document.getElementById('edit-duration').value;
-            const isAbsent = ['Falta', 'Descanso', 'Incapacidad', 'Permiso', 'Vacaciones'].includes(this.currentItem.shift);
-            if(isAbsent && this.currentItem.startTime) { this.currentItem.shift = 'Diurno'; }
-            this.persistChanges();
-            this.init(this.currentItem);
-            this.toggleEditMode(false);
-        },
-        saveComments(val) { this.currentItem.comments = val; this.persistChanges(); },
-        persistChanges() {
-            const allAssignments = window.RegAs.assignments.getAll();
-            const idx = allAssignments.findIndex(a => a.elementId === this.currentItem.elementId && a.date === this.currentItem.date);
-            if (idx !== -1) {
-                allAssignments[idx] = { ...allAssignments[idx], ...this.currentItem };
-                window.RegAs.assignments.save(allAssignments);
-            }
-        },
+
         setTab(tabName) {
             ['turno', 'bitacora'].forEach(t => {
+                const el = document.getElementById(`side-content-${t}`);
                 const btn = document.getElementById(`side-tab-${t}`);
-                if(!btn) return;
-                const content = document.getElementById(`side-content-${t}`);
-                if (t === tabName) {
-                    btn.className = "flex-1 py-2.5 text-xs font-bold text-brand-600 border-b-2 border-brand-600 bg-brand-50/50 transition-colors uppercase tracking-wide";
-                    if(content) content.classList.remove('hidden');
+                if(t === tabName) {
+                    el?.classList.remove('hidden');
+                    btn?.classList.add('text-brand-600', 'border-brand-600', 'bg-brand-50/50');
+                    btn?.classList.remove('text-slate-400', 'border-transparent');
                 } else {
-                    btn.className = "flex-1 py-2.5 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-wide";
-                    if(content) content.classList.add('hidden');
+                    el?.classList.add('hidden');
+                    btn?.classList.remove('text-brand-600', 'border-brand-600', 'bg-brand-50/50');
+                    btn?.classList.add('text-slate-400', 'border-transparent');
                 }
             });
         }

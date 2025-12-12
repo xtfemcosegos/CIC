@@ -94,15 +94,21 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
                 <!-- CARD: RegAs (Asistencia Consolidada) -->
-                <!-- Accesible para Nivel 0, 1, 2 -->
-                <div class="group bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl hover:border-brand-200 transition-all duration-300 overflow-hidden flex flex-col h-full">
+                <div class="group bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl hover:border-brand-200 transition-all duration-300 overflow-hidden flex flex-col h-full rbac-element" data-max-level="2">
                     <div class="p-6 border-b border-slate-50 bg-gradient-to-br from-white to-slate-50 flex items-start gap-4">
                         <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform duration-300">
                             <i class="fa-solid fa-clipboard-user"></i>
                         </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-800 group-hover:text-brand-700 transition-colors">Control de Asistencia</h3>
-                            <p class="text-sm text-slate-500 mt-1 leading-relaxed">Plataforma integral de gestión de personal.</p>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-lg text-slate-800 group-hover:text-brand-700 transition-colors">Control de Asistencia</h3>
+                                <!-- Contadores Dinámicos -->
+                                <div class="flex gap-1" id="dash-badges-regas">
+                                    <span class="hidden px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200" id="badge-active-count">0 Activos</span>
+                                    <span class="hidden px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full border border-red-200 animate-pulse" id="badge-alert-count">0 Alertas</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-1 leading-relaxed">Gestión de entradas, salidas, turnos y incidencias de personal.</p>
                         </div>
                     </div>
                     
@@ -200,6 +206,116 @@
     </div>
 
     <script>
+        // --- ALERT MANAGER GLOBAL (Cerebro de Alertas) ---
+        window.globalAlertManager = {
+            init() {
+                // Ejecutar al cargar y cada minuto
+                this.checkAlerts();
+                setInterval(() => this.checkAlerts(), 60000);
+            },
+            
+            checkAlerts() {
+                const assignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+                const config = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+                const now = new Date();
+                const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                
+                // Filtrar solo hoy
+                const todays = assignments.filter(a => a.date === todayStr);
+                
+                let activeCount = 0;
+                let alertCount = 0;
+                const alerts = [];
+
+                todays.forEach(assign => {
+                    if(assign.isAbsent) return;
+                    
+                    // Contar activos
+                    if(assign.checkInTime && !assign.checkOutTime) activeCount++;
+
+                    // Analizar Alertas
+                    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+                    const [startH, startM] = (assign.startTime || "00:00").split(':').map(Number);
+                    const startMinutes = (startH * 60) + startM;
+
+                    // 1. Retardo Entrada (> 15 min tarde)
+                    if (!assign.checkInTime && currentMinutes > (startMinutes + 15)) {
+                        alertCount++;
+                        this.pushAlert(alerts, assign, config, 'Retardo', 'red', 'fa-user-clock');
+                    }
+                    // 2. Salida Pendiente (> 30 min despues de turno)
+                    const duration = (parseFloat(assign.duration || 8) * 60);
+                    if (assign.checkInTime && !assign.checkOutTime && currentMinutes > (startMinutes + duration + 30)) {
+                        alertCount++;
+                        this.pushAlert(alerts, assign, config, 'Salida Pendiente', 'orange', 'fa-hourglass-end');
+                    }
+                });
+
+                // Actualizar Badges en Dashboard
+                const activeBadge = document.getElementById('badge-active-count');
+                const alertBadge = document.getElementById('badge-alert-count');
+                
+                if(activeBadge) {
+                    activeBadge.textContent = `${activeCount} Activos`;
+                    activeBadge.classList.remove('hidden');
+                }
+                if(alertBadge) {
+                    if(alertCount > 0) {
+                        alertBadge.textContent = `${alertCount} Alertas`;
+                        alertBadge.classList.remove('hidden');
+                    } else {
+                        alertBadge.classList.add('hidden');
+                    }
+                }
+
+                // Inyectar en Sidebar si existe (Cuando el sidebar carga)
+                this.renderSidebarAlerts(alerts);
+            },
+
+            pushAlert(list, assign, config, msg, color, icon) {
+                const el = config.find(e => e.id === assign.elementId) || {name:'Desconocido'};
+                list.push({ ...assign, name: el.name, msg, color, icon });
+            },
+
+            renderSidebarAlerts(alerts) {
+                const container = document.getElementById('alerts-container');
+                const panel = document.getElementById('imminent-activity-panel');
+                
+                if(!container || !panel) return; // Sidebar no cargado aun
+
+                container.innerHTML = '';
+                if(alerts.length === 0) {
+                    panel.classList.add('hidden');
+                    return;
+                }
+                
+                panel.classList.remove('hidden');
+                
+                alerts.forEach(alert => {
+                    const div = document.createElement('div');
+                    // Usar la función global de PlanDia si está disponible, sino navegar
+                    div.onclick = () => {
+                         if(window.dayViewManager && window.dayViewManager.openSidePanel) {
+                             window.dayViewManager.openSidePanel(alert);
+                         } else {
+                             // Si no está cargado PlanDia, cargarlo y luego abrir panel (Complejo, por ahora simple alerta)
+                             alert("Ve al módulo de Asistencia para gestionar esta alerta.");
+                         }
+                    };
+                    
+                    div.className = `bg-white border border-${alert.color}-200 p-2 rounded mb-2 shadow-sm cursor-pointer hover:bg-${alert.color}-50 flex items-center gap-2`;
+                    div.innerHTML = `
+                        <div class="w-6 h-6 rounded-full bg-${alert.color}-100 text-${alert.color}-600 flex items-center justify-center text-[10px]"><i class="fa-solid ${alert.icon}"></i></div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold text-${alert.color}-600 leading-none uppercase">${alert.msg}</p>
+                            <p class="text-xs font-bold text-slate-700 truncate">${alert.name}</p>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        };
+
         // --- SESSION MANAGER ---
         window.sessionManager = {
             user: null,
@@ -237,14 +353,11 @@
                 const actionsDiv = document.getElementById('menu-actions');
 
                 if (isLoggedIn) {
-                    // Mostrar Dashboard
                     guestView.classList.add('hidden');
                     dashView.classList.remove('hidden');
-                    
-                    // Aplicar permisos RBAC
                     this.applyPermissions();
+                    window.globalAlertManager.init(); // Iniciar Alertas Globales
 
-                    // Info Usuario Header
                     const name = this.user['Nombre Completo'] || this.user.Nombre || "Usuario";
                     const initial = name.charAt(0);
                     const photos = this.user.Fotografias || [];
@@ -272,7 +385,6 @@
                         </button>
                     `;
                 } else {
-                    // Mostrar Guest View
                     guestView.classList.remove('hidden');
                     dashView.classList.add('hidden');
 
@@ -296,15 +408,11 @@
 
             applyPermissions() {
                 const userLevel = this.user ? parseInt(this.user.Nivel) : 99;
-                
                 const protectedEls = document.querySelectorAll('.rbac-element');
                 protectedEls.forEach(el => {
                     const maxLevel = parseInt(el.dataset.maxLevel);
-                    if (userLevel <= maxLevel) {
-                        el.classList.remove('rbac-hidden');
-                    } else {
-                        el.classList.add('rbac-hidden');
-                    }
+                    if (userLevel <= maxLevel) el.classList.remove('rbac-hidden');
+                    else el.classList.add('rbac-hidden');
                 });
             },
 
@@ -320,7 +428,6 @@
             }
         };
 
-        // --- CARGADOR ---
         async function loadModule(url) {
             const modal = document.getElementById('modal-container');
             const content = document.getElementById('modal-content');

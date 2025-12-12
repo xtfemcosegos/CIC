@@ -1,1 +1,367 @@
-semana
+<div class="flex flex-col h-full bg-white rounded-xl shadow border border-slate-200 overflow-hidden animate-fade-in relative">
+    
+    <!-- 1. BARRA SUPERIOR (NAVEGACIÓN SEMANAL) - Fija -->
+    <div class="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0 z-30 shadow-sm relative">
+        <div class="flex items-center gap-4 bg-slate-50 p-1 rounded-lg border border-slate-200 shadow-sm">
+            <button onclick="window.weekViewManager.changeWeek(-1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 bg-white rounded shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="text-center min-w-[200px]">
+                <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1" id="week-label">SEMANA ACTUAL</span>
+                <div class="flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                    <span id="week-range-text" class="text-sm font-bold text-slate-800">-- al --</span>
+                </div>
+            </div>
+            <button onclick="window.weekViewManager.changeWeek(1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 bg-white rounded shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        
+        <!-- Filtro Rápido -->
+        <div class="relative">
+            <input type="text" placeholder="Filtrar por nombre..." onkeyup="window.weekViewManager.filterRows(this.value)" class="pl-8 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 w-64 bg-slate-50">
+            <i class="fa-solid fa-filter absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 2. CONTENEDOR DE SCROLL (TABLA) -->
+    <div class="flex-grow relative overflow-hidden bg-slate-50">
+        <!-- El contenedor absoluto fuerza el scroll interno -->
+        <div class="absolute inset-0 overflow-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse min-w-max" id="week-table">
+                <thead class="bg-white sticky top-0 z-20 shadow-sm">
+                    <tr>
+                        <!-- ESQUINA SUPERIOR IZQUIERDA (Doble Sticky: Top y Left) -->
+                        <th class="p-3 border-b border-r border-slate-200 font-bold text-xs text-slate-500 uppercase tracking-wider bg-slate-50 sticky left-0 top-0 z-30 w-56 min-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                            Elemento / Área
+                        </th>
+                        <!-- Días generados dinámicamente -->
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="0"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="1"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="2"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="3"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="4"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="5"></th>
+                        <th class="week-day-header p-0 border-b border-slate-200 text-center min-w-[120px]" data-day="6"></th>
+                    </tr>
+                </thead>
+                <!-- El cuerpo se llena dinámicamente con múltiples tbodys (uno por área) -->
+            </table>
+            <div id="week-table-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Trigger Script -->
+<img src="x" onerror="if(!window.weekViewManager && document.getElementById('script-week-view')) eval(document.getElementById('script-week-view').innerText);" style="display:none;" />
+
+<script id="script-week-view">
+    window.weekViewManager = {
+        currentStartOfWeek: null, 
+        days: [], 
+
+        init() {
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day == 0 ? -6 : 1); 
+            this.currentStartOfWeek = new Date(now.setDate(diff));
+            this.currentStartOfWeek.setHours(0,0,0,0);
+            
+            this.render();
+        },
+
+        changeWeek(delta) {
+            this.currentStartOfWeek.setDate(this.currentStartOfWeek.getDate() + (delta * 7));
+            this.render();
+        },
+
+        render() {
+            this.calculateWeekDays();
+            this.renderHeaders();
+            this.renderBody();
+        },
+
+        calculateWeekDays() {
+            this.days = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(this.currentStartOfWeek);
+                d.setDate(d.getDate() + i);
+                this.days.push(d);
+            }
+        },
+
+        renderHeaders() {
+            const headers = document.querySelectorAll('.week-day-header');
+            const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            const daysShort = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+            const startStr = `${this.days[0].getDate()} ${months[this.days[0].getMonth()]}`;
+            const endStr = `${this.days[6].getDate()} ${months[this.days[6].getMonth()]}`;
+            document.getElementById('week-range-text').textContent = `${startStr} - ${endStr}`;
+
+            const today = new Date(); today.setHours(0,0,0,0);
+            const isCurrent = this.days.some(d => d.getTime() === today.getTime());
+            document.getElementById('week-label').textContent = isCurrent ? 'SEMANA ACTUAL' : 'HISTÓRICO / FUTURO';
+
+            headers.forEach((th, index) => {
+                const date = this.days[index];
+                const dateStr = this.formatDate(date);
+                const isToday = date.getTime() === today.getTime();
+                
+                // Botón interactivo para ir a la vista diaria
+                th.innerHTML = `
+                    <button onclick="window.weekViewManager.goToDay('${dateStr}')" class="w-full h-full p-2 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors group" title="Ver detalles del día">
+                        <span class="text-[10px] font-bold uppercase group-hover:text-brand-600 ${isToday ? 'text-brand-600' : 'text-slate-500'}">${daysShort[date.getDay()]}</span>
+                        <span class="text-lg font-bold leading-none group-hover:text-brand-700 ${isToday ? 'bg-brand-100 px-2 py-0.5 rounded-full text-brand-700' : ''}">${date.getDate()}</span>
+                    </button>
+                `;
+                
+                if(isToday) th.classList.add('bg-brand-50/10'); else th.classList.remove('bg-brand-50/10');
+            });
+        },
+
+        goToDay(dateStr) {
+            // Guardar fecha objetivo y navegar
+            localStorage.setItem('regas_jump_date', dateStr);
+            if(window.loadPlanView) window.loadPlanView('Dia');
+        },
+
+        renderBody(filterText = '') {
+            const table = document.getElementById('week-table');
+            // Limpiar tbodys anteriores (mantener thead)
+            while (table.tBodies.length > 0) {
+                table.removeChild(table.tBodies[0]);
+            }
+
+            const configElements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            const allAssignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
+
+            // Filtrar elementos
+            const filteredElements = configElements.filter(e => 
+                !filterText || e.name.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            if (filteredElements.length === 0) {
+                const tbody = document.createElement('tbody');
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 italic">No se encontraron elementos</td></tr>`;
+                table.appendChild(tbody);
+                return;
+            }
+
+            // Agrupar por Área
+            const grouped = {};
+            
+            // MAPA DE ORDENAMIENTO ESTRICTO
+            const areaConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
+            const areaOrder = {};
+            let orderCounter = 0;
+            
+            if (areaConfig.categories) {
+                areaConfig.categories.forEach(cat => {
+                    if (cat.areas) {
+                        cat.areas.forEach(a => { 
+                            // Asignar índice basado en la posición en el array de configuración
+                            areaOrder[a.name] = orderCounter++; 
+                        });
+                    }
+                });
+            }
+
+            filteredElements.forEach(e => {
+                const area = e.area || 'General';
+                if (!grouped[area]) grouped[area] = [];
+                grouped[area].push(e);
+            });
+
+            // Ordenar claves de áreas usando el mapa
+            const sortedAreas = Object.keys(grouped).sort((a, b) => {
+                // Si no tiene orden (ej. General o nuevas), se van al final (9999)
+                const oa = areaOrder[a] !== undefined ? areaOrder[a] : 9999;
+                const ob = areaOrder[b] !== undefined ? areaOrder[b] : 9999;
+                
+                if (oa !== ob) return oa - ob;
+                return a.localeCompare(b); // Fallback alfabético para áreas sin orden
+            });
+
+            sortedAreas.forEach((area, areaIdx) => {
+                const elementsInArea = grouped[area];
+                const tbody = document.createElement('tbody');
+                tbody.className = "border-b border-slate-200 group-area";
+                
+                // --- CABECERA DE ÁREA (Colapsable) ---
+                const headerRow = document.createElement('tr');
+                headerRow.className = "bg-slate-100 cursor-pointer hover:bg-slate-200 transition-colors";
+                headerRow.onclick = () => this.toggleArea(areaIdx);
+                
+                const thArea = document.createElement('th');
+                thArea.className = "p-2 pl-4 text-xs font-bold text-slate-700 uppercase sticky left-0 z-10 bg-slate-100 border-r border-slate-200 flex items-center gap-2";
+                thArea.style.top = "0"; 
+                thArea.innerHTML = `
+                    <i id="icon-area-${areaIdx}" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+                    ${area} <span class="bg-slate-300 text-slate-600 px-1.5 rounded-full text-[9px]">${elementsInArea.length}</span>
+                `;
+                headerRow.appendChild(thArea);
+                
+                for(let i=0; i<7; i++) headerRow.appendChild(document.createElement('td'));
+                tbody.appendChild(headerRow);
+
+                // --- FILAS DE ELEMENTOS ---
+                elementsInArea.forEach(element => {
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-slate-50 transition-colors row-area-${areaIdx}`;
+
+                    // Nombre Sticky
+                    const tdName = document.createElement('td');
+                    tdName.className = "p-3 border-b border-r border-slate-200 bg-white group-hover:bg-slate-50 sticky left-0 z-10";
+                    
+                    tdName.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="FotosElementosPP/${element.id}.jpg" class="w-8 h-8 rounded-full object-cover border border-slate-200 bg-slate-100" onerror="this.src='https://ui-avatars.com/api/?name=${element.name}&background=random'">
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-slate-700 truncate max-w-[140px]" title="${element.name}">${element.name}</p>
+                                <p class="text-[9px] text-slate-400 font-mono">${element.id}</p>
+                            </div>
+                        </div>
+                    `;
+                    tr.appendChild(tdName);
+
+                    // Días
+                    this.days.forEach(day => {
+                        const dateStr = this.formatDate(day);
+                        const assigns = allAssignments.filter(a => a.elementId === element.id && a.date === dateStr);
+                        const td = document.createElement('td');
+                        td.className = "p-2 border-b border-slate-100 text-center relative h-12";
+                        
+                        if(assigns.length > 0) {
+                            const btn = document.createElement('button');
+                            btn.onclick = () => this.openSidePanel(assigns[0], element);
+                            
+                            const label = assigns.map(a => this.getShortLabel(a.shift)).join('/');
+                            let bgClass = this.getBgClass(assigns);
+                            let borderClass = assigns.some(a => a.isLate) ? "border-2 border-red-500" : "border-transparent";
+                            
+                            let statusDot = '';
+                            if (assigns.some(a => a.checkInTime)) {
+                                const allOut = assigns.every(a => !a.checkInTime || a.checkOutTime);
+                                statusDot = `<span class="absolute top-[-2px] right-[-2px] w-2 h-2 rounded-full border-2 border-white ${allOut ? 'bg-slate-400' : 'bg-green-500'}"></span>`;
+                            }
+
+                            btn.className = `w-full h-full py-1 px-1 rounded-md text-[11px] font-bold transition-all shadow-sm relative flex items-center justify-center gap-1 ${bgClass} ${borderClass}`;
+                            btn.innerHTML = `${label} ${statusDot}`;
+                            td.appendChild(btn);
+
+                        } else {
+                            const btnAdd = document.createElement('button');
+                            btnAdd.className = "w-full h-full rounded-md text-[10px] text-slate-300 hover:text-brand-500 hover:bg-brand-50 border border-transparent hover:border-brand-200 transition-all opacity-0 hover:opacity-100 flex items-center justify-center";
+                            btnAdd.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+                            btnAdd.onclick = () => this.quickAdd(element, dateStr);
+                            td.appendChild(btnAdd);
+                        }
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                // --- FOOTER DE ÁREA ---
+                const footerRow = document.createElement('tr');
+                footerRow.className = `bg-slate-50 border-t border-slate-200 font-mono text-[10px] text-slate-500 row-area-${areaIdx}`;
+                
+                const tdTotalLabel = document.createElement('td');
+                tdTotalLabel.className = "p-2 text-right font-bold uppercase sticky left-0 z-10 bg-slate-50 border-r border-slate-200";
+                
+                let totalWeeklyAssignments = 0;
+                const dailyCounts = this.days.map(day => {
+                    const dStr = this.formatDate(day);
+                    let count = 0;
+                    elementsInArea.forEach(e => {
+                        const hasAssign = allAssignments.some(a => a.elementId === e.id && a.date === dStr && !a.isAbsent);
+                        if(hasAssign) count++;
+                    });
+                    totalWeeklyAssignments += count;
+                    return count;
+                });
+
+                tdTotalLabel.innerHTML = `Total Semanal: <span class="text-brand-600">${totalWeeklyAssignments}</span>`;
+                footerRow.appendChild(tdTotalLabel);
+
+                dailyCounts.forEach(count => {
+                    const tdCount = document.createElement('td');
+                    tdCount.className = "p-2 text-center font-bold";
+                    tdCount.innerHTML = count > 0 ? `<span class="bg-white border border-slate-200 px-2 py-0.5 rounded-full">${count}</span>` : '-';
+                    footerRow.appendChild(tdCount);
+                });
+
+                tbody.appendChild(footerRow);
+                table.appendChild(tbody);
+            });
+        },
+
+        getBgClass(assigns) {
+            let bgClass = "bg-slate-100 text-slate-600";
+            if (assigns[0].shift === 'Diurno') bgClass = "bg-blue-100 text-blue-700 hover:bg-blue-200";
+            else if (assigns[0].shift === 'Vespertino') bgClass = "bg-orange-100 text-orange-700 hover:bg-orange-200";
+            else if (assigns[0].shift === 'Nocturno') bgClass = "bg-slate-700 text-slate-200 hover:bg-slate-600";
+            
+            const isAbsent = assigns.some(a => ['Falta','Descanso','Incapacidad','Permiso','Vacaciones'].includes(a.shift) || a.isAbsent);
+            const isHoliday = assigns.some(a => a.isHoliday || a.movementIsHoliday);
+            const isExtra = assigns.some(a => a.isExtraTime || a.movementIsExtra);
+            const isRecovery = assigns.some(a => a.isRecovery || a.movementIsRecovery);
+
+            if (isAbsent) bgClass = "bg-red-50 text-red-500 border border-red-100 hover:bg-red-100";
+            else if (isHoliday) bgClass = "bg-purple-100 text-purple-700 hover:bg-purple-200";
+            else if (isExtra) bgClass = "bg-fuchsia-100 text-fuchsia-700 hover:bg-fuchsia-200";
+            else if (isRecovery) bgClass = "bg-green-100 text-green-700 hover:bg-green-200";
+            
+            return bgClass;
+        },
+
+        getShortLabel(shift) {
+            const map = { 'Diurno': 'D', 'Matutino': 'D', 'Vespertino': 'V', 'Nocturno': 'N', 'Descanso': 'DES', 'Falta': 'FAL', 'Vacaciones': 'VC', 'Incapacidad': 'INC', 'Permiso': 'PER', 'Suspension': 'SUS' };
+            return map[shift] || shift.substring(0, 3).toUpperCase();
+        },
+
+        toggleArea(areaIdx) {
+            const rows = document.querySelectorAll(`.row-area-${areaIdx}`);
+            const icon = document.getElementById(`icon-area-${areaIdx}`);
+            let isHidden = false;
+            
+            rows.forEach(row => {
+                if (row.classList.contains('hidden')) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                    isHidden = true;
+                }
+            });
+            
+            if(isHidden) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            }
+        },
+
+        filterRows(val) { this.renderBody(val); },
+        formatDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); },
+
+        quickAdd(element, dateStr) {
+            window.RegAs.assignments.addMany([{ 
+                elementId: element.id, date: dateStr, shift: 'Diurno', startTime: '07:00', duration: 8, area: element.area || 'General'
+            }]);
+            this.render(); 
+        },
+
+        async openSidePanel(assign, elementInfo) {
+            const item = { ...elementInfo, ...assign };
+            
+            if (window.loadComponent && window.toggleRightPanel) {
+                if (!window.profileSidePanelManager) {
+                    await window.loadComponent('Componentes/Baner_Perfil.html', 'right-panel-content');
+                }
+                window.toggleRightPanel(true);
+                setTimeout(() => { if (window.profileSidePanelManager) window.profileSidePanelManager.init(item); }, 50);
+            }
+        }
+    };
+
+    window.weekViewManager.init();
+</script>

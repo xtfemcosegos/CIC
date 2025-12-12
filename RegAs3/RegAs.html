@@ -3,522 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RegAs - Gestión Modular</title>
-    
-    <!-- Importar Tailwind CSS -->
+    <title>RegAs - Control de Asistencia</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Importar Iconos (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Configuración personalizada de Tailwind -->
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                    },
                     colors: {
-                        brand: {
-                            50: '#fef2f2',
-                            100: '#fee2e2',
-                            200: '#fecaca',
-                            300: '#fca5a5',
-                            400: '#f87171',
-                            500: '#dc2626',
-                            600: '#b91c1c', // Rojo Principal
-                            700: '#991b1b',
-                            800: '#7f1d1d',
-                            900: '#450a0a',
-                            950: '#2a0a0a',
-                        }
-                    },
-                    boxShadow: {
-                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                        'glow': '0 0 15px rgba(185, 28, 28, 0.3)',
-                    },
-                    animation: {
-                        'spin-slow-hover': 'spin 3s linear infinite',
+                        brand: { 50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171', 500: '#dc2626', 600: '#b91c1c', 700:'#991b1b', 800:'#7f1d1d', 900:'#450a0a', 950:'#2a0a0a' }
                     }
                 }
             }
         }
     </script>
 
-    <style>
-        /* Estilos Globales */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    <!-- Script de Seguridad de Sesión -->
+    <script>
+        (function() {
+            const session = localStorage.getItem('regas_user_session');
+            if (!session) {
+                window.location.href = 'https://cicxtfemco.online/login.html';
+            }
+        })();
+    </script>
+</head>
+<body class="bg-slate-50 overflow-hidden h-screen flex text-slate-800">
+    
+    <!-- Sidebar Container -->
+    <aside id="module-sidebar" class="w-64 bg-white border-r border-slate-200 h-full hidden md:block flex-shrink-0 z-30 transition-all duration-300">
+        <!-- Se inyecta Baner_Lateral.html aquí -->
+        <div class="flex items-center justify-center h-full text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i></div>
+    </aside>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+    <!-- Overlay Móvil -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-slate-900/50 z-20 hidden md:hidden backdrop-blur-sm" onclick="toggleSidebar()"></div>
+
+    <!-- Main App Container -->
+    <main class="flex-grow h-full relative flex flex-col min-w-0 transition-all duration-300">
+        
+        <!-- HEADER DEL MÓDULO -->
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 z-20 shadow-sm">
+            <!-- Izquierda: Título y Toggle -->
+            <div class="flex items-center gap-4">
+                <!-- Botón Toggle (Visible en móvil O cuando el sidebar está oculto por el perfil) -->
+                <button id="sidebar-toggle-btn" onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-brand-600 p-1 rounded-lg transition-colors" title="Mostrar Menú">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-800 leading-none">Elementos PP</h1>
+                    <span class="text-[10px] font-bold text-brand-600 uppercase tracking-widest">Control de Asistencia</span>
+                </div>
+            </div>
+
+            <!-- Derecha: Perfil -->
+            <div class="relative">
+                <button onclick="toggleUserMenu(event)" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200 hover:ring-2 hover:ring-brand-200 transition-all shadow-sm overflow-hidden" id="header-avatar-btn">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+
+                <!-- Menú Desplegable -->
+                <div id="header-user-menu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 hidden animate-fade-in overflow-hidden">
+                    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                        <p class="text-sm font-bold text-slate-800 truncate" id="header-user-name">Usuario</p>
+                        <p class="text-[10px] text-slate-500 truncate" id="header-user-role">Rol</p>
+                    </div>
+                    <div class="p-1">
+                        <button onclick="openMyProfile()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors">
+                            <i class="fa-solid fa-id-badge w-4 text-center"></i> Mi Perfil
+                        </button>
+                        <div class="border-t border-slate-100 my-1"></div>
+                        <button onclick="logout()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fa-solid fa-power-off w-4 text-center"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido Dinámico -->
+        <div id="module-content" class="flex-grow h-full relative overflow-hidden"></div>
+    </main>
+
+    <!-- Panel Lateral Derecho (Perfil Global) -->
+    <aside id="global-right-panel" class="w-0 bg-white border-l border-slate-200 h-full overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out relative z-40 shadow-xl absolute right-0 top-0">
+        <div class="w-[28vw] min-w-[350px] h-full flex flex-col relative"> 
+            <div id="right-panel-content" class="h-full flex flex-col bg-white"></div>
+        </div>
+    </aside>
+
+    <script>
+        // --- GESTIÓN DE SESIÓN Y UI ---
+        function updateHeaderUI() {
+            const session = localStorage.getItem('regas_user_session');
+            if (session) {
+                try {
+                    const user = JSON.parse(session);
+                    const name = user['Nombre Completo'] || user.Nombre || "Usuario";
+                    const initial = name.charAt(0);
+                    const roles = {0:"Admin", 1:"Supervisor", 2:"Operativo"};
+                    
+                    document.getElementById('header-user-name').textContent = name;
+                    document.getElementById('header-user-role').textContent = roles[user.Nivel] || "Colaborador";
+
+                    const btn = document.getElementById('header-avatar-btn');
+                    const photos = user.Fotografias || [];
+                    const photo = photos.length > 0 ? photos[0] : (user.Fotografia || user.FOTOGRAFIA);
+
+                    if (photo) {
+                        btn.innerHTML = `<img src="${photo}" class="w-full h-full object-cover">`;
+                    } else {
+                        btn.innerHTML = `<span class="font-bold text-lg">${initial}</span>`;
+                    }
+                    btn.classList.add('bg-brand-100', 'text-brand-700', 'border-brand-200');
+                    btn.classList.remove('bg-slate-100', 'text-slate-500');
+                } catch (e) { console.error(e); }
+            }
         }
 
-        footer { display: none !important; }
+        function toggleUserMenu(e) {
+            e.stopPropagation();
+            document.getElementById('header-user-menu').classList.toggle('hidden');
+        }
 
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
-        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-    </style>
-</head>
-<body class="text-slate-800 antialiased flex flex-col h-screen selection:bg-brand-100 selection:text-brand-900 overflow-hidden bg-slate-50">
-
-    <!-- 1. MÓDULO DE NAVEGACIÓN -->
-    <nav class="flex-shrink-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div class="w-full px-4 lg:px-6"> 
-            <div class="flex justify-between h-16 lg:h-20 items-center">
-                
-                <!-- Izquierda: Logo y Toggle Móvil -->
-                <div class="flex items-center gap-4">
-                    <button id="mobile-sidebar-btn" class="lg:hidden text-slate-500 hover:text-brand-600 hover:bg-slate-100 p-2 rounded-lg transition-colors">
-                        <i class="fa-solid fa-bars text-xl"></i>
-                    </button>
-
-                    <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.reload()">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:shadow-glow transition-all duration-300 transform group-hover:scale-105">
-                            <i class="fa-solid fa-shield-cat text-lg lg:text-xl"></i>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-bold text-xl lg:text-2xl tracking-tight text-slate-900 leading-none">Reg<span class="text-brand-600">As</span></span>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest leading-none mt-0.5">Enterprise</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Centro: Navegación -->
-                <div class="hidden md:flex items-center space-x-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-inner mx-4">
-                    <button onclick="loadModule('Vistas/ElementosPP.html')" class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                        <i class="fa-solid fa-helmet-safety text-slate-400 group-hover:text-brand-500"></i> Elementos PP
-                    </button>
-                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-user text-slate-400 group-hover:text-brand-500"></i> Visitas
-                    </button>
-                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                        <i class="fa-solid fa-truck-fast text-slate-400 group-hover:text-brand-500"></i> Proveedores
-                    </button>
-                </div>
-
-                <!-- Derecha: Herramientas -->
-                <div class="flex items-center gap-3 lg:gap-4">
-                    
-                    <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 p-0.5 shadow-inner">
-                        <!-- Reloj -->
-                        <div id="clock-display" class="hidden md:block font-mono font-bold text-slate-600 text-base tracking-wider px-3 py-1.5 border-r border-slate-200">
-                            00:00
-                        </div>
-                        
-                        <!-- BOTÓN ESTADO DB / SINCRONIZACIÓN -->
-                        <div class="relative">
-                            <button onclick="window.appCore.toggleDbPanel(event)" id="db-status-btn" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-brand-600 hover:bg-white rounded-md transition-colors relative" title="Estado de Sincronización">
-                                <i id="db-icon" class="fa-solid fa-cloud"></i>
-                                <span id="db-indicator" class="absolute top-2 right-2 w-1.5 h-1.5 bg-gray-400 rounded-full ring-1 ring-white"></span>
-                            </button>
-
-                            <!-- PANEL VOLÁTIL DB -->
-                            <div id="db-status-popover" class="absolute right-0 top-full mt-3 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-[60] hidden animate-fade-in overflow-hidden" onclick="event.stopPropagation()">
-                                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Sincronización Nube</h4>
-                                    <span id="sync-status-label" class="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-mono">Conectando...</span>
-                                </div>
-                                
-                                <div class="p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar" id="db-status-list">
-                                    <!-- Lista de DBs se llena con JS -->
-                                </div>
-
-                                <!-- ACCIONES -->
-                                <div class="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
-                                    <button onclick="window.syncManager.uploadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-brand-200 hover:text-brand-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i> Forzar Carga
-                                    </button>
-                                    <button onclick="window.syncManager.downloadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-blue-200 hover:text-blue-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                        <i class="fa-solid fa-cloud-arrow-down"></i> Forzar Descarga
-                                    </button>
-                                    
-                                    <!-- IMPORTADOR EXCEL -->
-                                    <button onclick="window.loadComponent('Componentes/Utilidades/ImportadorExcel.html', 'right-panel-content').then(() => window.toggleRightPanel(true)); window.appCore.toggleDbPanel(event);" class="col-span-2 flex items-center justify-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                        <i class="fa-solid fa-file-csv"></i> Importar desde Excel/CSV
-                                    </button>
-                                </div>
-
-                                <div class="px-4 py-2 border-t border-slate-100 bg-white text-[10px] text-slate-400 text-center flex justify-between items-center">
-                                    <span>Última sinc: <b id="last-sync-time">--:--</b></span>
-                                    <span class="flex items-center gap-1" id="cloud-indicator-text"><i class="fa-solid fa-circle text-gray-300 text-[8px]"></i> Offline</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
-
-                    <!-- Botón Configuración -->
-                    <button onclick="window.loadModule('Componentes/Ajustes.html')" class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-200 hover:shadow-md flex items-center justify-center transition-all duration-200 group" title="Configuración Global">
-                        <i class="fa-solid fa-gear text-lg group-hover:animate-spin-slow-hover"></i>
-                    </button>
-                    
-                    <!-- Avatar Usuario / Menú de Sesión -->
-                    <div class="relative">
-                        <button onclick="window.appCore.toggleUserPanel(event)" class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all shadow-sm border border-brand-200 overflow-hidden" title="Cuenta de Usuario">
-                            <!-- Silueta por defecto -->
-                            <i class="fa-solid fa-user text-lg"></i>
-                            <!-- Espacio reservado para imagen: <img src="..." class="w-full h-full object-cover hidden"> -->
-                        </button>
-
-                        <!-- Menú Usuario Dropdown -->
-                        <div id="user-menu-popover" class="absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-[60] hidden animate-fade-in overflow-hidden" onclick="event.stopPropagation()">
-                            
-                            <!-- Info Usuario -->
-                            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                                <p class="text-sm font-bold text-slate-800">Usuario Invitado</p>
-                                <p class="text-[10px] text-slate-500">Sin sesión iniciada</p>
-                            </div>
-
-                            <!-- Opciones -->
-                            <div class="p-1.5 space-y-0.5">
-                                <button onclick="alert('Módulo de Login en desarrollo')" class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-brand-50 hover:text-brand-700 rounded-lg transition-colors flex items-center gap-3">
-                                    <i class="fa-solid fa-right-to-bracket w-4 text-center"></i> Iniciar Sesión
-                                </button>
-                                <button onclick="alert('Registro en desarrollo')" class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors flex items-center gap-3">
-                                    <i class="fa-solid fa-user-plus w-4 text-center"></i> Crear Cuenta
-                                </button>
-                            </div>
-                            
-                            <div class="border-t border-slate-100 p-1.5">
-                                <button onclick="location.reload()" class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-3">
-                                    <i class="fa-solid fa-power-off w-4 text-center"></i> Salir
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </nav>
-
-        <!-- 2. LAYOUT PRINCIPAL -->
-        <div class="flex-grow flex w-full overflow-hidden relative">
-            <aside id="sidebar-container" class="hidden lg:block w-1/5 min-w-[250px] max-w-xs bg-white border-r border-slate-200 h-full overflow-hidden flex-shrink-0 z-30">
-                <div class="flex items-center justify-center h-full text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i></div>
-            </aside>
-
-            <main id="app-container" class="flex-grow w-full lg:w-4/5 h-full overflow-y-auto bg-slate-50 p-4 md:p-6 lg:p-8 relative custom-scrollbar">
-                <div class="flex-grow flex flex-col items-center justify-center h-full text-slate-300">
-                    <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-soft mb-6 animate-pulse">
-                        <i class="fa-solid fa-shield-halved text-5xl text-slate-200"></i>
-                    </div>
-                    <h2 class="text-xl font-medium text-slate-400">Cargando sistema...</h2>
-                </div>
-            </main>
-
-            <aside id="global-right-panel" class="w-0 bg-white border-l border-slate-200 h-full overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out relative z-30 shadow-xl">
-                <div class="w-[28vw] min-w-[350px] h-full flex flex-col relative"> 
-                    <button onclick="window.toggleRightPanel(false)" class="absolute top-4 left-4 z-50 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2 transition-colors shadow-sm"><i class="fa-solid fa-xmark drop-shadow-md"></i></button>
-                    <div id="right-panel-content" class="h-full flex flex-col bg-white"></div>
-                </div>
-            </aside>
-
-            <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity duration-300" onclick="toggleMobileSidebar()"></div>
-            <div id="mobile-sidebar-drawer" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 lg:hidden flex flex-col">
-                <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50"><div class="flex items-center gap-2 font-bold text-slate-800"><i class="fa-solid fa-bars text-brand-600"></i> Menú</div><button onclick="toggleMobileSidebar()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button></div>
-                <div id="mobile-sidebar-content" class="flex-grow overflow-y-auto custom-scrollbar"></div>
-            </div>
-        </div>
-
-        <!-- SCRIPTS CORE -->
-        <script>
-            function updateClock() {
-                const now = new Date();
-                const clockEl = document.getElementById('clock-display');
-                if (clockEl) clockEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            }
-            setInterval(updateClock, 1000); updateClock();
-
-            // --- GESTOR DE SINCRONIZACIÓN CENTRALIZADO ---
-            window.syncManager = {
-                API_URL: "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4",
-                DB_KEYS: [
-                    'regas_epp_config',
-                    'regas_assignments',
-                    'regas_areas_config',
-                    'regas_shift_templates',
-                    'regas_pattern_templates',
-                    'regas_chat_messages',
-                    'regas_counters'
-                ],
-                
-                init() {
-                    console.log("Iniciando SyncManager...");
-                    this.renderDbStatus();
-                    // 1. Descarga inicial automática
-                    this.downloadData();
-                    
-                    // 2. Autosave periódico (cada 60s)
-                    setInterval(() => this.uploadData(true), 60000);
-                },
-
-                async downloadData() {
-                    this.updateUI('syncing', 'Descargando...');
-                    try {
-                        const response = await fetch(this.API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ Mode: 'Descarga' })
-                        });
-
-                        if (!response.ok) throw new Error("Error en API");
-                        
-                        const result = await response.json();
-                        
-                        // Parsear body si viene como string (común en Power Automate)
-                        let cloudData = result;
-                        if(result.body && typeof result.body === 'string') {
-                            try { cloudData = JSON.parse(result.body); } catch(e) {}
-                        } else if (result.Data) {
-                            cloudData = result.Data;
-                        }
-
-                        if (cloudData && Object.keys(cloudData).length > 0) {
-                            // Aplicar datos de la nube
-                            this.DB_KEYS.forEach(key => {
-                                if (cloudData[key]) {
-                                    localStorage.setItem(key, JSON.stringify(cloudData[key]));
-                                }
-                            });
-                            this.updateUI('online', 'Sincronizado');
-                            console.log("Datos descargados y aplicados.");
-                            // Recargar módulo actual para reflejar cambios
-                            window.dispatchEvent(new CustomEvent('regas:assignments-updated'));
-                        } else {
-                            console.warn("Nube vacía o formato inválido. Manteniendo datos locales.");
-                            this.updateUI('local', 'Local (Nube vacía)');
-                        }
-                    } catch (error) {
-                        console.error("Fallo descarga:", error);
-                        this.updateUI('offline', 'Modo Offline');
-                    }
-                    this.renderDbStatus();
-                },
-
-                async uploadData(isAuto = false) {
-                    if(!isAuto) this.updateUI('syncing', 'Subiendo...');
-                    
-                    const payload = {};
-                    this.DB_KEYS.forEach(key => {
-                        const val = localStorage.getItem(key);
-                        if(val) payload[key] = JSON.parse(val);
-                    });
-
-                    try {
-                        await fetch(this.API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                Mode: 'Carga',
-                                Data: payload 
-                            })
-                        });
-                        if(!isAuto) this.updateUI('online', 'Guardado en Nube');
-                        console.log("Autoguardado exitoso.");
-                    } catch (error) {
-                        console.error("Fallo subida:", error);
-                        if(!isAuto) this.updateUI('offline', 'Error al guardar');
-                    }
-                    this.renderDbStatus();
-                },
-
-                updateUI(status, label) {
-                    const icon = document.getElementById('db-icon');
-                    const dot = document.getElementById('db-indicator');
-                    const text = document.getElementById('sync-status-label');
-                    const footerText = document.getElementById('cloud-indicator-text');
-                    const time = document.getElementById('last-sync-time');
-
-                    if(text) text.textContent = label;
-                    if(time) time.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-                    if (status === 'syncing') {
-                        icon.className = "fa-solid fa-rotate fa-spin";
-                        dot.className = "absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full ring-1 ring-white";
-                    } else if (status === 'online') {
-                        icon.className = "fa-solid fa-cloud text-brand-600";
-                        dot.className = "absolute top-2 right-2 w-1.5 h-1.5 bg-green-500 rounded-full ring-1 ring-white";
-                        if(footerText) footerText.innerHTML = '<i class="fa-solid fa-circle text-green-500 text-[8px]"></i> Online';
-                    } else {
-                        icon.className = "fa-solid fa-database text-slate-400";
-                        dot.className = "absolute top-2 right-2 w-1.5 h-1.5 bg-gray-400 rounded-full ring-1 ring-white";
-                        if(footerText) footerText.innerHTML = '<i class="fa-solid fa-circle text-gray-300 text-[8px]"></i> Offline';
-                    }
-                },
-
-                renderDbStatus() {
-                    const list = document.getElementById('db-status-list');
-                    if(!list) return;
-                    list.innerHTML = '';
-                    
-                    this.DB_KEYS.forEach(key => {
-                        const data = localStorage.getItem(key);
-                        const size = data ? (data.length / 1024).toFixed(1) : 0;
-                        
-                        const div = document.createElement('div');
-                        div.className = "flex justify-between items-center p-2 hover:bg-slate-50 rounded";
-                        div.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-database text-slate-300 text-xs"></i>
-                                <span class="text-xs text-slate-600 font-medium truncate max-w-[120px]">${key.replace('regas_','')}</span>
-                            </div>
-                            <span class="text-[9px] text-slate-400 font-mono">${size} KB</span>
-                        `;
-                        list.appendChild(div);
-                    });
-                },
-
-                togglePanel(e) {
-                    e.stopPropagation();
-                    const panel = document.getElementById('db-status-popover');
-                    // Cerrar user menu si está abierto
-                    document.getElementById('user-menu-popover')?.classList.add('hidden');
-                    
-                    panel.classList.toggle('hidden');
-                    if(!panel.classList.contains('hidden')) this.renderDbStatus();
-                }
-            };
-
-            // --- Core: Navegación y Carga ---
-            window.appCore = window.appCore || {};
+        // --- LÓGICA DE INTERCAMBIO DE PANELES ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('module-sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const rightPanel = document.getElementById('global-right-panel');
             
-            // Nueva función para toggle del menú de usuario
-            window.appCore.toggleUserPanel = function(event) {
-                event.stopPropagation();
-                const panel = document.getElementById('user-menu-popover');
-                // Cerrar otros paneles
-                document.getElementById('db-status-popover')?.classList.add('hidden');
-                
-                if (panel.classList.contains('hidden')) {
-                    panel.classList.remove('hidden');
-                    const closeHandler = (e) => {
-                        if (!panel.contains(e.target) && e.target !== event.currentTarget) {
-                            panel.classList.add('hidden');
-                            document.removeEventListener('click', closeHandler);
-                        }
-                    };
-                    setTimeout(() => document.addEventListener('click', closeHandler), 10);
-                } else {
-                    panel.classList.add('hidden');
-                }
-            };
-
-            // Mantener toggleDbPanel en window.appCore para compatibilidad
-            window.appCore.toggleDbPanel = window.syncManager.togglePanel.bind(window.syncManager);
-
-            // Export/Import hooks (si existen en el código anterior, los mantenemos aquí o en syncManager)
-            // Para mantener compatibilidad con versiones previas, mapeamos:
-            window.appCore.exportDB = async () => {
-                // Implementación simplificada usando el payload actual
-                const payload = {};
-                window.syncManager.DB_KEYS.forEach(key => {
-                    const val = localStorage.getItem(key);
-                    if(val) payload[key] = JSON.parse(val);
-                });
-                const dataStr = JSON.stringify(payload, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `RegAs_Backup_${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-            
-            window.appCore.importDB = (inputElement) => {
-                const file = inputElement.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        if (!confirm("Sobrescribir datos locales?")) return;
-                        window.syncManager.DB_KEYS.forEach(key => {
-                            if (importedData[key]) localStorage.setItem(key, JSON.stringify(importedData[key]));
-                        });
-                        alert("Importado. Recargando...");
-                        location.reload();
-                    } catch (error) { alert("Error JSON"); }
-                };
-                reader.readAsText(file);
-            };
-
-
-            async function loadComponent(url, containerId) {
-                const container = document.getElementById(containerId);
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const html = await response.text();
-                    container.innerHTML = html;
-                    container.querySelectorAll("script").forEach(oldScript => {
-                        const newScript = document.createElement("script");
-                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
-                    });
-                    return true;
-                } catch (error) {
-                    console.error(`Error cargando ${url}:`, error);
-                    return false;
-                }
+            // Si el panel derecho está abierto, cerrarlo restaura el sidebar automáticamente (via toggleRightPanel)
+            if (rightPanel.classList.contains('w-[28vw]')) {
+                toggleRightPanel(false);
+                return;
             }
 
-            window.loadModule = function(url) {
-                const container = document.getElementById('app-container');
-                window.toggleRightPanel(false);
-                container.style.opacity = '0';
-                container.style.transform = 'translateY(10px)';
-                setTimeout(() => {
-                    loadComponent(url, 'app-container').then(() => {
-                        container.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-                        container.style.opacity = '1';
-                        container.style.transform = 'translateY(0)';
-                        const drawer = document.getElementById('mobile-sidebar-drawer');
-                        if (!drawer.classList.contains('-translate-x-full')) toggleMobileSidebar();
-                        container.scrollTop = 0;
-                    });
-                }, 200);
-            };
-
-            window.toggleRightPanel = function(show) {
-                const panel = document.getElementById('global-right-panel');
-                if (show) { panel.classList.remove('w-0'); panel.classList.add('w-[28vw]', 'min-w-[350px]'); } 
-                else { panel.classList.remove('w-[28vw]', 'min-w-[350px]'); panel.classList.add('w-0'); setTimeout(() => { document.getElementById('right-panel-content').innerHTML = ''; }, 300); }
-            };
-
-            window.toggleMobileSidebar = function() {
-                const overlay = document.getElementById('mobile-sidebar-overlay');
-                const drawer = document.getElementById('mobile-sidebar-drawer');
-                const content = document.getElementById('mobile-sidebar-content');
-                if (drawer.classList.contains('-translate-x-full')) {
-                    content.innerHTML = document.getElementById('sidebar-container').innerHTML;
+            // Lógica estándar de menú móvil
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                // Solo añadir fixed/shadow en móvil si no estamos en desktop mode restaurado
+                if (window.innerWidth < 768) { 
+                    sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'shadow-xl');
                     overlay.classList.remove('hidden');
-                    setTimeout(() => drawer.classList.remove('-translate-x-full'), 10);
                 } else {
-                    drawer.classList.add('-translate-x-full');
-                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                    // En desktop, aseguramos que se vea como bloque
+                    sidebar.classList.add('md:block');
                 }
-            };
-            document.getElementById('mobile-sidebar-btn').addEventListener('click', toggleMobileSidebar);
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'shadow-xl');
+                overlay.classList.add('hidden');
+            }
+        }
 
-            document.addEventListener('DOMContentLoaded', async () => {
-                await loadComponent('Componentes/Baner_Lateral.html', 'sidebar-container');
-                loadModule('Vistas/ElementosPP.html');
-                window.syncManager.init(); // Iniciar sincronización
-            });
-        </script>
-    </body>
-    </html>
+        async function openMyProfile() {
+            await loadInternalComponent('../Componentes/MiPerfil.html', 'right-panel-content');
+            toggleRightPanel(true);
+        }
+
+        function logout() {
+            localStorage.removeItem('regas_user_session');
+            localStorage.removeItem('regas_session_start');
+            window.location.href = 'https://cicxtfemco.online/login.html';
+        }
+
+        async function loadInternalComponent(url, containerId) {
+            const container = document.getElementById(containerId);
+            try {
+                const response = await fetch(url);
+                if(!response.ok) throw new Error(`Error HTTP ${response.status} al cargar ${url}`);
+                const html = await response.text();
+                container.innerHTML = html;
+                
+                container.querySelectorAll("script").forEach(oldScript => {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+            } catch(e) { console.error("Error cargando componente interno:", e); }
+        }
+
+        // --- TOGGLE PANEL DERECHO CON GESTIÓN DE SIDEBAR ---
+        window.toggleRightPanel = function(show) {
+            const panel = document.getElementById('global-right-panel');
+            const sidebar = document.getElementById('module-sidebar');
+            const toggleBtn = document.getElementById('sidebar-toggle-btn');
+
+            if(show) {
+                // ABRIR Panel Derecho
+                panel.classList.remove('w-0');
+                panel.classList.add('w-[28vw]', 'min-w-[350px]');
+                
+                // OCULTAR Sidebar Izquierdo (Modo Enfoque)
+                sidebar.classList.remove('md:block'); // Quitar visibilidad desktop
+                sidebar.classList.add('hidden');      // Forzar oculto
+                
+                // MOSTRAR Botón de Menú en Header (Para poder reabrir sidebar)
+                toggleBtn.classList.remove('md:hidden');
+                
+            } else {
+                // CERRAR Panel Derecho
+                panel.classList.remove('w-[28vw]', 'min-w-[350px]');
+                panel.classList.add('w-0');
+                setTimeout(() => {
+                    const content = document.getElementById('right-panel-content');
+                    if(content) content.innerHTML = '';
+                }, 300);
+
+                // RESTAURAR Sidebar Izquierdo
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('md:block');
+                
+                // OCULTAR Botón de Menú en Header (Ya no es necesario en desktop)
+                toggleBtn.classList.add('md:hidden');
+            }
+        };
+
+        window.loadComponent = loadInternalComponent;
+        
+        document.addEventListener('click', () => {
+            document.getElementById('header-user-menu').classList.add('hidden');
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateHeaderUI();
+            loadInternalComponent('Componentes/Baner_Lateral.html', 'module-sidebar');
+            loadInternalComponent('Vistas/ElementosPP.html', 'module-content');
+        });
+    </script>
+</body>
+</html>

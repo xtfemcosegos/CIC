@@ -62,12 +62,10 @@
     </div>
 </div>
 
-<!-- INTEGRIDAD: Trigger de Ejecución de Script -->
 <img src="x" onerror="if(!window.dayViewManager && document.getElementById('script-day-view')) eval(document.getElementById('script-day-view').innerText);" style="display:none;" />
 
 <script id="script-day-view">
     window.RegAs = window.RegAs || {};
-    // Store simple de asignaciones
     if (!window.RegAs.assignments) {
         window.RegAs.assignments = {
             STORAGE_KEY: 'regas_assignments',
@@ -86,16 +84,18 @@
             if (!this._listening) {
                 window.addEventListener('regas:assignments-updated', () => {
                     this.render();
-                    this.checkAlerts();
                 });
                 this._listening = true;
             }
-            this.setDate(new Date().toISOString().split('T')[0]);
-            
-            // Iniciar ciclo de alertas
-            this.checkAlerts();
-            if(this.alertInterval) clearInterval(this.alertInterval);
-            this.alertInterval = setInterval(() => this.checkAlerts(), 60000); // Revisar cada minuto
+
+            // --- LÓGICA DE SALTO DE FECHA (Desde Vista Semanal) ---
+            const jumpDate = localStorage.getItem('regas_jump_date');
+            if (jumpDate) {
+                this.setDate(jumpDate);
+                localStorage.removeItem('regas_jump_date'); // Consumir fecha
+            } else {
+                this.setDate(new Date().toISOString().split('T')[0]);
+            }
             
             console.log("DayViewManager Initialized");
         },
@@ -108,7 +108,6 @@
             const isToday = this.currentDate.toDateString() === new Date().toDateString();
             document.getElementById('day-label').textContent = isToday ? 'HOY' : this.currentDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
             this.render();
-            this.checkAlerts();
         },
 
         changeDate(d) { this.currentDate.setDate(this.currentDate.getDate() + d); this.setDate(this.formatDate(this.currentDate)); },
@@ -127,13 +126,11 @@
 
             todayAssignments.forEach(assign => {
                 const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
-                // Aseguramos que la info de la asignación (como area modificada) sobrescriba la del empleado
                 const item = { ...elementInfo, ...assign };
                 if (groups[assign.shift]) groups[assign.shift].push(item);
-                else groups['Diurno'].push(item); // Fallback
+                else groups['Diurno'].push(item); 
             });
 
-            // UI Counters
             ['Diurno','Vespertino','Nocturno'].forEach(t => {
                 const el = document.getElementById(`stat-${t.toLowerCase()}`);
                 if(el) el.textContent = groups[t].length;
@@ -141,122 +138,33 @@
             const elAbs = document.getElementById('count-absences');
             if(elAbs) elAbs.textContent = groups['Descanso'].length;
 
-            // UI Tabs
             ['Diurno','Vespertino','Nocturno'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
-                const active = this.currentTab === t;
-                btn.className = `flex-1 py-3 text-sm font-${active ? 'bold' : 'medium'} border-b-2 transition-all ${active ? (t==='Diurno'?'text-blue-600 border-blue-600 bg-blue-50': t==='Vespertino'?'text-orange-600 border-orange-600 bg-orange-50':'text-slate-800 border-slate-800 bg-slate-100') : 'text-slate-400 border-transparent hover:text-slate-600'}`;
+                if (btn) {
+                    const active = this.currentTab === t;
+                    btn.className = `flex-1 py-3 text-sm font-${active ? 'bold' : 'medium'} border-b-2 transition-all ${active ? (t==='Diurno'?'text-blue-600 border-blue-600 bg-blue-50': t==='Vespertino'?'text-orange-600 border-orange-600 bg-orange-50':'text-slate-800 border-slate-800 bg-slate-100') : 'text-slate-400 border-transparent hover:text-slate-600'}`;
+                }
             });
 
             this.renderContent(groups[this.currentTab]);
             this.renderAbsences(groups['Descanso']);
         },
 
-        // --- SISTEMA DE ALERTAS E INCONSISTENCIAS ---
-        checkAlerts() {
-            const panel = document.getElementById('imminent-activity-panel');
-            const container = document.getElementById('alerts-container');
-            if (!panel || !container) return;
-
-            const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            const updateTimeEl = document.getElementById('alert-last-update');
-            if(updateTimeEl) updateTimeEl.textContent = timeStr;
-
-            const dateStr = this.formatDate(this.currentDate);
-            if (dateStr !== this.formatDate(now)) {
-                panel.classList.add('hidden');
-                return;
-            }
-
-            const allAssignments = window.RegAs.assignments.getAll().filter(a => a.date === dateStr);
-            const configElements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
-            const alerts = [];
-
-            allAssignments.forEach(assign => {
-                if (assign.isAbsent || assign.shift === 'Descanso') return;
-
-                const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
-                const item = { ...elementInfo, ...assign };
-
-                const currentMinutes = (now.getHours() * 60) + now.getMinutes();
-                const [startH, startM] = (assign.startTime || "00:00").split(':').map(Number);
-                const startMinutes = (startH * 60) + startM;
-                
-                if (!assign.checkInTime && currentMinutes > (startMinutes + 15)) {
-                    alerts.push({ type: 'late_in', msg: 'Retardo de Entrada', color: 'red', icon: 'fa-user-clock', item });
-                }
-                else if (!assign.checkInTime && currentMinutes >= (startMinutes - 15) && currentMinutes <= startMinutes) {
-                    alerts.push({ type: 'coming_soon', msg: 'Entrada Inminente', color: 'blue', icon: 'fa-person-walking-arrow-right', item });
-                }
-
-                const durationMinutes = (parseFloat(assign.duration || 8) * 60);
-                if (assign.checkInTime && !assign.checkOutTime && currentMinutes > (startMinutes + durationMinutes + 30)) {
-                    alerts.push({ type: 'late_out', msg: 'Salida Pendiente', color: 'orange', icon: 'fa-hourglass-end', item });
-                }
-            });
-
-            container.innerHTML = '';
-
-            if (alerts.length === 0) {
-                panel.classList.add('hidden');
-                return;
-            }
-
-            panel.classList.remove('hidden');
-            alerts.forEach(alert => {
-                const card = document.createElement('div');
-                card.className = "w-full flex-shrink-0 bg-white border border-slate-200 rounded-lg p-2.5 hover:shadow-md transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden group mb-2";
-                
-                const borderClass = `bg-${alert.color}-500`;
-                const textClass = `text-${alert.color}-600`;
-                const photo = `FotosElementosPP/${alert.item.id}.jpg`;
-
-                card.innerHTML = `
-                    <div class="absolute left-0 top-0 bottom-0 w-1 ${borderClass}"></div>
-                    <img src="${photo}" class="w-8 h-8 rounded-full object-cover border border-slate-100 bg-slate-50" onerror="this.src='https://ui-avatars.com/api/?name=${alert.item.name}&background=random'">
-                    <div class="min-w-0 flex-grow">
-                        <div class="flex items-center gap-1.5 mb-0.5">
-                            <i class="fa-solid ${alert.icon} text-[10px] ${textClass}"></i>
-                            <span class="text-[9px] font-bold ${textClass} uppercase tracking-wider leading-none">${alert.msg}</span>
-                        </div>
-                        <h5 class="text-xs font-bold text-slate-700 truncate leading-tight">${alert.item.name}</h5>
-                        <p class="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
-                            <i class="fa-regular fa-clock text-[9px]"></i> ${alert.item.startTime} • ${alert.item.area || 'General'}
-                        </p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                `;
-                
-                card.onclick = (e) => {
-                    e.stopPropagation();
-                    window.dayViewManager.openSidePanel(alert.item);
-                };
-                
-                container.appendChild(card);
-            });
-        },
-
         renderContent(items) {
             const container = document.getElementById('active-shift-container');
+            if(!container) return;
             container.innerHTML = '';
             
-            // Build areas structure from config to include empty ones
+            // Agrupación por Área con ordenamiento
             const areas = {};
             const areaConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
             const areaOrder = {};
             let orderCounter = 0;
             if (areaConfig.categories) {
                 areaConfig.categories.forEach(cat => {
-                    if (cat.areas) {
-                        cat.areas.forEach(area => { 
-                            areaOrder[area.name] = orderCounter++; 
-                            areas[area.name] = []; // Initialize empty array
-                        });
-                    }
+                    if (cat.areas) cat.areas.forEach(area => { areaOrder[area.name] = orderCounter++; });
                 });
             }
-            // Ensure 'General' or other unconfigured areas from items exist
             items.forEach(i => { 
                 const a = i.area || 'General'; 
                 if(!areas[a]) areas[a]=[]; 
@@ -270,20 +178,15 @@
                 return a.localeCompare(b);
             });
 
+            if (sortedAreaKeys.length === 0) {
+                 container.innerHTML = `<div class="flex flex-col items-center justify-center h-32 text-slate-300"><i class="fa-regular fa-calendar-xmark text-4xl mb-3"></i><p class="text-sm">Sin personal en ${this.currentTab}</p></div>`;
+            }
+
             sortedAreaKeys.forEach(area => {
                 const div = document.createElement('div');
-                div.innerHTML = `<h4 class="text-xs font-bold text-slate-500 uppercase mb-3 pl-1 flex items-center justify-between"><div class="flex items-center"><span class="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>${area}</div></h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 area-grid"></div>`;
+                div.innerHTML = `<h4 class="text-xs font-bold text-slate-500 uppercase mb-3 pl-1 flex items-center"><span class="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>${area}</h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 area-grid"></div>`;
                 const grid = div.querySelector('.area-grid');
-                
-                if (areas[area].length > 0) {
-                    areas[area].forEach(item => grid.appendChild(this.createCard(item)));
-                } else {
-                    const emptyCard = document.createElement('button');
-                    emptyCard.className = "border-2 border-dashed border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-brand-300 hover:text-brand-500 hover:bg-white transition-all h-[76px] group";
-                    emptyCard.innerHTML = `<i class="fa-solid fa-plus text-lg mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[10px] font-bold uppercase">Asignar aquí</span>`;
-                    emptyCard.onclick = () => window.dayViewManager.initiateAddToArea(area);
-                    grid.appendChild(emptyCard);
-                }
+                areas[area].forEach(item => grid.appendChild(this.createCard(item)));
                 container.appendChild(div);
             });
         },
@@ -294,7 +197,7 @@
             
             const isActive = item.checkInTime && !item.checkOutTime;
             const color = this.currentTab==='Diurno'?'bg-blue-500':this.currentTab==='Vespertino'?'bg-orange-500':'bg-slate-800';
-            const photo = `FotosElementosPP/${item.id}.jpg`;
+            const photo = `FotosElementosPP/${item.id}.jpg`; // RUTA DE FOTO CORREGIDA PARA CONTEXTO REGAS3
             const imgClass = isActive ? "w-10 h-10 rounded-full object-cover border-2 border-green-500 shadow-sm" : "w-10 h-10 rounded-full object-cover border border-slate-100 bg-slate-100";
             const activeIndicator = isActive ? `<div class="absolute top-2 right-2 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></div>` : '';
             const statusIcon = isActive ? `<i class="fa-solid fa-circle-check text-green-500 ml-1 text-xs" title="Activo"></i>` : '';
@@ -306,6 +209,7 @@
 
         renderAbsences(items) {
             const container = document.getElementById('absences-list');
+            if(!container) return;
             container.innerHTML = '';
             items.forEach(item => {
                 const div = document.createElement('div');
@@ -316,50 +220,23 @@
             });
         },
 
-        initiateAddToArea(area) {
-            this.targetAreaForAdd = area;
-            const label = document.getElementById('add-modal-area-label');
-            if(label) {
-                label.textContent = `en ${area}`;
-                label.classList.remove('hidden');
-            }
-            this.openAddModal();
-        },
-
         openAddModal() {
-            if (!this.targetAreaForAdd) {
-                const label = document.getElementById('add-modal-area-label');
-                if(label) label.classList.add('hidden');
-            }
             document.getElementById('add-element-modal').classList.remove('hidden');
             this.renderElementsList();
         },
-        
-        closeAddModal() { 
-            document.getElementById('add-element-modal').classList.add('hidden'); 
-            this.targetAreaForAdd = null; 
-        },
+        closeAddModal() { document.getElementById('add-element-modal').classList.add('hidden'); },
         
         filterElementsList(q) { this.renderElementsList(q.toLowerCase()); },
         renderElementsList(filter='') {
             const container = document.getElementById('elements-selection-list');
             const elements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
             container.innerHTML = '';
-
             elements.filter(e => !filter || e.name.toLowerCase().includes(filter)).forEach(e => {
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left flex items-center gap-3 p-2 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-200";
                 btn.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">${e.name.charAt(0)}</div><div><p class="text-sm font-bold text-slate-700">${e.name}</p><p class="text-[10px] text-slate-400">${e.area || 'General'}</p></div>`;
                 btn.onclick = () => {
-                    const areaToAssign = this.targetAreaForAdd || e.area || 'General';
-                    window.RegAs.assignments.addMany([{ 
-                        elementId: e.id, 
-                        date: this.formatDate(this.currentDate), 
-                        shift: this.currentTab, 
-                        startTime: '07:00', 
-                        duration: 8,
-                        area: areaToAssign 
-                    }]);
+                    window.RegAs.assignments.addMany([{ elementId: e.id, date: this.formatDate(this.currentDate), shift: this.currentTab, startTime: '07:00', duration: 8, area: e.area || 'General' }]);
                     this.closeAddModal();
                 };
                 container.appendChild(btn);
@@ -369,28 +246,24 @@
         async openSidePanel(item) {
             console.log("Solicitud de apertura de panel para:", item.name);
             
-            if (typeof window.loadComponent === 'function' && window.toggleRightPanel) {
-                // CORRECCIÓN CLAVE: Verificar existencia del HTML del banner, no solo el objeto JS
+            if (window.loadComponent && window.toggleRightPanel) {
+                // Validación para cargar Baner_Perfil si no existe
                 if (!window.profileSidePanelManager || !document.getElementById('side-p-name')) {
-                    console.log("Cargando Baner_Perfil.html en panel derecho...");
+                    // FIX: Ruta corregida para cargar desde RegAs3/RegAs.html
                     await window.loadComponent('Componentes/Baner_Perfil.html', 'right-panel-content');
                 }
-
                 window.toggleRightPanel(true);
-
+                
                 setTimeout(() => {
                     if (window.profileSidePanelManager) {
                         window.profileSidePanelManager.init(item);
                     } else {
-                        // Intento de recuperación forzada si el script no se ejecutó
+                        // Intento de recuperación
                         const script = document.getElementById('script-baner-perfil');
                         if(script) eval(script.innerText);
                         if(window.profileSidePanelManager) window.profileSidePanelManager.init(item);
                     }
                 }, 50);
-            } 
-            else {
-                console.error("Error de entorno: loadComponent o toggleRightPanel no definidos.");
             }
         }
     };
