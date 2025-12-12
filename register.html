@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Personal - Protección Patrimonial</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    
+    <!-- Importar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Importar Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171',
+                            500: '#dc2626', 600: '#b91c1c', 700:'#991b1b', 800:'#7f1d1d', 900:'#450a0a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        .form-section-title {
+            grid-column: 1 / -1;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .input-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background-color: #f8fafc;
+        }
+        .form-input:focus {
+            background-color: #ffffff;
+            border-color: #dc2626;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen py-10 px-4">
+
+    <!-- Header y Botón Volver -->
+    <div class="max-w-5xl mx-auto mb-6 flex justify-between items-center">
+        <a href="login.html" class="flex items-center gap-2 text-slate-500 hover:text-brand-600 transition-colors font-bold text-sm group">
+            <div class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-brand-200 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </div>
+            <span>Cancelar y Volver</span>
+        </a>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-800 rounded-lg flex items-center justify-center text-white text-sm shadow-md">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <span class="font-bold text-slate-700">Alta de Personal</span>
+        </div>
+    </div>
+
+    <!-- Tarjeta de Registro -->
+    <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-600 to-brand-400"></div>
+
+        <form id="formRegistro" onsubmit="return RegistrarUsuario(event)" class="p-8 sm:p-10">
+            
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-slate-900">Crear Nuevo Expediente</h1>
+                <p class="text-slate-400 text-sm mt-1">Ingresa los datos completos del elemento para el alta en sistema.</p>
+            </div>
+
+            <!-- GRID DE CAMPOS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+
+                <!-- === SECCIÓN: DATOS PERSONALES === -->
+                <div class="form-section-title mt-0">Datos Personales</div>
+
+                <div class="lg:col-span-2">
+                    <label class="input-label">Nombre Completo</label>
+                    <input type="text" class="form-input" placeholder="Apellido Paterno, Materno, Nombres" required>
+                </div>
+
+                <div>
+                    <label class="input-label">Fecha de Nacimiento</label>
+                    <input type="date" class="form-input" onchange="calcularEdad(this.value)" required>
+                </div>
+
+                <div>
+                    <label class="input-label">Edad</label>
+                    <input type="number" id="edadCalculada" class="form-input bg-slate-100 text-slate-500" readonly placeholder="Auto">
+                </div>
+
+                <div>
+                    <label class="input-label">Sexo</label>
+                    <select class="form-input">
+                        <option value="">Seleccionar...</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                        <option value="X">Otro</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="input-label">Estado Civil</label>
+                    <select class="form-input">
+                        <option value="">Seleccionar...</option>
+                        <option value="Soltero">Soltero(a)</option>
+                        <option value="Casado">Casado(a)</option>
+                        <option value="Divorciado">Divorciado(a)</option>
+                        <option value="Viudo">Viudo(a)</option>
+                        <option value="Union">Unión Libre</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="input-label">Lugar de Nacimiento</label>
+                    <input type="text" class="form-input" placeholder="Estado / Ciudad">
+                </div>
+
+                <div class="lg:col-span-2">
+                    <label class="input-label">Domicilio Actual</label>
+                    <input type="text" class="form-input" placeholder="Calle, Número, Colonia, CP, Ciudad">
+                </div>
+
+                <!-- === SECCIÓN: DATOS FAMILIARES === -->
+                <div class="form-section-title">Datos Familiares</div>
+
+                <div>
+                    <label class="input-label">¿Tiene Hijos?</label>
+                    <select class="form-input" onchange="toggleHijos(this.value)">
+                        <option value="No">No</option>
+                        <option value="Si">Sí</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="input-label">Cantidad de Hijos</label>
+                    <input type="number" id="inputHijos" class="form-input" placeholder="0" disabled>
+                </div>
+
+                <!-- === SECCIÓN: CONTACTO Y SALUD === -->
+                <div class="form-section-title">Contacto y Salud</div>
+
+                <div>
+                    <label class="input-label">Número de Celular</label>
+                    <input type="tel" class="form-input" placeholder="(000) 000-0000" required>
+                </div>
+
+                <div>
+                    <label class="input-label">Correo Electrónico</label>
+                    <input type="email" class="form-input" placeholder="ejemplo@correo.com">
+                </div>
+
+                <div>
+                    <label class="input-label">Contacto de Emergencia</label>
+                    <input type="tel" class="form-input" placeholder="Nombre y Teléfono">
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="input-label">Alergias a Medicamentos</label>
+                    <input type="text" class="form-input" placeholder="Especifique o escriba 'Ninguna'">
+                </div>
+
+                <!-- === SECCIÓN: DATOS LABORALES === -->
+                <div class="form-section-title">Información Laboral</div>
+
+                <div>
+                    <label class="input-label">Número de Empleado</label>
+                    <input type="text" class="form-input font-bold" placeholder="ID de Nómina" required>
+                </div>
+
+                <div>
+                    <label class="input-label">Número de Seguro Social (NSS)</label>
+                    <input type="text" class="form-input" placeholder="11 Dígitos">
+                </div>
+
+                <div>
+                    <label class="input-label">Fecha de Ingreso</label>
+                    <input type="date" class="form-input" required>
+                </div>
+
+                <div>
+                    <label class="input-label">Compañía</label>
+                    <input type="text" class="form-input" placeholder="Razón Social">
+                </div>
+
+                <div>
+                    <label class="input-label">Puesto</label>
+                    <input type="text" class="form-input" placeholder="Cargo asignado">
+                </div>
+
+                <div>
+                    <label class="input-label">Predio / Ubicación</label>
+                    <input type="text" class="form-input" placeholder="Lugar de trabajo asignado">
+                </div>
+
+                <div>
+                    <label class="input-label">Estatus</label>
+                    <select class="form-input bg-green-50 text-green-700 border-green-200">
+                        <option value="Activo" selected>Activo</option>
+                        <option value="Baja">Baja</option>
+                        <option value="Incapacitado">Incapacitado</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="input-label">Fecha de Baja</label>
+                    <input type="date" class="form-input" disabled>
+                </div>
+
+                <!-- === SECCIÓN: PERFIL PROFESIONAL === -->
+                <div class="form-section-title">Perfil Profesional</div>
+
+                <div>
+                    <label class="input-label">Escolaridad Máxima</label>
+                    <select class="form-input">
+                        <option value="">Seleccionar...</option>
+                        <option value="Secundaria">Secundaria</option>
+                        <option value="Preparatoria">Preparatoria / Bachillerato</option>
+                        <option value="Tecnico">Técnico</option>
+                        <option value="Licenciatura">Licenciatura / Ingeniería</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="input-label">Tiempo de Experiencia</label>
+                    <input type="text" class="form-input" placeholder="Ej. 2 años en seguridad">
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="input-label">Cursos Básicos (Paquetería Office, etc.)</label>
+                    <textarea class="form-input" rows="2" placeholder="Listar cursos..."></textarea>
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="input-label">Cursos Avanzados (Área de Seguridad)</label>
+                    <textarea class="form-input" rows="2" placeholder="Cursos especializados..."></textarea>
+                </div>
+
+                <!-- === SECCIÓN: FOTOGRAFÍA === -->
+                <div class="form-section-title">Fotografía</div>
+
+                <div class="lg:col-span-3">
+                    <div class="flex items-center justify-center w-full">
+                        <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-brand-300 transition-colors">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-3"></i>
+                                <p class="text-sm text-slate-500"><span class="font-bold">Clic para subir</span> o arrastra la foto aquí</p>
+                                <p class="text-xs text-slate-400">SVG, PNG, JPG (MAX. 2MB)</p>
+                            </div>
+                            <input id="dropzone-file" type="file" class="hidden" accept="image/*" />
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="mt-8 pt-6 border-t border-slate-200 flex gap-4 justify-end">
+                <button type="button" onclick="location.href='login.html'" class="px-6 py-3 bg-white border border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-8 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all transform active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i>
+                    Guardar Expediente
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        function toggleHijos(valor) {
+            const input = document.getElementById('inputHijos');
+            input.disabled = valor !== 'Si';
+            if(valor !== 'Si') input.value = '';
+        }
+
+        function calcularEdad(fechaNac) {
+            if(!fechaNac) return;
+            const hoy = new Date();
+            const nacimiento = new Date(fechaNac);
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const mes = hoy.getMonth() - nacimiento.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+                edad--;
+            }
+            document.getElementById('edadCalculada').value = edad;
+        }
+
+        function RegistrarUsuario(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalContent = btn.innerHTML;
+            
+            // Simulación de carga
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando...';
+
+            setTimeout(() => {
+                alert('Expediente guardado exitosamente. (Simulación)');
+                // Aquí iría la lógica para enviar a la base de datos o localStorage
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                // window.location.href = 'login.html';
+            }, 1500);
+            
+            return false;
+        }
+    </script>
+</body>
+</html>
