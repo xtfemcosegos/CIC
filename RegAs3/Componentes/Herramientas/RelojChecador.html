@@ -1,31 +1,55 @@
-<div class="flex flex-col h-full items-center justify-center p-6 animate-fade-in bg-slate-50">
+<div class="flex flex-col h-full items-center justify-center p-6 animate-fade-in bg-slate-50 overflow-y-auto">
     
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 w-full max-w-md text-center">
-        <div class="mb-6">
-            <div class="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-600">
-                <i class="fa-solid fa-fingerprint text-4xl"></i>
-            </div>
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 w-full max-w-md text-center">
+        <!-- Header -->
+        <div class="mb-4">
             <h2 class="text-2xl font-bold text-slate-800">Reloj Checador</h2>
-            <p class="text-slate-500 text-sm">Ingresa tu ID para registrar asistencia</p>
-        </div>
-
-        <div class="mb-6">
-            <div class="text-4xl font-mono font-bold text-slate-700 tracking-wider mb-2" id="live-clock">00:00:00</div>
+            <div class="text-3xl font-mono font-bold text-brand-600 tracking-wider mt-1" id="live-clock">00:00:00</div>
             <p class="text-xs text-slate-400 uppercase font-bold" id="live-date">--/--/----</p>
         </div>
 
+        <!-- Cámara -->
+        <div class="relative mx-auto w-48 h-48 mb-6 bg-slate-900 rounded-full overflow-hidden border-4 border-slate-200 shadow-inner group">
+            <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover transform scale-x-[-1]"></video>
+            <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400">
+                <i class="fa-solid fa-camera text-4xl"></i>
+            </div>
+            <!-- Overlay visual -->
+            <div class="absolute inset-0 border-4 border-white/20 rounded-full pointer-events-none"></div>
+        </div>
+
+        <!-- Formulario -->
         <form onsubmit="window.timeClock.register(event)" class="space-y-4">
-            <input type="text" id="employee-id" class="w-full text-center text-2xl font-bold border-2 border-slate-200 rounded-xl py-3 focus:border-brand-500 focus:ring-0 outline-none transition-colors" placeholder="ID Personal" autofocus autocomplete="off">
+            <div class="relative">
+                <input type="text" id="employee-id" class="w-full text-center text-xl font-bold border-2 border-slate-200 rounded-xl py-3 focus:border-brand-500 focus:ring-0 outline-none transition-colors" placeholder="Ingresa tu ID" autocomplete="off">
+                <i class="fa-solid fa-id-card absolute left-4 top-4 text-slate-300"></i>
+            </div>
             
-            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-brand-500/30 transition-all active:scale-95">
-                <i class="fa-solid fa-check-to-slot mr-2"></i> Registrar
+            <!-- Indicador Ubicación -->
+            <div id="location-status" class="flex items-center justify-center gap-2 text-xs text-slate-400 py-1">
+                <i class="fa-solid fa-location-crosshairs animate-pulse"></i> Obteniendo ubicación...
+            </div>
+
+            <button type="submit" id="btn-register" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl text-lg shadow-lg shadow-brand-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-fingerprint mr-2"></i> Registrar Asistencia
             </button>
         </form>
 
-        <div id="clock-message" class="mt-6 hidden p-4 rounded-xl text-sm font-medium animate-fade-in"></div>
+        <!-- Mensajes -->
+        <div id="clock-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium animate-fade-in"></div>
+
+        <!-- Configuración (Solo admin/demo) -->
+        <div class="mt-6 pt-4 border-t border-slate-100">
+            <button onclick="window.timeClock.setTrustedLocation()" class="text-[10px] text-slate-300 hover:text-brand-500 underline">
+                Definir ubicación actual como Sitio Seguro
+            </button>
+        </div>
     </div>
 
 </div>
+
+<!-- Canvas oculto para capturar foto -->
+<canvas id="photo-canvas" class="hidden"></canvas>
 
 <img src="x" onerror="if(!window.timeClock && document.getElementById('script-reloj')) eval(document.getElementById('script-reloj').innerText);" style="display:none;" />
 
@@ -39,73 +63,205 @@
     }, 1000);
 
     window.timeClock = {
-        register(e) {
-            e.preventDefault();
-            const idInput = document.getElementById('employee-id');
-            const msgBox = document.getElementById('clock-message');
-            const id = idInput.value.trim();
+        currentLocation: null,
+        trustedLocation: null,
+        maxDistance: 100, // Metros permitidos
+
+        init() {
+            this.startCamera();
+            this.watchLocation();
             
-            if(!id) return;
+            // Cargar ubicación segura guardada
+            const savedLoc = localStorage.getItem('regas_trusted_location');
+            if(savedLoc) this.trustedLocation = JSON.parse(savedLoc);
+        },
 
-            const config = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
-            const assignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
-            const user = config.find(u => u.id === id);
+        startCamera() {
+            const video = document.getElementById('camera-feed');
+            const placeholder = document.getElementById('camera-placeholder');
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                    .then(stream => {
+                        video.srcObject = stream;
+                        video.onloadedmetadata = () => {
+                            placeholder.classList.add('hidden');
+                        };
+                    })
+                    .catch(err => {
+                        console.error("Error cámara:", err);
+                        this.showMessage('warning', 'No se pudo acceder a la cámara. Se requerirá validación manual.');
+                    });
+            }
+        },
 
-            if(!user) {
-                this.showMessage('error', 'ID no encontrado en el sistema.');
+        watchLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        this.currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            acc: position.coords.accuracy
+                        };
+                        this.updateLocationStatus(true);
+                    },
+                    (error) => {
+                        console.error("Error geo:", error);
+                        this.updateLocationStatus(false);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                this.updateLocationStatus(false);
+            }
+        },
+
+        updateLocationStatus(available) {
+            const el = document.getElementById('location-status');
+            const btn = document.getElementById('btn-register');
+            
+            if(!available) {
+                el.innerHTML = '<span class="text-red-500"><i class="fa-solid fa-location-slash"></i> Ubicación no disponible</span>';
+                // Opcional: Bloquear botón si es estricto
+                // btn.disabled = true;
                 return;
             }
 
+            if(this.trustedLocation) {
+                const dist = this.calculateDistance(
+                    this.currentLocation.lat, this.currentLocation.lng,
+                    this.trustedLocation.lat, this.trustedLocation.lng
+                );
+                
+                if(dist <= this.maxDistance) {
+                    el.innerHTML = `<span class="text-green-500"><i class="fa-solid fa-location-dot"></i> En sitio (${Math.round(dist)}m)</span>`;
+                    btn.disabled = false;
+                } else {
+                    el.innerHTML = `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Fuera de rango (${Math.round(dist)}m)</span>`;
+                    // Bloquear registro si está lejos
+                    btn.disabled = true; 
+                }
+            } else {
+                el.innerHTML = '<span class="text-orange-400"><i class="fa-solid fa-circle-question"></i> Sitio no configurado (Abierto)</span>';
+                btn.disabled = false;
+            }
+        },
+
+        register(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('employee-id');
+            const id = idInput.value.trim();
+            if(!id) return;
+
+            // 1. Validar ID
+            const config = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
+            const user = config.find(u => u.id === id);
+            if(!user) {
+                this.showMessage('error', 'ID no encontrado.');
+                return;
+            }
+
+            // 2. Capturar Foto
+            const photo = this.capturePhoto();
+
+            // 3. Registrar
+            this.processCheckIn(user, photo);
+            idInput.value = '';
+        },
+
+        capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('photo-canvas');
+            if(video.srcObject) {
+                const context = canvas.getContext('2d');
+                canvas.width = 300; // Baja res para optimizar storage
+                canvas.height = 300;
+                // Dibujar video en canvas (recorte cuadrado centro)
+                const s = Math.min(video.videoWidth, video.videoHeight);
+                const sx = (video.videoWidth - s) / 2;
+                const sy = (video.videoHeight - s) / 2;
+                context.save();
+                context.scale(-1, 1); // Espejo
+                context.drawImage(video, sx, sy, s, s, -300, 0, 300, 300);
+                context.restore();
+                return canvas.toDataURL('image/jpeg', 0.7);
+            }
+            return null;
+        },
+
+        processCheckIn(user, photoBase64) {
+            const assignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
             const now = new Date();
             const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-            // Buscar asignación de hoy
-            let assignIndex = assignments.findIndex(a => a.elementId === id && a.date === dateStr);
+            let assignIndex = assignments.findIndex(a => a.elementId === user.id && a.date === dateStr);
             let action = "";
 
             if(assignIndex === -1) {
-                // Crear asignación automática si no existe
                 const newAssign = {
-                    elementId: id,
-                    date: dateStr,
-                    shift: 'Diurno', // Default
-                    startTime: '07:00',
-                    duration: 8,
-                    checkInTime: timeStr,
-                    timestamp: Date.now()
+                    elementId: user.id, date: dateStr, shift: 'Diurno', startTime: '07:00', duration: 8,
+                    checkInTime: timeStr, checkInPhoto: photoBase64, 
+                    checkInLocation: this.currentLocation, timestamp: Date.now()
                 };
                 assignments.push(newAssign);
-                action = "Entrada (Turno Creado)";
+                action = "Entrada";
             } else {
                 const assign = assignments[assignIndex];
                 if(!assign.checkInTime) {
                     assign.checkInTime = timeStr;
-                    action = "Entrada Registrada";
+                    assign.checkInPhoto = photoBase64;
+                    action = "Entrada";
                 } else if (!assign.checkOutTime) {
                     assign.checkOutTime = timeStr;
-                    action = "Salida Registrada";
+                    assign.checkOutPhoto = photoBase64; // Foto de salida
+                    action = "Salida";
                 } else {
-                    this.showMessage('warning', `Ya registraste entrada y salida hoy (${user.name}).`);
-                    idInput.value = '';
+                    this.showMessage('warning', `Ya existen registros hoy para ${user.name}.`);
                     return;
                 }
                 assignments[assignIndex] = assign;
             }
 
             localStorage.setItem('regas_assignments', JSON.stringify(assignments));
-            window.dispatchEvent(new CustomEvent('regas:assignments-updated')); // Notificar al sistema
-            
-            this.showMessage('success', `¡Éxito! ${action} para ${user.name} a las ${timeStr}.`);
-            idInput.value = '';
+            window.dispatchEvent(new CustomEvent('regas:assignments-updated'));
+            this.showMessage('success', `${action} registrada: ${user.name}`);
+        },
+
+        setTrustedLocation() {
+            if(this.currentLocation) {
+                if(confirm("¿Establecer la ubicación actual como el único punto válido para checar?")) {
+                    this.trustedLocation = this.currentLocation;
+                    localStorage.setItem('regas_trusted_location', JSON.stringify(this.trustedLocation));
+                    this.updateLocationStatus(true);
+                    alert("Ubicación guardada.");
+                }
+            } else {
+                alert("Espera a obtener señal GPS.");
+            }
+        },
+
+        calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Metros
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         },
 
         showMessage(type, text) {
             const box = document.getElementById('clock-message');
-            box.textContent = text;
-            box.className = `mt-6 p-4 rounded-xl text-sm font-bold animate-fade-in ${type === 'error' ? 'bg-red-100 text-red-700' : type === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`;
+            box.innerHTML = text;
+            const colors = type === 'error' ? 'bg-red-100 text-red-700' : type === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700';
+            box.className = `mt-4 p-3 rounded-lg text-sm font-bold text-center animate-fade-in ${colors}`;
             box.classList.remove('hidden');
             setTimeout(() => box.classList.add('hidden'), 4000);
         }
     };
+    
+    window.timeClock.init();
 </script>

@@ -1,172 +1,203 @@
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>RegAs - Gestión Modular</title>
-        
-        <!-- Importar Tailwind CSS -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        
-        <!-- Importar Iconos (FontAwesome) -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RegAs - Gestión Modular</title>
+    
+    <!-- Importar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Importar Iconos (FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <!-- Configuración personalizada de Tailwind -->
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        fontFamily: {
-                            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                        },
-                        colors: {
-                            brand: {
-                                50: '#fef2f2',
-                                100: '#fee2e2',
-                                200: '#fecaca',
-                                300: '#fca5a5',
-                                400: '#f87171',
-                                500: '#dc2626',
-                                600: '#b91c1c', // Rojo Principal
-                                700: '#991b1b',
-                                800: '#7f1d1d',
-                                900: '#450a0a',
-                                950: '#2a0a0a',
-                            }
-                        },
-                        boxShadow: {
-                            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                            'glow': '0 0 15px rgba(185, 28, 28, 0.3)',
-                        },
-                        animation: {
-                            'spin-slow-hover': 'spin 3s linear infinite',
+    <!-- Configuración personalizada de Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#dc2626',
+                            600: '#b91c1c', // Rojo Principal
+                            700: '#991b1b',
+                            800: '#7f1d1d',
+                            900: '#450a0a',
+                            950: '#2a0a0a',
                         }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'glow': '0 0 15px rgba(185, 28, 28, 0.3)',
+                    },
+                    animation: {
+                        'spin-slow-hover': 'spin 3s linear infinite',
                     }
                 }
             }
-        </script>
+        }
+    </script>
 
-        <style>
-            /* Estilos Globales */
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    <style>
+        /* Estilos Globales */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-            body {
-                font-family: 'Inter', sans-serif;
-                background-color: #f8fafc;
-            }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
 
-            footer { display: none !important; }
+        footer { display: none !important; }
 
-            .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-            .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-            .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
-            .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-        </style>
-    </head>
-    <body class="text-slate-800 antialiased flex flex-col h-screen selection:bg-brand-100 selection:text-brand-900 overflow-hidden bg-slate-50">
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased flex flex-col h-screen selection:bg-brand-100 selection:text-brand-900 overflow-hidden bg-slate-50">
 
-        <!-- 1. MÓDULO DE NAVEGACIÓN -->
-        <nav class="flex-shrink-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-            <div class="w-full px-4 lg:px-6"> 
-                <div class="flex justify-between h-16 lg:h-20 items-center">
-                    
-                    <!-- Izquierda: Logo y Toggle Móvil -->
-                    <div class="flex items-center gap-4">
-                        <button id="mobile-sidebar-btn" class="lg:hidden text-slate-500 hover:text-brand-600 hover:bg-slate-100 p-2 rounded-lg transition-colors">
-                            <i class="fa-solid fa-bars text-xl"></i>
-                        </button>
+    <!-- 1. MÓDULO DE NAVEGACIÓN -->
+    <nav class="flex-shrink-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+        <div class="w-full px-4 lg:px-6"> 
+            <div class="flex justify-between h-16 lg:h-20 items-center">
+                
+                <!-- Izquierda: Logo y Toggle Móvil -->
+                <div class="flex items-center gap-4">
+                    <button id="mobile-sidebar-btn" class="lg:hidden text-slate-500 hover:text-brand-600 hover:bg-slate-100 p-2 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
 
-                        <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.reload()">
-                            <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:shadow-glow transition-all duration-300 transform group-hover:scale-105">
-                                <i class="fa-solid fa-shield-cat text-lg lg:text-xl"></i>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="font-bold text-xl lg:text-2xl tracking-tight text-slate-900 leading-none">Reg<span class="text-brand-600">As</span></span>
-                                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest leading-none mt-0.5">Enterprise</span>
-                            </div>
+                    <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.reload()">
+                        <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:shadow-glow transition-all duration-300 transform group-hover:scale-105">
+                            <i class="fa-solid fa-shield-cat text-lg lg:text-xl"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xl lg:text-2xl tracking-tight text-slate-900 leading-none">Reg<span class="text-brand-600">As</span></span>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest leading-none mt-0.5">Enterprise</span>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Centro: Navegación -->
+                <div class="hidden md:flex items-center space-x-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-inner mx-4">
+                    <button onclick="loadModule('Vistas/ElementosPP.html')" class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-helmet-safety text-slate-400 group-hover:text-brand-500"></i> Elementos PP
+                    </button>
+                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-user text-slate-400 group-hover:text-brand-500"></i> Visitas
+                    </button>
+                    <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                    <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-truck-fast text-slate-400 group-hover:text-brand-500"></i> Proveedores
+                    </button>
+                </div>
+
+                <!-- Derecha: Herramientas -->
+                <div class="flex items-center gap-3 lg:gap-4">
                     
-                    <!-- Centro: Navegación -->
-                    <div class="hidden md:flex items-center space-x-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-inner mx-4">
-                        <button onclick="loadModule('Vistas/ElementosPP.html')" class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                            <i class="fa-solid fa-helmet-safety text-slate-400 group-hover:text-brand-500"></i> Elementos PP
-                        </button>
-                        <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                        <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                            <i class="fa-solid fa-clipboard-user text-slate-400 group-hover:text-brand-500"></i> Visitas
-                        </button>
-                        <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                        <button class="nav-btn text-slate-600 hover:text-brand-700 hover:bg-white hover:shadow-sm px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2">
-                            <i class="fa-solid fa-truck-fast text-slate-400 group-hover:text-brand-500"></i> Proveedores
-                        </button>
-                    </div>
-
-                    <!-- Derecha: Herramientas -->
-                    <div class="flex items-center gap-3 lg:gap-4">
+                    <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 p-0.5 shadow-inner">
+                        <!-- Reloj -->
+                        <div id="clock-display" class="hidden md:block font-mono font-bold text-slate-600 text-base tracking-wider px-3 py-1.5 border-r border-slate-200">
+                            00:00
+                        </div>
                         
-                        <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 p-0.5 shadow-inner">
-                            <!-- Reloj -->
-                            <div id="clock-display" class="hidden md:block font-mono font-bold text-slate-600 text-base tracking-wider px-3 py-1.5 border-r border-slate-200">
-                                00:00
-                            </div>
-                            
-                            <!-- BOTÓN ESTADO DB / SINCRONIZACIÓN -->
-                            <div class="relative">
-                                <button onclick="window.syncManager.togglePanel(event)" id="db-status-btn" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-brand-600 hover:bg-white rounded-md transition-colors relative" title="Estado de Sincronización">
-                                    <i id="db-icon" class="fa-solid fa-cloud"></i>
-                                    <span id="db-indicator" class="absolute top-2 right-2 w-1.5 h-1.5 bg-gray-400 rounded-full ring-1 ring-white"></span>
-                                </button>
+                        <!-- BOTÓN ESTADO DB / SINCRONIZACIÓN -->
+                        <div class="relative">
+                            <button onclick="window.appCore.toggleDbPanel(event)" id="db-status-btn" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-brand-600 hover:bg-white rounded-md transition-colors relative" title="Estado de Sincronización">
+                                <i id="db-icon" class="fa-solid fa-cloud"></i>
+                                <span id="db-indicator" class="absolute top-2 right-2 w-1.5 h-1.5 bg-gray-400 rounded-full ring-1 ring-white"></span>
+                            </button>
 
-                                <!-- PANEL VOLÁTIL DB -->
-                                <div id="db-status-popover" class="absolute right-0 top-full mt-3 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-[60] hidden animate-fade-in overflow-hidden" onclick="event.stopPropagation()">
-                                    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                        <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Sincronización Nube</h4>
-                                        <span id="sync-status-label" class="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-mono">Conectando...</span>
-                                    </div>
+                            <!-- PANEL VOLÁTIL DB -->
+                            <div id="db-status-popover" class="absolute right-0 top-full mt-3 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-[60] hidden animate-fade-in overflow-hidden" onclick="event.stopPropagation()">
+                                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Sincronización Nube</h4>
+                                    <span id="sync-status-label" class="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-mono">Conectando...</span>
+                                </div>
+                                
+                                <div class="p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar" id="db-status-list">
+                                    <!-- Lista de DBs se llena con JS -->
+                                </div>
+
+                                <!-- ACCIONES -->
+                                <div class="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
+                                    <button onclick="window.syncManager.uploadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-brand-200 hover:text-brand-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Forzar Carga
+                                    </button>
+                                    <button onclick="window.syncManager.downloadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-blue-200 hover:text-blue-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                        <i class="fa-solid fa-cloud-arrow-down"></i> Forzar Descarga
+                                    </button>
                                     
-                                    <div class="p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar" id="db-status-list">
-                                        <!-- Lista de DBs se llena con JS -->
-                                    </div>
+                                    <!-- IMPORTADOR EXCEL -->
+                                    <button onclick="window.loadComponent('Componentes/Utilidades/ImportadorExcel.html', 'right-panel-content').then(() => window.toggleRightPanel(true)); window.appCore.toggleDbPanel(event);" class="col-span-2 flex items-center justify-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                        <i class="fa-solid fa-file-csv"></i> Importar desde Excel/CSV
+                                    </button>
+                                </div>
 
-                                    <!-- ACCIONES -->
-                                    <div class="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
-                                        <button onclick="window.syncManager.uploadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-brand-200 hover:text-brand-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                            <i class="fa-solid fa-cloud-arrow-up"></i> Forzar Carga
-                                        </button>
-                                        <button onclick="window.syncManager.downloadData()" class="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-blue-200 hover:text-blue-600 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                            <i class="fa-solid fa-cloud-arrow-down"></i> Forzar Descarga
-                                        </button>
-                                        
-                                        <!-- IMPORTADOR EXCEL -->
-                                        <button onclick="window.loadComponent('Componentes/Utilidades/ImportadorExcel.html', 'right-panel-content').then(() => window.toggleRightPanel(true)); window.syncManager.togglePanel(event);" class="col-span-2 flex items-center justify-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                            <i class="fa-solid fa-file-csv"></i> Importar desde Excel/CSV
-                                        </button>
-                                    </div>
-
-                                    <div class="px-4 py-2 border-t border-slate-100 bg-white text-[10px] text-slate-400 text-center flex justify-between items-center">
-                                        <span>Última sinc: <b id="last-sync-time">--:--</b></span>
-                                        <span class="flex items-center gap-1" id="cloud-indicator-text"><i class="fa-solid fa-circle text-gray-300 text-[8px]"></i> Offline</span>
-                                    </div>
+                                <div class="px-4 py-2 border-t border-slate-100 bg-white text-[10px] text-slate-400 text-center flex justify-between items-center">
+                                    <span>Última sinc: <b id="last-sync-time">--:--</b></span>
+                                    <span class="flex items-center gap-1" id="cloud-indicator-text"><i class="fa-solid fa-circle text-gray-300 text-[8px]"></i> Offline</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
+                    <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
 
-                        <!-- Botón Configuración -->
-                        <button onclick="window.loadModule('Componentes/Ajustes.html')" class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-200 hover:shadow-md flex items-center justify-center transition-all duration-200 group" title="Configuración Global">
-                            <i class="fa-solid fa-gear text-lg group-hover:animate-spin-slow-hover"></i>
+                    <!-- Botón Configuración -->
+                    <button onclick="window.loadModule('Componentes/Ajustes.html')" class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-200 hover:shadow-md flex items-center justify-center transition-all duration-200 group" title="Configuración Global">
+                        <i class="fa-solid fa-gear text-lg group-hover:animate-spin-slow-hover"></i>
+                    </button>
+                    
+                    <!-- Avatar Usuario / Menú de Sesión -->
+                    <div class="relative">
+                        <button onclick="window.appCore.toggleUserPanel(event)" class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all shadow-sm border border-brand-200 overflow-hidden" title="Cuenta de Usuario">
+                            <!-- Silueta por defecto -->
+                            <i class="fa-solid fa-user text-lg"></i>
+                            <!-- Espacio reservado para imagen: <img src="..." class="w-full h-full object-cover hidden"> -->
                         </button>
-                        
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm cursor-pointer hover:ring-2 hover:ring-brand-200 transition-all shadow-sm border border-brand-200">
-                            AD
+
+                        <!-- Menú Usuario Dropdown -->
+                        <div id="user-menu-popover" class="absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-[60] hidden animate-fade-in overflow-hidden" onclick="event.stopPropagation()">
+                            
+                            <!-- Info Usuario -->
+                            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                                <p class="text-sm font-bold text-slate-800">Usuario Invitado</p>
+                                <p class="text-[10px] text-slate-500">Sin sesión iniciada</p>
+                            </div>
+
+                            <!-- Opciones -->
+                            <div class="p-1.5 space-y-0.5">
+                                <button onclick="alert('Módulo de Login en desarrollo')" class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-brand-50 hover:text-brand-700 rounded-lg transition-colors flex items-center gap-3">
+                                    <i class="fa-solid fa-right-to-bracket w-4 text-center"></i> Iniciar Sesión
+                                </button>
+                                <button onclick="alert('Registro en desarrollo')" class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors flex items-center gap-3">
+                                    <i class="fa-solid fa-user-plus w-4 text-center"></i> Crear Cuenta
+                                </button>
+                            </div>
+                            
+                            <div class="border-t border-slate-100 p-1.5">
+                                <button onclick="location.reload()" class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-3">
+                                    <i class="fa-solid fa-power-off w-4 text-center"></i> Salir
+                                </button>
+                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </nav>
@@ -351,12 +382,80 @@
                 togglePanel(e) {
                     e.stopPropagation();
                     const panel = document.getElementById('db-status-popover');
+                    // Cerrar user menu si está abierto
+                    document.getElementById('user-menu-popover')?.classList.add('hidden');
+                    
                     panel.classList.toggle('hidden');
                     if(!panel.classList.contains('hidden')) this.renderDbStatus();
                 }
             };
 
             // --- Core: Navegación y Carga ---
+            window.appCore = window.appCore || {};
+            
+            // Nueva función para toggle del menú de usuario
+            window.appCore.toggleUserPanel = function(event) {
+                event.stopPropagation();
+                const panel = document.getElementById('user-menu-popover');
+                // Cerrar otros paneles
+                document.getElementById('db-status-popover')?.classList.add('hidden');
+                
+                if (panel.classList.contains('hidden')) {
+                    panel.classList.remove('hidden');
+                    const closeHandler = (e) => {
+                        if (!panel.contains(e.target) && e.target !== event.currentTarget) {
+                            panel.classList.add('hidden');
+                            document.removeEventListener('click', closeHandler);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+                } else {
+                    panel.classList.add('hidden');
+                }
+            };
+
+            // Mantener toggleDbPanel en window.appCore para compatibilidad
+            window.appCore.toggleDbPanel = window.syncManager.togglePanel.bind(window.syncManager);
+
+            // Export/Import hooks (si existen en el código anterior, los mantenemos aquí o en syncManager)
+            // Para mantener compatibilidad con versiones previas, mapeamos:
+            window.appCore.exportDB = async () => {
+                // Implementación simplificada usando el payload actual
+                const payload = {};
+                window.syncManager.DB_KEYS.forEach(key => {
+                    const val = localStorage.getItem(key);
+                    if(val) payload[key] = JSON.parse(val);
+                });
+                const dataStr = JSON.stringify(payload, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `RegAs_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+            
+            window.appCore.importDB = (inputElement) => {
+                const file = inputElement.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (!confirm("Sobrescribir datos locales?")) return;
+                        window.syncManager.DB_KEYS.forEach(key => {
+                            if (importedData[key]) localStorage.setItem(key, JSON.stringify(importedData[key]));
+                        });
+                        alert("Importado. Recargando...");
+                        location.reload();
+                    } catch (error) { alert("Error JSON"); }
+                };
+                reader.readAsText(file);
+            };
+
+
             async function loadComponent(url, containerId) {
                 const container = document.getElementById(containerId);
                 try {

@@ -51,7 +51,7 @@
     <div id="add-element-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target === this) window.dayViewManager.closeAddModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
             <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800">Asignar Personal <span id="add-modal-area-label" class="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded ml-2 hidden"></span></h3>
+                <h3 class="font-bold text-slate-800">Asignar Personal</h3>
                 <button onclick="window.dayViewManager.closeAddModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-3 bg-white border-b border-slate-100">
@@ -73,8 +73,7 @@
             STORAGE_KEY: 'regas_assignments',
             getAll() { return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]'); },
             save(data) { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data)); window.dispatchEvent(new CustomEvent('regas:assignments-updated')); },
-            addMany(newA) { const all = this.getAll(); newA.forEach(n => { const idx = all.findIndex(a => a.elementId === n.elementId && a.date === n.date); if(idx !== -1) all.splice(idx,1); all.push(n); }); this.save(all); },
-            remove(elementId, date) { let all = this.getAll(); all = all.filter(a => !(a.elementId === elementId && a.date === date)); this.save(all); }
+            addMany(newA) { const all = this.getAll(); newA.forEach(n => { const idx = all.findIndex(a => a.elementId === n.elementId && a.date === n.date); if(idx !== -1) all.splice(idx,1); all.push(n); }); this.save(all); }
         };
     }
 
@@ -82,7 +81,6 @@
         currentDate: new Date(),
         currentTab: 'Diurno',
         alertInterval: null,
-        targetAreaForAdd: null,
         
         init() {
             if (!this._listening) {
@@ -94,6 +92,7 @@
             }
             this.setDate(new Date().toISOString().split('T')[0]);
             
+            // Iniciar ciclo de alertas
             this.checkAlerts();
             if(this.alertInterval) clearInterval(this.alertInterval);
             this.alertInterval = setInterval(() => this.checkAlerts(), 60000); // Revisar cada minuto
@@ -128,11 +127,13 @@
 
             todayAssignments.forEach(assign => {
                 const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
-                const item = { ...elementInfo, ...assign }; 
+                // Aseguramos que la info de la asignación (como area modificada) sobrescriba la del empleado
+                const item = { ...elementInfo, ...assign };
                 if (groups[assign.shift]) groups[assign.shift].push(item);
                 else groups['Diurno'].push(item); // Fallback
             });
 
+            // UI Counters
             ['Diurno','Vespertino','Nocturno'].forEach(t => {
                 const el = document.getElementById(`stat-${t.toLowerCase()}`);
                 if(el) el.textContent = groups[t].length;
@@ -140,6 +141,7 @@
             const elAbs = document.getElementById('count-absences');
             if(elAbs) elAbs.textContent = groups['Descanso'].length;
 
+            // UI Tabs
             ['Diurno','Vespertino','Nocturno'].forEach(t => {
                 const btn = document.getElementById(`tab-${t.toLowerCase()}`);
                 const active = this.currentTab === t;
@@ -150,6 +152,7 @@
             this.renderAbsences(groups['Descanso']);
         },
 
+        // --- SISTEMA DE ALERTAS E INCONSISTENCIAS ---
         checkAlerts() {
             const panel = document.getElementById('imminent-activity-panel');
             const container = document.getElementById('alerts-container');
@@ -172,16 +175,21 @@
 
             allAssignments.forEach(assign => {
                 if (assign.isAbsent || assign.shift === 'Descanso') return;
+
                 const elementInfo = configElements.find(e => e.id === assign.elementId) || { name: 'Desconocido', area: 'Sin Área' };
                 const item = { ...elementInfo, ...assign };
+
                 const currentMinutes = (now.getHours() * 60) + now.getMinutes();
                 const [startH, startM] = (assign.startTime || "00:00").split(':').map(Number);
                 const startMinutes = (startH * 60) + startM;
+                
                 if (!assign.checkInTime && currentMinutes > (startMinutes + 15)) {
                     alerts.push({ type: 'late_in', msg: 'Retardo de Entrada', color: 'red', icon: 'fa-user-clock', item });
-                } else if (!assign.checkInTime && currentMinutes >= (startMinutes - 15) && currentMinutes <= startMinutes) {
+                }
+                else if (!assign.checkInTime && currentMinutes >= (startMinutes - 15) && currentMinutes <= startMinutes) {
                     alerts.push({ type: 'coming_soon', msg: 'Entrada Inminente', color: 'blue', icon: 'fa-person-walking-arrow-right', item });
                 }
+
                 const durationMinutes = (parseFloat(assign.duration || 8) * 60);
                 if (assign.checkInTime && !assign.checkOutTime && currentMinutes > (startMinutes + durationMinutes + 30)) {
                     alerts.push({ type: 'late_out', msg: 'Salida Pendiente', color: 'orange', icon: 'fa-hourglass-end', item });
@@ -189,19 +197,42 @@
             });
 
             container.innerHTML = '';
+
             if (alerts.length === 0) {
                 panel.classList.add('hidden');
                 return;
             }
+
             panel.classList.remove('hidden');
             alerts.forEach(alert => {
                 const card = document.createElement('div');
                 card.className = "w-full flex-shrink-0 bg-white border border-slate-200 rounded-lg p-2.5 hover:shadow-md transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden group mb-2";
+                
                 const borderClass = `bg-${alert.color}-500`;
                 const textClass = `text-${alert.color}-600`;
                 const photo = `FotosElementosPP/${alert.item.id}.jpg`;
-                card.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 ${borderClass}"></div><img src="${photo}" class="w-8 h-8 rounded-full object-cover border border-slate-100 bg-slate-50" onerror="this.src='https://ui-avatars.com/api/?name=${alert.item.name}&background=random'"><div class="min-w-0 flex-grow"><div class="flex items-center gap-1.5 mb-0.5"><i class="fa-solid ${alert.icon} text-[10px] ${textClass}"></i><span class="text-[9px] font-bold ${textClass} uppercase tracking-wider leading-none">${alert.msg}</span></div><h5 class="text-xs font-bold text-slate-700 truncate leading-tight">${alert.item.name}</h5><p class="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5"><i class="fa-regular fa-clock text-[9px]"></i> ${alert.item.startTime} • ${alert.item.area || 'General'}</p></div><i class="fa-solid fa-chevron-right text-slate-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>`;
-                card.onclick = (e) => { e.stopPropagation(); window.dayViewManager.openSidePanel(alert.item); };
+
+                card.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${borderClass}"></div>
+                    <img src="${photo}" class="w-8 h-8 rounded-full object-cover border border-slate-100 bg-slate-50" onerror="this.src='https://ui-avatars.com/api/?name=${alert.item.name}&background=random'">
+                    <div class="min-w-0 flex-grow">
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                            <i class="fa-solid ${alert.icon} text-[10px] ${textClass}"></i>
+                            <span class="text-[9px] font-bold ${textClass} uppercase tracking-wider leading-none">${alert.msg}</span>
+                        </div>
+                        <h5 class="text-xs font-bold text-slate-700 truncate leading-tight">${alert.item.name}</h5>
+                        <p class="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                            <i class="fa-regular fa-clock text-[9px]"></i> ${alert.item.startTime} • ${alert.item.area || 'General'}
+                        </p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                `;
+                
+                card.onclick = (e) => {
+                    e.stopPropagation();
+                    window.dayViewManager.openSidePanel(alert.item);
+                };
+                
                 container.appendChild(card);
             });
         },
@@ -247,7 +278,6 @@
                 if (areas[area].length > 0) {
                     areas[area].forEach(item => grid.appendChild(this.createCard(item)));
                 } else {
-                    // Empty State Card with Add Button
                     const emptyCard = document.createElement('button');
                     emptyCard.className = "border-2 border-dashed border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-brand-300 hover:text-brand-500 hover:bg-white transition-all h-[76px] group";
                     emptyCard.innerHTML = `<i class="fa-solid fa-plus text-lg mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[10px] font-bold uppercase">Asignar aquí</span>`;
@@ -289,15 +319,17 @@
         initiateAddToArea(area) {
             this.targetAreaForAdd = area;
             const label = document.getElementById('add-modal-area-label');
-            label.textContent = `en ${area}`;
-            label.classList.remove('hidden');
+            if(label) {
+                label.textContent = `en ${area}`;
+                label.classList.remove('hidden');
+            }
             this.openAddModal();
         },
 
         openAddModal() {
-            // If opening generically (without target area), hide the specific area label
             if (!this.targetAreaForAdd) {
-                document.getElementById('add-modal-area-label').classList.add('hidden');
+                const label = document.getElementById('add-modal-area-label');
+                if(label) label.classList.add('hidden');
             }
             document.getElementById('add-element-modal').classList.remove('hidden');
             this.renderElementsList();
@@ -305,7 +337,7 @@
         
         closeAddModal() { 
             document.getElementById('add-element-modal').classList.add('hidden'); 
-            this.targetAreaForAdd = null; // Reset
+            this.targetAreaForAdd = null; 
         },
         
         filterElementsList(q) { this.renderElementsList(q.toLowerCase()); },
@@ -326,7 +358,7 @@
                         shift: this.currentTab, 
                         startTime: '07:00', 
                         duration: 8,
-                        area: areaToAssign // Explicitly set area
+                        area: areaToAssign 
                     }]);
                     this.closeAddModal();
                 };
@@ -336,22 +368,28 @@
 
         async openSidePanel(item) {
             console.log("Solicitud de apertura de panel para:", item.name);
+            
             if (typeof window.loadComponent === 'function' && window.toggleRightPanel) {
-                if (!window.profileSidePanelManager) {
+                // CORRECCIÓN CLAVE: Verificar existencia del HTML del banner, no solo el objeto JS
+                if (!window.profileSidePanelManager || !document.getElementById('side-p-name')) {
                     console.log("Cargando Baner_Perfil.html en panel derecho...");
                     await window.loadComponent('Componentes/Baner_Perfil.html', 'right-panel-content');
                 }
+
                 window.toggleRightPanel(true);
+
                 setTimeout(() => {
                     if (window.profileSidePanelManager) {
                         window.profileSidePanelManager.init(item);
                     } else {
+                        // Intento de recuperación forzada si el script no se ejecutó
                         const script = document.getElementById('script-baner-perfil');
                         if(script) eval(script.innerText);
                         if(window.profileSidePanelManager) window.profileSidePanelManager.init(item);
                     }
                 }, 50);
-            } else {
+            } 
+            else {
                 console.error("Error de entorno: loadComponent o toggleRightPanel no definidos.");
             }
         }
