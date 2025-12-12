@@ -5,14 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Protección Patrimonial</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
-    
-    <!-- Importar Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Importar Iconos (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Configuración de Tema -->
     <script>
         tailwind.config = {
             theme: {
@@ -49,11 +43,8 @@
 
     <!-- Tarjeta de Login -->
     <div class="bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-slate-200 w-full max-w-sm animate-fade-in relative overflow-hidden">
-        
-        <!-- Decoración Superior -->
         <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-600 to-brand-400"></div>
 
-        <!-- Logo / Marca -->
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 mx-auto mb-5 text-3xl transform hover:scale-105 transition-transform duration-300">
                 <i class="fa-solid fa-shield-cat"></i>
@@ -64,8 +55,6 @@
 
         <!-- Formulario -->
         <form id="formLogin" onsubmit="return IniciarSesion(event)" class="space-y-5">
-            
-            <!-- Usuario -->
             <div>
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1 tracking-wider">Usuario / ID</label>
                 <div class="relative group">
@@ -76,7 +65,6 @@
                 </div>
             </div>
 
-            <!-- Contraseña -->
             <div>
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1 tracking-wider">Contraseña</label>
                 <div class="relative group">
@@ -90,9 +78,14 @@
                 </div>
             </div>
 
-            <!-- Botones -->
+            <!-- Área de Mensajes de Error -->
+            <div id="error-message" class="hidden bg-red-50 text-red-600 text-xs font-bold p-3 rounded-lg border border-red-100 flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="error-text">Credenciales incorrectas</span>
+            </div>
+
             <div class="pt-2 space-y-3">
-                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
+                <button type="submit" id="btn-submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
                     <span>Iniciar Sesión</span>
                     <i class="fa-solid fa-arrow-right-long group-hover:translate-x-1 transition-transform"></i>
                 </button>
@@ -101,49 +94,83 @@
                     Crear Cuenta
                 </button>
             </div>
-
         </form>
     </div>
 
-    <!-- Footer -->
     <div class="mt-8 text-center">
         <p class="text-xs text-slate-400 font-medium">© 2024 Protección Patrimonial</p>
     </div>
 
-    <!-- Lógica (Placeholder para integración futura) -->
-    <!-- Mantengo tu referencia original, pero añado un fallback por si el archivo no existe aún -->
-    <script src="Scripts/Principal.js?v=0.1.3" onerror="console.warn('Script Principal.js no encontrado, usando lógica local temporal.')"></script>
-    
     <script>
-        // Función wrapper local para evitar errores si Principal.js no está listo
-        function IniciarSesion(e) {
+        const API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9f1a1b8b772e4e8299870e50b78b6dd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ADqvyD8wK1Qwzdx8bmSkrMB6-bURKepai99jsYOqab4";
+
+        async function IniciarSesion(e) {
             e.preventDefault();
             
-            // Si la función original existe (cargada desde Principal.js), úsala
-            if (typeof window.OriginalIniciarSesion === 'function') {
-                return window.OriginalIniciarSesion(e);
-            }
-
-            // --- LÓGICA TEMPORAL VISUAL ---
-            const btn = e.target.querySelector('button[type="submit"]');
+            const btn = document.getElementById('btn-submit');
             const originalContent = btn.innerHTML;
-            const user = document.getElementById('usuario').value;
-            
-            // Estado de carga
+            const errorBox = document.getElementById('error-message');
+            const user = document.getElementById('usuario').value.trim();
+            const pass = document.getElementById('contraseña').value.trim();
+
+            // Reset UI
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Validando...';
-            
-            setTimeout(() => {
-                // Aquí conectarás tu lógica real más adelante
-                console.log(`Intento de login para: ${user}`);
-                alert(`¡Bienvenido, ${user}! (Lógica pendiente de ajuste)`);
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
+            errorBox.classList.add('hidden');
+
+            try {
+                // 1. Enviar solicitud a la API
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        Mode: 'Login',
+                        User: user,
+                        Pass: pass
+                    })
+                });
+
+                if (!response.ok) throw new Error("Error de conexión con el servidor.");
+
+                // 2. Procesar respuesta
+                const data = await response.json();
                 
-                // Redirigir al dashboard como ejemplo de éxito
-                // window.location.href = 'index.html'; 
+                // NOTA: Asumimos que la API devuelve un objeto con la info del usuario si el login es correcto,
+                // o un objeto con error/vacío si falla. Ajusta según tu API real.
+                // Ejemplo de éxito esperado: { "Nivel": 0, "Nombre": "Juan Perez", "ID": "12345", ... }
                 
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            }, 1500);
+                // Validación básica de respuesta exitosa (Si tiene Nivel o ID)
+                if (data && (data.Nivel !== undefined || data.ID)) {
+                    
+                    // 3. Guardar sesión persistente y global
+                    localStorage.setItem('regas_user_session', JSON.stringify(data));
+                    
+                    // 4. Redirigir
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Éxito!';
+                    btn.classList.replace('bg-brand-600', 'bg-green-600');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+
+                } else {
+                    throw new Error("Usuario o contraseña incorrectos.");
+                }
+
+            } catch (error) {
+                console.error("Login error:", error);
+                document.getElementById('error-text').textContent = error.message || "Error al iniciar sesión.";
+                errorBox.classList.remove('hidden');
+                
+                // Animación de error
+                btn.classList.add('animate-pulse');
+                setTimeout(() => btn.classList.remove('animate-pulse'), 500);
+            } finally {
+                if (!localStorage.getItem('regas_user_session')) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            }
             
             return false;
         }

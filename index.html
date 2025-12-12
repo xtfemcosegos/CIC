@@ -12,36 +12,17 @@
     <!-- Importar Iconos (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Configuración de Tema (Igual a RegAs) -->
+    <!-- Configuración de Tema -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
                     colors: {
-                        brand: {
-                            50: '#fef2f2',
-                            100: '#fee2e2',
-                            200: '#fecaca',
-                            300: '#fca5a5',
-                            400: '#f87171',
-                            500: '#dc2626',
-                            600: '#b91c1c', // Rojo Principal
-                            700: '#991b1b',
-                            800: '#7f1d1d',
-                            900: '#450a0a',
-                            950: '#2a0a0a',
-                        }
+                        brand: { 50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171', 500: '#dc2626', 600: '#b91c1c', 700:'#991b1b', 800:'#7f1d1d', 900:'#450a0a', 950:'#2a0a0a' }
                     },
-                    boxShadow: {
-                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                        'glow': '0 0 15px rgba(185, 28, 28, 0.3)',
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out forwards',
-                    }
+                    boxShadow: { 'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', 'glow': '0 0 15px rgba(185, 28, 28, 0.3)' },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards' }
                 }
             }
         }
@@ -49,19 +30,16 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
         body { font-family: 'Inter', sans-serif; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .access-restricted { display: none !important; }
+        .rbac-hidden { display: none !important; }
     </style>
 </head>
 
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- HEADER (Estilo RegAs) -->
+    <!-- HEADER -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="flex items-center gap-4 cursor-pointer group" onclick="window.location.reload()">
@@ -76,41 +54,47 @@
             
             <!-- Avatar / Perfil con Menú -->
             <div class="relative">
-                <button onclick="toggleUserMenu(event)" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200 hover:ring-2 hover:ring-brand-200 transition-all shadow-sm">
+                <button onclick="window.sessionManager.toggleUserMenu(event)" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200 hover:ring-2 hover:ring-brand-200 transition-all shadow-sm overflow-hidden" id="user-avatar-btn">
                     <i class="fa-solid fa-user"></i>
                 </button>
 
                 <!-- Menú Desplegable -->
-                <div id="user-menu" class="absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 hidden animate-fade-in overflow-hidden">
+                <div id="user-menu" class="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-200 z-50 hidden animate-fade-in overflow-hidden">
                     <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                        <p class="text-sm font-bold text-slate-800">Invitado</p>
-                        <p class="text-[10px] text-slate-500">Sin sesión iniciada</p>
+                        <p class="text-sm font-bold text-slate-800 truncate" id="menu-user-name">Invitado</p>
+                        <p class="text-[10px] text-slate-500 truncate" id="menu-user-role">Sin sesión iniciada</p>
                     </div>
-                    <div class="p-1">
-                        <a href="login.html" class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-brand-50 hover:text-brand-700 rounded-lg transition-colors">
-                            <i class="fa-solid fa-right-to-bracket w-4 text-center"></i> Iniciar Sesión
-                        </a>
-                        <button onclick="alert('Registro en desarrollo')" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors">
-                            <i class="fa-solid fa-user-plus w-4 text-center"></i> Crear Cuenta
-                        </button>
-                    </div>
+                    <div class="p-1" id="menu-actions"></div>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full animate-fade-in">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full animate-fade-in relative">
         
-        <!-- SECCIÓN: MÓDULOS ACTIVOS -->
-        <div class="mb-12">
+        <!-- VISTA INVITADO (Login Prompt) -->
+        <div id="guest-view" class="hidden flex flex-col items-center justify-center h-full py-20 text-center">
+            <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner text-slate-300">
+                <i class="fa-solid fa-lock text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Acceso Restringido</h1>
+            <p class="text-slate-500 max-w-md mx-auto mb-8">Para acceder a las herramientas operativas y dashboards, es necesario iniciar sesión con tu cuenta institucional.</p>
+            <a href="login.html" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-500/30 transition-transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+            </a>
+        </div>
+
+        <!-- VISTA DASHBOARD (Solo usuarios logueados) -->
+        <div id="dashboard-view" class="hidden">
             <div class="flex items-center gap-4 mb-6 border-b border-slate-200 pb-2">
-                <h2 class="text-xl font-bold text-slate-800">Módulos Activos</h2>
+                <h2 class="text-xl font-bold text-slate-800">Panel de Control</h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
-                <!-- CARD: RegAs (Asistencia) -->
+                <!-- CARD: RegAs (Asistencia Consolidada) -->
+                <!-- Accesible para Nivel 0, 1, 2 -->
                 <div class="group bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl hover:border-brand-200 transition-all duration-300 overflow-hidden flex flex-col h-full">
                     <div class="p-6 border-b border-slate-50 bg-gradient-to-br from-white to-slate-50 flex items-start gap-4">
                         <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform duration-300">
@@ -118,50 +102,65 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-lg text-slate-800 group-hover:text-brand-700 transition-colors">Control de Asistencia</h3>
-                            <p class="text-sm text-slate-500 mt-1 leading-relaxed">Gestión de entradas, salidas, turnos y incidencias de personal.</p>
+                            <p class="text-sm text-slate-500 mt-1 leading-relaxed">Plataforma integral de gestión de personal.</p>
                         </div>
                     </div>
+                    
                     <div class="p-6 flex flex-col gap-3 flex-grow bg-white">
-                        <!-- Botón Principal (Abre el App Completo) -->
-                        <a href="RegAs3/RegAs.html" class="flex items-center justify-between w-full px-4 py-3 bg-brand-600 text-white rounded-xl font-bold text-sm hover:bg-brand-700 shadow-md hover:shadow-lg hover:shadow-brand-500/20 transition-all group/btn">
-                            <span>Ir a RegAs</span>
-                            <i class="fa-solid fa-arrow-right-long transform group-hover/btn:translate-x-1 transition-transform"></i>
-                        </a>
                         
-                        <!-- Link Reportes (Carga en el shell actual) -->
-                        <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Utilidades/ReporteDiario.html')" class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors mt-2">
-                            <i class="fa-solid fa-file-contract text-slate-400"></i> Reporte Diario
-                        </a>
+                        <!-- Acceso Principal (Admin/Supervisor - Nivel <= 1) -->
+                        <div class="rbac-element space-y-3" data-max-level="1">
+                            <a href="RegAs3/RegAs.html" class="flex items-center justify-between w-full px-4 py-3 bg-brand-600 text-white rounded-xl font-bold text-sm hover:bg-brand-700 shadow-md transition-all group/btn">
+                                <span>Ir a Dashboard Principal</span>
+                                <i class="fa-solid fa-arrow-right-long transform group-hover/btn:translate-x-1 transition-transform"></i>
+                            </a>
+                            <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Utilidades/ReporteDiario.html')" class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-slate-100">
+                                <i class="fa-solid fa-file-contract text-slate-400"></i> Reporte Diario
+                            </a>
+                        </div>
 
-                        <!-- Sección Herramientas (Carga en el shell actual) -->
-                        <div class="mt-4 pt-4 border-t border-slate-100">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-3">Herramientas</p>
-                            <div class="space-y-1">
-                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/RelojChecador.html')" class="flex items-center gap-3 px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors group/tool">
-                                    <div class="w-6 h-6 rounded bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
+                        <!-- Herramientas Operativas (Todos los niveles) -->
+                        <div class="pt-2 border-t border-slate-100 mt-auto">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Herramientas Operativas</p>
+                            <div class="space-y-2">
+                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/RelojChecador.html')" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-brand-100 group/tool">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
                                         <i class="fa-solid fa-fingerprint"></i>
                                     </div>
-                                    Reloj Checador
+                                    <div class="flex flex-col">
+                                        <span class="leading-none font-bold">Reloj Checador</span>
+                                        <span class="text-[10px] text-slate-400 mt-0.5">Registro de entrada/salida</span>
+                                    </div>
                                 </a>
-                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/ContadorIngresos.html')" class="flex items-center gap-3 px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors group/tool">
-                                    <div class="w-6 h-6 rounded bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
+                                
+                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/ContadorIngresos.html')" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-brand-100 group/tool">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
                                         <i class="fa-solid fa-arrow-right-to-bracket"></i>
                                     </div>
-                                    Contador Ingresos
+                                    <div class="flex flex-col">
+                                        <span class="leading-none font-bold">Contador</span>
+                                        <span class="text-[10px] text-slate-400 mt-0.5">Control de aforo</span>
+                                    </div>
                                 </a>
-                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/Mensajero.html')" class="flex items-center gap-3 px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors group/tool">
-                                    <div class="w-6 h-6 rounded bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
+
+                                <a href="#" onclick="event.preventDefault(); loadModule('RegAs3/Componentes/Herramientas/Mensajero.html')" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-brand-100 group/tool">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover/tool:bg-brand-100 group-hover/tool:text-brand-600 transition-colors">
                                         <i class="fa-solid fa-walkie-talkie"></i>
                                     </div>
-                                    Mensajero
+                                    <div class="flex flex-col">
+                                        <span class="leading-none font-bold">Mensajero</span>
+                                        <span class="text-[10px] text-slate-400 mt-0.5">Chat interno</span>
+                                    </div>
                                 </a>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- CARD: Siniestros -->
-                <div class="group bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl hover:border-slate-300 transition-all duration-300 overflow-hidden flex flex-col h-full">
+                <!-- CARD: Siniestros (RegSin) -->
+                <!-- Nivel 0 y 1 -->
+                <div class="group bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl hover:border-amber-300 transition-all duration-300 overflow-hidden flex flex-col h-full rbac-element" data-max-level="1">
                     <div class="p-6 border-b border-slate-50 bg-gradient-to-br from-white to-slate-50 flex items-start gap-4">
                         <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform duration-300">
                             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -172,68 +171,11 @@
                         </div>
                     </div>
                     <div class="p-6 flex flex-col gap-3 flex-grow bg-white">
-                        <a href="https://cicxtfemco.online/Form_RegSin.html" class="flex items-center justify-between w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 hover:border-amber-300 hover:text-amber-700 transition-all group/btn">
+                        <a href="Form_RegSin.html" class="flex items-center justify-between w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 hover:border-amber-300 hover:text-amber-700 transition-all group/btn">
                             <span>Nuevo Reporte</span>
                             <i class="fa-solid fa-plus transform group-hover/btn:rotate-90 transition-transform"></i>
                         </a>
-                        <span class="text-xs text-slate-400 italic px-4 py-2">Historial disponible próximamente.</span>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- SECCIÓN: PRÓXIMAMENTE -->
-        <div>
-            <div class="flex items-center gap-4 mb-6">
-                <h2 class="text-lg font-bold text-slate-400 uppercase tracking-widest">En Desarrollo</h2>
-                <div class="h-px bg-slate-200 flex-grow"></div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- CARD: Monitoreo (Locked) -->
-                <div class="relative bg-slate-50 rounded-2xl border border-slate-200 p-6 opacity-75 hover:opacity-100 transition-opacity">
-                    <span class="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[10px] font-bold px-2 py-1 rounded border border-slate-300 uppercase">Próximamente</span>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-slate-200 text-slate-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-satellite-dish"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-600">Central de Monitoreo</h3>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="h-2 bg-slate-200 rounded-full w-3/4"></div>
-                        <div class="h-2 bg-slate-200 rounded-full w-1/2"></div>
-                    </div>
-                </div>
-
-                <!-- CARD: CCTV (Locked) -->
-                <div class="relative bg-slate-50 rounded-2xl border border-slate-200 p-6 opacity-75 hover:opacity-100 transition-opacity">
-                    <span class="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[10px] font-bold px-2 py-1 rounded border border-slate-300 uppercase">Próximamente</span>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-slate-200 text-slate-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-video"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-600">Video Vigilancia</h3>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="h-2 bg-slate-200 rounded-full w-2/3"></div>
-                        <div class="h-2 bg-slate-200 rounded-full w-3/4"></div>
-                    </div>
-                </div>
-
-                <!-- CARD: Accesos (Locked) -->
-                <div class="relative bg-slate-50 rounded-2xl border border-slate-200 p-6 opacity-75 hover:opacity-100 transition-opacity">
-                    <span class="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[10px] font-bold px-2 py-1 rounded border border-slate-300 uppercase">Próximamente</span>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-slate-200 text-slate-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-car-on"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-600">Control de Accesos</h3>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="h-2 bg-slate-200 rounded-full w-full"></div>
-                        <div class="h-2 bg-slate-200 rounded-full w-1/2"></div>
+                        <span class="text-xs text-slate-400 italic px-2">Historial y seguimiento próximamente.</span>
                     </div>
                 </div>
 
@@ -245,52 +187,168 @@
     <!-- FOOTER -->
     <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
         <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-xs text-slate-400 font-medium">© 2024 Protección Patrimonial - Corporativo OXXO. Todos los derechos reservados.</p>
+            <p class="text-xs text-slate-400 font-medium">© 2024 Protección Patrimonial</p>
         </div>
     </footer>
 
+    <!-- CONTENEDOR MODAL FLOTANTE (Para loadModule) -->
+    <div id="modal-container" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-4xl h-[90vh] overflow-hidden flex flex-col shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-10 text-slate-400 hover:text-red-500 bg-white rounded-full p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div id="modal-content" class="h-full w-full"></div>
+        </div>
+    </div>
+
     <script>
-        // Función loadModule para cargar componentes dentro del shell
-        async function loadModule(url) {
-            // Verificar si tenemos un contenedor de app
-            let container = document.querySelector('main');
-            
-            // Si el index.html no tiene la estructura de shell esperada (con 'app-container'), 
-            // la creamos o inyectamos directo en main.
-            // Para mantener consistencia con RegAs, podemos limpiar el main e inyectar.
-            if(container) {
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const html = await response.text();
-                    container.innerHTML = html;
-                    
-                    // Ejecutar scripts
-                    container.querySelectorAll("script").forEach(oldScript => {
-                        const newScript = document.createElement("script");
-                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
-                    });
-                } catch (error) {
-                    console.error("Error cargando módulo:", error);
-                    alert("No se pudo cargar el módulo. Verifica la ruta.");
+        // --- SESSION MANAGER ---
+        window.sessionManager = {
+            user: null,
+            SESSION_TIMEOUT_MS: 24 * 60 * 60 * 1000, 
+
+            init() {
+                const stored = localStorage.getItem('regas_user_session');
+                let timestamp = localStorage.getItem('regas_session_start');
+
+                if (stored) {
+                    if (!timestamp) {
+                        timestamp = Date.now().toString();
+                        localStorage.setItem('regas_session_start', timestamp);
+                    }
+                    const elapsed = Date.now() - parseInt(timestamp);
+                    if (elapsed > this.SESSION_TIMEOUT_MS) {
+                        this.logout();
+                        return;
+                    }
+                    try {
+                        this.user = JSON.parse(stored);
+                        this.updateUI(true);
+                    } catch (e) { this.logout(); }
+                } else {
+                    this.updateUI(false);
                 }
+            },
+
+            updateUI(isLoggedIn) {
+                const guestView = document.getElementById('guest-view');
+                const dashView = document.getElementById('dashboard-view');
+                const avatarBtn = document.getElementById('user-avatar-btn');
+                const nameLabel = document.getElementById('menu-user-name');
+                const roleLabel = document.getElementById('menu-user-role');
+                const actionsDiv = document.getElementById('menu-actions');
+
+                if (isLoggedIn) {
+                    // Mostrar Dashboard
+                    guestView.classList.add('hidden');
+                    dashView.classList.remove('hidden');
+                    
+                    // Aplicar permisos RBAC
+                    this.applyPermissions();
+
+                    // Info Usuario Header
+                    const name = this.user['Nombre Completo'] || this.user.Nombre || "Usuario";
+                    const initial = name.charAt(0);
+                    const photos = this.user.Fotografias || [];
+                    const photo = photos.length > 0 ? photos[0] : (this.user.Fotografia || this.user.FOTOGRAFIA);
+
+                    if (photo) {
+                        avatarBtn.innerHTML = `<img src="${photo}" class="w-full h-full object-cover">`;
+                    } else {
+                        avatarBtn.innerHTML = `<span class="font-bold text-lg">${initial}</span>`;
+                    }
+                    avatarBtn.classList.add('bg-brand-100', 'text-brand-700', 'border-brand-200');
+                    avatarBtn.classList.remove('bg-slate-100', 'text-slate-500', 'border-slate-200');
+
+                    nameLabel.textContent = name;
+                    const roles = {0:"Administrador", 1:"Supervisor", 2:"Operativo"};
+                    roleLabel.textContent = roles[this.user.Nivel] || "Colaborador";
+
+                    actionsDiv.innerHTML = `
+                        <button onclick="window.loadModule('MiPerfil.html');" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors">
+                            <i class="fa-solid fa-id-badge w-4 text-center"></i> Mi Perfil
+                        </button>
+                        <div class="border-t border-slate-100 my-1"></div>
+                        <button onclick="window.sessionManager.logout()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fa-solid fa-power-off w-4 text-center"></i> Cerrar Sesión
+                        </button>
+                    `;
+                } else {
+                    // Mostrar Guest View
+                    guestView.classList.remove('hidden');
+                    dashView.classList.add('hidden');
+
+                    avatarBtn.innerHTML = `<i class="fa-solid fa-user"></i>`;
+                    avatarBtn.classList.add('bg-slate-100', 'text-slate-500', 'border-slate-200');
+                    avatarBtn.classList.remove('bg-brand-100', 'text-brand-700', 'border-brand-200');
+
+                    nameLabel.textContent = "Invitado";
+                    roleLabel.textContent = "Sin sesión iniciada";
+
+                    actionsDiv.innerHTML = `
+                        <a href="login.html" class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-brand-50 hover:text-brand-700 rounded-lg transition-colors">
+                            <i class="fa-solid fa-right-to-bracket w-4 text-center"></i> Iniciar Sesión
+                        </a>
+                        <a href="register.html" class="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors">
+                            <i class="fa-solid fa-user-plus w-4 text-center"></i> Crear Cuenta
+                        </a>
+                    `;
+                }
+            },
+
+            applyPermissions() {
+                const userLevel = this.user ? parseInt(this.user.Nivel) : 99;
+                
+                const protectedEls = document.querySelectorAll('.rbac-element');
+                protectedEls.forEach(el => {
+                    const maxLevel = parseInt(el.dataset.maxLevel);
+                    if (userLevel <= maxLevel) {
+                        el.classList.remove('rbac-hidden');
+                    } else {
+                        el.classList.add('rbac-hidden');
+                    }
+                });
+            },
+
+            toggleUserMenu(e) {
+                e.stopPropagation();
+                document.getElementById('user-menu').classList.toggle('hidden');
+            },
+
+            logout() {
+                localStorage.removeItem('regas_user_session');
+                localStorage.removeItem('regas_session_start');
+                location.reload();
             }
+        };
+
+        // --- CARGADOR ---
+        async function loadModule(url) {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Error');
+                const html = await response.text();
+                content.innerHTML = html;
+                content.querySelectorAll("script").forEach(oldScript => {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                modal.classList.remove('hidden');
+            } catch (error) { alert("Error al cargar módulo."); }
         }
 
-        // Toggle User Menu
-        function toggleUserMenu(e) {
-            e.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            if(menu) menu.classList.toggle('hidden');
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+            document.getElementById('modal-content').innerHTML = ''; 
         }
 
-        // Close menu when clicking outside
-        document.addEventListener('click', () => {
-            const menu = document.getElementById('user-menu');
-            if(menu && !menu.classList.contains('hidden')) menu.classList.add('hidden');
-        });
+        window.toggleRightPanel = function(show) { if (!show) closeModal(); };
+
+        document.addEventListener('click', () => { document.getElementById('user-menu').classList.add('hidden'); });
+
+        document.addEventListener('DOMContentLoaded', () => { window.sessionManager.init(); });
     </script>
 
 </body>

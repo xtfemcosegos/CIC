@@ -1,0 +1,368 @@
+<div class="flex flex-col h-full bg-slate-50 relative animate-fade-in overflow-hidden">
+    
+    <!-- Header / Portada -->
+    <div class="h-48 bg-slate-800 relative shrink-0">
+        <div class="absolute inset-0 bg-gradient-to-r from-brand-900 to-slate-800 opacity-90"></div>
+        
+        <!-- Botón Cerrar -->
+        <button onclick="window.toggleRightPanel(false)" class="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-2 transition-all z-10">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <div class="absolute bottom-0 left-0 w-full p-6 flex items-end gap-6 bg-gradient-to-t from-slate-900/80 to-transparent">
+            <!-- Foto Principal (Avatar) -->
+            <div class="relative group">
+                <img id="profile-main-photo" src="" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg bg-slate-200" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random'">
+                <!-- Acceso rápido a cámara para foto principal -->
+                <button onclick="window.myProfileManager.startCamera()" class="absolute bottom-[-10px] right-[-10px] bg-brand-600 text-white p-2 rounded-full shadow-md hover:bg-brand-500 transition-transform hover:scale-110" title="Tomar Foto">
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+            </div>
+            
+            <div class="text-white pb-2">
+                <h1 class="text-2xl font-bold leading-tight" id="profile-name">Cargando...</h1>
+                <p class="text-sm text-slate-300 font-mono" id="profile-id">ID: ---</p>
+                <div class="mt-2 flex gap-2">
+                    <span id="profile-role" class="px-2 py-0.5 rounded bg-white/20 text-xs font-bold backdrop-blur-sm border border-white/10">---</span>
+                    <span id="profile-status" class="px-2 py-0.5 rounded bg-green-500/20 text-green-300 text-xs font-bold border border-green-500/30">Activo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido del Formulario -->
+    <div class="flex-grow overflow-y-auto custom-scrollbar p-6">
+        <div class="max-w-4xl mx-auto space-y-8">
+
+            <!-- SECCIÓN: GALERÍA DE FOTOS -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                        <i class="fa-solid fa-images text-brand-500"></i> Galería de Fotos
+                    </h3>
+                    <div class="flex gap-2">
+                        <!-- Botón Cámara -->
+                        <button onclick="window.myProfileManager.startCamera()" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-camera"></i> Tomar Foto
+                        </button>
+                        <!-- Botón Subir Archivo -->
+                        <input type="file" id="photo-input" class="hidden" accept="image/*" multiple onchange="window.myProfileManager.handlePhotoUpload(this)">
+                        <button onclick="document.getElementById('photo-input').click()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-upload"></i> Subir
+                        </button>
+                    </div>
+                </div>
+
+                <!-- INTERFAZ DE CÁMARA (Oculta por defecto) -->
+                <div id="camera-container" class="hidden flex-col items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-lg mb-4 animate-fade-in">
+                    <div class="relative w-full max-w-sm aspect-[4/3] bg-black rounded-lg overflow-hidden border-2 border-slate-700 shadow-inner">
+                        <video id="camera-feed" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+                        <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 transition-opacity" id="flash-effect">
+                            <div class="w-full h-full bg-white"></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 w-full max-w-sm">
+                        <button type="button" onclick="window.myProfileManager.capturePhoto()" class="flex-1 bg-white hover:bg-slate-100 text-slate-900 py-2.5 rounded-lg font-bold shadow-md transition-colors flex items-center justify-center gap-2 active:scale-95">
+                            <div class="w-4 h-4 rounded-full border-2 border-slate-900 bg-red-500"></div> Capturar
+                        </button>
+                        <button type="button" onclick="window.myProfileManager.stopCamera()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 rounded-lg font-bold transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="photos-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    <!-- Las fotos se inyectan aquí -->
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 italic">* La primera foto se usará como avatar.</p>
+            </div>
+
+            <!-- FORMULARIO DE DATOS -->
+            <form id="profile-form" onsubmit="window.myProfileManager.saveProfile(event)" class="space-y-8">
+                
+                <!-- Datos Personales -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">Datos Personales</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre Completo</label>
+                            <input type="text" name="Nombre Completo" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fecha Nacimiento</label>
+                            <input type="date" name="Fecha de Nacimiento" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sexo</label>
+                            <select name="Sexo" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estado Civil</label>
+                            <select name="Estado Civil" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                                <option value="Soltero">Soltero(a)</option>
+                                <option value="Casado">Casado(a)</option>
+                                <option value="Union">Unión Libre</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Domicilio</label>
+                            <input type="text" name="Domicilio Actual" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hijos</label>
+                            <input type="number" name="Cantidad de Hijos" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contacto -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">Contacto</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Celular</label>
+                            <input type="tel" name="Número de Celular" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email</label>
+                            <input type="email" name="Correo Electrónico" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contacto Emergencia</label>
+                            <input type="text" name="Contacto de Emergencia" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500" placeholder="Nombre y Teléfono">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Laboral (Read Only mostly, but editable per request) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">Información Laboral</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">NSS</label>
+                            <input type="text" name="Número de Seguro Social (NSS)" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Puesto</label>
+                            <input type="text" name="Puesto" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 bg-slate-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ubicación</label>
+                            <input type="text" name="Predio / Ubicación" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500 bg-slate-50" readonly>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cursos / Habilidades</label>
+                            <textarea name="Cursos Avanzados" class="w-full text-sm border-slate-300 rounded-lg focus:ring-brand-500" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Guardar Flotante -->
+                <div class="fixed bottom-6 right-6 z-50">
+                    <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-full shadow-lg shadow-brand-500/30 flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+
+            </form>
+            <div class="h-12"></div> <!-- Spacer -->
+        </div>
+    </div>
+</div>
+
+<!-- Canvas oculto para procesar captura -->
+<canvas id="profile-photo-canvas" class="hidden"></canvas>
+
+<!-- Trigger -->
+<img src="x" onerror="if(!window.myProfileManager && document.getElementById('script-my-profile')) eval(document.getElementById('script-my-profile').innerText);" style="display:none;" />
+
+<script id="script-my-profile">
+    window.myProfileManager = {
+        userData: {},
+        photos: [], 
+        videoStream: null,
+
+        init() {
+            // Cargar datos de la sesión
+            const session = localStorage.getItem('regas_user_session');
+            if (!session) {
+                alert("Sesión no encontrada.");
+                window.toggleRightPanel(false);
+                return;
+            }
+            this.userData = JSON.parse(session);
+            
+            // Inicializar array de fotos
+            if (Array.isArray(this.userData.Fotografias)) {
+                this.photos = this.userData.Fotografias;
+            } else if (this.userData.Fotografia || this.userData.FOTOGRAFIA) {
+                this.photos = [this.userData.Fotografia || this.userData.FOTOGRAFIA];
+            } else {
+                this.photos = [];
+            }
+
+            this.renderHeader();
+            this.populateForm();
+            this.renderGallery();
+        },
+
+        renderHeader() {
+            const name = this.userData['Nombre Completo'] || this.userData.Nombre || 'Usuario';
+            document.getElementById('profile-name').textContent = name;
+            document.getElementById('profile-id').textContent = `ID: ${this.userData.ID || this.userData['Número de Empleado'] || '---'}`;
+            document.getElementById('profile-role').textContent = this.getLevelName(this.userData.Nivel);
+            
+            // Foto principal es la primera del array
+            const mainPhoto = this.photos.length > 0 ? this.photos[0] : '';
+            if(mainPhoto) document.getElementById('profile-main-photo').src = mainPhoto;
+        },
+
+        populateForm() {
+            const form = document.getElementById('profile-form');
+            Array.from(form.elements).forEach(input => {
+                if (input.name && this.userData[input.name] !== undefined) {
+                    input.value = this.userData[input.name];
+                }
+            });
+        },
+
+        renderGallery() {
+            const grid = document.getElementById('photos-grid');
+            grid.innerHTML = '';
+
+            this.photos.forEach((photo, index) => {
+                const div = document.createElement('div');
+                div.className = "relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer";
+                div.innerHTML = `
+                    <img src="${photo}" class="w-full h-full object-cover" onclick="window.open('${photo}')">
+                    <button onclick="window.myProfileManager.removePhoto(${index})" class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                    ${index === 0 ? '<div class="absolute bottom-0 left-0 w-full bg-brand-600 text-white text-[9px] font-bold text-center py-0.5">PERFIL</div>' : ''}
+                `;
+                grid.appendChild(div);
+            });
+        },
+
+        handlePhotoUpload(input) {
+            if (input.files) {
+                Array.from(input.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.photos.push(e.target.result);
+                        this.renderGallery();
+                        this.renderHeader(); 
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        },
+
+        // --- FUNCIONES DE CÁMARA ---
+        async startCamera() {
+            const container = document.getElementById('camera-container');
+            const video = document.getElementById('camera-feed');
+            
+            try {
+                this.videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = this.videoStream;
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            } catch (err) {
+                console.error("Error cámara:", err);
+                alert("No se pudo acceder a la cámara. Verifica los permisos.");
+            }
+        },
+
+        stopCamera() {
+            const container = document.getElementById('camera-container');
+            const video = document.getElementById('camera-feed');
+            
+            if (this.videoStream) {
+                this.videoStream.getTracks().forEach(track => track.stop());
+                this.videoStream = null;
+            }
+            video.srcObject = null;
+            
+            container.classList.add('hidden');
+            container.classList.remove('flex');
+        },
+
+        capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('profile-photo-canvas');
+            
+            if (video.videoWidth) {
+                // Efecto Flash visual
+                const flash = document.getElementById('flash-effect');
+                flash.style.opacity = '1';
+                setTimeout(() => flash.style.opacity = '0', 100);
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                
+                // Espejo
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0);
+                
+                // Calidad 0.8 para no pesar tanto
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Agregar a galería (al principio para que sea la nueva foto de perfil si se desea)
+                this.photos.unshift(dataUrl);
+                
+                this.renderGallery();
+                this.renderHeader(); // Actualizar avatar header
+                
+                // Pequeño delay para ver el flash antes de cerrar
+                setTimeout(() => this.stopCamera(), 300);
+            }
+        },
+
+        removePhoto(index) {
+            if(confirm("¿Eliminar esta foto?")) {
+                this.photos.splice(index, 1);
+                this.renderGallery();
+                this.renderHeader();
+            }
+        },
+
+        saveProfile(e) {
+            e.preventDefault();
+            const form = document.getElementById('profile-form');
+            const formData = new FormData(form);
+            
+            for (let [key, value] of formData.entries()) {
+                this.userData[key] = value;
+            }
+
+            this.userData.Fotografias = this.photos;
+            this.userData.Fotografia = this.photos.length > 0 ? this.photos[0] : ''; 
+
+            localStorage.setItem('regas_user_session', JSON.stringify(this.userData));
+            
+            if(window.syncManager) window.syncManager.uploadData(true);
+
+            alert("Perfil actualizado correctamente.");
+            this.renderHeader(); 
+        },
+
+        getLevelName(n) {
+            const roles = {0:"Administrador", 1:"Supervisor", 2:"Operativo"};
+            return roles[n] || "Colaborador";
+        }
+    };
+
+    window.myProfileManager.init();
+</script>
