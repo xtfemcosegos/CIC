@@ -105,7 +105,6 @@
                 const dateStr = this.formatDate(date);
                 const isToday = date.getTime() === today.getTime();
                 
-                // Botón interactivo para ir a la vista diaria
                 th.innerHTML = `
                     <button onclick="window.weekViewManager.goToDay('${dateStr}')" class="w-full h-full p-2 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors group" title="Ver detalles del día">
                         <span class="text-[10px] font-bold uppercase group-hover:text-brand-600 ${isToday ? 'text-brand-600' : 'text-slate-500'}">${daysShort[date.getDay()]}</span>
@@ -118,14 +117,12 @@
         },
 
         goToDay(dateStr) {
-            // Guardar fecha objetivo y navegar
             localStorage.setItem('regas_jump_date', dateStr);
             if(window.loadPlanView) window.loadPlanView('Dia');
         },
 
         renderBody(filterText = '') {
             const table = document.getElementById('week-table');
-            // Limpiar tbodys anteriores (mantener thead)
             while (table.tBodies.length > 0) {
                 table.removeChild(table.tBodies[0]);
             }
@@ -133,7 +130,6 @@
             const configElements = JSON.parse(localStorage.getItem('regas_epp_config') || '[]');
             const allAssignments = JSON.parse(localStorage.getItem('regas_assignments') || '[]');
 
-            // Filtrar elementos
             const filteredElements = configElements.filter(e => 
                 !filterText || e.name.toLowerCase().includes(filterText.toLowerCase())
             );
@@ -145,47 +141,58 @@
                 return;
             }
 
-            // Agrupar por Área
+            // --- LÓGICA DE AGRUPACIÓN INTELIGENTE ---
             const grouped = {};
             
-            // MAPA DE ORDENAMIENTO ESTRICTO
+            // 1. Mapa de Orden
             const areaConfig = JSON.parse(localStorage.getItem('regas_areas_config') || '{"categories":[]}');
             const areaOrder = {};
             let orderCounter = 0;
-            
             if (areaConfig.categories) {
                 areaConfig.categories.forEach(cat => {
-                    if (cat.areas) {
-                        cat.areas.forEach(a => { 
-                            // Asignar índice basado en la posición en el array de configuración
-                            areaOrder[a.name] = orderCounter++; 
-                        });
-                    }
+                    if (cat.areas) cat.areas.forEach(a => { areaOrder[a.name] = orderCounter++; });
                 });
             }
 
+            // 2. Asignación de elementos a grupos
             filteredElements.forEach(e => {
-                const area = e.area || 'General';
+                let area = e.area;
+                
+                // FIX: Si el área base es 'General' o vacía, buscar en las asignaciones de esta semana
+                if (!area || area === 'General') {
+                    // Buscar asignaciones para este elemento en los días de la semana visible
+                    const weekAssignments = allAssignments.filter(a => 
+                        a.elementId === e.id && 
+                        this.days.some(d => this.formatDate(d) === a.date)
+                    );
+                    
+                    // Si encuentra una asignación con área específica, usar esa
+                    const specificAssign = weekAssignments.find(a => a.area && a.area !== 'General');
+                    if (specificAssign) {
+                        area = specificAssign.area;
+                    }
+                }
+                
+                area = area || 'General'; // Fallback final
+
                 if (!grouped[area]) grouped[area] = [];
                 grouped[area].push(e);
             });
 
-            // Ordenar claves de áreas usando el mapa
+            // 3. Ordenar Grupos
             const sortedAreas = Object.keys(grouped).sort((a, b) => {
-                // Si no tiene orden (ej. General o nuevas), se van al final (9999)
                 const oa = areaOrder[a] !== undefined ? areaOrder[a] : 9999;
                 const ob = areaOrder[b] !== undefined ? areaOrder[b] : 9999;
-                
                 if (oa !== ob) return oa - ob;
-                return a.localeCompare(b); // Fallback alfabético para áreas sin orden
+                return a.localeCompare(b);
             });
 
+            // 4. Renderizar
             sortedAreas.forEach((area, areaIdx) => {
                 const elementsInArea = grouped[area];
                 const tbody = document.createElement('tbody');
                 tbody.className = "border-b border-slate-200 group-area";
                 
-                // --- CABECERA DE ÁREA (Colapsable) ---
                 const headerRow = document.createElement('tr');
                 headerRow.className = "bg-slate-100 cursor-pointer hover:bg-slate-200 transition-colors";
                 headerRow.onclick = () => this.toggleArea(areaIdx);
@@ -198,16 +205,13 @@
                     ${area} <span class="bg-slate-300 text-slate-600 px-1.5 rounded-full text-[9px]">${elementsInArea.length}</span>
                 `;
                 headerRow.appendChild(thArea);
-                
                 for(let i=0; i<7; i++) headerRow.appendChild(document.createElement('td'));
                 tbody.appendChild(headerRow);
 
-                // --- FILAS DE ELEMENTOS ---
                 elementsInArea.forEach(element => {
                     const tr = document.createElement('tr');
                     tr.className = `hover:bg-slate-50 transition-colors row-area-${areaIdx}`;
 
-                    // Nombre Sticky
                     const tdName = document.createElement('td');
                     tdName.className = "p-3 border-b border-r border-slate-200 bg-white group-hover:bg-slate-50 sticky left-0 z-10";
                     
@@ -222,7 +226,6 @@
                     `;
                     tr.appendChild(tdName);
 
-                    // Días
                     this.days.forEach(day => {
                         const dateStr = this.formatDate(day);
                         const assigns = allAssignments.filter(a => a.elementId === element.id && a.date === dateStr);
@@ -259,10 +262,9 @@
                     tbody.appendChild(tr);
                 });
 
-                // --- FOOTER DE ÁREA ---
+                // Footer Estadísticas
                 const footerRow = document.createElement('tr');
                 footerRow.className = `bg-slate-50 border-t border-slate-200 font-mono text-[10px] text-slate-500 row-area-${areaIdx}`;
-                
                 const tdTotalLabel = document.createElement('td');
                 tdTotalLabel.className = "p-2 text-right font-bold uppercase sticky left-0 z-10 bg-slate-50 border-r border-slate-200";
                 
@@ -352,7 +354,7 @@
 
         async openSidePanel(assign, elementInfo) {
             const item = { ...elementInfo, ...assign };
-            
+            console.log("Abriendo panel semanal para:", item.name);
             if (window.loadComponent && window.toggleRightPanel) {
                 if (!window.profileSidePanelManager) {
                     await window.loadComponent('Componentes/Baner_Perfil.html', 'right-panel-content');
