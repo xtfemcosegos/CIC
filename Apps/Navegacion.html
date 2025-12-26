@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        .nav-link { 
+            transition: all 0.2s; 
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #475569;
+        }
+        .nav-link:hover { background-color: #f8fafc; color: #720000; }
+        .nav-link.active { background: #720000; color: white !important; }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .section-header:hover { background: #f1f5f9; }
+        
+        .section-title {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .section-item.active .section-content {
+            max-height: 800px;
+            margin-top: 4px;
+            margin-bottom: 12px;
+        }
+
+        .chevron { 
+            transition: transform 0.3s; 
+            color: #cbd5e1;
+        }
+        .section-item.active .chevron { 
+            transform: rotate(180deg); 
+            color: #720000;
+        }
+
+        .group-label {
+            font-size: 9px;
+            font-weight: 800;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            padding: 8px 12px 4px 12px;
+            margin-top: 4px;
+            border-left: 2px solid #f1f5f9;
+            margin-left: 12px;
+        }
+    </style>
+</head>
+<body class="bg-white h-screen flex flex-col font-sans overflow-hidden border-r border-slate-100 select-none">
+
+    <div class="p-6 shrink-0">
+        <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Menú Principal</h2>
+        <p class="text-[9px] font-bold text-red-800 uppercase italic">Control de Operaciones</p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-10 space-y-1" id="nav-accordion">
+        
+        <!-- INICIO -->
+        <div onclick="navTo('Apps/Home.html')" class="nav-link role-all active mb-4">
+            <span>🏠</span> Inicio
+        </div>
+
+        <!-- SECCIÓN: REGISTROS DE ACCESO -->
+        <div class="section-item role-all">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Registros de Acceso</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/ConteoDeIngresos.html')" class="nav-link"><span>📊</span> Conteo de Ingresos</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/ElementosPP.html')" class="nav-link"><span>👮</span> Elementos PP</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Visitas.html')" class="nav-link"><span>👤</span> Visitas</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/PrestadoresDeServicios.html')" class="nav-link"><span>🛠️</span> Prestadores</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Consultores.html')" class="nav-link"><span>💼</span> Consultores</div>
+                
+                <div class="group-label">Herramientas</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Herramientas/RelojChecador.html')" class="nav-link"><span>⏰</span> Reloj Checador</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Herramientas/Contador.html')" class="nav-link"><span>🔢</span> Contador</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Herramientas/AutoRegistro.html')" class="nav-link"><span>📝</span> AutoRegistro</div>
+                <div onclick="navTo('Navegacion/RegistrosDeAcceso/Herramientas/Reportes.html')" class="nav-link role-admin"><span>📄</span> Reportes</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: MARBETES -->
+        <div class="section-item role-all">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Marbetes</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/Marbetes/BuscadorDeMarbetes.html')" class="nav-link"><span>🔍</span> Buscador</div>
+                <div onclick="navTo('Navegacion/Marbetes/RegistroDeNuevoMarbete.html')" class="nav-link"><span>✨</span> Nuevo Marbete</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: NOTIFICACIONES -->
+        <div class="section-item role-all">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Notificaciones</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/Notificaciones/RegistroDeNotificacionesLegales.html')" class="nav-link"><span>⚖️</span> Notif. Legales</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: RECORRIDOS -->
+        <div class="section-item role-all">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Recorridos</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/Recorridos/SeguimientoEnTiempoReal.html')" class="nav-link"><span>🛰️</span> Seguimiento</div>
+                <div onclick="navTo('Navegacion/Recorridos/Analitica.html')" class="nav-link role-admin"><span>📈</span> Analítica</div>
+                <div class="group-label">Herramientas</div>
+                <div onclick="navTo('Navegacion/Recorridos/Herramientas/EnPunto.html')" class="nav-link"><span>📍</span> EnPunto</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: MONITOREOS -->
+        <div class="section-item role-all">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Monitoreos</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/Monitoreos/MapaDeSeguimiento.html')" class="nav-link"><span>🗺️</span> Mapa Seguimiento</div>
+                <div class="group-label">Herramientas</div>
+                <div onclick="navTo('Navegacion/Monitoreos/Herramientas/Rastreador.html')" class="nav-link"><span>📡</span> Rastreador</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: REGISTRO DE SINIESTROS (RUTA ACTUALIZADA) -->
+        <div class="section-item role-all active">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <span class="section-title">Registro de Siniestros</span>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="section-content">
+                <div onclick="navTo('Navegacion/RegistroDeSiniestros/RegSin.html')" class="nav-link"><span>🚨</span> RegSin</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSection(element) {
+            const isActive = element.classList.contains('active');
+            document.querySelectorAll('.section-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (!isActive) {
+                element.classList.add('active');
+            }
+        }
+
+        function navTo(fullPath) {
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            if (event && event.currentTarget.classList.contains('nav-link')) {
+                event.currentTarget.classList.add('active');
+            }
+            window.parent.postMessage({ 
+                type: 'LOAD_NAV', 
+                path: fullPath 
+            }, '*');
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'SET_ROLE') {
+                const isAdmin = event.data.role === 'administrador';
+                document.querySelectorAll('.role-admin').forEach(el => {
+                    el.style.display = isAdmin ? 'flex' : 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

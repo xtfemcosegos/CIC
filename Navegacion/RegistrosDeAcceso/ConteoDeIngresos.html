@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .row-update { animation: highlight 1s ease-out; }
+        @keyframes highlight {
+            0% { background-color: #fef2f2; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans text-slate-800 p-4 md:p-10">
+
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Conteo de Ingresos</h1>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">Resumen consolidado en tiempo real</p>
+            </div>
+            
+            <!-- TOTALES GENERALES -->
+            <div class="flex gap-4">
+                <div class="bg-slate-900 text-white p-4 rounded-3xl min-w-[120px] text-center shadow-lg">
+                    <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">Total Personas</p>
+                    <p id="total-people" class="text-2xl font-black">0</p>
+                </div>
+                <div class="bg-red-800 text-white p-4 rounded-3xl min-w-[120px] text-center shadow-lg">
+                    <p class="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">Total Vehículos</p>
+                    <p id="total-vehicles" class="text-2xl font-black">0</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- LISTADO DINÁMICO -->
+        <div class="bg-slate-50 border border-slate-100 rounded-[2.5rem] overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-white border-b border-slate-100">
+                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Punto de Acceso</th>
+                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Personas</th>
+                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Vehículos</th>
+                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Último Ingreso</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conteo-body" class="divide-y divide-slate-100">
+                        <!-- Filas generadas dinámicamente -->
+                        <tr>
+                            <td colspan="4" class="p-20 text-center">
+                                <div class="w-8 h-8 border-4 border-slate-200 border-t-red-800 rounded-full animate-spin mx-auto mb-4"></div>
+                                <p class="text-[10px] font-black uppercase text-slate-300">Sincronizando datos...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp"
+        };
+        const appId = "cic-pp";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let casetas = {};
+        let counts = {};
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) startSync();
+            else signInAnonymously(auth);
+        });
+
+        function startSync() {
+            // 1. Obtener nombres de casetas desde Áreas
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'areas'), (snap) => {
+                casetas = {};
+                snap.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.type === 'caseta') {
+                        casetas[doc.id] = data.name;
+                    }
+                });
+                renderTable();
+            });
+
+            // 2. Obtener conteos en tiempo real
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'h_contador'), (snap) => {
+                counts = {};
+                snap.docs.forEach(doc => {
+                    counts[doc.id] = doc.data();
+                });
+                renderTable();
+            });
+        }
+
+        function renderTable() {
+            const body = document.getElementById('conteo-body');
+            const ids = Object.keys(casetas);
+            
+            if (ids.length === 0) return;
+
+            let totalP = 0, totalV = 0;
+
+            body.innerHTML = ids.map(id => {
+                const data = counts[id] || { people: 0, vehicles: 0, lastUpdate: '-' };
+                totalP += data.people || 0;
+                totalV += data.vehicles || 0;
+
+                const date = data.lastUpdate !== '-' ? new Date(data.lastUpdate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
+
+                return `
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="p-6 font-bold text-slate-700 text-sm">
+                            <span class="mr-2 text-xs">🚨</span> ${casetas[id]}
+                        </td>
+                        <td class="p-6 text-center">
+                            <span class="px-4 py-1.5 bg-slate-100 text-slate-900 rounded-full font-black text-xs min-w-[50px] inline-block">
+                                ${data.people || 0}
+                            </span>
+                        </td>
+                        <td class="p-6 text-center">
+                            <span class="px-4 py-1.5 bg-red-50 text-red-800 rounded-full font-black text-xs min-w-[50px] inline-block">
+                                ${data.vehicles || 0}
+                            </span>
+                        </td>
+                        <td class="p-6 text-right text-[10px] font-bold text-slate-400 uppercase">
+                            ${date}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Actualizar totales generales
+            document.getElementById('total-people').innerText = totalP;
+            document.getElementById('total-vehicles').innerText = totalV;
+        }
+    </script>
+</body>
+</html>

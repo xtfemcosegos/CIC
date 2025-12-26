@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --corporate-red: #720000; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .user-card.active { border-left: 4px solid var(--corporate-red); background: #fff1f1; }
+        .loader { border-top-color: #720000; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans text-slate-800">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-6 text-center">
+        <div id="loader-spinner">
+            <div class="w-10 h-10 border-4 border-slate-100 loader rounded-full mb-4 mx-auto"></div>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Datos...</p>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-80 border-r border-slate-100 flex flex-col bg-slate-50/50">
+            <div class="p-6 border-b border-slate-100 bg-white">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xs font-black uppercase text-slate-400">Directorio Firebase</h2>
+                    <button onclick="prepareNewUser()" class="p-2 bg-slate-900 text-white rounded-lg hover:bg-red-900 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                </div>
+                <input type="text" id="user-search" oninput="renderUsers()" placeholder="Buscar..." class="w-full px-4 py-2 bg-slate-100 border-none rounded-xl text-xs outline-none">
+            </div>
+            <div id="users-list" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"></div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-10 bg-white custom-scrollbar">
+            <div id="editor-empty" class="h-full flex flex-col items-center justify-center text-center opacity-30">
+                <div class="text-6xl mb-4">🔐</div>
+                <p class="text-sm font-bold uppercase tracking-widest leading-loose">Gestión de Cuentas Firebase<br><span class="text-[10px]">Cree usuarios auténticos en el sistema</span></p>
+            </div>
+
+            <div id="editor-form-container" class="hidden max-w-2xl mx-auto">
+                <header class="mb-10 flex justify-between items-start">
+                    <div>
+                        <span id="form-mode-badge" class="px-3 py-1 bg-red-50 text-red-700 text-[9px] font-black uppercase rounded-full">Registro Auth</span>
+                        <h1 id="form-title" class="text-3xl font-black text-slate-900 tracking-tighter uppercase mt-2">Perfil de Usuario</h1>
+                    </div>
+                    <button onclick="deleteUser()" id="delete-btn" class="text-[10px] font-bold text-red-600 uppercase hover:underline">Eliminar de BD</button>
+                </header>
+
+                <form id="user-form" class="space-y-6">
+                    <div class="flex gap-8 items-start mb-8">
+                        <div id="photo-display-box" class="w-32 h-32 rounded-[2.5rem] bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center relative cursor-pointer" onclick="document.getElementById('file-input').click()">
+                            <img id="form-photo-preview" src="" class="w-full h-full object-cover hidden">
+                            <span id="form-photo-placeholder" class="text-5xl">👤</span>
+                        </div>
+                        <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleImageFile(this)">
+                        <input type="text" id="user-photo" class="hidden">
+
+                        <div class="flex-1 space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase">ID Empleado</label>
+                                    <input type="text" id="user-id" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase">Nivel / Rol</label>
+                                    <select id="user-role" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold uppercase tracking-tighter">
+                                        <!-- Opciones cargadas dinámicamente desde Firestore (job_positions) -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-black text-slate-400 uppercase">Nombre</label>
+                                <input type="text" id="user-name" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-8 space-y-6">
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Acceso a Firebase Auth</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-black text-slate-500 uppercase">Correo (Login)</label>
+                                <input type="email" id="user-email" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div class="space-y-1" id="pass-container">
+                                <label class="text-[10px] font-black text-slate-500 uppercase">Contraseña Temporal</label>
+                                <input type="text" id="user-pass" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm" placeholder="••••••••">
+                            </div>
+                        </div>
+                        <p id="edit-notice" class="hidden text-[9px] text-amber-600 font-bold uppercase tracking-widest">Nota: La contraseña solo puede ser asignada al crear la cuenta.</p>
+                    </div>
+
+                    <button type="submit" id="save-btn" class="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-red-950 transition-all">Sincronizar Usuario</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = "cic-pp";
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp", storageBucket: "cic-pp.firebasestorage.app", 
+            messagingSenderId: "336771827172", appId: "1:336771827172:web:ff43891fd9b0fcaca073f1" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let users = [];
+        let roles = [];
+        let selectedUserId = null;
+
+        onAuthStateChanged(auth, (user) => { 
+            if (user) startApp();
+        });
+
+        const startApp = () => {
+            // Sincronizar Usuarios
+            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+            onSnapshot(usersRef, (snap) => {
+                users = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+                renderUsers();
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+
+            // Sincronizar Roles desde la colección de reglas (job_positions)
+            const rolesRef = collection(db, 'artifacts', appId, 'public', 'data', 'job_positions');
+            onSnapshot(rolesRef, (snap) => {
+                roles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderRoleSelect();
+            });
+        };
+
+        const renderRoleSelect = () => {
+            const select = document.getElementById('user-role');
+            const currentSelection = select.value;
+            
+            if (roles.length === 0) {
+                select.innerHTML = '<option value="">Sin roles definidos</option>';
+                return;
+            }
+
+            select.innerHTML = roles.map(r => `
+                <option value="${r.id}">${r.name || r.label || 'Sin Nombre'}</option>
+            `).join('');
+
+            if (currentSelection) select.value = currentSelection;
+        };
+
+        window.renderUsers = () => {
+            const list = document.getElementById('users-list');
+            const search = document.getElementById('user-search').value.toLowerCase();
+            const filtered = users.filter(u => u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search));
+            list.innerHTML = filtered.map(u => `
+                <div onclick="selectUser('${u.firestoreId}')" class="user-card flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-100 cursor-pointer ${selectedUserId === u.firestoreId ? 'active' : ''}">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+                        ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : '👤'}
+                    </div>
+                    <div class="truncate">
+                        <p class="text-[11px] font-black truncate">${u.name || 'Sin nombre'}</p>
+                        <p class="text-[8px] text-red-900 font-bold uppercase">ID: ${u.empId || 'N/A'}</p>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.selectUser = (id) => {
+            selectedUserId = id;
+            const u = users.find(user => user.firestoreId === id);
+            document.getElementById('user-id').value = u.empId || '';
+            document.getElementById('user-name').value = u.name || '';
+            document.getElementById('user-email').value = u.email || '';
+            document.getElementById('user-role').value = u.roleId || (roles[0]?.id || '');
+            document.getElementById('user-photo').value = u.photo || '';
+            
+            document.getElementById('user-pass').required = false;
+            document.getElementById('pass-container').classList.add('opacity-30');
+            document.getElementById('edit-notice').classList.remove('hidden');
+
+            updatePhotoPreview(u.photo);
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('editor-form-container').classList.remove('hidden');
+            document.getElementById('delete-btn').classList.remove('hidden');
+            document.getElementById('save-btn').innerText = "Actualizar Perfil en BD";
+            renderUsers();
+        };
+
+        window.prepareNewUser = () => {
+            selectedUserId = null;
+            document.getElementById('user-form').reset();
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('editor-form-container').classList.remove('hidden');
+            document.getElementById('delete-btn').classList.add('hidden');
+            document.getElementById('save-btn').innerText = "Crear Usuario en Firebase";
+            document.getElementById('user-pass').required = true;
+            document.getElementById('pass-container').classList.remove('opacity-30');
+            document.getElementById('edit-notice').classList.add('hidden');
+            updatePhotoPreview('');
+            if (roles.length > 0) document.getElementById('user-role').value = roles[0].id;
+        };
+
+        document.getElementById('user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('save-btn');
+            const email = document.getElementById('user-email').value;
+            const pass = document.getElementById('user-pass').value;
+            const roleId = document.getElementById('user-role').value;
+            
+            // Buscar la etiqueta del rol para persistencia visual en otras apps
+            const selectedRole = roles.find(r => r.id === roleId);
+            const roleLabel = selectedRole ? (selectedRole.name || selectedRole.label) : 'SIN ROL';
+
+            btn.disabled = true; btn.innerText = "Procesando...";
+
+            try {
+                let finalUid = selectedUserId;
+
+                if (!selectedUserId) {
+                    const tempApp = initializeApp(firebaseConfig, "TempApp");
+                    const tempAuth = getAuth(tempApp);
+                    try {
+                        const userCred = await createUserWithEmailAndPassword(tempAuth, email, pass);
+                        finalUid = userCred.user.uid;
+                        await signOut(tempAuth);
+                    } catch (authErr) {
+                        alert("Error en Firebase Auth: " + authErr.message);
+                        throw authErr;
+                    } finally {
+                        await deleteApp(tempApp);
+                    }
+                }
+
+                const userData = {
+                    empId: document.getElementById('user-id').value,
+                    name: document.getElementById('user-name').value,
+                    email: email,
+                    roleId: roleId,
+                    roleLabel: roleLabel.toUpperCase(),
+                    photo: document.getElementById('user-photo').value,
+                    updatedAt: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', finalUid), userData, { merge: true });
+                
+                btn.innerText = "¡Sincronizado!";
+                setTimeout(() => { 
+                    btn.disabled = false; 
+                    btn.innerText = selectedUserId ? "Actualizar Perfil en BD" : "Crear Usuario en Firebase"; 
+                }, 2000);
+            } catch (err) {
+                console.error(err);
+                btn.innerText = "Error";
+                btn.disabled = false;
+            }
+        });
+
+        window.deleteUser = async () => {
+            if (confirm("¿Eliminar perfil de la base de datos? (La cuenta de Auth debe eliminarse manualmente en la consola de Firebase)")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', selectedUserId));
+                document.getElementById('editor-form-container').classList.add('hidden');
+                document.getElementById('editor-empty').classList.remove('hidden');
+            }
+        };
+
+        window.handleImageFile = (input) => {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX = 400; const scale = MAX / img.width;
+                    canvas.width = MAX; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById('user-photo').value = dataUrl;
+                    updatePhotoPreview(dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const updatePhotoPreview = (url) => {
+            const img = document.getElementById('form-photo-preview');
+            const placeholder = document.getElementById('form-photo-placeholder');
+            if (url) { img.src = url; img.classList.remove('hidden'); placeholder.classList.add('hidden'); }
+            else { img.classList.add('hidden'); placeholder.classList.remove('hidden'); }
+        };
+    </script>
+</body>
+</html>

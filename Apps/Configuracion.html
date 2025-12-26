@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-active {
+            background: white;
+            color: #720000;
+            font-weight: 800;
+            border-top: 3px solid #720000;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+        }
+        .tab-inactive {
+            color: #64748b;
+            border-top: 3px solid transparent;
+        }
+        .tab-inactive:hover {
+            background: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col font-sans p-6 overflow-hidden">
+
+    <div class="max-w-6xl mx-auto w-full flex-1 flex flex-col gap-6">
+        
+        <!-- CABECERA DE MÓDULO -->
+        <div class="flex items-end justify-between">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Configuración</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Preferencias y Administración de Sistema</p>
+            </div>
+            <div class="text-[10px] font-black bg-slate-200 text-slate-600 px-3 py-1 rounded-full uppercase tracking-tighter">
+                V 5.2.1
+            </div>
+        </div>
+
+        <!-- CONTENEDOR PRINCIPAL -->
+        <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden flex-1 flex flex-col">
+            
+            <!-- NAVEGACIÓN DE PESTAÑAS -->
+            <nav class="bg-slate-50 border-b border-slate-200 flex px-8 shrink-0">
+                <button id="tab-usuarios" onclick="switchTab('usuarios')" class="px-8 py-5 text-xs font-black uppercase tracking-widest transition-all tab-active">
+                    Personal
+                </button>
+                <button id="tab-rules" onclick="switchTab('rules')" class="px-8 py-5 text-xs font-black uppercase tracking-widest transition-all tab-inactive">
+                    Reglas de visualización
+                </button>
+            </nav>
+
+            <!-- ÁREA DE CONTENIDO DINÁMICO -->
+            <main class="flex-1 relative bg-white p-2">
+                <iframe id="config-frame" src="AdminUsuarios.html" class="w-full h-full border-none"></iframe>
+            </main>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * Manejador de cambio de pestañas interno
+         * @param {string} tab Identificador de la pestaña
+         */
+        function switchTab(tab) {
+            const tabs = {
+                'usuarios': { id: 'tab-usuarios', src: 'AdminUsuarios.html' },
+                'rules': { id: 'tab-rules', src: '../Config/Rules.html' }
+            };
+
+            // Resetear estilos visuales
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+
+            // Activar pestaña actual
+            const active = tabs[tab];
+            const btn = document.getElementById(active.id);
+            if (btn) {
+                btn.classList.add('tab-active');
+                btn.classList.remove('tab-inactive');
+            }
+
+            // Cambiar el contenido del iframe interno
+            document.getElementById('config-frame').src = active.src;
+        }
+    </script>
+
+</body>
+</html>

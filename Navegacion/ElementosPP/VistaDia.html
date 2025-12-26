@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        /* Tablero adaptable: Se ajusta a filas si hay espacio */
+        .slots-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 1rem;
+            justify-content: flex-start;
+        }
+
+        .location-slot {
+            display: flex;
+            flex-direction: column;
+            width: 140px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02));
+            transition: all 0.3s ease;
+        }
+
+        .location-label {
+            background: #0f172a;
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 6px 12px;
+            border-radius: 0.8rem 0.8rem 0 0;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .drop-zone {
+            min-height: 80px;
+            background: white;
+            border: 2px solid #f1f5f9;
+            border-top: none;
+            border-radius: 0 0 0.8rem 0.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            background: #fff1f1;
+            border-color: #720000;
+            transform: scale(1.02);
+        }
+
+        .assigned-item {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            padding: 2px;
+            border: 2.5px solid #22c55e;
+            border-radius: 9999px;
+            background: white;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            flex-shrink: 0;
+        }
+        .assigned-item:hover { transform: scale(1.1); z-index: 20; }
+
+        .assigned-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 9999px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 30;
+            border: 2px solid white;
+        }
+        .assigned-item:hover .remove-btn { display: flex; }
+
+        .shift-btn {
+            transition: all 0.3s ease;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 900;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+        }
+        .shift-btn.active {
+            background: #0f172a;
+            color: white;
+            border-color: #0f172a;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+        }
+
+        .view-all-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: #f8fafc;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid #f1f5f9;
+        }
+
+        .column-header {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #save-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #0f172a;
+            color: white;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800 p-6 flex flex-col gap-6">
+
+    <div id="save-indicator">Sincronizando...</div>
+
+    <!-- BARRA DE HERRAMIENTAS -->
+    <div class="flex flex-wrap justify-between items-center gap-4 bg-white/50 p-2 rounded-2xl backdrop-blur-sm sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="date-nav">
+                <button onclick="changeDate(-1)" class="hover:text-slate-900"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+                <input type="date" id="date-selector" class="font-black uppercase text-xs outline-none bg-transparent">
+                <button onclick="changeDate(1)" class="hover:text-slate-900"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
+            <button onclick="setToday()" class="px-4 py-2 bg-slate-100 text-[10px] font-black uppercase rounded-xl hover:bg-slate-200">Hoy</button>
+        </div>
+
+        <!-- SELECTOR DE TURNOS Y MODO VISTA COMPLETA (BORRADOR) -->
+        <div class="flex items-center gap-2">
+            <button onclick="setViewShift('morning')" id="btn-morning" class="shift-btn active">M</button>
+            <button onclick="setViewShift('afternoon')" id="btn-afternoon" class="shift-btn">T</button>
+            <button onclick="setViewShift('night')" id="btn-night" class="shift-btn">N</button>
+            <div class="w-[1px] h-6 bg-slate-200 mx-1"></div>
+            <button onclick="setViewShift('all')" id="btn-all" class="shift-btn" title="Ver todos los turnos">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <div id="main-board" class="flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Render dinámico aquí -->
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp"
+        };
+        const appId = "cic-pp";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let areas = [];
+        let locations = [];
+        let attendance = {};
+        let currentSelectedDate = new Date().toISOString().split('T')[0];
+        let currentViewShift = 'morning'; // 'morning', 'afternoon', 'night', 'all'
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                initDateSelector();
+                initSync();
+            } else { signInAnonymously(auth); }
+        });
+
+        function initDateSelector() {
+            const selector = document.getElementById('date-selector');
+            selector.value = currentSelectedDate;
+            selector.addEventListener('change', (e) => {
+                currentSelectedDate = e.target.value;
+                renderBoard();
+            });
+        }
+
+        window.setToday = () => {
+            currentSelectedDate = new Date().toISOString().split('T')[0];
+            document.getElementById('date-selector').value = currentSelectedDate;
+            renderBoard();
+        };
+
+        window.changeDate = (days) => {
+            const dateObj = new Date(currentSelectedDate + "T12:00:00");
+            dateObj.setDate(dateObj.getDate() + days);
+            currentSelectedDate = dateObj.toISOString().split('T')[0];
+            document.getElementById('date-selector').value = currentSelectedDate;
+            renderBoard();
+        };
+
+        window.setViewShift = (shift) => {
+            currentViewShift = shift;
+            document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${shift}`).classList.add('active');
+            renderBoard();
+        };
+
+        function showIndicator(show) {
+            document.getElementById('save-indicator').style.opacity = show ? "1" : "0";
+        }
+
+        async function initSync() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'areas'), (snap) => {
+                areas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'job_positions'), (pSnap) => {
+                    const puestos = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    locations = [...areas.filter(a => a.type === 'caseta'), ...puestos]
+                                .sort((a, b) => (a.index || 0) - (b.index || 0));
+                    renderBoard();
+                });
+            });
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'attendance_day'), (snap) => {
+                attendance = {};
+                snap.docs.forEach(d => {
+                    const parts = d.id.split('_'); 
+                    if (parts.length >= 3) {
+                        const date = parts[0];
+                        const shift = parts[1];
+                        const locId = parts[2];
+                        const key = `${date}_${shift}_${locId}`;
+                        if (!attendance[key]) attendance[key] = [];
+                        attendance[key].push({ docId: d.id, ...d.data() });
+                    }
+                });
+                renderBoard();
+            });
+        }
+
+        function createSlotHTML(loc, shift) {
+            const list = attendance[`${currentSelectedDate}_${shift}_${loc.id}`] || [];
+            const isOccupied = list.length > 0;
+            
+            return `
+                <div class="location-slot">
+                    <div class="location-label">${loc.name}</div>
+                    <div class="drop-zone" 
+                         ondragover="event.preventDefault(); this.classList.add('drag-over')" 
+                         ondragleave="this.classList.remove('drag-over')"
+                         ondrop="handleDrop(event, '${shift}', '${loc.id}')">
+                        
+                        ${list.map(item => `
+                            <div class="assigned-item">
+                                <img src="${item.userPhoto}" class="assigned-photo">
+                                <div class="remove-btn" onclick="removeAssignment('${item.docId}')">×</div>
+                            </div>
+                        `).join('')}
+
+                        ${!isOccupied ? `
+                            <div class="opacity-10 py-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('main-board');
+            if (!board) return;
+
+            if (currentViewShift === 'all') {
+                // Modo Vista Completa (Borrador): Ahora permite wrapping interno en cada columna
+                board.innerHTML = `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-20">
+                        <div class="view-all-column">
+                            <div class="column-header">☀️ Matutino</div>
+                            <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                                ${locations.map(loc => createSlotHTML(loc, 'morning')).join('')}
+                            </div>
+                        </div>
+                        <div class="view-all-column">
+                            <div class="column-header">⛅ Vespertino</div>
+                            <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                                ${locations.map(loc => createSlotHTML(loc, 'afternoon')).join('')}
+                            </div>
+                        </div>
+                        <div class="view-all-column">
+                            <div class="column-header">🌙 Nocturno</div>
+                            <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                                ${locations.map(loc => createSlotHTML(loc, 'night')).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Modo Turno Específico: Grid adaptable
+                board.innerHTML = `
+                    <div class="slots-grid pb-20">
+                        ${locations.map(loc => createSlotHTML(loc, currentViewShift)).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        window.handleDrop = async (e, shift, locationId) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const rawData = e.dataTransfer.getData('user_profile') || e.dataTransfer.getData('text/plain');
+            if (!rawData) return;
+            try {
+                const userData = JSON.parse(rawData);
+                showIndicator(true);
+                const docId = `${currentSelectedDate}_${shift}_${locationId}_${userData.id}`;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attendance_day', docId), {
+                    userId: userData.id,
+                    userName: userData.name,
+                    userPhoto: userData.photo,
+                    locationId: locationId,
+                    shift: shift,
+                    date: currentSelectedDate,
+                    assignedAt: new Date().toISOString()
+                });
+                setTimeout(() => showIndicator(false), 500);
+            } catch (err) { 
+                console.error(err); 
+                showIndicator(false);
+            }
+        };
+
+        window.removeAssignment = async (docId) => {
+            try {
+                showIndicator(true);
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attendance_day', docId));
+                setTimeout(() => showIndicator(false), 500);
+            } catch (err) { 
+                console.error(err); 
+                showIndicator(false);
+            }
+        };
+    </script>
+</body>
+</html>

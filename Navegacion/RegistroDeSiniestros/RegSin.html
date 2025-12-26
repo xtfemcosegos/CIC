@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Siniestros - CIC</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root { --brand-red: #720000; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #1e293b;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .editor-content:empty:before {
+            content: attr(placeholder);
+            color: #94a3b8;
+            pointer-events: none;
+            display: block;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 2.5rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-group label {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .standard-input {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .standard-input:focus {
+            outline: none;
+            border-color: var(--brand-red);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(114, 0, 0, 0.05);
+        }
+
+        .color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .color-swatch:hover { transform: scale(1.2); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <!-- OVERLAY DE CARGA -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[2000] flex flex-col justify-center items-center transition-opacity duration-500">
+        <div class="w-12 h-12 border-4 border-slate-100 border-t-red-800 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400" id="loadingText">Sincronizando Sistema...</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- CABECERA (Limpia sin accesos) -->
+        <header class="mb-10 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-red-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-900/20">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Registro de Siniestros</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Control de incidentes patrimoniales</p>
+                </div>
+            </div>
+            <div id="clock" class="text-[10px] font-black text-slate-300 uppercase tracking-widest">00:00:00</div>
+        </header>
+
+        <!-- FORMULARIO PRINCIPAL -->
+        <main class="animate-slide-up">
+            <form id="formSiniestros" class="form-card overflow-hidden">
+                <div class="p-8 md:p-12">
+                    
+                    <div id="formUI" class="space-y-8">
+                        
+                        <!-- PASO 1: UBICACIÓN -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 1</span>
+                                <div class="h-px bg-slate-100 flex-1"></div>
+                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ubicación del Evento</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="input-group">
+                                    <label>🏢 Negocio</label>
+                                    <select id="Negocio" class="standard-input" required>
+                                        <option value="">Seleccione</option>
+                                        <option value="Club de Futbol Monterrey">Club de Futbol Monterrey</option>
+                                        <option value="Femsa">Femsa</option>
+                                        <option value="Oficinas de servicio Oxxo" selected>Oficinas de servicio Oxxo</option>
+                                        <option value="Otras">Otras</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>📍 Plaza / Oficina</label>
+                                    <select id="Plaza" class="standard-input" required>
+                                        <option value="">Seleccione</option>
+                                        <option value="Oficina de servicio (OS)" selected>Oficina de servicio (OS)</option>
+                                        <option value="Otras">Otras</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>🏗️ Edificio / Sede</label>
+                                <select id="Edificio" class="standard-input" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="Almacén Dr. Mora">Almacén Dr. Mora</option>
+                                    <option value="Almacén Luis Mora">Almacén Luis Mora</option>
+                                    <option value="Anexo OS">Anexo OS</option>
+                                    <option value="Cash Center">Cash Center</option>
+                                    <option value="Corporativo Femsa">Corporativo Femsa</option>
+                                    <option value="Crisoles">Crisoles</option>
+                                    <option value="Edison" selected>Edison</option>
+                                    <option value="Fundadores">Fundadores</option>
+                                    <option value="Lucas Alemán">Lucas Alemán</option>
+                                    <option value="Michelena">Michelena</option>
+                                    <option value="Patio 4">Patio 4</option>
+                                    <option value="Proyectos culturales">Proyectos culturales</option>
+                                    <option value="Simón Bolivar">Simón Bolivar</option>
+                                    <option value="Xpertal">Xpertal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- PASO 2: CLASIFICACIÓN -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 2</span>
+                                <div class="h-px bg-slate-100 flex-1"></div>
+                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Tipo de Incidente</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
+                                <div class="input-group">
+                                    <label>⚠️ Categoría Principal</label>
+                                    <select id="TipoSiniestro" class="standard-input" required>
+                                        <option value="">Seleccione Categoría</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>📌 Subtipo</label>
+                                    <select id="Subtipo" class="standard-input" required>
+                                        <option value="">Seleccione Subtipo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PASO 3: DETALLES -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 3</span>
+                                <div class="h-px bg-slate-100 flex-1"></div>
+                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Descripción y Afectados</h3>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📝 Descripción Narrativa</label>
+                                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white focus-within:ring-4 focus-within:ring-red-800/5 transition-all">
+                                    <div class="bg-slate-50 border-b border-slate-100 p-2 flex items-center gap-1">
+                                        <button type="button" class="p-2 hover:bg-white rounded-lg text-slate-600 transition-colors" onclick="document.execCommand('bold')"><i class="fa-solid fa-bold"></i></button>
+                                        <button type="button" class="p-2 hover:bg-white rounded-lg text-slate-600 transition-colors" onclick="document.execCommand('italic')"><i class="fa-solid fa-italic"></i></button>
+                                        <button type="button" class="p-2 hover:bg-white rounded-lg text-slate-600 transition-colors" onclick="document.execCommand('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
+                                        <div class="w-px h-6 bg-slate-200 mx-2"></div>
+                                        
+                                        <!-- Muestrario de colores -->
+                                        <div class="flex items-center gap-1.5 px-2">
+                                            <div class="color-swatch" style="background: #000000;" onclick="document.execCommand('foreColor', false, '#000000')" title="Negro"></div>
+                                            <div class="color-swatch" style="background: #720000;" onclick="document.execCommand('foreColor', false, '#720000')" title="Rojo CIC"></div>
+                                            <div class="color-swatch" style="background: #ef4444;" onclick="document.execCommand('foreColor', false, '#ef4444')" title="Rojo Vivo"></div>
+                                            <div class="color-swatch" style="background: #3b82f6;" onclick="document.execCommand('foreColor', false, '#3b82f6')" title="Azul"></div>
+                                            <div class="color-swatch" style="background: #22c55e;" onclick="document.execCommand('foreColor', false, '#22c55e')" title="Verde"></div>
+                                            <div class="color-swatch" style="background: #f59e0b;" onclick="document.execCommand('foreColor', false, '#f59e0b')" title="Naranja"></div>
+                                        </div>
+                                    </div>
+                                    <div id="descripcion" contenteditable="true" class="editor-content min-h-[160px] p-6 text-sm text-slate-700 outline-none" placeholder="Relate detalladamente los hechos ocurridos..."></div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <span class="text-xs font-bold text-slate-600 uppercase tracking-tighter">🚑 Lesionados en sitio</span>
+                                    <input type="checkbox" name="personasAfectadas[]" value="Lesionados" class="w-5 h-5 accent-red-800">
+                                </label>
+                                <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <span class="text-xs font-bold text-slate-600 uppercase tracking-tighter">⚖️ Personas Detenidas</span>
+                                    <input type="checkbox" name="personasAfectadas[]" value="Detenidos" class="w-5 h-5 accent-red-800">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- PASO 4: CONTACTOS -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 4</span>
+                                <div class="h-px bg-slate-100 flex-1"></div>
+                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Personal Responsable</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="input-group">
+                                    <label>👤 Nombre de quien reporta</label>
+                                    <input type="text" id="reporta" class="standard-input" placeholder="Nombre completo" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>🧑‍💼 Realiza el reporte (CCO)</label>
+                                    <select id="realiza" class="standard-input" required>
+                                        <option value="">Seleccione Operador</option>
+                                    </select>
+                                    <input type="text" id="realizaOtro" class="standard-input mt-2 hidden" placeholder="Escriba el nombre completo del operador">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PASO 5: NOTIFICACIONES -->
+                        <div class="pt-4 space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">📨 Notificar adicionalmente a:</label>
+                            
+                            <div class="grid grid-cols-1 gap-2">
+                                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="mt-1 w-4 h-4 accent-red-800" name="correosExtra" value="jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter break-all">jesuseduardo.gutierrez@armur.com; juan.paniagua@armur.com</span>
+                                </label>
+                                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="mt-1 w-4 h-4 accent-red-800" name="correosExtra" value="emmanuel.zapata@oxxogas.com;andreac.rodriguez@oxxogas.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter break-all">emmanuel.zapata@oxxogas.com; andreac.rodriguez@oxxogas.com</span>
+                                </label>
+                                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="mt-1 w-4 h-4 accent-red-800" name="correosExtra" value="treycy.arreguin@oxxo.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">treycy.arreguin@oxxo.com</span>
+                                </label>
+                                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="mt-1 w-4 h-4 accent-red-800" name="correosExtra" value="joseantonio.palacios@armur.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">joseantonio.palacios@armur.com</span>
+                                </label>
+                            </div>
+
+                            <div class="mt-2">
+                                <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block">✏️ Otros (separados por ;)</label>
+                                <input type="text" id="correosOtros" class="standard-input" placeholder="ejemplo@correo.com; otro@correo.com">
+                            </div>
+                        </div>
+
+                        <!-- BOTÓN DE ENVÍO -->
+                        <button type="submit" id="btnSubmit" class="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-red-950 transition-all flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            Finalizar y Registrar Siniestro
+                        </button>
+
+                    </div>
+
+                    <!-- ESTADO DE ÉXITO -->
+                    <div id="successUI" class="hidden py-16 text-center space-y-6">
+                        <div class="w-24 h-24 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-sm border border-green-100">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">¡Registro Exitoso!</h3>
+                            <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2">La información ha sido registrada y enviada a los destinatarios seleccionados.</p>
+                        </div>
+                        <button type="button" id="btnNewReport" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all">
+                            Crear Nuevo Registro
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </main>
+
+        <footer class="mt-12 text-center">
+            <p class="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">CIC — Protección Patrimonial</p>
+        </footer>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración Firebase
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp",
+            appId: "1:336771827172:web:ff43891fd9b0fcaca073f1"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // URLs Power Automate
+        const URL_RECUPERAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
+        const URL_ENVIAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/28a6ecf6c40e4d14aa520a51c8430065/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4DbF_Lj5HOOWUNIaV_lSLMZH1j5etCF1n18CTLRDkxs";
+
+        async function recuperarDatos(solicitud) {
+            try {
+                const response = await fetch(URL_RECUPERAR, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Mode: solicitud })
+                });
+                if (!response.ok) throw new Error("Error en la solicitud: " + response.status);
+                return await response.json();
+            } catch (error) {
+                console.error("Error al recuperar datos:", error);
+                return null;
+            }
+        }
+
+        async function enviarDatos(formData) {
+            try {
+                const response = await fetch(URL_ENVIAR, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData)
+                });
+                if (!response.ok) throw new Error(`Error en la petición: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error("❌ Error al enviar los datos:", error);
+                return null;
+            }
+        }
+
+        function updateClock() {
+            const clockEl = document.getElementById('clock');
+            if (!clockEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+        }
+
+        // Estado de aplicación
+        let currentUser = null;
+        let dataArray = [];
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                initApp();
+            } else {
+                signInAnonymously(auth);
+            }
+        });
+
+        async function initApp() {
+            setInterval(updateClock, 1000);
+            updateClock();
+            
+            // Lógica para el campo "Otro" en Realiza Reporte
+            const realizaSelect = document.getElementById('realiza');
+            const realizaOtroInput = document.getElementById('realizaOtro');
+            realizaSelect.addEventListener('change', function() {
+                if (this.value === 'Otro') {
+                    realizaOtroInput.classList.remove('hidden');
+                    realizaOtroInput.required = true;
+                } else {
+                    realizaOtroInput.classList.add('hidden');
+                    realizaOtroInput.required = false;
+                }
+            });
+            
+            try {
+                await Promise.all([cargarTipos(), cargarUsuarios()]);
+                const loader = document.getElementById('loadingOverlay');
+                loader.classList.add('opacity-0');
+                setTimeout(() => loader.style.display = 'none', 500);
+            } catch (error) {
+                console.error("Error crítico:", error);
+                document.getElementById('loadingText').textContent = "Reintentando conexión...";
+            }
+        }
+
+        const tipoSelect = document.getElementById("TipoSiniestro");
+        const subtipoSelect = document.getElementById("Subtipo");
+
+        const actualizarSubtiposUI = () => {
+            subtipoSelect.innerHTML = "<option value=''>Seleccione un subtipo</option>";
+            const subtipos = dataArray
+                .filter(item => item.Tipo === tipoSelect.value)
+                .map(item => item.Subtipo);
+
+            const fragmentSub = document.createDocumentFragment();
+            subtipos.forEach(subtipo => {
+                const option = document.createElement("option");
+                option.value = subtipo;
+                option.textContent = subtipo;
+                fragmentSub.appendChild(option);
+            });
+            subtipoSelect.appendChild(fragmentSub);
+        };
+
+        async function cargarTipos() {
+            const res = await recuperarDatos("Tipos");
+            if (res && res.Matriz) {
+                dataArray = res.Matriz;
+            } else {
+                dataArray = [];
+            }
+
+            const tiposUnicos = [...new Set(dataArray.map(item => item.Tipo).filter(t => t))];
+            const fragmentTipos = document.createDocumentFragment();
+            tiposUnicos.forEach(tipo => {
+                const option = document.createElement("option");
+                option.value = tipo;
+                option.textContent = tipo;
+                fragmentTipos.appendChild(option);
+            });
+            tipoSelect.appendChild(fragmentTipos);
+            
+            tipoSelect.addEventListener("change", actualizarSubtiposUI);
+        }
+
+        async function cargarUsuarios() {
+            const data = await recuperarDatos("ElementosPP");
+            if (data && data.Usuarios) {
+                const realizaSelect = document.getElementById("realiza");
+                data.Usuarios.filter(u => u.Area === "Centro de Control").forEach(u => {
+                    const option = document.createElement("option");
+                    option.value = u.Nombre;
+                    option.textContent = u.Nombre;
+                    realizaSelect.appendChild(option);
+                });
+                // Añadir opción "Otro"
+                const optOtro = document.createElement("option");
+                optOtro.value = "Otro";
+                optOtro.textContent = "Otro (Especificar)";
+                realizaSelect.appendChild(optOtro);
+            }
+        }
+
+        /* === MANEJO DE ENVÍO HÍBRIDO === */
+        document.getElementById('formSiniestros').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Procesando...';
+
+            const valTipo = document.getElementById("TipoSiniestro").value;
+            const valSubtipo = document.getElementById("Subtipo").value;
+            
+            // Obtener valor de Realiza (si es otro, tomar el input)
+            const realizaBase = document.getElementById("realiza").value;
+            const nombreRealizaFinal = realizaBase === 'Otro' ? document.getElementById("realizaOtro").value : realizaBase;
+
+            // Calcular destinatarios
+            let correosBase = [];
+            const match = dataArray.find(item => item.Tipo === valTipo && item.Subtipo === valSubtipo);
+            if (match && match["Listado de correos"]) {
+                correosBase = match["Listado de correos"].split(";").map(c => c.trim()).filter(c => c);
+            }
+            const extras = Array.from(document.querySelectorAll("input[name='correosExtra']:checked")).map(cb => cb.value);
+            const manual = document.getElementById("correosOtros").value.split(";").map(c => c.trim()).filter(c => c);
+            const todosLosCorreos = [...new Set([...correosBase, ...extras, ...manual])];
+
+            const formData = {
+                negocioSeleccionado: document.getElementById("Negocio").value,
+                plazaSeleccionada: document.getElementById("Plaza").value,
+                edificioSeleccionado: document.getElementById("Edificio").value,
+                tipoSiniestroSeleccionado: valTipo,
+                subtipoSeleccionado: valSubtipo, 
+                descripcionIncidente: document.getElementById("descripcion").innerHTML,
+                descripcionTextoPlano: document.getElementById("descripcion").innerText,
+                personasAfectadas: Array.from(document.querySelectorAll("input[name='personasAfectadas[]']")).map(cb => ({
+                    [cb.value]: cb.checked ? "Sí" : "No"
+                })),
+                nombreReporta: document.getElementById("reporta").value,
+                nombreRealiza: nombreRealizaFinal,
+                listadoCorreos: todosLosCorreos.join(";"),
+                timestamp: new Date().toISOString(),
+                uid: currentUser?.uid || 'anonymous'
+            };
+
+            try {
+                // 1. Guardar en Firestore
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'siniestros'), formData);
+
+                // 2. Enviar a Power Automate
+                await enviarDatos(formData);
+
+                // UI Éxito
+                document.getElementById("formUI").style.display = "none";
+                document.getElementById("successUI").classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (err) {
+                console.error("Error en el envío:", err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Error - Reintentar';
+            }
+        });
+
+        document.getElementById('btnNewReport').addEventListener('click', () => {
+            document.getElementById('formSiniestros').reset();
+            document.getElementById('descripcion').innerHTML = "";
+            document.getElementById('realizaOtro').classList.add('hidden');
+            document.getElementById("formUI").style.display = "block";
+            document.getElementById("successUI").classList.add('hidden');
+            document.getElementById('btnSubmit').disabled = false;
+            document.getElementById('btnSubmit').innerHTML = '<i class="fa-solid fa-paper-plane"></i> Finalizar y Registrar Siniestro';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

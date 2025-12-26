@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .permission-toggle:checked + div { background-color: #720000; }
+        .permission-toggle:checked + div svg { transform: translateX(100%); }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans text-slate-800 p-4 md:p-10">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Reglas de Visualización</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión de Permisos y Niveles de Acceso</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="generateFirebaseRules()" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2">
+                    <span>🔥</span> Generar Reglas Firebase
+                </button>
+                <button onclick="saveChanges()" id="btn-save" class="px-5 py-2.5 bg-red-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg">
+                    Guardar Cambios
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <!-- LATERAL: LISTA DE NIVELES (ROLES) -->
+            <aside class="lg:col-span-1 space-y-4">
+                <div class="flex items-center justify-between px-2">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveles / Roles</h3>
+                    <button onclick="addNewRole()" class="text-red-700 hover:text-red-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                </div>
+                <div id="roles-list" class="space-y-2">
+                    <!-- Roles dinámicos -->
+                </div>
+            </aside>
+
+            <!-- PRINCIPAL: MATRIZ DE PERMISOS -->
+            <main class="lg:col-span-3">
+                <div class="bg-slate-50 rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                    <div class="p-6 bg-white border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h2 id="current-role-title" class="text-lg font-black text-slate-900 uppercase tracking-tight">Seleccione un nivel</h2>
+                            <p id="current-role-desc" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Configure el acceso a secciones y módulos</p>
+                        </div>
+                        <div id="role-edit-actions" class="hidden flex gap-2">
+                            <button onclick="deleteCurrentRole()" class="p-2 text-slate-300 hover:text-red-600 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="permissions-matrix" class="p-4 md:p-8 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <!-- Secciones y Módulos dinámicos -->
+                        <div class="flex flex-col items-center justify-center py-20 text-slate-300 opacity-50">
+                            <div class="text-5xl mb-4">🛂</div>
+                            <p class="text-[10px] font-black uppercase">Selecciona un rol para editar sus permisos</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL REGLAS FIREBASE -->
+    <div id="modal-rules" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <header class="p-8 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter">Firestore Security Rules</h2>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Copia y pega esto en tu consola de Firebase</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-2xl font-bold">&times;</button>
+            </header>
+            <div class="flex-1 p-8 overflow-y-auto bg-slate-900 text-emerald-400 font-mono text-xs custom-scrollbar">
+                <pre id="rules-code-block"></pre>
+            </div>
+            <footer class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="copyRules()" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Copiar al portapapeles</button>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración oficial del proyecto CIC para evitar errores de API Key vacía
+        const officialConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp",
+            appId: "1:336771827172:web:ff43891fd9b0fcaca073f1"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : officialConfig;
+            
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
+        
+        // Inicialización segura
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Error al inicializar Firebase:", e);
+        }
+
+        let roles = {};
+        let selectedRole = null;
+        let currentUser = null;
+
+        // Estructura de secciones basada en la navegación solicitada
+        const schema = [
+            { id: 'registros', label: 'Registros de Acceso', modules: [
+                { id: 'conteo', label: 'Conteo de Ingresos' },
+                { id: 'elementos', label: 'Elementos PP' },
+                { id: 'visitas', label: 'Visitas' },
+                { id: 'prestadores', label: 'Prestadores de Servicios' },
+                { id: 'consultores', label: 'Consultores' },
+                { id: 'h_reloj', label: 'Reloj Checador', group: 'Herramientas' },
+                { id: 'h_contador', label: 'Contador', group: 'Herramientas' },
+                { id: 'h_autoregistro', label: 'AutoRegistro', group: 'Herramientas' },
+                { id: 'h_reportes', label: 'Reportes', group: 'Herramientas' }
+            ]},
+            { id: 'marbetes', label: 'Marbetes', modules: [
+                { id: 'buscador', label: 'Buscador de Marbetes' },
+                { id: 'registro_m', label: 'Registro de nuevo marbete' }
+            ]},
+            { id: 'notificaciones', label: 'Notificaciones', modules: [
+                { id: 'legales', label: 'Registro de Notificaciones Legales' }
+            ]},
+            { id: 'recorridos', label: 'Recorridos', modules: [
+                { id: 'tiempo_real', label: 'Seguimiento en tiempo real' },
+                { id: 'analitica', label: 'Analítica' },
+                { id: 'enpunto', label: 'EnPunto', group: 'Herramientas' }
+            ]},
+            { id: 'monitoreos', label: 'Monitoreos', modules: [
+                { id: 'mapa', label: 'Mapa de seguimiento' },
+                { id: 'rastreador', label: 'Rastreador', group: 'Herramientas' }
+            ]}
+        ];
+
+        // Vinculación de funciones al objeto window para acceso desde el HTML
+        window.addNewRole = () => {
+            const name = prompt("Nombre del nuevo nivel (Ej: Encargado de Base):");
+            if (!name) return;
+            const id = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+            if (roles[id]) return alert("Ese ID de nivel ya existe.");
+            
+            roles[id] = { label: name, permissions: {} };
+            window.renderRoles();
+            window.selectRole(id);
+        };
+
+        window.renderRoles = () => {
+            const list = document.getElementById('roles-list');
+            list.innerHTML = Object.keys(roles).map(id => `
+                <div onclick="selectRole('${id}')" class="group flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${selectedRole === id ? 'bg-red-50 border-red-100 text-red-900 font-bold shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}">
+                    <span class="text-xs uppercase tracking-tight">${roles[id].label}</span>
+                    <div class="text-[8px] px-2 py-0.5 bg-slate-100 rounded-full text-slate-400 font-black group-hover:bg-white">${id}</div>
+                </div>
+            `).join('');
+        };
+
+        window.selectRole = (id) => {
+            selectedRole = id;
+            const role = roles[id];
+            document.getElementById('current-role-title').innerText = role.label;
+            document.getElementById('current-role-desc').innerText = `ID técnico: ${id}`;
+            document.getElementById('role-edit-actions').classList.remove('hidden');
+            
+            const matrix = document.getElementById('permissions-matrix');
+            matrix.innerHTML = schema.map(section => `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] whitespace-nowrap">${section.label}</h3>
+                        <div class="h-px bg-slate-100 w-full"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${section.modules.map(mod => renderModulePermission(id, mod)).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            window.renderRoles();
+        };
+
+        function renderModulePermission(roleId, mod) {
+            const perms = roles[roleId].permissions[mod.id] || { view: false, edit: false };
+            return `
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+                    <div class="truncate">
+                        ${mod.group ? `<p class="text-[8px] font-black text-slate-300 uppercase mb-0.5">${mod.group}</p>` : ''}
+                        <p class="text-xs font-bold text-slate-700 truncate">${mod.label}</p>
+                    </div>
+                    <div class="flex gap-4 shrink-0">
+                        <label class="flex flex-col items-center gap-1 cursor-pointer">
+                            <span class="text-[8px] font-black text-slate-300 uppercase">Ver</span>
+                            <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" ${perms.view ? 'checked' : ''} onchange="updatePermission('${roleId}', '${mod.id}', 'view', this.checked)" class="permission-toggle absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-200 appearance-none cursor-pointer z-10"/>
+                                <div class="block overflow-hidden h-4 rounded-full bg-slate-200 cursor-pointer">
+                                    <svg class="w-2 h-2 text-white absolute top-1 left-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4"></path></svg>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="flex flex-col items-center gap-1 cursor-pointer">
+                            <span class="text-[8px] font-black text-slate-300 uppercase">Edit</span>
+                            <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" ${perms.edit ? 'checked' : ''} onchange="updatePermission('${roleId}', '${mod.id}', 'edit', this.checked)" class="permission-toggle absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-200 appearance-none cursor-pointer z-10"/>
+                                <div class="block overflow-hidden h-4 rounded-full bg-slate-200 cursor-pointer">
+                                    <svg class="w-2 h-2 text-white absolute top-1 left-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4"></path></svg>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.updatePermission = (roleId, modId, type, value) => {
+            if (!roles[roleId].permissions[modId]) roles[roleId].permissions[modId] = { view: false, edit: false };
+            roles[roleId].permissions[modId][type] = value;
+        };
+
+        window.deleteCurrentRole = () => {
+            if (selectedRole === 'administrador') return alert("No se puede eliminar el rol raíz.");
+            if (confirm(`¿Eliminar el nivel ${roles[selectedRole].label}?`)) {
+                delete roles[selectedRole];
+                selectedRole = null;
+                document.getElementById('permissions-matrix').innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-slate-300 opacity-50"><div class="text-5xl mb-4">🛂</div><p class="text-[10px] font-black uppercase">Selecciona un rol para editar sus permisos</p></div>';
+                document.getElementById('role-edit-actions').classList.add('hidden');
+                document.getElementById('current-role-title').innerText = "Seleccione un nivel";
+                window.renderRoles();
+            }
+        };
+
+        window.saveChanges = async () => {
+            if (!currentUser) return alert("Debe estar autenticado para guardar cambios.");
+            const btn = document.getElementById('btn-save');
+            btn.disabled = true;
+            btn.innerText = "Guardando...";
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ui_rules', 'global'), { 
+                    roles, 
+                    updatedAt: new Date().toISOString() 
+                }, { merge: true });
+                btn.innerText = "¡Guardado!";
+                setTimeout(() => { btn.disabled = false; btn.innerText = "Guardar Cambios"; }, 2000);
+            } catch (e) {
+                console.error("Fallo al guardar:", e);
+                btn.disabled = false; btn.innerText = "Guardar Cambios";
+            }
+        };
+
+        window.generateFirebaseRules = () => {
+            let rules = `service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función auxiliar para obtener el rol del usuario
+    function getUserRole() {
+      return get(/databases/$(database)/documents/artifacts/${appId}/public/data/users/$(request.auth.uid)).data.roleId;
+    }
+
+    // Reglas Dinámicas basadas en UI Config\n`;
+
+            Object.entries(roles).forEach(([roleId, config]) => {
+                rules += `\n    // Reglas para el nivel: ${config.label} (${roleId})\n`;
+                
+                Object.entries(config.permissions).forEach(([modId, p]) => {
+                    if (p.view || p.edit) {
+                        const allowRead = p.view ? 'read' : '';
+                        const allowWrite = p.edit ? 'write' : '';
+                        const methods = [allowRead, allowWrite].filter(m => m).join(', ');
+                        
+                        rules += `    match /artifacts/${appId}/public/data/${modId}/{doc} {
+      allow ${methods}: if getUserRole() == '${roleId}';
+    }\n`;
+                    }
+                });
+            });
+
+            rules += `\n    // Reglas de sistema (Siempre permitidas para Admin)
+    match /artifacts/${appId}/{allPaths=**} {
+      allow read, write: if getUserRole() == 'administrador';
+    }
+  }
+}`;
+            document.getElementById('rules-code-block').innerText = rules;
+            document.getElementById('modal-rules').classList.remove('hidden');
+        };
+
+        window.closeModal = () => document.getElementById('modal-rules').classList.add('hidden');
+        
+        window.copyRules = () => {
+            const text = document.getElementById('rules-code-block').innerText;
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            const btn = event.currentTarget;
+            btn.innerText = "¡Copiado!";
+            setTimeout(() => btn.innerText = "Copiar al portapapeles", 2000);
+        };
+
+        // Lógica de autenticación
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Fallo en la autenticación silenciosa:", error);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadData();
+            } else {
+                initAuth();
+            }
+        });
+
+        async function loadData() {
+            if (!db || !currentUser) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ui_rules', 'global');
+            onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    roles = snap.data().roles || {};
+                    window.renderRoles();
+                    if (selectedRole) window.selectRole(selectedRole);
+                } else {
+                    roles = {
+                        'administrador': { label: 'Administrador', permissions: {} },
+                        'operativo': { label: 'Operativo', permissions: {} }
+                    };
+                    window.saveChanges();
+                }
+            }, (err) => {
+                console.error("Error al leer reglas:", err);
+            });
+        }
+    </script>
+</body>
+</html>

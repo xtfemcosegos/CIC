@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC - Protección Patrimonial</title>
+    
+    <!-- Meta tags para PWA -->
+    <meta name="theme-color" content="#720000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CIC Patrimonial">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/192/720000/shield.png">
+
+    <style>
+        :root {
+            --corporate-red: #720000;
+            --dark-red: #4a0000;
+            --gold-accent: #c5a059;
+            --slate-gray: #2d3436;
+            --border-color: #e0e0e0;
+            --bg-body: #f8f9fa;
+            --sidebar-width: 280px;
+            --side-app-width: 380px;
+            --transition-speed: 0.4s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            color: var(--slate-gray);
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- SISTEMA DE PANTALLAS --- */
+        .screen {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+
+        #screen-loading.active,
+        #screen-login.active {
+            justify-content: center;
+            align-items: center;
+        }
+
+        #screen-app.active {
+            flex-direction: column;
+        }
+
+        /* --- DISEÑO LOGIN --- */
+        #screen-login {
+            background-color: #0f172a;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+        }
+
+        .login-card { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            width: 90%; 
+            max-width: 400px; 
+            padding: 40px; 
+            border-radius: 32px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+            border-top: 6px solid var(--corporate-red); 
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            outline: none;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        .login-input:focus { border-color: var(--corporate-red); }
+
+        .btn-login { 
+            background: linear-gradient(to right, var(--corporate-red), var(--dark-red)); 
+            color: white; 
+            width: 100%; 
+            padding: 16px; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .btn-login:hover:not(:disabled) { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 25px rgba(114,0,0,0.3); 
+        }
+
+        /* --- ENCABEZADO --- */
+        header {
+            background: linear-gradient(to bottom, var(--corporate-red), var(--dark-red));
+            color: white;
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border-bottom: 3px solid var(--gold-accent);
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo-container span {
+            font-weight: 900;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(to bottom, #ffffff, var(--gold-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .header-center h1 {
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: white;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* --- LANZADOR DE APPS (GRID BUTTON) --- */
+        .launcher-container {
+            position: relative;
+            height: 65px;
+            display: flex;
+            align-items: center;
+        }
+
+        .launcher-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .launcher-btn:hover {
+            background: white;
+            color: var(--corporate-red);
+            transform: scale(1.05);
+        }
+
+        .app-menu {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: white;
+            width: 300px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            border: 1px solid var(--border-color);
+            z-index: 1100;
+        }
+
+        /* Puente invisible para mantener el hover en el menú de apps */
+        .app-menu::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            right: 0;
+            height: 15px;
+            background: transparent;
+        }
+
+        .launcher-container:hover .app-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: var(--slate-gray);
+        }
+
+        .menu-item:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .menu-item .icon {
+            width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--corporate-red);
+            position: relative;
+        }
+
+        .menu-item:hover .icon {
+            background: var(--corporate-red);
+            color: white;
+        }
+
+        .menu-item span {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: #ff4757;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 71, 87, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+
+        /* --- AVATAR Y POPUP --- */
+        .avatar-container {
+            position: relative;
+            cursor: pointer;
+            height: 65px;
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.2);
+            overflow: hidden; 
+        }
+
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .login-popup {
+            position: absolute;
+            top: 60px; 
+            right: 0;
+            background: white;
+            color: var(--slate-gray);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            display: none;
+            min-width: 240px;
+            z-index: 1100;
+            border-top: 5px solid var(--corporate-red);
+        }
+
+        /* Puente invisible para mantener el hover en el popup del avatar */
+        .login-popup::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            right: 0;
+            height: 15px;
+            background: transparent;
+        }
+
+        .avatar-container:hover .login-popup { display: block; }
+
+        .popup-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .popup-header:hover h4 { color: var(--corporate-red); }
+
+        .popup-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-popup {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-profile { background: #f8f9fa; color: var(--slate-gray); }
+        .btn-profile:hover { background: #eee; color: var(--corporate-red); }
+        .btn-logout { background: var(--corporate-red); color: white; }
+        .btn-logout:hover { background: var(--dark-red); }
+
+        /* --- LAYOUT --- */
+        .main-wrapper {
+            display: flex;
+            flex: 1;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background: var(--bg-body);
+        }
+
+        aside#sidebar-left {
+            width: var(--sidebar-width);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            z-index: 50;
+        }
+
+        aside#sidebar-right {
+            width: 0;
+            background: white;
+            transition: width var(--transition-speed) cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex;
+            flex-direction: column;
+            border-left: 0px solid var(--border-color);
+            z-index: 50;
+            overflow: hidden;
+        }
+        
+        aside#sidebar-right.active {
+            width: var(--side-app-width);
+            border-left: 1px solid var(--border-color);
+        }
+
+        .panel-center {
+            flex: 1;
+            background: #f1f1ef;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .canvas-area {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        @media (max-width: 1024px) { 
+            .header-center { display: none; } 
+            aside#sidebar-right.active { 
+                width: 100vw; 
+                position: absolute; 
+                right: 0; 
+                top: 0; 
+                bottom: 0; 
+                z-index: 1000; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE CARGA -->
+    <div id="screen-loading" class="screen active">
+        <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #720000; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    </div>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="screen-login" class="screen">
+        <div class="login-card">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🛡️</div>
+                <h1 style="font-size: 1.5rem; font-weight: 900; margin: 0; color: #333;">SISTEMA <span style="color: #720000;">CIC</span></h1>
+                <p style="font-size: 0.6rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 2px;">Protección Patrimonial</p>
+            </div>
+            <form id="login-form">
+                <input type="email" id="login-email" class="login-input" placeholder="Correo Electrónico" required>
+                <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" required>
+                <div id="login-error" class="error-msg"></div>
+                <button type="submit" id="login-submit" class="btn-login">Acceder al Centro</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE APLICACIÓN -->
+    <div id="screen-app" class="screen">
+        <header>
+            <div class="logo-container" onclick="loadInMain('Home')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+                <span style="font-weight:900; font-size:1.8rem; letter-spacing:2px; color:white;">CIC</span>
+            </div>
+
+            <div class="header-center">
+                <h1>Protección Patrimonial</h1>
+            </div>
+
+            <div class="header-right">
+                <!-- LANZADOR DE APPS (BENTO) -->
+                <div class="launcher-container">
+                    <button class="launcher-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    </button>
+                    
+                    <div class="app-menu">
+                        <div class="menu-item" onclick="loadInSideApp('Correo')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <span id="mail-dot" class="badge"></span>
+                            </div>
+                            <span>Correo</span>
+                        </div>
+                        <div id="menu-users" class="menu-item hidden" onclick="loadInSideApp('Perfiles')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            </div>
+                            <span>Perfiles</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Areas')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            </div>
+                            <span>Áreas</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Bases')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                            </div>
+                            <span>Bases</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Alertas')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                            </div>
+                            <span>Alertas</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Ayuda')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </div>
+                            <span>Ayuda</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÓN CONFIGURACIÓN -->
+                <button class="launcher-btn" onclick="loadInMain('Configuracion')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+
+                <!-- AVATAR DINÁMICO -->
+                <div class="avatar-container">
+                    <div class="avatar">
+                        <svg id="header-avatar-svg" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <img id="header-avatar-img" src="" class="hidden" alt="Usuario">
+                    </div>
+                    <!-- Popup con puentes vinculados -->
+                    <div class="login-popup">
+                        <div class="popup-header" onclick="loadInSideApp('Perfiles')">
+                            <h4 style="font-size: 0.85rem; letter-spacing: 0.5px; color: #333; margin-bottom: 2px; font-weight: 800;" id="user-display-name">USUARIO</h4>
+                            <p style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;" id="user-display-role">Cargando...</p>
+                        </div>
+                        <div class="popup-actions">
+                            <button class="btn-popup btn-profile" onclick="loadInSideApp('Perfiles')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                Mi Perfil
+                            </button>
+                            <button class="btn-popup btn-logout" onclick="handleLogout()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside id="sidebar-left">
+                <iframe id="nav-frame" src="Apps/Navegacion.html"></iframe>
+            </aside>
+            
+            <section class="panel-center">
+                <div class="canvas-area">
+                    <iframe id="main-frame" src="Apps/Home.html"></iframe>
+                </div>
+            </section>
+            
+            <!-- PANEL DERECHO PARA APPS -->
+            <aside id="sidebar-right">
+                <div style="height: 65px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0;">
+                    <h3 id="side-app-title" style="font-size: 0.7rem; font-weight: 900; color: var(--corporate-red); text-transform: uppercase; letter-spacing: 1px;">Módulo</h3>
+                    <button onclick="closeSideApp()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;">&times;</button>
+                </div>
+                <iframe id="side-app-frame" src="about:blank" style="flex: 1;"></iframe>
+            </aside>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp", 
+            storageBucket: "cic-pp.firebasestorage.app", 
+            messagingSenderId: "336771827172", 
+            appId: "1:336771827172:web:ff43891fd9b0fcaca073f1" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "cic-pp";
+
+        // Cambiar pantalla de forma segura manteniendo el layout flex
+        const showScreen = (name) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const screen = document.getElementById('screen-' + name);
+            if (screen) screen.classList.add('active');
+        };
+
+        // --- LÓGICA DE LOGIN ---
+        const loginForm = document.getElementById('login-form');
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const err = document.getElementById('login-error');
+            const btn = document.getElementById('login-submit');
+
+            btn.disabled = true; btn.innerText = 'Verificando...'; err.style.display = 'none';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                err.innerText = "Correo o contraseña oficiales incorrectos.";
+                err.style.display = 'block'; 
+                btn.disabled = false; btn.innerText = 'Acceder al Centro';
+            }
+        });
+
+        window.handleLogout = () => { signOut(auth); showScreen('loading'); };
+
+        // --- OBSERVADOR DE ESTADO ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const publicRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
+                
+                onSnapshot(publicRef, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        document.getElementById('user-display-name').innerText = data.name || "Usuario";
+                        document.getElementById('user-display-role').innerText = data.roleLabel || "OPERATIVO";
+                        
+                        // Control de visibilidad de Perfiles en el menú
+                        if(data.roleId === 'administrador') {
+                            document.getElementById('menu-users').classList.remove('hidden');
+                        } else {
+                            document.getElementById('menu-users').classList.add('hidden');
+                        }
+
+                        // Enviar rol al frame de navegación
+                        const navFrame = document.getElementById('nav-frame');
+                        if(navFrame.contentWindow) {
+                            navFrame.contentWindow.postMessage({ type: 'SET_ROLE', role: data.roleId }, '*');
+                        }
+
+                        const avatarImg = document.getElementById('header-avatar-img');
+                        const avatarSvg = document.getElementById('header-avatar-svg');
+                        if (data.photo) { 
+                            avatarImg.src = data.photo; 
+                            avatarImg.classList.remove('hidden'); 
+                            avatarSvg.classList.add('hidden'); 
+                        } else { 
+                            avatarImg.classList.add('hidden'); 
+                            avatarSvg.classList.remove('hidden'); 
+                        }
+                        showScreen('app');
+                    } else {
+                        document.getElementById('user-display-name').innerText = user.email;
+                        document.getElementById('user-display-role').innerText = "SIN PERFIL FIRESTORE";
+                        showScreen('app');
+                    }
+                }, (error) => {
+                    showScreen('login');
+                });
+            } else { 
+                showScreen('login'); 
+            }
+        });
+
+        // Carga en panel central
+        window.loadInMain = (n) => {
+            document.getElementById('main-frame').src = `Apps/${n}.html`;
+            closeSideApp();
+        };
+
+        // Carga en panel derecho (Apps)
+        window.loadInSideApp = (n) => {
+            const side = document.getElementById('sidebar-right');
+            const frame = document.getElementById('side-app-frame');
+            const title = document.getElementById('side-app-title');
+            
+            if(n === 'Correo') {
+                const dot = document.getElementById('mail-dot');
+                if(dot) dot.classList.add('hidden');
+            }
+
+            title.innerText = n.replace(/([A-Z])/g, ' $1').trim();
+            frame.src = `Apps/${n}.html`;
+            side.classList.add('active');
+        };
+
+        window.closeSideApp = () => {
+            document.getElementById('sidebar-right').classList.remove('active');
+            setTimeout(() => { document.getElementById('side-app-frame').src = "about:blank"; }, 400);
+        };
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'LOAD_NAV') {
+                document.getElementById('main-frame').src = event.data.path;
+            }
+        });
+    </script>
+</body>
+</html>

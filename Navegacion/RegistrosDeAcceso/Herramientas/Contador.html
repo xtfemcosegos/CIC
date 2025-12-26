@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .counter-btn:active { transform: scale(0.95); }
+        .pulse-red { animation: pulse 0.5s ease-in-out; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); color: #720000; }
+            100% { transform: scale(1); }
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="w-12 h-12 border-4 border-slate-200 border-t-red-800 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Casetas...</p>
+    </div>
+
+    <div id="main-content" class="p-4 md:p-8 max-w-2xl mx-auto">
+        
+        <header class="mb-8">
+            <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Herramienta: Contador</h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Selección de acceso dinámico</p>
+        </header>
+
+        <!-- SELECTOR DE CASETA DESDE BASE DE DATOS -->
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-8">
+            <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">Punto de Acceso Detectado</label>
+            <select id="booth-selector" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-800/20 appearance-none cursor-pointer">
+                <option value="">-- Seleccionar Caseta --</option>
+            </select>
+        </div>
+
+        <!-- PANELES DE CONTEO -->
+        <div id="counters-container" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 gap-6">
+                <!-- PERSONAS -->
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center">
+                    <span class="text-4xl mb-2">👥</span>
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingreso Personas</h3>
+                    <div id="count-people" class="text-8xl font-black text-slate-900 my-4 tabular-nums">0</div>
+                    
+                    <div class="flex gap-4 w-full">
+                        <button onclick="updateCount('people', -1)" class="counter-btn flex-1 p-6 bg-slate-100 text-slate-400 rounded-2xl font-black text-2xl hover:bg-slate-200 transition-all">-</button>
+                        <button onclick="updateCount('people', 1)" class="counter-btn flex-[3] p-6 bg-slate-900 text-white rounded-2xl font-black text-2xl hover:bg-slate-800 transition-all shadow-lg">+</button>
+                    </div>
+                </div>
+
+                <!-- VEHÍCULOS -->
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center">
+                    <span class="text-4xl mb-2">🚗</span>
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingreso Vehículos</h3>
+                    <div id="count-vehicles" class="text-8xl font-black text-slate-900 my-4 tabular-nums">0</div>
+                    
+                    <div class="flex gap-4 w-full">
+                        <button onclick="updateCount('vehicles', -1)" class="counter-btn flex-1 p-6 bg-slate-100 text-slate-400 rounded-2xl font-black text-2xl hover:bg-slate-200 transition-all">-</button>
+                        <button onclick="updateCount('vehicles', 1)" class="counter-btn flex-[3] p-6 bg-red-800 text-white rounded-2xl font-black text-2xl hover:bg-red-700 transition-all shadow-lg">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-4">
+                <button onclick="resetCurrentBooth()" class="px-6 py-2 text-[9px] font-black text-slate-300 uppercase hover:text-red-700 transition-colors">
+                    Reiniciar conteo de esta caseta
+                </button>
+            </div>
+        </div>
+
+        <div id="placeholder" class="py-20 text-center flex flex-col items-center opacity-30">
+            <div class="text-6xl mb-4">🏢</div>
+            <p class="text-xs font-black uppercase tracking-widest">Seleccione una caseta para operar</p>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp"
+        };
+        const appId = "cic-pp";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentBoothId = "";
+        let unsubCounts = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) syncCasetas();
+            else signInAnonymously(auth);
+        });
+
+        // 1. Obtener casetas desde el módulo de Áreas
+        function syncCasetas() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'areas'), (snap) => {
+                const select = document.getElementById('booth-selector');
+                const casetas = snap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(a => a.type === 'caseta');
+
+                select.innerHTML = '<option value="">-- Seleccionar Caseta --</option>' + 
+                    casetas.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+        }
+
+        // 2. Escuchar cambios de selección
+        document.getElementById('booth-selector').addEventListener('change', (e) => {
+            currentBoothId = e.target.value;
+            if (currentBoothId) {
+                document.getElementById('counters-container').classList.remove('hidden');
+                document.getElementById('placeholder').classList.add('hidden');
+                syncCounts(currentBoothId);
+            } else {
+                document.getElementById('counters-container').classList.add('hidden');
+                document.getElementById('placeholder').classList.remove('hidden');
+                if (unsubCounts) unsubCounts();
+            }
+        });
+
+        // 3. Sincronizar conteo en tiempo real
+        function syncCounts(id) {
+            if (unsubCounts) unsubCounts();
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'h_contador', id);
+            
+            unsubCounts = onSnapshot(ref, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    animateValue('count-people', data.people || 0);
+                    animateValue('count-vehicles', data.vehicles || 0);
+                } else {
+                    setDoc(ref, { people: 0, vehicles: 0, lastUpdate: new Date().toISOString() });
+                }
+            });
+        }
+
+        function animateValue(id, val) {
+            const el = document.getElementById(id);
+            if (el.innerText != val) {
+                el.innerText = val;
+                el.classList.remove('pulse-red');
+                void el.offsetWidth; // Trigger reflow
+                el.classList.add('pulse-red');
+            }
+        }
+
+        window.updateCount = async (type, val) => {
+            if (!currentBoothId) return;
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'h_contador', currentBoothId);
+            try {
+                await updateDoc(ref, {
+                    [type]: increment(val),
+                    lastUpdate: new Date().toISOString()
+                });
+            } catch (e) { console.error(e); }
+        };
+
+        window.resetCurrentBooth = async () => {
+            if (!confirm("¿Reiniciar el conteo de esta caseta?")) return;
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'h_contador', currentBoothId);
+            await updateDoc(ref, { people: 0, vehicles: 0, lastUpdate: new Date().toISOString() });
+        };
+    </script>
+</body>
+</html>
