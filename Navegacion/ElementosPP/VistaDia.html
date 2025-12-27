@@ -8,359 +8,190 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        :root { --corporate-red: #720000; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; }
         
-        .slot-card {
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .caseta-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .caseta-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
 
-        .drop-zone {
-            min-height: 90px;
-            transition: all 0.2s ease;
+        .element-photo {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
-
-        .drop-zone.drag-over {
-            background: #fef2f2;
-            border-color: #720000;
-            transform: scale(1.02);
-            box-shadow: 0 10px 15px -3px rgba(114, 0, 0, 0.1);
-        }
-
-        .assigned-badge {
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .element-photo:hover {
+            transform: scale(1.1);
+            border-color: var(--corporate-red);
+            z-index: 10;
         }
 
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .shift-column {
+            background: rgba(248, 250, 252, 0.5);
+            border-radius: 1rem;
+            min-height: 60px;
         }
 
-        .shift-pill {
-            transition: all 0.3s ease;
-        }
-        .shift-pill.active {
-            background: #0f172a;
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        #save-indicator {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            pointer-events: none;
-            z-index: 100;
-        }
+        .loader { border-top-color: var(--corporate-red); animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 p-4 md:p-8 flex flex-col gap-6">
+<body class="p-4 md:p-8 min-h-screen">
 
-    <!-- INDICADOR DE GUARDADO -->
-    <div id="save-indicator" class="opacity-0 transition-opacity duration-300 flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl">
-        <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
-        Sincronizando...
+    <!-- OVERLAY DE CARGA -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-10 h-10 border-4 border-slate-100 loader rounded-full mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Tablero...</p>
     </div>
 
-    <!-- CABECERA Y HERRAMIENTAS -->
-    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100">
-        <div class="flex items-center gap-6">
-            <div class="flex flex-col">
-                <h2 class="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">Tablero Diario</h2>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sincronización en vivo</p>
+    <div class="max-w-7xl mx-auto">
+        <!-- CABECERA -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Asistencia Diaria</h1>
+                <p id="current-date-label" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Cargando fecha...</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="bg-white px-4 py-2 rounded-2xl border border-slate-200 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-[9px] font-black uppercase text-slate-500">Sincronizado</span>
                 </div>
             </div>
+        </header>
 
-            <div class="h-10 w-[1px] bg-slate-100 hidden md:block"></div>
-
-            <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-                <button onclick="changeDate(-1)" class="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-slate-900">
-                    <i class="fa-solid fa-chevron-left text-xs"></i>
-                </button>
-                <div class="flex flex-col items-center px-2">
-                    <input type="date" id="date-selector" class="bg-transparent border-none text-xs font-black uppercase outline-none cursor-pointer text-center">
-                </div>
-                <button onclick="changeDate(1)" class="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-slate-900">
-                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                </button>
-            </div>
-            <button onclick="setToday()" class="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-800 transition-colors">Hoy</button>
+        <!-- GRID DE CASETAS -->
+        <div id="casetas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Las casetas se inyectan aquí -->
         </div>
 
-        <div class="flex flex-wrap items-center gap-4">
-            <!-- RESUMEN -->
-            <div class="flex gap-4 px-6 py-2 bg-slate-50 rounded-2xl border border-slate-100">
-                <div class="text-center">
-                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Total</p>
-                    <p id="stat-total" class="text-xs font-black text-slate-900">0</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Asignados</p>
-                    <p id="stat-assigned" class="text-xs font-black text-green-600">0</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Vacantes</p>
-                    <p id="stat-pending" class="text-xs font-black text-red-800">0</p>
-                </div>
-            </div>
-
-            <div class="h-6 w-[1px] bg-slate-100"></div>
-
-            <!-- FILTRO DE TURNOS -->
-            <div class="flex p-1 bg-slate-100 rounded-xl">
-                <button onclick="setViewShift('morning')" id="btn-morning" class="shift-pill px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg active">M</button>
-                <button onclick="setViewShift('afternoon')" id="btn-afternoon" class="shift-pill px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg">T</button>
-                <button onclick="setViewShift('night')" id="btn-night" class="shift-pill px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg">N</button>
-                <button onclick="setViewShift('all')" id="btn-all" class="shift-pill px-4 py-2 rounded-lg" title="Vista Comparativa">
-                    <i class="fa-solid fa-grip"></i>
-                </button>
-            </div>
+        <div id="empty-state" class="hidden py-40 text-center opacity-20">
+            <i class="fa-solid fa-users-slash text-6xl mb-4"></i>
+            <p class="text-xl font-black uppercase">No hay registros hoy</p>
         </div>
-    </header>
-
-    <!-- ÁREA PRINCIPAL -->
-    <main id="main-board" class="flex-1 overflow-y-auto custom-scrollbar pb-24">
-        <!-- Render dinámico -->
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
             authDomain: "cic-pp.firebaseapp.com", 
-            projectId: "cic-pp"
+            projectId: "cic-pp",
+            appId: "1:336771827172:web:ff43891fd9b0fcaca073f1"
         };
         const appId = "cic-pp";
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let records = [];
         let areas = [];
-        let locations = [];
-        let attendance = {};
-        let currentSelectedDate = new Date().toISOString().split('T')[0];
-        let currentViewShift = 'morning';
+
+        // Fecha de hoy en formato local
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('current-date-label').innerText = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                initDateSelector();
-                initSync();
-            } else { signInAnonymously(auth); }
+            if (user) initDashboard();
+            else signInAnonymously(auth);
         });
 
-        function initDateSelector() {
-            const selector = document.getElementById('date-selector');
-            selector.value = currentSelectedDate;
-            selector.addEventListener('change', (e) => {
-                currentSelectedDate = e.target.value;
-                renderBoard();
-            });
-        }
-
-        window.setToday = () => {
-            currentSelectedDate = new Date().toISOString().split('T')[0];
-            document.getElementById('date-selector').value = currentSelectedDate;
-            renderBoard();
-        };
-
-        window.changeDate = (days) => {
-            const dateObj = new Date(currentSelectedDate + "T12:00:00");
-            dateObj.setDate(dateObj.getDate() + days);
-            currentSelectedDate = dateObj.toISOString().split('T')[0];
-            document.getElementById('date-selector').value = currentSelectedDate;
-            renderBoard();
-        };
-
-        window.setViewShift = (shift) => {
-            currentViewShift = shift;
-            document.querySelectorAll('.shift-pill').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${shift}`).classList.add('active');
-            renderBoard();
-        };
-
-        function showIndicator(show) {
-            document.getElementById('save-indicator').style.opacity = show ? "1" : "0";
-        }
-
-        async function initSync() {
-            // Sincronizar estructura
+        function initDashboard() {
+            // 1. Obtener Casetas
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'areas'), (snap) => {
-                areas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'job_positions'), (pSnap) => {
-                    const puestos = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    locations = [...areas.filter(a => a.type === 'caseta'), ...puestos]
-                                .sort((a, b) => (a.index || 0) - (b.index || 0));
-                    renderBoard();
-                });
+                areas = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.type === 'caseta');
+                renderBoard();
             });
 
-            // Sincronizar asistencias del día seleccionado
-            // RULE 2: Evitamos queries complejas, traemos todo y filtramos localmente
+            // 2. Obtener Asistencia de Hoy
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'attendance_day'), (snap) => {
-                attendance = {};
-                snap.docs.forEach(d => {
-                    const data = d.data();
-                    if (data.date === currentSelectedDate) {
-                        const key = `${data.date}_${data.shift}_${data.locationId}`;
-                        if (!attendance[key]) attendance[key] = [];
-                        attendance[key].push({ docId: d.id, ...data });
-                    }
-                });
+                records = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.date === today);
                 renderBoard();
+                
+                document.getElementById('loading-overlay').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
             });
         }
 
-        function createSlotHTML(loc, shift) {
-            const list = attendance[`${currentSelectedDate}_${shift}_${loc.id}`] || [];
-            const isOccupied = list.length > 0;
+        function renderBoard() {
+            const grid = document.getElementById('casetas-grid');
+            const empty = document.getElementById('empty-state');
+            
+            if (areas.length === 0) return;
+            grid.innerHTML = '';
+            
+            const sortedAreas = [...areas].sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedAreas.forEach(caseta => {
+                const casetaRecords = records.filter(r => r.locationId === caseta.id);
+                
+                const card = document.createElement('div');
+                card.className = "caseta-card bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col";
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-shield-halved text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black uppercase text-slate-800 leading-none">${caseta.name}</h3>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Punto de Control</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">${casetaRecords.length} Reg.</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        ${renderShift('morning', 'M', casetaRecords)}
+                        ${renderShift('afternoon', 'V', casetaRecords)}
+                        ${renderShift('night', 'N', casetaRecords)}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            empty.classList.toggle('hidden', areas.length > 0);
+        }
+
+        function renderShift(shiftKey, label, records) {
+            const shiftRecords = records.filter(r => r.shift === shiftKey);
             
             return `
-                <div class="slot-card flex flex-col w-[150px] bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                    <div class="bg-slate-900 py-2 px-3 flex items-center justify-between">
-                        <span class="text-[9px] font-black text-white/50 uppercase tracking-tighter truncate">${loc.name}</span>
-                        ${isOccupied ? '<i class="fa-solid fa-circle-check text-[10px] text-green-400"></i>' : '<i class="fa-solid fa-circle text-[10px] text-slate-700"></i>'}
-                    </div>
-                    
-                    <div class="drop-zone flex-1 p-3 flex flex-wrap items-center justify-center gap-2 relative" 
-                         ondragover="event.preventDefault(); this.classList.add('drag-over')" 
-                         ondragleave="this.classList.remove('drag-over')"
-                         ondrop="handleDrop(event, '${shift}', '${loc.id}')">
-                        
-                        ${list.map(item => `
-                            <div class="assigned-badge relative group/item w-12 h-12">
-                                <img src="${item.userPhoto}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-sm">
-                                <button onclick="removeAssignment('${item.docId}')" class="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover/item:opacity-100 transition-opacity border-2 border-white shadow-md">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                                <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-800 text-white text-[7px] font-black rounded opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                                    ${item.userName}
+                <div class="shift-column p-2 flex flex-col items-center gap-2">
+                    <span class="text-[7px] font-black text-slate-300 uppercase mb-1">${label}</span>
+                    <div class="flex flex-wrap justify-center gap-1.5">
+                        ${shiftRecords.length > 0 ? 
+                            shiftRecords.map(r => `
+                                <div class="relative group">
+                                    <img src="${r.userPhoto}" 
+                                         onclick="openDetail('${r.id}')"
+                                         title="${r.userName}"
+                                         class="element-photo w-8 h-8 rounded-full object-cover shadow-sm bg-slate-200">
+                                    <div class="absolute -top-1 -right-1 w-2.5 h-2.5 ${r.type === 'clock_in_ai' ? 'bg-green-500' : 'bg-amber-500'} border-2 border-white rounded-full"></div>
                                 </div>
-                            </div>
-                        `).join('')}
-
-                        ${!isOccupied ? `
-                            <div class="flex flex-col items-center opacity-10">
-                                <i class="fa-solid fa-user-plus text-xl mb-1"></i>
-                                <span class="text-[7px] font-black uppercase">Vacante</span>
-                            </div>
-                        ` : ''}
+                            `).join('') 
+                            : '<div class="w-8 h-8 rounded-full border border-dashed border-slate-200 flex items-center justify-center text-[8px] text-slate-200"><i class="fa-solid fa-user-plus"></i></div>'
+                        }
                     </div>
                 </div>
             `;
         }
 
-        function renderBoard() {
-            const board = document.getElementById('main-board');
-            if (!board) return;
-
-            let assignedCount = 0;
-            let totalSlots = locations.length;
-
-            if (currentViewShift === 'all') {
-                totalSlots *= 3;
-                board.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3 px-4 py-2 bg-amber-50 rounded-2xl border border-amber-100">
-                                <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
-                                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-900">Matutino</h3>
-                            </div>
-                            <div class="flex flex-wrap gap-4">
-                                ${locations.map(loc => {
-                                    if (attendance[`${currentSelectedDate}_morning_${loc.id}`]) assignedCount++;
-                                    return createSlotHTML(loc, 'morning');
-                                }).join('')}
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100">
-                                <i class="fa-solid fa-cloud-sun text-blue-500 text-xs"></i>
-                                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-900">Vespertino</h3>
-                            </div>
-                            <div class="flex flex-wrap gap-4">
-                                ${locations.map(loc => {
-                                    if (attendance[`${currentSelectedDate}_afternoon_${loc.id}`]) assignedCount++;
-                                    return createSlotHTML(loc, 'afternoon');
-                                }).join('')}
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3 px-4 py-2 bg-slate-900 rounded-2xl">
-                                <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
-                                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-white">Nocturno</h3>
-                            </div>
-                            <div class="flex flex-wrap gap-4">
-                                ${locations.map(loc => {
-                                    if (attendance[`${currentSelectedDate}_night_${loc.id}`]) assignedCount++;
-                                    return createSlotHTML(loc, 'night');
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                board.innerHTML = `
-                    <div class="flex flex-wrap gap-5 justify-center md:justify-start">
-                        ${locations.map(loc => {
-                            if (attendance[`${currentSelectedDate}_${currentViewShift}_${loc.id}`]) assignedCount++;
-                            return createSlotHTML(loc, currentViewShift);
-                        }).join('')}
-                    </div>
-                `;
-            }
-
-            // Actualizar estadísticas
-            document.getElementById('stat-total').innerText = totalSlots;
-            document.getElementById('stat-assigned').innerText = assignedCount;
-            document.getElementById('stat-pending').innerText = totalSlots - assignedCount;
-        }
-
-        window.handleDrop = async (e, shift, locationId) => {
-            e.preventDefault();
-            e.currentTarget.classList.remove('drag-over');
-            
-            const rawData = e.dataTransfer.getData('user_profile') || e.dataTransfer.getData('text/plain');
-            if (!rawData) return;
-
-            try {
-                const userData = JSON.parse(rawData);
-                showIndicator(true);
-                
-                // Generar un ID determinista para evitar duplicados del mismo usuario en el mismo slot/turno/día
-                const docId = `${currentSelectedDate}_${shift}_${locationId}_${userData.id}`;
-                
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attendance_day', docId), {
-                    userId: userData.id,
-                    userName: userData.name,
-                    userPhoto: userData.photo,
-                    locationId: locationId,
-                    shift: shift,
-                    date: currentSelectedDate,
-                    assignedAt: new Date().toISOString()
-                });
-                
-                setTimeout(() => showIndicator(false), 500);
-            } catch (err) { 
-                console.error("Error al asignar:", err); 
-                showIndicator(false);
-            }
-        };
-
-        window.removeAssignment = async (docId) => {
-            try {
-                showIndicator(true);
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attendance_day', docId));
-                setTimeout(() => showIndicator(false), 500);
-            } catch (err) { 
-                console.error("Error al eliminar:", err); 
-                showIndicator(false);
-            }
+        window.openDetail = (alertId) => {
+            // Enviamos mensaje al index para cargar Alertas con el detalle
+            window.parent.postMessage({
+                type: 'LOAD_SIDE_APP',
+                app: 'Alertas',
+                params: `?detailId=${alertId}`
+            }, '*');
         };
     </script>
 </body>

@@ -1,61 +1,273 @@
-<!-- Usar este mismo archivo para Perfiles.html, Areas.html, Bases.html, Alertas.html, Ayuda.html y Configuracion.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @keyframes construction {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-10px) rotate(5deg); }
-            75% { transform: translateY(-10px) rotate(-5deg); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        :root { --corporate-red: #720000; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .alert-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.4s ease-out;
+            cursor: pointer;
         }
-        .anim-worker {
-            animation: construction 2s ease-in-out infinite;
+        .alert-card:hover { transform: scale(1.02); border-color: var(--corporate-red); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .progress-bar {
+
+        .pulse-red { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(114, 0, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(114, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(114, 0, 0, 0); }
+        }
+
+        .loader { border-top-color: var(--corporate-red); animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Estilos del Modal */
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.9) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        #map-container {
             width: 100%;
-            height: 6px;
-            background: #f1f5f9;
-            border-radius: 10px;
+            height: 200px;
+            background: #e2e8f0;
+            border-radius: 1rem;
             overflow: hidden;
-            position: relative;
-        }
-        .progress-fill {
-            position: absolute;
-            height: 100%;
-            width: 30%;
-            background: #7f1d1d;
-            border-radius: 10px;
-            animation: move 3s linear infinite;
-        }
-        @keyframes move {
-            0% { left: -30%; }
-            100% { left: 110%; }
         }
     </style>
 </head>
-<body class="bg-slate-50 h-screen flex flex-col items-center justify-center p-10 text-center overflow-hidden">
-    
-    <div class="anim-worker text-7xl mb-6">
-        👷‍♂️
+<body class="min-h-screen flex flex-col overflow-hidden">
+
+    <!-- OVERLAY CARGA -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-10 h-10 border-4 border-slate-100 loader rounded-full mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Alertas...</p>
     </div>
 
-    <h2 class="text-xl font-black text-red-900 uppercase tracking-tighter mb-2">
-        Módulo en proceso de creación
-    </h2>
-    
-    <p class="text-slate-500 text-sm max-w-xs mb-8 italic">
-        "Estamos martillando bits y pegando píxeles. Vuelve pronto o trae café."
-    </p>
+    <!-- CABECERA -->
+    <header class="bg-white border-b border-slate-100 p-6 shrink-0">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-xl font-black text-slate-900 uppercase tracking-tighter">Panel de Alertas</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Haga clic en una alerta para ver detalles</p>
+            </div>
+            <div class="bg-red-50 text-red-800 px-3 py-1.5 rounded-full flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-600 rounded-full pulse-red"></span>
+                <span class="text-[9px] font-black uppercase tracking-widest">En Vivo</span>
+            </div>
+        </div>
 
-    <div class="progress-bar max-w-[200px]">
-        <div class="progress-fill"></div>
+        <div class="relative">
+            <input type="text" id="alert-search" oninput="filterAlerts(this.value)" placeholder="Buscar por elemento o caseta..." 
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-[11px] font-bold outline-none focus:ring-4 focus:ring-red-800/5 transition-all">
+            <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- LISTA DE ALERTAS -->
+    <main id="alerts-container" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50/50">
+        <div class="py-20 text-center opacity-30">
+            <i class="fa-solid fa-bell-slash text-4xl mb-4"></i>
+            <p class="text-[10px] font-black uppercase tracking-widest">Esperando actividad...</p>
+        </div>
+    </main>
+
+    <!-- FOOTER ESTADÍSTICO -->
+    <footer class="bg-white border-t border-slate-100 p-4 shrink-0 flex items-center justify-around">
+        <div class="text-center">
+            <p id="count-total" class="text-lg font-black text-slate-900 leading-none">0</p>
+            <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Hoy</p>
+        </div>
+        <div class="w-px h-8 bg-slate-100"></div>
+        <div class="text-center">
+            <p id="count-ai" class="text-lg font-black text-green-600 leading-none">0</p>
+            <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">Vía IA</p>
+        </div>
+    </footer>
+
+    <!-- MODAL DE DETALLE -->
+    <div id="alert-modal" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl modal-content">
+            <div class="relative h-64">
+                <img id="modal-photo" src="" class="w-full h-full object-cover">
+                <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                    <h2 id="modal-name" class="text-white text-xl font-black uppercase tracking-tighter">Nombre</h2>
+                    <p id="modal-time" class="text-white/70 text-[10px] font-bold uppercase tracking-widest">Hora</p>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <p class="text-[7px] font-black text-slate-400 uppercase">Ubicación</p>
+                        <p id="modal-location" class="text-[10px] font-bold text-slate-700 uppercase truncate">Caseta</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <p class="text-[7px] font-black text-slate-400 uppercase">Validación</p>
+                        <p id="modal-method" class="text-[10px] font-bold text-slate-700 uppercase">Método</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubicación de Registro</p>
+                    <div id="map-container">
+                        <iframe id="modal-map" width="100%" height="100%" frameborder="0" style="border:0"></iframe>
+                    </div>
+                </div>
+
+                <button onclick="closeModal()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">
+                    Cerrar Detalle
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="mt-12 opacity-20">
-        <img src="https://img.icons8.com/flat-round/96/shield.png" class="w-12 h-12">
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp",
+            appId: "1:336771827172:web:ff43891fd9b0fcaca073f1"
+        };
+        const appId = "cic-pp";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let allAlerts = [];
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) startAlertsSync();
+            else signInAnonymously(auth);
+        });
+
+        function startAlertsSync() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'attendance_day'), (snap) => {
+                allAlerts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allAlerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                renderAlerts(allAlerts);
+                updateStats(allAlerts);
+                document.getElementById('loading-overlay').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
+
+                // NUEVO: Verificar si hay un ID pendiente para mostrar detalle
+                const urlParams = new URLSearchParams(window.location.search);
+                const focusId = urlParams.get('detailId');
+                if(focusId) {
+                    // Esperar un momento para asegurar que el render haya terminado
+                    setTimeout(() => showDetail(focusId), 500);
+                }
+            });
+        }
+
+        function renderAlerts(list) {
+            const container = document.getElementById('alerts-container');
+            if (list.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center opacity-30"><p class="text-[10px] font-black uppercase tracking-widest">Sin actividad hoy</p></div>`;
+                return;
+            }
+
+            const now = new Date();
+            container.innerHTML = list.map(alert => {
+                const alertTime = new Date(alert.timestamp);
+                const isNew = (now - alertTime) / 1000 / 60 < 5;
+                const typeColor = alert.type === 'clock_in_ai' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+
+                return `
+                    <div id="alert-${alert.id}" onclick="showDetail('${alert.id}')" class="alert-card bg-white rounded-3xl p-4 border border-slate-100 shadow-sm ${isNew ? 'pulse-red border-red-100' : ''}">
+                        <div class="flex items-start gap-4">
+                            <img src="${alert.userPhoto || 'https://via.placeholder.com/100'}" class="w-12 h-12 rounded-2xl object-cover bg-slate-100">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="text-[11px] font-black text-slate-800 uppercase truncate">${alert.userName}</h4>
+                                    <span class="text-[8px] font-bold text-slate-400 shrink-0">${alertTime.toLocaleTimeString('es-MX', {hour12:false, hour:'2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-tighter mb-2"><i class="fa-solid fa-location-dot text-red-800 mr-1"></i>${alert.locationName}</p>
+                                <span class="px-2 py-0.5 ${typeColor} rounded-full text-[7px] font-black uppercase">${alert.type === 'clock_in_ai' ? 'IA Verificada' : 'Captura Manual'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.showDetail = (id) => {
+            const alert = allAlerts.find(a => a.id === id);
+            if (!alert) return;
+
+            // Scroll hacia la tarjeta si no está visible
+            const card = document.getElementById(`alert-${id}`);
+            if(card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            document.getElementById('modal-photo').src = alert.userPhoto;
+            document.getElementById('modal-name').innerText = alert.userName;
+            document.getElementById('modal-time').innerText = `Entrada: ${new Date(alert.timestamp).toLocaleString('es-MX')}`;
+            document.getElementById('modal-location').innerText = alert.locationName;
+            document.getElementById('modal-method').innerText = alert.type === 'clock_in_ai' ? 'IA BIOMÉTRICA' : 'MANUAL';
+
+            // Mapa (OpenStreetMap Embed)
+            if (alert.geo) {
+                const { lat, lng } = alert.geo;
+                const bbox = `${lng-0.002},${lat-0.002},${lng+0.002},${lat+0.002}`;
+                document.getElementById('modal-map').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+                document.getElementById('map-container').classList.remove('hidden');
+            } else {
+                document.getElementById('map-container').classList.add('hidden');
+            }
+
+            document.getElementById('alert-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = () => document.getElementById('alert-modal').classList.add('hidden');
+
+        // Escuchar mensajes del padre para actualizar detalle sin recargar si ya está abierto
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'SHOW_DETAIL') {
+                showDetail(event.data.alertId);
+            }
+        });
+
+        function updateStats(list) {
+            document.getElementById('count-total').innerText = list.length;
+            document.getElementById('count-ai').innerText = list.filter(a => a.type === 'clock_in_ai').length;
+        }
+
+        window.filterAlerts = (q) => {
+            const query = q.toLowerCase();
+            renderAlerts(allAlerts.filter(a => a.userName.toLowerCase().includes(query) || a.locationName.toLowerCase().includes(query)));
+        };
+    </script>
 </body>
 </html>
