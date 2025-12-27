@@ -2,17 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CIC - Protección Patrimonial</title>
     
-    <!-- Meta tags para PWA -->
+    <!-- Tipografía Profesional -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Meta tags PWA -->
     <meta name="theme-color" content="#720000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CIC Patrimonial">
     
-    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/192/720000/shield.png">
 
     <style>
@@ -20,32 +22,33 @@
             --corporate-red: #720000;
             --dark-red: #4a0000;
             --gold-accent: #c5a059;
-            --slate-gray: #2d3436;
-            --border-color: #e0e0e0;
-            --bg-body: #f8f9fa;
+            --slate-gray: #1e293b;
+            --border-color: #e2e8f0;
+            --bg-body: #f1f5f9;
             --sidebar-width: 280px;
-            --side-app-width: 380px;
-            --transition-speed: 0.4s;
+            --side-app-width: 400px;
+            --header-height: 65px;
+            --transition-speed: 0.3s;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg-body);
             height: 100vh;
-            margin: 0;
             overflow: hidden;
             color: var(--slate-gray);
         }
 
         .hidden { display: none !important; }
 
-        /* --- SISTEMA DE PANTALLAS --- */
+        /* --- PANTALLAS --- */
         .screen {
             display: none;
             height: 100vh;
@@ -60,120 +63,159 @@
         #screen-login.active {
             justify-content: center;
             align-items: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
 
         #screen-app.active {
             flex-direction: column;
         }
 
-        /* --- DISEÑO LOGIN --- */
-        #screen-login {
-            background-color: #0f172a;
-            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+        /* --- LOGIN REDISEÑADO --- */
+        .login-card { 
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            width: 90%; 
+            max-width: 420px; 
+            padding: 3rem; 
+            border-radius: 2rem; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
         }
 
-        .login-card { 
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            width: 90%; 
-            max-width: 400px; 
-            padding: 40px; 
-            border-radius: 32px; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
-            border-top: 6px solid var(--corporate-red); 
+        .login-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .login-title {
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
         }
 
         .login-input {
             width: 100%;
-            padding: 14px 20px;
-            margin-bottom: 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 2px solid #f1f5f9;
+            border-radius: 1rem;
             outline: none;
-            font-size: 0.9rem;
-            transition: border-color 0.3s;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: #f8fafc;
         }
 
-        .login-input:focus { border-color: var(--corporate-red); }
+        .login-input:focus {
+            border-color: var(--corporate-red);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(114, 0, 0, 0.1);
+        }
 
         .btn-login { 
-            background: linear-gradient(to right, var(--corporate-red), var(--dark-red)); 
+            background: var(--corporate-red);
             color: white; 
             width: 100%; 
-            padding: 16px; 
-            border-radius: 12px; 
+            padding: 1.15rem; 
+            border-radius: 1rem; 
             font-weight: 800; 
             text-transform: uppercase; 
-            letter-spacing: 1px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: all 0.3s;
+            letter-spacing: 1px;
         }
-        .btn-login:hover:not(:disabled) { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 25px rgba(114,0,0,0.3); 
+
+        .btn-login:hover {
+            background: var(--dark-red);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(114, 0, 0, 0.2);
         }
 
         /* --- ENCABEZADO --- */
         header {
-            background: linear-gradient(to bottom, var(--corporate-red), var(--dark-red));
+            background: var(--corporate-red);
             color: white;
-            height: 65px;
+            height: var(--header-height);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 25px;
+            padding: 0 1.5rem;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            border-bottom: 3px solid var(--gold-accent);
+            box-shadow: 0 1px 10px rgba(0,0,0,0.1);
             flex-shrink: 0;
+            position: relative;
         }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .menu-toggle:hover { background: rgba(255,255,255,0.25); }
 
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0.75rem;
             cursor: pointer;
         }
 
         .logo-container span {
             font-weight: 900;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            background: linear-gradient(to bottom, #ffffff, var(--gold-accent));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            color: white;
         }
 
         .header-center h1 {
-            font-size: 1.1rem;
-            font-weight: 900;
-            letter-spacing: 6px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            color: white;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.9);
+            text-align: center;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 1rem;
         }
 
-        /* --- LANZADOR DE APPS (GRID BUTTON) --- */
-        .launcher-container {
-            position: relative;
-            height: 65px;
-            display: flex;
-            align-items: center;
-        }
-
+        /* --- MENÚ BENTO --- */
         .launcher-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.15);
+            border: none;
             color: white;
             width: 42px;
             height: 42px;
@@ -182,47 +224,32 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
 
-        .launcher-btn:hover {
-            background: white;
-            color: var(--corporate-red);
-            transform: scale(1.05);
-        }
+        .launcher-btn:hover { background: white; color: var(--corporate-red); }
 
         .app-menu {
             position: absolute;
-            top: 60px;
-            right: 0;
+            top: 70px;
+            right: 1.5rem;
             background: white;
             width: 320px;
-            border-radius: 24px;
+            border-radius: 1.5rem;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            padding: 20px;
+            padding: 1.5rem;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 1rem;
             opacity: 0;
             visibility: hidden;
             transform: translateY(10px);
             transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-            border: 1px solid var(--border-color);
             z-index: 1100;
+            border: 1px solid var(--border-color);
         }
 
-        /* Puente invisible para mantener el hover en el menú de apps */
-        .app-menu::before {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 0;
-            right: 0;
-            height: 15px;
-            background: transparent;
-        }
-
-        .launcher-container:hover .app-menu {
+        .launcher-container.active .app-menu {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
@@ -232,153 +259,38 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 12px;
-            border-radius: 16px;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 1rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
             color: var(--slate-gray);
+            text-decoration: none;
+            transition: background 0.2s;
         }
 
-        .menu-item:hover {
-            background: #f8f9fa;
-            transform: translateY(-2px);
-        }
+        .menu-item:hover { background: #f1f5f9; }
 
         .menu-item .icon {
-            width: 40px;
-            height: 40px;
-            background: #f1f5f9;
+            width: 42px;
+            height: 42px;
+            background: #f8fafc;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--corporate-red);
-            position: relative;
+            transition: all 0.2s;
         }
 
-        .menu-item:hover .icon {
-            background: var(--corporate-red);
-            color: white;
-        }
+        .menu-item:hover .icon { background: var(--corporate-red); color: white; }
 
         .menu-item span {
             font-size: 0.65rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             text-align: center;
-        }
-
-        .badge {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            width: 10px;
-            height: 10px;
-            background: #ff4757;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: pulse-badge 2s infinite;
-        }
-
-        @keyframes pulse-badge {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 71, 87, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
-        }
-
-        /* --- AVATAR Y POPUP --- */
-        .avatar-container {
-            position: relative;
-            cursor: pointer;
-            height: 65px;
-            display: flex;
-            align-items: center;
-        }
-
-        .avatar {
-            width: 42px;
-            height: 42px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255,255,255,0.2);
-            overflow: hidden; 
-        }
-
-        .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-        .login-popup {
-            position: absolute;
-            top: 60px; 
-            right: 0;
-            background: white;
-            color: var(--slate-gray);
-            padding: 24px;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-            display: none;
-            min-width: 240px;
-            z-index: 1100;
-            border-top: 5px solid var(--corporate-red);
-        }
-
-        /* Puente invisible para mantener el hover en el popup del avatar */
-        .login-popup::before {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 0;
-            right: 0;
-            height: 15px;
-            background: transparent;
-        }
-
-        .avatar-container:hover .login-popup { display: block; }
-
-        .popup-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        .popup-header:hover h4 { color: var(--corporate-red); }
-
-        .popup-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .btn-popup {
-            width: 100%;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
-
-        .btn-profile { background: #f8f9fa; color: var(--slate-gray); }
-        .btn-profile:hover { background: #eee; color: var(--corporate-red); }
-        .btn-logout { background: var(--corporate-red); color: white; }
-        .btn-logout:hover { background: var(--dark-red); }
 
         /* --- LAYOUT --- */
         .main-wrapper {
@@ -387,16 +299,23 @@
             position: relative;
             width: 100%;
             overflow: hidden;
-            background: var(--bg-body);
         }
 
         aside#sidebar-left {
             width: var(--sidebar-width);
             background: white;
-            display: flex;
-            flex-direction: column;
             border-right: 1px solid var(--border-color);
-            z-index: 50;
+            z-index: 500;
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .nav-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: 450;
+            backdrop-filter: blur(4px);
         }
 
         aside#sidebar-right {
@@ -405,8 +324,7 @@
             transition: width var(--transition-speed) cubic-bezier(0.19, 1, 0.22, 1);
             display: flex;
             flex-direction: column;
-            border-left: 0px solid var(--border-color);
-            z-index: 50;
+            z-index: 600;
             overflow: hidden;
         }
         
@@ -417,8 +335,8 @@
 
         .panel-center {
             flex: 1;
-            background: #f1f1ef;
-            padding: 15px;
+            background: var(--bg-body);
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -427,71 +345,132 @@
         .canvas-area {
             flex: 1;
             background: white;
-            border-radius: 12px;
+            border-radius: 1.5rem;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 1024px) {
+            .header-center { display: none; }
+            .menu-toggle { display: flex; }
+            
+            aside#sidebar-left {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                transform: translateX(-100%);
+                z-index: 1200;
+                height: 100vh;
+            }
+
+            aside#sidebar-left.open {
+                transform: translateX(0);
+                box-shadow: 20px 0 50px rgba(0,0,0,0.2);
+            }
+
+            .nav-overlay.active { display: block; }
+
+            aside#sidebar-right.active { 
+                width: 100vw; 
+                position: fixed; 
+                inset: 0;
+                z-index: 1300;
+            }
+
+            .panel-center { padding: 1rem; }
+            .app-menu { 
+                right: 1rem; 
+                width: calc(100vw - 2rem); 
+                max-width: 350px; 
+            }
+        }
+
+        @media (min-width: 1600px) {
+            :root {
+                --sidebar-width: 320px;
+                --side-app-width: 450px;
+            }
+        }
+
+        /* --- AVATAR & POPUP --- */
+        .avatar-container { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .avatar { 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 50%; 
+            border: 2px solid rgba(255,255,255,0.3); 
+            overflow: hidden; 
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .login-popup {
+            position: absolute;
+            top: 60px; 
+            right: 0;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            display: none;
+            min-width: 220px;
+            z-index: 1100;
+            border: 1px solid var(--border-color);
+        }
+
+        .login-popup h4 {
+            font-size: 0.85rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: #0f172a;
+        }
+
+        .avatar-container:hover .login-popup { display: block; }
 
         iframe { width: 100%; height: 100%; border: none; }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-msg {
-            color: #ef4444;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 15px;
-            display: none;
-        }
-
-        @media (max-width: 1024px) { 
-            .header-center { display: none; } 
-            aside#sidebar-right.active { 
-                width: 100vw; 
-                position: absolute; 
-                right: 0; 
-                top: 0; 
-                bottom: 0; 
-                z-index: 1000; 
-            }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE CARGA -->
+    <!-- PANTALLA CARGA -->
     <div id="screen-loading" class="screen active">
-        <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #720000; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
-    <!-- PANTALLA DE LOGIN -->
+    <!-- PANTALLA LOGIN -->
     <div id="screen-login" class="screen">
         <div class="login-card">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div style="font-size: 3rem; margin-bottom: 10px;">🛡️</div>
-                <h1 style="font-size: 1.5rem; font-weight: 900; margin: 0; color: #333;">SISTEMA <span style="color: #720000;">CIC</span></h1>
-                <p style="font-size: 0.6rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 2px;">Protección Patrimonial</p>
-            </div>
+            <span class="login-logo">🛡️</span>
+            <h1 class="login-title">Sistema CIC</h1>
+            <p class="login-subtitle">Protección Patrimonial</p>
             <form id="login-form">
-                <input type="email" id="login-email" class="login-input" placeholder="Correo Electrónico" required>
+                <input type="email" id="login-email" class="login-input" placeholder="Correo corporativo" required>
                 <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" required>
-                <div id="login-error" class="error-msg"></div>
-                <button type="submit" id="login-submit" class="btn-login">Acceder al Centro</button>
+                <button type="submit" id="login-submit" class="btn-login">Ingresar al Sistema</button>
             </form>
         </div>
     </div>
 
-    <!-- PANTALLA DE APLICACIÓN -->
+    <!-- PANTALLA APLICACIÓN -->
     <div id="screen-app" class="screen">
         <header>
-            <div class="logo-container" onclick="loadInMain('Home')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
-                <span>CIC</span>
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleNav()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div class="logo-container" onclick="loadInMain('Home')">
+                    <span>CIC</span>
+                </div>
             </div>
 
             <div class="header-center">
@@ -499,120 +478,68 @@
             </div>
 
             <div class="header-right">
-                <!-- LANZADOR DE APPS (BENTO) -->
-                <div class="launcher-container">
-                    <button class="launcher-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                <div class="launcher-container" id="launcher">
+                    <button class="launcher-btn" onclick="toggleLauncher(event)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                     </button>
-                    
                     <div class="app-menu">
-                        <!-- NUEVO: WHATSAPP -->
                         <div class="menu-item" onclick="loadInSideApp('WhatsApp')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            </div>
+                            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
                             <span>WhatsApp</span>
                         </div>
                         <div class="menu-item" onclick="loadInSideApp('Correo')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                                <span id="mail-dot" class="badge"></span>
-                            </div>
+                            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
                             <span>Correo</span>
                         </div>
-                        <div id="menu-users" class="menu-item hidden" onclick="loadInSideApp('Perfiles')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                            </div>
+                        <div class="menu-item" onclick="loadInSideApp('Perfiles')">
+                            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
                             <span>Perfiles</span>
-                        </div>
-                        <div class="menu-item" onclick="loadInSideApp('Areas')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            </div>
-                            <span>Áreas</span>
-                        </div>
-                        <div class="menu-item" onclick="loadInSideApp('Bases')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-                            </div>
-                            <span>Bases</span>
-                        </div>
-                        <div class="menu-item" onclick="loadInSideApp('Alertas')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                            </div>
-                            <span>Alertas</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- BOTÓN CONFIGURACIÓN -->
-                <button class="launcher-btn" onclick="loadInMain('Configuracion')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-
-                <!-- AVATAR DINÁMICO -->
                 <div class="avatar-container">
                     <div class="avatar">
-                        <svg id="header-avatar-svg" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <img id="header-avatar-img" src="" class="hidden" alt="Usuario">
+                        <svg id="header-avatar-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <img id="header-avatar-img" src="" class="hidden">
                     </div>
-                    <!-- Popup con puentes vinculados -->
                     <div class="login-popup">
-                        <div class="popup-header" onclick="loadInSideApp('Perfiles')">
-                            <h4 style="font-size: 0.85rem; letter-spacing: 0.5px; color: #333; margin-bottom: 2px; font-weight: 800;" id="user-display-name">USUARIO</h4>
-                            <p style="font-size: 0.65rem; color: #999; font-weight: 700; text-transform: uppercase;" id="user-display-role">Cargando...</p>
-                        </div>
-                        <div class="popup-actions">
-                            <button class="btn-popup btn-profile" onclick="loadInSideApp('Perfiles')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                Mi Perfil
-                            </button>
-                            <button class="btn-popup btn-logout" onclick="handleLogout()">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                Cerrar Sesión
-                            </button>
-                        </div>
+                        <h4 id="user-display-name">Cargando...</h4>
+                        <button class="btn-login" style="padding: 0.75rem; font-size: 0.75rem;" onclick="handleLogout()">Cerrar Sesión</button>
                     </div>
                 </div>
             </div>
         </header>
 
         <div class="main-wrapper">
+            <div class="nav-overlay" id="overlay" onclick="toggleNav()"></div>
             <aside id="sidebar-left">
                 <iframe id="nav-frame" src="Apps/Navegacion.html"></iframe>
             </aside>
-            
             <section class="panel-center">
                 <div class="canvas-area">
                     <iframe id="main-frame" src="Apps/Home.html"></iframe>
                 </div>
             </section>
-            
-            <!-- PANEL DERECHO PARA APPS -->
             <aside id="sidebar-right">
-                <div style="height: 65px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0;">
-                    <h3 id="side-app-title" style="font-size: 0.7rem; font-weight: 900; color: var(--corporate-red); text-transform: uppercase; letter-spacing: 1px;">Módulo</h3>
-                    <button onclick="closeSideApp()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;">&times;</button>
+                <div style="height: 60px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; flex-shrink: 0; background: #f8fafc;">
+                    <h3 id="side-app-title" style="font-size: 0.75rem; font-weight: 900; color: var(--corporate-red); text-transform: uppercase; letter-spacing: 1px;">Módulo</h3>
+                    <button onclick="closeSideApp()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #94a3b8; display: flex; align-items: center;">&times;</button>
                 </div>
                 <iframe id="side-app-frame" src="about:blank" style="flex: 1;"></iframe>
             </aside>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
             apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
             authDomain: "cic-pp.firebaseapp.com", 
             projectId: "cic-pp", 
-            storageBucket: "cic-pp.firebasestorage.app", 
-            messagingSenderId: "336771827172", 
             appId: "1:336771827172:web:ff43891fd9b0fcaca073f1" 
         };
 
@@ -621,122 +548,164 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
 
-        // Cambiar pantalla de forma segura manteniendo el layout flex
-        const showScreen = (name) => {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screen = document.getElementById('screen-' + name);
-            if (screen) screen.classList.add('active');
+        // Rutas de estado
+        const getPrivatePath = (uid) => doc(db, 'artifacts', appId, 'users', uid, 'settings', 'state');
+
+        // FUNCIÓN CLAVE: Normalizar rutas para evitar duplicidad de carpetas
+        const normalizePath = (n) => {
+            if (!n || n === 'about:blank') return '';
+            // Si ya tiene extensión .html, asumimos que es una ruta completa desde la raíz
+            if (n.includes('.html')) return n;
+            // Si es un nombre simple, le asignamos la carpeta Apps por defecto
+            return `Apps/${n}.html`;
         };
 
-        // --- LÓGICA DE LOGIN ---
+        const showScreen = (name) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('screen-' + name);
+            if(target) target.classList.add('active');
+        };
+
+        window.toggleNav = () => {
+            const side = document.getElementById('sidebar-left');
+            const over = document.getElementById('overlay');
+            side.classList.toggle('open');
+            over.classList.toggle('active');
+        };
+
+        window.toggleLauncher = (e) => {
+            e.stopPropagation();
+            document.getElementById('launcher').classList.toggle('active');
+        };
+
+        document.addEventListener('click', () => {
+            document.getElementById('launcher').classList.remove('active');
+        });
+
         const loginForm = document.getElementById('login-form');
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
-            const err = document.getElementById('login-error');
             const btn = document.getElementById('login-submit');
-
-            btn.disabled = true; btn.innerText = 'Verificando...'; err.style.display = 'none';
-
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (error) {
-                err.innerText = "Correo o contraseña oficiales incorrectos.";
-                err.style.display = 'block'; 
-                btn.disabled = false; btn.innerText = 'Acceder al Centro';
+            
+            btn.disabled = true;
+            btn.innerText = 'Autenticando...';
+            
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass); 
+            } catch (err) { 
+                alert("Credenciales no válidas.");
+                btn.disabled = false;
+                btn.innerText = 'Ingresar al Sistema';
             }
         });
 
-        window.handleLogout = () => { signOut(auth); showScreen('loading'); };
-
-        const initAuth = async () => {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
-        };
-
-        // --- OBSERVADOR DE ESTADO ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const publicRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
-                
                 onSnapshot(publicRef, (snap) => {
                     if (snap.exists()) {
-                        const data = snap.data();
-                        document.getElementById('user-display-name').innerText = data.name || "Usuario";
-                        document.getElementById('user-display-role').innerText = data.roleLabel || "OPERATIVO";
-                        
-                        // Control de visibilidad de Perfiles en el menú
-                        if(data.roleId === 'administrador') {
-                            document.getElementById('menu-users').classList.remove('hidden');
-                        } else {
-                            document.getElementById('menu-users').classList.add('hidden');
+                        const d = snap.data();
+                        document.getElementById('user-display-name').innerText = d.name || user.email;
+                        if (d.photo) {
+                            const img = document.getElementById('header-avatar-img');
+                            img.src = d.photo;
+                            img.classList.remove('hidden');
+                            document.getElementById('header-avatar-svg').classList.add('hidden');
                         }
-
-                        // Enviar rol al frame de navegación
-                        const navFrame = document.getElementById('nav-frame');
-                        if(navFrame.contentWindow) {
-                            navFrame.contentWindow.postMessage({ type: 'SET_ROLE', role: data.roleId }, '*');
-                        }
-
-                        const avatarImg = document.getElementById('header-avatar-img');
-                        const avatarSvg = document.getElementById('header-avatar-svg');
-                        if (data.photo) { 
-                            avatarImg.src = data.photo; 
-                            avatarImg.classList.remove('hidden'); 
-                            avatarSvg.classList.add('hidden'); 
-                        } else { 
-                            avatarImg.classList.add('hidden'); 
-                            avatarSvg.classList.remove('hidden'); 
-                        }
-                        showScreen('app');
                     } else {
                         document.getElementById('user-display-name').innerText = user.email;
-                        document.getElementById('user-display-role').innerText = "SIN PERFIL FIRESTORE";
-                        showScreen('app');
                     }
-                }, (error) => {
-                    showScreen('login');
+                    showScreen('app');
+                    restoreState(user.uid);
                 });
             } else { 
-                initAuth();
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
                 showScreen('login'); 
             }
         });
 
-        // Carga en panel central
-        window.loadInMain = (n) => {
-            document.getElementById('main-frame').src = `Apps/${n}.html`;
-            closeSideApp();
+        // Persistencia de estado usando rutas normalizadas
+        const saveState = async (mainPath, sidePath, sideTitle) => {
+            if (!auth.currentUser) return;
+            try {
+                const stateRef = getPrivatePath(auth.currentUser.uid);
+                // Guardamos la ruta final normalizada para que sea independiente de dónde se llamó
+                await setDoc(stateRef, {
+                    mainPath: mainPath || '',
+                    sidePath: sidePath || '',
+                    sideTitle: sideTitle || '',
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (e) { console.error("Error saving state:", e); }
         };
 
-        // Carga en panel derecho (Apps)
-        window.loadInSideApp = (n) => {
+        const restoreState = async (uid) => {
+            try {
+                const stateRef = getPrivatePath(uid);
+                const snap = await getDoc(stateRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    // Restauramos directamente al src del iframe
+                    if (data.mainPath) {
+                        document.getElementById('main-frame').src = data.mainPath;
+                    }
+                    if (data.sidePath && data.sidePath !== 'about:blank') {
+                        const side = document.getElementById('sidebar-right');
+                        const frame = document.getElementById('side-app-frame');
+                        document.getElementById('side-app-title').innerText = data.sideTitle || 'Módulo';
+                        frame.src = data.sidePath;
+                        side.classList.add('active');
+                    }
+                }
+            } catch (e) { console.error("Error restoring state:", e); }
+        };
+
+        window.handleLogout = () => signOut(auth);
+
+        window.loadInMain = (n, skipSave = false) => {
+            const fullPath = normalizePath(n);
+            document.getElementById('main-frame').src = fullPath;
+            if(window.innerWidth <= 1024) toggleNav();
+            closeSideApp(skipSave);
+            if (!skipSave) saveState(fullPath, null, null);
+        };
+
+        window.loadInSideApp = (n, skipSave = false) => {
+            document.getElementById('launcher').classList.remove('active');
             const side = document.getElementById('sidebar-right');
             const frame = document.getElementById('side-app-frame');
-            const title = document.getElementById('side-app-title');
+            const fullPath = normalizePath(n);
+            const cleanTitle = n.replace(/Apps\//, '').replace(/\.html/, '').replace(/([A-Z])/g, ' $1').trim();
             
-            if(n === 'Correo') {
-                const dot = document.getElementById('mail-dot');
-                if(dot) dot.classList.add('hidden');
-            }
-
-            title.innerText = n.replace(/([A-Z])/g, ' $1').trim();
-            frame.src = `Apps/${n}.html`;
+            document.getElementById('side-app-title').innerText = cleanTitle;
+            frame.src = fullPath;
             side.classList.add('active');
+            if (!skipSave) saveState(null, fullPath, cleanTitle);
         };
 
-        window.closeSideApp = () => {
+        window.closeSideApp = (skipSave = false) => {
             document.getElementById('sidebar-right').classList.remove('active');
-            setTimeout(() => { document.getElementById('side-app-frame').src = "about:blank"; }, 400);
+            setTimeout(() => { document.getElementById('side-app-frame').src = "about:blank"; }, 300);
+            if (!skipSave) saveState(null, 'about:blank', '');
         };
 
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'LOAD_NAV') {
-                document.getElementById('main-frame').src = event.data.path;
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'LOAD_NAV') {
+                const fullPath = normalizePath(e.data.path);
+                document.getElementById('main-frame').src = fullPath;
+                saveState(fullPath, null, null);
+                if(window.innerWidth <= 1024) {
+                    const side = document.getElementById('sidebar-left');
+                    const over = document.getElementById('overlay');
+                    side.classList.remove('open');
+                    over.classList.remove('active');
+                }
             }
         });
     </script>
