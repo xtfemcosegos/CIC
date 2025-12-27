@@ -39,11 +39,11 @@
             position: sticky;
             top: 0;
             z-index: 40;
-            background: rgba(248, 250, 252, 0.8);
-            backdrop-filter: blur(8px);
-            padding-bottom: 1rem;
+            background: rgba(248, 250, 252, 0.9);
+            backdrop-filter: blur(12px);
+            padding-bottom: 1.5rem;
             margin-bottom: 2rem;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
         }
 
         .modal-overlay {
@@ -58,24 +58,47 @@
 <body class="bg-slate-50 min-h-screen text-slate-800 hero-gradient custom-scrollbar">
 
     <!-- MODAL PARA AGREGAR AVISO -->
-    <div id="notice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="notice-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0" onclick="toggleModal(false)"></div>
-        <div class="bg-white rounded-[2rem] w-full max-w-md p-8 relative shadow-2xl animate-in fade-in zoom-in duration-300">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 relative shadow-2xl animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6 flex items-center gap-3">
                 <i class="fa-solid fa-pen-nib text-red-800"></i> Nuevo Aviso
             </h3>
+            
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Título del Aviso</label>
                     <input type="text" id="notice-title" placeholder="Ej. Cambio de Turno" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm font-bold outline-none focus:border-red-800 transition-colors">
                 </div>
+                
                 <div>
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Mensaje</label>
-                    <textarea id="notice-message" placeholder="Escribe el aviso oficial aquí..." rows="4" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm font-bold outline-none focus:border-red-800 transition-colors resize-none"></textarea>
+                    <textarea id="notice-message" placeholder="Escribe el aviso oficial aquí..." rows="3" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm font-bold outline-none focus:border-red-800 transition-colors resize-none"></textarea>
                 </div>
+
+                <!-- OPCIONES DE VIGENCIA -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Vigencia del Aviso</label>
+                    <select id="notice-expiry-type" onchange="handleExpiryChange()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none mb-3">
+                        <option value="indefinite">Tiempo Indefinido</option>
+                        <option value="days">Por cantidad de días</option>
+                        <option value="date">Hasta fecha específica</option>
+                    </select>
+
+                    <div id="expiry-input-days" class="hidden">
+                        <input type="number" id="notice-days" placeholder="Número de días" min="1" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none">
+                    </div>
+
+                    <div id="expiry-input-date" class="hidden">
+                        <input type="date" id="notice-expiry-date" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none">
+                    </div>
+                </div>
+
+                <div id="notice-error" class="hidden text-[10px] font-bold text-red-600 uppercase bg-red-50 p-3 rounded-lg"></div>
+                
                 <div class="flex gap-3 pt-4">
                     <button onclick="toggleModal(false)" class="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Cancelar</button>
-                    <button onclick="saveNotice()" class="flex-[2] bg-slate-900 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-lg shadow-slate-200">Publicar Aviso</button>
+                    <button id="btn-save-notice" onclick="saveNotice()" class="flex-[2] bg-slate-900 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-lg shadow-slate-200">Publicar Aviso</button>
                 </div>
             </div>
         </div>
@@ -96,7 +119,7 @@
             </p>
         </header>
 
-        <!-- BLOQUES DE IDENTIDAD (STIKCY) -->
+        <!-- BLOQUES DE IDENTIDAD (STICKY) -->
         <div class="sticky-wrapper">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Información Central -->
@@ -127,19 +150,19 @@
                     <h2 class="text-sm font-black uppercase tracking-[0.3em] text-slate-900 flex items-center gap-3">
                         <i class="fa-solid fa-thumbtack text-red-800"></i> Tablero de Avisos
                     </h2>
-                    <span id="notices-count" class="bg-slate-200 text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-full">0</span>
+                    <span id="notices-count" class="bg-slate-200 text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-full">...</span>
                 </div>
                 
-                <button onclick="toggleModal(true)" class="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-md active:scale-95">
+                <button id="btn-add-notice" onclick="toggleModal(true)" disabled class="flex items-center gap-2 bg-slate-300 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed transition-all shadow-md">
                     <i class="fa-solid fa-plus"></i> Nuevo Aviso
                 </button>
             </div>
 
-            <div id="notices-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Los avisos se cargarán dinámicamente aquí -->
-                <div class="col-span-full py-20 text-center opacity-20">
-                    <i class="fa-solid fa-spinner animate-spin text-3xl mb-4"></i>
-                    <p class="text-[10px] font-black uppercase tracking-widest">Sincronizando información...</p>
+            <div id="notices-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[300px]">
+                <!-- Cargando inicial -->
+                <div id="loader-view" class="col-span-full py-20 text-center opacity-40">
+                    <i class="fa-solid fa-circle-notch animate-spin text-3xl mb-4"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest">Estableciendo conexión segura...</p>
                 </div>
             </div>
         </section>
@@ -152,123 +175,228 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, deleteDoc, doc, Timestamp, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        const fallbackConfig = { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
+            authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp"
+        };
+
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+        } catch (e) {
+            firebaseConfig = fallbackConfig;
+        }
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
 
         let user = null;
+        let isAuthInitiated = false;
 
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            if (isAuthInitiated) return;
+            isAuthInitiated = true;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth failed:", err);
+                showSyncError("Fallo de identidad.");
             }
         };
-        initAuth();
 
         onAuthStateChanged(auth, (u) => {
             user = u;
-            if (user) loadNotices();
+            if (user) {
+                const btnAdd = document.getElementById('btn-add-notice');
+                btnAdd.disabled = false;
+                btnAdd.classList.remove('bg-slate-300', 'cursor-not-allowed');
+                btnAdd.classList.add('bg-slate-900', 'hover:bg-red-800');
+                loadNotices();
+            } else {
+                initAuth();
+            }
         });
 
-        // MODAL LOGIC
         window.toggleModal = (show) => {
             const modal = document.getElementById('notice-modal');
+            const errorBox = document.getElementById('notice-error');
+            errorBox.classList.add('hidden');
             modal.classList.toggle('hidden', !show);
-            if(show) document.getElementById('notice-title').focus();
+            if(show) {
+                setTimeout(() => document.getElementById('notice-title').focus(), 100);
+            }
         };
 
-        // SAVE NOTICE
+        window.handleExpiryChange = () => {
+            const type = document.getElementById('notice-expiry-type').value;
+            document.getElementById('expiry-input-days').classList.toggle('hidden', type !== 'days');
+            document.getElementById('expiry-input-date').classList.toggle('hidden', type !== 'date');
+        };
+
         window.saveNotice = async () => {
+            const btn = document.getElementById('btn-save-notice');
             const title = document.getElementById('notice-title').value.trim();
             const message = document.getElementById('notice-message').value.trim();
+            const expiryType = document.getElementById('notice-expiry-type').value;
+            const errorBox = document.getElementById('notice-error');
 
-            if (!title || !message) return;
+            if (!title || !message) {
+                errorBox.innerText = "Completa todos los campos";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            let expiresAt = null;
+
+            if (expiryType === 'days') {
+                const days = parseInt(document.getElementById('notice-days').value);
+                if (!days || days < 1) {
+                    errorBox.innerText = "Ingresa una cantidad de días válida";
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+                const date = new Date();
+                date.setDate(date.getDate() + days);
+                expiresAt = Timestamp.fromDate(date);
+            } else if (expiryType === 'date') {
+                const dateVal = document.getElementById('notice-expiry-date').value;
+                if (!dateVal) {
+                    errorBox.innerText = "Selecciona una fecha de expiración";
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+                const date = new Date(dateVal + "T23:59:59");
+                expiresAt = Timestamp.fromDate(date);
+            }
 
             try {
-                // RULE 1: Public data path
+                btn.disabled = true;
+                btn.innerText = "Publicando...";
+                
+                // Buscar datos del perfil en la colección users (Regla 1)
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
+                const userSnap = await getDoc(userRef);
+                
+                let authorName = 'Operador CIC';
+                let authorPhoto = 'https://img.icons8.com/ios-glyphs/90/720000/user--v1.png';
+
+                if (userSnap.exists()) {
+                    const profile = userSnap.data();
+                    authorName = profile.name || authorName;
+                    authorPhoto = profile.photo || authorPhoto; // Base64
+                }
+
                 const noticesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notices');
                 await addDoc(noticesRef, {
                     title,
                     message,
-                    author: user.displayName || user.email || 'Operador CIC',
+                    author: authorName,
+                    authorPhoto: authorPhoto,
                     authorUid: user.uid,
-                    createdAt: serverTimestamp()
+                    createdAt: serverTimestamp(),
+                    expiresAt: expiresAt,
+                    expiryType: expiryType
                 });
 
-                // Clear and close
+                // Reset form
                 document.getElementById('notice-title').value = '';
                 document.getElementById('notice-message').value = '';
+                document.getElementById('notice-expiry-type').value = 'indefinite';
+                document.getElementById('notice-days').value = '';
+                document.getElementById('notice-expiry-date').value = '';
+                handleExpiryChange();
                 toggleModal(false);
             } catch (error) {
-                console.error("Error saving notice:", error);
+                console.error("Save error:", error);
+                errorBox.innerText = "Fallo al publicar";
+                errorBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Publicar Aviso";
             }
         };
 
-        // DELETE NOTICE (Optional feature)
         window.deleteNotice = async (noticeId) => {
+            if (!confirm("¿Eliminar aviso?")) return;
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notices', noticeId));
             } catch (err) { console.error(err); }
         };
 
-        // LOAD NOTICES REAL-TIME
+        function showSyncError(msg) {
+            const container = document.getElementById('notices-container');
+            container.innerHTML = `<div class="col-span-full py-20 text-center text-red-800/50">${msg}</div>`;
+        }
+
         function loadNotices() {
             const container = document.getElementById('notices-container');
             const noticesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notices');
 
-            // RULE 2: Simple query, filter/sort in JS
             onSnapshot(noticesRef, (snap) => {
+                const now = new Date();
+                
                 const notices = snap.docs
                     .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(n => {
+                        if (!n.expiresAt) return true;
+                        const expiryDate = n.expiresAt.toDate();
+                        return expiryDate > now;
+                    })
                     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
                 document.getElementById('notices-count').innerText = notices.length;
 
                 if (notices.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full py-20 text-center opacity-20">
-                            <i class="fa-solid fa-inbox text-4xl mb-4"></i>
-                            <p class="text-[10px] font-black uppercase tracking-widest">No hay avisos publicados recientemente.</p>
-                        </div>
-                    `;
+                    container.innerHTML = `<div class="col-span-full py-20 text-center opacity-20"><p class="text-[10px] font-black uppercase tracking-widest">Sin avisos oficiales.</p></div>`;
                     return;
                 }
 
                 container.innerHTML = notices.map(n => {
-                    const dateStr = n.createdAt ? new Date(n.createdAt.seconds * 1000).toLocaleDateString('es-MX', {day:'2-digit', month:'short'}) : 'Reciente';
-                    const rotation = (Math.random() * 2 - 1).toFixed(1); // Small random rotation for "paper" effect
+                    const dateStr = n.createdAt ? new Date(n.createdAt.seconds * 1000).toLocaleDateString('es-MX', {day:'2-digit', month:'short'}) : 'Hoy';
+                    const rotation = (Math.random() * 1.4 - 0.7).toFixed(1);
+                    const authorPhoto = n.authorPhoto || 'https://img.icons8.com/ios-glyphs/90/720000/user--v1.png';
+                    
+                    let expiryTag = '';
+                    if (n.expiresAt) {
+                        const expDate = n.expiresAt.toDate().toLocaleDateString('es-MX', {day:'2-digit', month:'short'});
+                        expiryTag = `<span class="text-[7px] font-bold text-red-800/50 uppercase ml-2 italic">Expira: ${expDate}</span>`;
+                    }
 
                     return `
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 relative shadow-sm transition-all hover:shadow-xl group" 
-                             style="transform: rotate(${rotation}deg)">
+                        <div class="bg-white p-7 rounded-[2rem] border border-slate-100 relative shadow-sm transition-all hover:shadow-xl group" style="transform: rotate(${rotation}deg)">
                             <div class="notice-pin"></div>
-                            
                             <div class="flex justify-between items-start mb-3">
-                                <p class="text-[9px] font-black text-red-800 uppercase tracking-tighter">${n.author}</p>
+                                <div class="flex items-center gap-2">
+                                    <img src="${authorPhoto}" class="w-5 h-5 rounded-full object-cover border border-slate-100 bg-slate-50" onerror="this.src='https://img.icons8.com/ios-glyphs/90/720000/user--v1.png'">
+                                    <p class="text-[9px] font-black text-slate-800 uppercase tracking-tighter">${n.author}</p>
+                                </div>
                                 ${n.authorUid === user.uid ? `
-                                    <button onclick="deleteNotice('${n.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-600 transition-all">
-                                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                    <button onclick="deleteNotice('${n.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-600 transition-all p-1">
+                                        <i class="fa-solid fa-xmark text-[10px]"></i>
                                     </button>
                                 ` : ''}
                             </div>
-                            
-                            <h4 class="text-xs font-black text-slate-900 uppercase leading-snug mb-2">${n.title}</h4>
-                            <p class="text-xs font-medium text-slate-500 leading-relaxed">${n.message}</p>
-                            
-                            <div class="mt-6 pt-4 border-t border-slate-50 flex justify-end items-center">
-                                <span class="text-[8px] font-black text-slate-400 uppercase">${dateStr}</span>
+                            <h4 class="text-xs font-black text-slate-900 uppercase leading-snug mb-3">${n.title}</h4>
+                            <p class="text-[11px] font-medium text-slate-500 leading-relaxed">${n.message}</p>
+                            <div class="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center">
+                                ${expiryTag}
+                                <span class="text-[8px] font-black text-slate-300 uppercase">${dateStr}</span>
                             </div>
                         </div>
                     `;
                 }).join('');
-            }, (error) => {
-                console.error("Firestore Error:", error);
+            }, (err) => {
+                console.error(err);
+                showSyncError("Error de sincronización.");
             });
         }
     </script>
