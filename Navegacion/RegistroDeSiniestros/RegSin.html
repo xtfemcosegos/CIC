@@ -92,7 +92,7 @@
 
     <div class="max-w-4xl mx-auto">
         
-        <!-- CABECERA (Limpia sin accesos) -->
+        <!-- CABECERA -->
         <header class="mb-10 flex items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-red-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-900/20">
@@ -204,8 +204,6 @@
                                         <button type="button" class="p-2 hover:bg-white rounded-lg text-slate-600 transition-colors" onclick="document.execCommand('italic')"><i class="fa-solid fa-italic"></i></button>
                                         <button type="button" class="p-2 hover:bg-white rounded-lg text-slate-600 transition-colors" onclick="document.execCommand('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
                                         <div class="w-px h-6 bg-slate-200 mx-2"></div>
-                                        
-                                        <!-- Muestrario de colores -->
                                         <div class="flex items-center gap-1.5 px-2">
                                             <div class="color-swatch" style="background: #000000;" onclick="document.execCommand('foreColor', false, '#000000')" title="Negro"></div>
                                             <div class="color-swatch" style="background: #720000;" onclick="document.execCommand('foreColor', false, '#720000')" title="Rojo CIC"></div>
@@ -333,7 +331,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // URLs Power Automate
+        // URL ENVIAR Power Automate
         const URL_RECUPERAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
         const URL_ENVIAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/28a6ecf6c40e4d14aa520a51c8430065/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4DbF_Lj5HOOWUNIaV_lSLMZH1j5etCF1n18CTLRDkxs";
 
@@ -344,7 +342,6 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ Mode: solicitud })
                 });
-                if (!response.ok) throw new Error("Error en la solicitud: " + response.status);
                 return await response.json();
             } catch (error) {
                 console.error("Error al recuperar datos:", error);
@@ -359,7 +356,6 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(formData)
                 });
-                if (!response.ok) throw new Error(`Error en la petición: ${response.status}`);
                 return await response.json();
             } catch (error) {
                 console.error("❌ Error al enviar los datos:", error);
@@ -369,39 +365,26 @@
 
         function updateClock() {
             const clockEl = document.getElementById('clock');
-            if (!clockEl) return;
-            const now = new Date();
-            clockEl.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+            if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false });
         }
 
-        // Estado de aplicación
         let currentUser = null;
         let dataArray = [];
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                initApp();
-            } else {
-                signInAnonymously(auth);
-            }
+            if (user) { currentUser = user; initApp(); }
+            else { signInAnonymously(auth); }
         });
 
         async function initApp() {
             setInterval(updateClock, 1000);
             updateClock();
             
-            // Lógica para el campo "Otro" en Realiza Reporte
             const realizaSelect = document.getElementById('realiza');
             const realizaOtroInput = document.getElementById('realizaOtro');
             realizaSelect.addEventListener('change', function() {
-                if (this.value === 'Otro') {
-                    realizaOtroInput.classList.remove('hidden');
-                    realizaOtroInput.required = true;
-                } else {
-                    realizaOtroInput.classList.add('hidden');
-                    realizaOtroInput.required = false;
-                }
+                realizaOtroInput.classList.toggle('hidden', this.value !== 'Otro');
+                realizaOtroInput.required = (this.value === 'Otro');
             });
             
             try {
@@ -409,10 +392,7 @@
                 const loader = document.getElementById('loadingOverlay');
                 loader.classList.add('opacity-0');
                 setTimeout(() => loader.style.display = 'none', 500);
-            } catch (error) {
-                console.error("Error crítico:", error);
-                document.getElementById('loadingText').textContent = "Reintentando conexión...";
-            }
+            } catch (error) { console.error(error); }
         }
 
         const tipoSelect = document.getElementById("TipoSiniestro");
@@ -420,39 +400,26 @@
 
         const actualizarSubtiposUI = () => {
             subtipoSelect.innerHTML = "<option value=''>Seleccione un subtipo</option>";
-            const subtipos = dataArray
-                .filter(item => item.Tipo === tipoSelect.value)
-                .map(item => item.Subtipo);
-
-            const fragmentSub = document.createDocumentFragment();
-            subtipos.forEach(subtipo => {
+            dataArray.filter(item => item.Tipo === tipoSelect.value).forEach(item => {
                 const option = document.createElement("option");
-                option.value = subtipo;
-                option.textContent = subtipo;
-                fragmentSub.appendChild(option);
+                option.value = item.Subtipo;
+                option.textContent = item.Subtipo;
+                subtipoSelect.appendChild(option);
             });
-            subtipoSelect.appendChild(fragmentSub);
         };
 
         async function cargarTipos() {
             const res = await recuperarDatos("Tipos");
             if (res && res.Matriz) {
                 dataArray = res.Matriz;
-            } else {
-                dataArray = [];
+                const tiposUnicos = [...new Set(dataArray.map(item => item.Tipo))];
+                tiposUnicos.forEach(tipo => {
+                    const option = document.createElement("option");
+                    option.value = tipo; option.textContent = tipo;
+                    tipoSelect.appendChild(option);
+                });
+                tipoSelect.addEventListener("change", actualizarSubtiposUI);
             }
-
-            const tiposUnicos = [...new Set(dataArray.map(item => item.Tipo).filter(t => t))];
-            const fragmentTipos = document.createDocumentFragment();
-            tiposUnicos.forEach(tipo => {
-                const option = document.createElement("option");
-                option.value = tipo;
-                option.textContent = tipo;
-                fragmentTipos.appendChild(option);
-            });
-            tipoSelect.appendChild(fragmentTipos);
-            
-            tipoSelect.addEventListener("change", actualizarSubtiposUI);
         }
 
         async function cargarUsuarios() {
@@ -461,40 +428,44 @@
                 const realizaSelect = document.getElementById("realiza");
                 data.Usuarios.filter(u => u.Area === "Centro de Control").forEach(u => {
                     const option = document.createElement("option");
-                    option.value = u.Nombre;
-                    option.textContent = u.Nombre;
+                    option.value = u.Nombre; option.textContent = u.Nombre;
                     realizaSelect.appendChild(option);
                 });
-                // Añadir opción "Otro"
                 const optOtro = document.createElement("option");
-                optOtro.value = "Otro";
-                optOtro.textContent = "Otro (Especificar)";
+                optOtro.value = "Otro"; optOtro.textContent = "Otro (Especificar)";
                 realizaSelect.appendChild(optOtro);
             }
         }
 
-        /* === MANEJO DE ENVÍO HÍBRIDO === */
+        // FUNCIÓN CLAVE DE LIMPIEZA DE CORREOS
+        const cleanEmail = (email) => email.trim().replace(/^mailto:/i, "");
+
         document.getElementById('formSiniestros').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Procesando...';
 
-            const valTipo = document.getElementById("TipoSiniestro").value;
-            const valSubtipo = document.getElementById("Subtipo").value;
-            
-            // Obtener valor de Realiza (si es otro, tomar el input)
+            const valTipo = tipoSelect.value;
+            const valSubtipo = subtipoSelect.value;
             const realizaBase = document.getElementById("realiza").value;
             const nombreRealizaFinal = realizaBase === 'Otro' ? document.getElementById("realizaOtro").value : realizaBase;
 
-            // Calcular destinatarios
+            // Lógica de correos con limpieza de mailto:
             let correosBase = [];
             const match = dataArray.find(item => item.Tipo === valTipo && item.Subtipo === valSubtipo);
             if (match && match["Listado de correos"]) {
-                correosBase = match["Listado de correos"].split(";").map(c => c.trim()).filter(c => c);
+                correosBase = match["Listado de correos"].split(";").map(cleanEmail).filter(c => c);
             }
-            const extras = Array.from(document.querySelectorAll("input[name='correosExtra']:checked")).map(cb => cb.value);
-            const manual = document.getElementById("correosOtros").value.split(";").map(c => c.trim()).filter(c => c);
+            
+            const extras = Array.from(document.querySelectorAll("input[name='correosExtra']:checked"))
+                .flatMap(cb => cb.value.split(";"))
+                .map(cleanEmail);
+            
+            const manual = document.getElementById("correosOtros").value.split(";")
+                .map(cleanEmail)
+                .filter(c => c);
+
             const todosLosCorreos = [...new Set([...correosBase, ...extras, ...manual])];
 
             const formData = {
@@ -510,39 +481,26 @@
                 })),
                 nombreReporta: document.getElementById("reporta").value,
                 nombreRealiza: nombreRealizaFinal,
-                listadoCorreos: todosLosCorreos.join(";"),
+                listadoCorreos: todosLosCorreos.join(";"), // Envía solo los strings de correo
                 timestamp: new Date().toISOString(),
                 uid: currentUser?.uid || 'anonymous'
             };
 
             try {
-                // 1. Guardar en Firestore
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'siniestros'), formData);
-
-                // 2. Enviar a Power Automate
                 await enviarDatos(formData);
-
-                // UI Éxito
                 document.getElementById("formUI").style.display = "none";
                 document.getElementById("successUI").classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-
             } catch (err) {
-                console.error("Error en el envío:", err);
+                console.error(err);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Error - Reintentar';
             }
         });
 
         document.getElementById('btnNewReport').addEventListener('click', () => {
-            document.getElementById('formSiniestros').reset();
-            document.getElementById('descripcion').innerHTML = "";
-            document.getElementById('realizaOtro').classList.add('hidden');
-            document.getElementById("formUI").style.display = "block";
-            document.getElementById("successUI").classList.add('hidden');
-            document.getElementById('btnSubmit').disabled = false;
-            document.getElementById('btnSubmit').innerHTML = '<i class="fa-solid fa-paper-plane"></i> Finalizar y Registrar Siniestro';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            location.reload();
         });
     </script>
 </body>

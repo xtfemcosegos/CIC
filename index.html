@@ -196,7 +196,7 @@
             top: 60px;
             right: 0;
             background: white;
-            width: 300px;
+            width: 320px;
             border-radius: 24px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             padding: 20px;
@@ -491,7 +491,7 @@
         <header>
             <div class="logo-container" onclick="loadInMain('Home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
-                <span style="font-weight:900; font-size:1.8rem; letter-spacing:2px; color:white;">CIC</span>
+                <span>CIC</span>
             </div>
 
             <div class="header-center">
@@ -506,6 +506,13 @@
                     </button>
                     
                     <div class="app-menu">
+                        <!-- NUEVO: WHATSAPP -->
+                        <div class="menu-item" onclick="loadInSideApp('WhatsApp')">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            </div>
+                            <span>WhatsApp</span>
+                        </div>
                         <div class="menu-item" onclick="loadInSideApp('Correo')">
                             <div class="icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -536,12 +543,6 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                             </div>
                             <span>Alertas</span>
-                        </div>
-                        <div class="menu-item" onclick="loadInSideApp('Ayuda')">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            </div>
-                            <span>Ayuda</span>
                         </div>
                     </div>
                 </div>
@@ -603,10 +604,10 @@
     <!-- SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
             apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", 
             authDomain: "cic-pp.firebaseapp.com", 
             projectId: "cic-pp", 
@@ -618,7 +619,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = "cic-pp";
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
 
         // Cambiar pantalla de forma segura manteniendo el layout flex
         const showScreen = (name) => {
@@ -648,6 +649,14 @@
         });
 
         window.handleLogout = () => { signOut(auth); showScreen('loading'); };
+
+        const initAuth = async () => {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        };
 
         // --- OBSERVADOR DE ESTADO ---
         onAuthStateChanged(auth, async (user) => {
@@ -693,6 +702,7 @@
                     showScreen('login');
                 });
             } else { 
+                initAuth();
                 showScreen('login'); 
             }
         });

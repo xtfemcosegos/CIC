@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        .user-card { transition: all 0.2s; border: 1px solid #f1f5f9; }
+        .user-card:hover { border-color: #25D366; background: #f0fff4; }
+        
+        .whatsapp-btn {
+            background-color: #25D366;
+            transition: all 0.3s;
+        }
+        .whatsapp-btn:hover { background-color: #128C7E; transform: scale(1.05); }
+
+        .loader { border-top-color: #25D366; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-white min-h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- OVERLAY DE CARGA -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="w-10 h-10 border-4 border-slate-100 loader rounded-full mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Verificando Directorio WhatsApp...</p>
+    </div>
+
+    <!-- VISTA PRINCIPAL -->
+    <div id="view-list" class="flex-1 flex flex-col">
+        <div class="p-6 border-b border-slate-100 shrink-0">
+            <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Conector de WhatsApp</h2>
+            <div class="relative">
+                <input type="text" id="user-search" oninput="filterUsers(this.value)" placeholder="Buscar por nombre o ID..." 
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-green-500/20">
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="users-list" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+            <!-- Usuarios con teléfono aparecerán aquí -->
+        </div>
+    </div>
+
+    <!-- PANEL DE REDACCIÓN -->
+    <div id="view-message" class="hidden fixed inset-0 bg-white z-40 flex flex-col">
+        <header class="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-white">
+            <button onclick="backToList()" class="p-2 text-slate-400 hover:text-green-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div id="target-avatar" class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center">👤</div>
+            <div class="flex-1 truncate">
+                <h3 id="target-name" class="text-xs font-black text-slate-800 uppercase truncate leading-none">Cargando...</h3>
+                <p id="target-phone" class="text-[9px] font-bold text-green-600 uppercase mt-1">Tel: -</p>
+            </div>
+        </header>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50/30 overflow-y-auto custom-scrollbar">
+            <div>
+                <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">Mensaje de WhatsApp</label>
+                <textarea id="wa-message" rows="5" placeholder="Escribe tu mensaje aquí..." 
+                    class="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-green-500/10 outline-none resize-none shadow-sm"></textarea>
+            </div>
+
+            <!-- Sugerencias rápidas -->
+            <div class="space-y-2">
+                <label class="text-[9px] font-black text-slate-400 uppercase block">Mensajes Predefinidos</label>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setMessage('Buen día element@, ¿podrías reportar tu estado actual?')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-[9px] font-bold hover:border-green-500 transition-colors">Estado Actual</button>
+                    <button onclick="setMessage('Se requiere apoyo en Base Central de forma inmediata.')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-[9px] font-bold hover:border-green-500 transition-colors">Solicitar Apoyo</button>
+                    <button onclick="setMessage('Favor de confirmar recepción de la alerta de siniestro.')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-[9px] font-bold hover:border-green-500 transition-colors">Confirmar Alerta</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 bg-white border-t border-slate-100">
+            <button onclick="launchWhatsApp()" class="whatsapp-btn w-full py-4 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-3">
+                <img src="https://img.icons8.com/color/48/whatsapp--v1.png" class="w-6 h-6">
+                Abrir WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
+            apiKey: "AIzaSyCmyzbw7csEtZkPqV89OMaM4cXDpG6O930", authDomain: "cic-pp.firebaseapp.com", 
+            projectId: "cic-pp", appId: "1:336771827172:web:ff43891fd9b0fcaca073f1" 
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let users = [];
+        let selectedUser = null;
+
+        const initAuth = async () => {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) startSync();
+            else initAuth();
+        });
+
+        function startSync() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+                // Filtramos SOLO los que tienen número de teléfono
+                users = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(u => u.phone && u.phone.trim().length >= 10);
+                
+                renderUsers(users);
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+        }
+
+        window.renderUsers = (list) => {
+            const container = document.getElementById('users-list');
+            if (list.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center opacity-30 text-[10px] font-black uppercase">Ningún usuario tiene teléfono registrado</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(u => `
+                <div onclick="selectUser('${u.id}')" class="user-card flex items-center gap-4 p-4 rounded-2xl bg-white cursor-pointer">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-2 border-transparent hover:border-green-500">
+                        ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : '👤'}
+                    </div>
+                    <div class="flex-1 truncate">
+                        <h4 class="text-[11px] font-black uppercase text-slate-800 truncate">${u.name}</h4>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[8px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">WhatsApp OK</span>
+                            <span class="text-[9px] font-bold text-slate-400">${u.roleLabel || 'OPERATIVO'}</span>
+                        </div>
+                    </div>
+                    <div class="text-green-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 18 6-6-6-6"/></svg>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.filterUsers = (q) => {
+            const query = q.toLowerCase();
+            const filtered = users.filter(u => 
+                u.name.toLowerCase().includes(query) || 
+                u.empId?.toLowerCase().includes(query)
+            );
+            renderUsers(filtered);
+        };
+
+        window.selectUser = (id) => {
+            selectedUser = users.find(u => u.id === id);
+            document.getElementById('target-name').innerText = selectedUser.name;
+            document.getElementById('target-phone').innerText = `Tel: ${selectedUser.phone}`;
+            document.getElementById('target-avatar').innerHTML = selectedUser.photo ? `<img src="${selectedUser.photo}" class="w-full h-full object-cover">` : '👤';
+            document.getElementById('view-message').classList.remove('hidden');
+        };
+
+        window.backToList = () => {
+            selectedUser = null;
+            document.getElementById('view-message').classList.add('hidden');
+            document.getElementById('wa-message').value = '';
+        };
+
+        window.setMessage = (txt) => {
+            document.getElementById('wa-message').value = txt;
+        };
+
+        window.launchWhatsApp = () => {
+            if (!selectedUser) return;
+            const msg = encodeURIComponent(document.getElementById('wa-message').value);
+            // Formatear número: eliminar caracteres no numéricos
+            const phone = selectedUser.phone.replace(/\D/g, '');
+            // Si el número tiene 10 dígitos, agregamos el código de México (52) por defecto si es necesario
+            const finalPhone = phone.length === 10 ? '52' + phone : phone;
+            
+            const waUrl = `https://wa.me/${finalPhone}?text=${msg}`;
+            window.open(waUrl, '_blank');
+        };
+    </script>
+</body>
+</html>
