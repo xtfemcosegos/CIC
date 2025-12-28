@@ -8,27 +8,30 @@
     <!-- Tipografía Profesional -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- Meta tags PWA -->
+    <!-- Meta tags PWA y Favicon -->
     <meta name="theme-color" content="#720000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CIC Patrimonial">
     
-    <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/192/720000/shield.png">
+    <!-- Iconos Sincronizados con manifest.json -->
+    <link rel="icon" type="image/png" href="https://img.icons8.com/flat-round/96/shield.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/flat-round/192/shield.png">
+    <link rel="manifest" href="manifest.json">
 
     <style>
         :root {
             --corporate-red: #720000;
             --dark-red: #4a0000;
             --gold-accent: #c5a059;
-            --slate-gray: #1e293b;
+            --slate-gray: #2d3436;
             --border-color: #e2e8f0;
-            --bg-body: #f1f5f9;
+            --bg-body: #f8f9fa;
             --sidebar-width: 280px;
             --side-app-width: 400px;
             --header-height: 65px;
-            --transition-speed: 0.3s;
+            --transition-speed: 0.4s;
         }
 
         * {
@@ -63,185 +66,268 @@
         #screen-login.active {
             justify-content: center;
             align-items: center;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            background-color: #0f172a;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
         }
 
         #screen-app.active {
             flex-direction: column;
         }
 
-        /* --- LOGO SVG --- */
-        .cic-logo-svg {
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-            transition: transform 0.3s ease;
-        }
-
-        /* --- LOGIN --- */
+        /* --- LOGIN PREMIUM --- */
         .login-card { 
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             width: 90%; 
-            max-width: 420px; 
-            padding: 3rem; 
-            border-radius: 2.5rem; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); 
-            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 400px; 
+            padding: 40px; 
+            border-radius: 32px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+            border-top: 6px solid var(--corporate-red);
             text-align: center;
         }
 
-        .login-logo-container { margin-bottom: 2rem; display: flex; justify-content: center; }
-        .login-title { font-weight: 900; font-size: 1.75rem; color: #0f172a; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: -1px; }
-        .login-subtitle { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 2.5rem; }
+        .login-logo-container { margin-bottom: 25px; display: flex; justify-content: center; }
         
         .login-input {
             width: 100%;
-            padding: 1.1rem 1.4rem;
-            margin-bottom: 1.25rem;
-            border: 2px solid #f1f5f9;
-            border-radius: 1.25rem;
+            padding: 14px 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             outline: none;
-            font-size: 1rem;
-            transition: all 0.2s;
-            background: #f8fafc;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
         }
 
-        .login-input:focus { border-color: var(--corporate-red); background: white; box-shadow: 0 0 0 4px rgba(114, 0, 0, 0.1); }
+        .login-input:focus { border-color: var(--corporate-red); }
 
         .btn-login { 
-            background: linear-gradient(135deg, var(--corporate-red), var(--dark-red));
+            background: linear-gradient(to right, var(--corporate-red), var(--dark-red)); 
             color: white; 
             width: 100%; 
-            padding: 1.2rem; 
-            border-radius: 1.25rem; 
+            padding: 16px; 
+            border-radius: 12px; 
             font-weight: 800; 
             text-transform: uppercase; 
             border: none;
             cursor: pointer;
             transition: all 0.3s;
-            letter-spacing: 1px;
-            margin-top: 1rem;
         }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(114,0,0,0.2); }
 
         /* --- ENCABEZADO --- */
         header {
-            background: var(--corporate-red);
+            background: linear-gradient(to bottom, var(--corporate-red), var(--dark-red));
             color: white;
             height: var(--header-height);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1.5rem;
+            padding: 0 25px;
             z-index: 1000;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            border-bottom: 3px solid var(--gold-accent);
             flex-shrink: 0;
-            position: relative;
         }
 
-        .header-left { display: flex; align-items: center; gap: 1.25rem; }
-        .menu-toggle { display: none; background: rgba(255,255,255,0.15); border: none; color: white; width: 42px; height: 42px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .menu-toggle { 
+            display: none; 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.2); 
+            color: white; 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            align-items: center; 
+            justify-content: center; 
+        }
 
-        .logo-container { display: flex; align-items: center; gap: 0.85rem; cursor: pointer; }
-        .logo-container span { font-weight: 900; font-size: 1.65rem; letter-spacing: 2px; text-transform: uppercase; color: white; }
+        .logo-container { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-container span { 
+            font-weight: 900; 
+            font-size: 1.8rem; 
+            text-transform: uppercase; 
+            background: linear-gradient(to bottom, #ffffff, var(--gold-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
 
-        .header-center h1 { font-size: 0.85rem; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.8); text-align: center; }
+        .header-center h1 { 
+            font-size: 1.1rem; 
+            font-weight: 900; 
+            letter-spacing: 5px; 
+            text-transform: uppercase; 
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
 
-        .header-right { display: flex; align-items: center; gap: 1.25rem; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
 
         /* --- MENÚ BENTO --- */
-        .launcher-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .launcher-container { position: relative; height: 100%; display: flex; align-items: center; }
+        .launcher-btn { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            color: white; 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+            transition: all 0.3s;
+        }
         .launcher-btn:hover { background: white; color: var(--corporate-red); }
 
         .app-menu {
             position: absolute;
-            top: 70px;
-            right: 1.5rem;
+            top: var(--header-height);
+            right: 0;
             background: white;
-            width: 340px;
-            border-radius: 2rem;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-            padding: 1.75rem;
+            width: 320px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            padding: 20px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.25rem;
+            gap: 15px;
             opacity: 0;
             visibility: hidden;
-            transform: translateY(15px);
+            transform: translateY(10px);
             transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
             z-index: 1100;
             border: 1px solid var(--border-color);
         }
 
-        .launcher-container.active .app-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .launcher-container:hover .app-menu { opacity: 1; visibility: visible; transform: translateY(0); }
 
         .menu-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.6rem;
-            padding: 1.15rem;
-            border-radius: 1.25rem;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 16px;
             cursor: pointer;
             color: var(--slate-gray);
             text-decoration: none;
             transition: all 0.2s;
         }
+        .menu-item:hover { background: #f8f9fa; transform: translateY(-2px); }
 
         .menu-item .icon {
-            width: 46px;
-            height: 46px;
-            background: #f8fafc;
-            border-radius: 14px;
+            width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--corporate-red);
-            transition: all 0.2s;
             position: relative;
+            transition: 0.2s;
         }
-
-        .menu-item:hover { background: #f1f5f9; transform: translateY(-3px); }
         .menu-item:hover .icon { background: var(--corporate-red); color: white; }
-        .menu-item span { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; text-align: center; letter-spacing: 0.5px; }
+        .menu-item span { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; text-align: center; }
+
+        .badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff4757; border-radius: 50%; border: 2px solid white; display: none; }
+        .badge.active { display: block; animation: pulse 2s infinite; }
 
         /* --- LAYOUT --- */
         .main-wrapper { display: flex; flex: 1; position: relative; width: 100%; overflow: hidden; }
-        aside#sidebar-left { width: var(--sidebar-width); background: white; border-right: 1px solid var(--border-color); z-index: 500; transition: transform var(--transition-speed) ease; }
-        .nav-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 450; backdrop-filter: blur(8px); }
-        aside#sidebar-right { width: 0; background: white; transition: width var(--transition-speed) cubic-bezier(0.19, 1, 0.22, 1); display: flex; flex-direction: column; z-index: 600; overflow: hidden; }
+        aside#sidebar-left { width: var(--sidebar-width); background: white; border-right: 1px solid var(--border-color); z-index: 50; transition: transform 0.4s ease; }
+        .nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; backdrop-filter: blur(2px); }
+        aside#sidebar-right { width: 0; background: white; transition: width var(--transition-speed) cubic-bezier(0.19, 1, 0.22, 1); display: flex; flex-direction: column; z-index: 50; overflow: hidden; }
         aside#sidebar-right.active { width: var(--side-app-width); border-left: 1px solid var(--border-color); }
-        .panel-center { flex: 1; background: var(--bg-body); padding: 1.5rem; display: flex; flex-direction: column; overflow: hidden; }
-        .canvas-area { flex: 1; background: white; border-radius: 1.5rem; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        .panel-center { flex: 1; background: #f1f1ef; padding: 15px; display: flex; flex-direction: column; overflow: hidden; }
+        .canvas-area { flex: 1; background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
         @media (max-width: 1024px) {
             .header-center { display: none; }
             .menu-toggle { display: flex; }
-            aside#sidebar-left { position: fixed; inset: 0; width: 280px; transform: translateX(-100%); z-index: 1200; height: 100vh; }
+            aside#sidebar-left { position: fixed; top: 65px; bottom: 0; left: 0; transform: translateX(-100%); z-index: 100; }
             aside#sidebar-left.open { transform: translateX(0); }
             .nav-overlay.active { display: block; }
-            aside#sidebar-right.active { width: 100vw; position: fixed; inset: 0; z-index: 1300; }
+            aside#sidebar-right.active { width: 100vw; position: fixed; inset: 0; z-index: 101; }
         }
 
-        .avatar { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); overflow: hidden; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
+        /* --- PERFIL Y POPUP --- */
+        .avatar-container { position: relative; cursor: pointer; height: 100%; display: flex; align-items: center; }
+        
+        .avatar { 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 50%; 
+            border: 2px solid rgba(255,255,255,0.2); 
+            overflow: hidden; 
+            background: rgba(255,255,255,0.1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.2s;
+        }
+        
+        .avatar-container:hover .avatar { border-color: var(--gold-accent); transform: scale(1.05); }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .login-popup { position: absolute; top: 60px; right: 0; background: white; padding: 1.5rem; border-radius: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.15); display: none; min-width: 240px; z-index: 1100; }
-        .avatar-container:hover .login-popup { display: block; }
+
+        .login-popup { 
+            position: absolute; 
+            top: var(--header-height); 
+            right: 0; 
+            background: white; 
+            padding: 24px; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            min-width: 240px; 
+            z-index: 1100; 
+            border-top: 5px solid var(--corporate-red); 
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .login-popup::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: transparent;
+        }
+
+        .avatar-container:hover .login-popup { 
+            opacity: 1; 
+            visibility: visible; 
+            transform: translateY(0); 
+        }
+
+        #user-display-name { color: #1e293b; text-align: center; }
+        #user-display-role { color: #64748b; text-align: center; }
 
         iframe { width: 100%; height: 100%; border: none; }
+        @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.7; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .badge { position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; background: #ff4757; border-radius: 50%; border: 2px solid white; display: none; }
-        .badge.active { display: block; }
     </style>
 </head>
 <body>
 
+    <!-- PANTALLA CARGA -->
     <div id="screen-loading" class="screen active">
         <div style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
+    <!-- PANTALLA LOGIN -->
     <div id="screen-login" class="screen">
         <div class="login-card">
             <div class="login-logo-container">
-                <svg width="100" height="100" viewBox="0 0 100 100" class="cic-logo-svg">
+                <svg width="80" height="80" viewBox="0 0 100 100">
                     <defs>
                         <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" style="stop-color:#720000" /><stop offset="100%" style="stop-color:#4a0000" />
@@ -251,19 +337,21 @@
                         </linearGradient>
                     </defs>
                     <path d="M50 5 L15 20 V50 C15 70 50 90 50 95 C50 90 85 70 85 50 V20 L50 5Z" fill="url(#shieldGrad)" />
+                    <path d="M50 12 L22 25 V50 C22 65 50 82 50 85 C50 82 78 65 78 50 V25 L50 12Z" fill="none" stroke="url(#goldGrad)" stroke-width="2" />
                     <text x="50" y="58" font-family="Inter" font-weight="900" font-size="22" fill="url(#goldGrad)" text-anchor="middle">CIC</text>
                 </svg>
             </div>
-            <h1 class="login-title">Sistema CIC</h1>
-            <p class="login-subtitle">Protección Patrimonial</p>
+            <h1 style="font-weight: 900; font-size: 1.5rem; color: #333; margin-bottom: 5px;">SISTEMA CIC</h1>
+            <p style="font-size: 0.65rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px;">Protección Patrimonial</p>
             <form id="login-form">
                 <input type="email" id="login-email" class="login-input" placeholder="Correo corporativo" required>
                 <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" required>
-                <button type="submit" id="login-submit" class="btn-login">Ingresar al Sistema</button>
+                <button type="submit" id="login-submit" class="btn-login">Acceder al Centro</button>
             </form>
         </div>
     </div>
 
+    <!-- PANTALLA APLICACIÓN -->
     <div id="screen-app" class="screen">
         <header id="main-header">
             <div class="header-left">
@@ -271,34 +359,78 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
                 <div class="logo-container" onclick="loadInMain('Home')">
-                    <svg width="32" height="32" viewBox="0 0 100 100"><path d="M50 5 L15 20 V50 C15 70 50 90 50 95 C50 90 85 70 85 50 V20 L50 5Z" fill="#ffffff" /><text x="50" y="58" font-family="Inter" font-weight="900" font-size="24" fill="var(--corporate-red)" text-anchor="middle">C</text></svg>
+                    <svg width="32" height="32" viewBox="0 0 100 100" style="vertical-align: middle;">
+                        <path d="M50 5 L15 20 V50 C15 70 50 90 50 95 C50 90 85 70 85 50 V20 L50 5Z" fill="#ffffff" />
+                        <path d="M50 20 L25 32 V50 C25 65 50 80 50 82 C50 80 75 65 75 50 V32 L50 20Z" fill="var(--corporate-red)" />
+                        <text x="50" y="58" font-family="Inter" font-weight="900" font-size="24" fill="white" text-anchor="middle">C</text>
+                    </svg>
                     <span>CIC</span>
                 </div>
             </div>
-            <div class="header-center"><h1 id="app-dynamic-title">Protección Patrimonial</h1></div>
+            <div class="header-center">
+                <!-- TÍTULO RESTITUIDO -->
+                <h1>Protección Patrimonial</h1>
+            </div>
             <div class="header-right">
                 <div class="launcher-container" id="launcher">
-                    <button class="launcher-btn" onclick="toggleLauncher(event)">
+                    <button class="launcher-btn">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                     </button>
                     <div class="app-menu">
-                        <div class="menu-item" onclick="loadInSideApp('WhatsApp')"><div class="icon">WA</div><span>WhatsApp</span></div>
-                        <div class="menu-item" onclick="loadInSideApp('Correo')"><div class="icon">✉️</div><span>Correo</span></div>
-                        <div id="menu-users" class="menu-item hidden" onclick="loadInSideApp('Perfiles')"><div class="icon">👤</div><span>Perfiles</span></div>
-                        <div class="menu-item" onclick="loadInSideApp('Areas')"><div class="icon">🗺️</div><span>Áreas</span></div>
-                        <div class="menu-item" onclick="loadInSideApp('Bases')"><div class="icon">🏢</div><span>Bases</span></div>
-                        <div class="menu-item" onclick="loadInSideApp('Alertas')"><div class="icon">🔔</div><span>Alertas</span></div>
+                        <div class="menu-item" onclick="loadInSideApp('WhatsApp')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            </div>
+                            <span>WhatsApp</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Correo')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <span id="mail-dot" class="badge"></span>
+                            </div>
+                            <span>Correo</span>
+                        </div>
+                        <div id="menu-users" class="menu-item hidden" onclick="loadInSideApp('Perfiles')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            </div>
+                            <span>Perfiles</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Areas')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            </div>
+                            <span>Áreas</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Bases')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                            </div>
+                            <span>Bases</span>
+                        </div>
+                        <div class="menu-item" onclick="loadInSideApp('Alertas')">
+                            <div class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                <span id="alerts-dot" class="badge"></span>
+                            </div>
+                            <span>Alertas</span>
+                        </div>
                     </div>
                 </div>
-                <button class="launcher-btn" onclick="loadInMain('Configuracion')">⚙️</button>
+                <button class="launcher-btn" onclick="loadInMain('Configuracion')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                
                 <div class="avatar-container">
                     <div class="avatar">
                         <img id="header-avatar-img" src="" class="hidden">
-                        <span id="header-avatar-svg">👤</span>
+                        <svg id="header-avatar-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                     <div class="login-popup">
-                        <h4 id="user-display-name">Cargando...</h4>
-                        <button class="btn-login" style="padding: 0.75rem; font-size: 0.75rem;" onclick="handleLogout()">Cerrar Sesión</button>
+                        <h4 id="user-display-name" style="font-weight: 800; font-size: 0.95rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: -0.5px;">CARGANDO...</h4>
+                        <p id="user-display-role" style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px;">Sincronizando</p>
+                        <div style="height: 1px; background: #f1f5f9; margin-bottom: 15px;"></div>
+                        <button class="btn-login" style="padding: 12px; font-size: 0.7rem; letter-spacing: 1px;" onclick="handleLogout()">Salir del Sistema</button>
                     </div>
                 </div>
             </div>
@@ -309,8 +441,8 @@
             <aside id="sidebar-left"><iframe id="nav-frame" src="Apps/Navegacion.html"></iframe></aside>
             <section class="panel-center"><div class="canvas-area"><iframe id="main-frame" src="about:blank"></iframe></div></section>
             <aside id="sidebar-right">
-                <div style="height: 60px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; background: #f8fafc;">
-                    <h3 id="side-app-title" style="font-size: 0.75rem; font-weight: 900; color: var(--corporate-red); text-transform: uppercase;">Módulo</h3>
+                <div style="height: 60px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #f8fafc;">
+                    <h3 id="side-app-title" style="font-size: 0.7rem; font-weight: 900; color: var(--corporate-red); text-transform: uppercase;">Módulo</h3>
                     <button onclick="closeSideApp()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</button>
                 </div>
                 <iframe id="side-app-frame" src="about:blank" style="flex: 1;"></iframe>
@@ -337,9 +469,9 @@
 
         const TOOL_ROUTES = {
             'reloj': { path: 'Navegacion/RegistrosDeAcceso/Herramientas/RelojChecador.html', name: 'Reloj Checador Biométrico' },
+            'relojchecador': { path: 'Navegacion/RegistrosDeAcceso/Herramientas/RelojChecador.html', name: 'Reloj Checador Biométrico' },
             'alertas': { path: 'Apps/Alertas.html', name: 'Centro de Alertas Operativas' },
             'siniestros': { path: 'Navegacion/RegistroDeSiniestros/RegSin.html', name: 'Registro de Siniestros' },
-            'contador': { path: 'Navegacion/RegistrosDeAcceso/Herramientas/Contador.html', name: 'Contador de Ingresos' },
             'home': { path: 'Apps/Home.html', name: 'Protección Patrimonial' }
         };
 
@@ -359,16 +491,6 @@
             document.getElementById('overlay').classList.toggle('active');
         };
 
-        window.toggleLauncher = (e) => {
-            e.stopPropagation();
-            document.getElementById('launcher').classList.toggle('active');
-        };
-
-        document.addEventListener('click', () => {
-            const l = document.getElementById('launcher');
-            if (l) l.classList.remove('active');
-        });
-
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('login-submit');
@@ -376,46 +498,59 @@
             try { 
                 await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value); 
             } catch (err) { 
-                alert("Credenciales no válidas."); btn.disabled = false; btn.innerText = 'Ingresar al Sistema';
+                alert("Credenciales no válidas."); btn.disabled = false; btn.innerText = 'Ingresar al Centro';
             }
         });
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
+            if (user && !user.isAnonymous) {
                 const publicRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
                 onSnapshot(publicRef, (snap) => {
                     const d = snap.exists() ? snap.data() : {};
-                    document.getElementById('user-display-name').innerText = d.name || user.email;
+                    const displayName = d.name || user.email;
+                    const displayRole = d.roleLabel || "Operativo";
+                    
+                    document.getElementById('user-display-name').innerText = displayName;
+                    document.getElementById('user-display-role').innerText = displayRole;
+                    
                     if(d.roleId === 'administrador') document.getElementById('menu-users').classList.remove('hidden');
+                    
                     if (d.photo) {
                         const img = document.getElementById('header-avatar-img');
-                        img.src = d.photo; img.classList.remove('hidden');
+                        img.src = d.photo; 
+                        img.classList.remove('hidden');
                         document.getElementById('header-avatar-svg').classList.add('hidden');
                     }
                     showScreen('app');
                     handleInitialRouting(user.uid);
                 });
             } else {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                else await signInAnonymously(auth);
+                if (!user) {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                        else await signInAnonymously(auth);
+                    } catch(e) {}
+                }
                 showScreen('login'); 
             }
         });
 
         const handleInitialRouting = async (uid) => {
             const urlParams = new URLSearchParams(window.location.search);
-            const toolKey = urlParams.get('tool');
-            if (toolKey && TOOL_ROUTES[toolKey]) {
-                const tool = TOOL_ROUTES[toolKey];
-                document.getElementById('main-frame').src = tool.path;
-                document.getElementById('app-dynamic-title').innerText = tool.name;
-                return;
+            let toolKey = urlParams.get('tool');
+            if (toolKey) {
+                toolKey = toolKey.toLowerCase();
+                if (TOOL_ROUTES[toolKey]) {
+                    const tool = TOOL_ROUTES[toolKey];
+                    document.getElementById('main-frame').src = tool.path;
+                    return;
+                }
             }
             restoreState(uid);
         };
 
         const saveState = async (mainPath, sidePath, sideTitle) => {
-            if (!auth.currentUser || new URLSearchParams(window.location.search).has('tool')) return;
+            if (!auth.currentUser || auth.currentUser.isAnonymous || new URLSearchParams(window.location.search).has('tool')) return;
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'settings', 'state'), {
                     mainPath: mainPath || '', sidePath: sidePath || '', sideTitle: sideTitle || '', updatedAt: new Date().toISOString()
@@ -440,15 +575,12 @@
         window.loadInMain = (n, skipSave = false) => {
             const path = normalizePath(n);
             document.getElementById('main-frame').src = path;
-            const tool = Object.values(TOOL_ROUTES).find(t => t.path === path);
-            document.getElementById('app-dynamic-title').innerText = tool ? tool.name : n.replace(/([A-Z])/g, ' $1').trim();
             if(window.innerWidth <= 1024 && document.getElementById('sidebar-left').classList.contains('open')) toggleNav();
             closeSideApp(skipSave);
             if (!skipSave) saveState(path, null, null);
         };
 
         window.loadInSideApp = (n, skipSave = false, params = '') => {
-            document.getElementById('launcher').classList.remove('active');
             const side = document.getElementById('sidebar-right');
             const fullPath = normalizePath(n) + params;
             const title = n.replace(/Apps\//, '').replace(/\.html/, '').replace(/([A-Z])/g, ' $1').trim();
@@ -468,6 +600,15 @@
             if (e.data.type === 'LOAD_NAV') window.loadInMain(e.data.path);
             if (e.data.type === 'LOAD_SIDE_APP') window.loadInSideApp(e.data.app, false, e.data.params || '');
         });
+
+        // REGISTRO DE SERVICE WORKER
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+              .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+              .catch(err => console.log('Error al registrar Service Worker:', err));
+          });
+        }
     </script>
 </body>
 </html>
