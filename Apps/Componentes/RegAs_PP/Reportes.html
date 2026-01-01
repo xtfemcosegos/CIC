@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Reportes - CIC Protection</title>
+    <!-- Dependencias Visuales -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.3; cursor: pointer; }
+        
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(248, 250, 252, 0.98);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="max-w-[1600px] mx-auto p-2 md:p-4 space-y-4 text-slate-900">
+    
+    <!-- CONTENEDOR STICKY: ENCABEZADO + CINTA -->
+    <div class="sticky-header space-y-2 pb-2 border-b border-slate-100">
+        <!-- Encabezado Compacto -->
+        <header class="flex items-center justify-between bg-white rounded-2xl p-3 border border-slate-100 shadow-sm overflow-hidden relative text-slate-900">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-red-50/50 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+            
+            <div class="z-10 flex items-center gap-3">
+                <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-file-invoice text-xs text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black tracking-tighter uppercase leading-none text-slate-900">
+                        Módulo <span class="text-red-800">Reportes</span>
+                    </h2>
+                    <p id="daily-title-date" class="text-slate-400 text-[6px] font-bold uppercase tracking-[0.3em] mt-0.5">Operación CIC</p>
+                </div>
+            </div>
+
+            <!-- Pestañas -->
+            <div class="z-10 flex items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
+                <button onclick="switchReportTab('whatsapp')" id="tab-whatsapp" class="px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all bg-white text-slate-900 shadow-sm border border-slate-100">
+                    WhatsApp
+                </button>
+                <button onclick="switchReportTab('daily')" id="tab-daily" class="px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-900">
+                    Diario
+                </button>
+            </div>
+        </header>
+
+        <!-- Cinta de Herramientas (Ribbon) -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950 text-white px-4 py-2 rounded-xl shadow-lg">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 border-r border-white/10 pr-4">
+                    <label class="text-[7px] font-black uppercase tracking-widest text-white/40">Fecha</label>
+                    <input type="date" id="global-report-date" onchange="syncAndLoad()" class="bg-white/10 border-none rounded-md px-2 py-1 text-[9px] font-bold outline-none focus:bg-white focus:text-slate-900 transition-all cursor-pointer text-white">
+                </div>
+
+                <div id="ribbon-night-toggle" class="hidden flex items-center gap-2 animate-in slide-in-from-left-1">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <div class="relative">
+                            <input type="checkbox" id="hybrid-night-mode" onchange="generateDailyTableReport()" class="sr-only peer">
+                            <div class="w-7 h-4 bg-white/20 rounded-full peer peer-checked:bg-red-800 transition-all"></div>
+                            <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full peer-checked:translate-x-3 transition-all shadow-sm"></div>
+                        </div>
+                        <span class="text-[8px] font-black uppercase text-white tracking-tighter">Ciclo Nocturno</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 text-white">
+                <div id="ribbon-email-action" class="hidden animate-in fade-in">
+                    <button onclick="openEmailModal()" class="flex items-center gap-2 px-4 py-1.5 bg-red-800 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm active:scale-95 text-white">
+                        <i class="fa-solid fa-envelope text-white"></i>
+                        <span>Enviar Correo</span>
+                    </button>
+                </div>
+                <div id="ribbon-status" class="px-2 text-[7px] font-black text-emerald-400 uppercase tracking-widest opacity-0 transition-opacity">
+                    <i class="fa-solid fa-cloud-check"></i> Sincronizado
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÁREA: WHATSAPP -->
+    <div id="content-whatsapp" class="space-y-4 animate-in fade-in duration-500 text-slate-900">
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-4 text-slate-900">
+            <div class="lg:col-span-1 text-slate-900">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-4 text-slate-900">
+                    <div class="space-y-1.5 text-slate-900">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Turno</label>
+                        <select id="report-shift" class="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[9px] font-bold outline-none focus:border-red-800 transition-all text-slate-900 text-slate-900">
+                            <option value="M">Mañana</option>
+                            <option value="V">Tarde</option>
+                            <option value="N">Noche</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer group px-1 text-slate-900">
+                        <input type="checkbox" id="include-times" class="w-3.5 h-3.5 accent-red-800 rounded" checked>
+                        <span class="text-[8px] font-black uppercase text-slate-500 group-hover:text-slate-900 transition-colors tracking-tighter">Incluir Horas</span>
+                    </label>
+                    <button onclick="generateReport()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-md flex items-center justify-center gap-2 text-white">
+                        <i class="fa-solid fa-wand-magic-sparkles text-white"></i> Crear Texto
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col overflow-hidden relative">
+                    <div class="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                        <p class="text-[8px] font-black text-slate-900 uppercase tracking-widest">Vista Previa WhatsApp</p>
+                        <button onclick="copyToClipboard()" id="copy-btn" class="hidden px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-sm text-white">
+                            <i class="fa-solid fa-copy mr-1 text-white"></i> Copiar
+                        </button>
+                    </div>
+                    <div class="flex-1 p-4">
+                        <textarea id="report-output" readonly placeholder="..." class="w-full h-full min-h-[300px] bg-slate-50/30 border-none resize-none text-[10px] font-mono text-slate-700 focus:outline-none custom-scrollbar p-3 rounded-xl text-slate-900"></textarea>
+                    </div>
+                    <div id="copy-toast" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest animate-in slide-in-from-bottom-2 shadow-2xl z-50 text-white">
+                        <i class="fa-solid fa-check-circle text-emerald-400 mr-1 text-white"></i> Copiado
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ÁREA: REPORTE DIARIO -->
+    <div id="content-daily" class="hidden space-y-6 animate-in fade-in duration-500 text-slate-900">
+        <div id="daily-tables-container" class="space-y-6 text-slate-900">
+            <div class="py-20 text-center opacity-20">
+                <i class="fa-solid fa-circle-notch animate-spin text-xl mb-3 text-slate-900"></i>
+                <p class="text-[8px] font-black uppercase tracking-widest text-slate-900 tracking-[0.2em]">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ENVÍO CORREO -->
+    <div id="email-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 text-slate-900">
+        <div class="bg-white w-full max-w-6xl rounded-[3rem] p-8 shadow-2xl space-y-6 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar text-slate-900 text-slate-900">
+            <div class="space-y-1 border-b border-slate-100 pb-4 text-slate-900 text-slate-900 text-slate-900">
+                <h3 class="text-lg font-black text-slate-900 uppercase tracking-tighter text-slate-900 text-slate-900 text-slate-900">Confirmar <span class="text-red-800">Envío</span></h3>
+                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Revisa la vista previa antes de confirmar.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-900 text-slate-900 text-slate-900">
+                <div class="lg:col-span-1 space-y-4 text-slate-900 text-slate-900 text-slate-900">
+                    <div class="space-y-1.5 text-slate-900 text-slate-900 text-slate-900">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-2">Para (to)</label>
+                        <textarea id="email-to" rows="2" class="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[9px] font-bold outline-none focus:border-red-800 transition-all resize-none shadow-inner text-slate-900 text-slate-900 text-slate-900"></textarea>
+                    </div>
+                    <div class="space-y-1.5 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-2">CC</label>
+                        <textarea id="email-cc" rows="2" class="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[9px] font-bold outline-none focus:border-red-800 transition-all resize-none shadow-inner text-slate-900 text-slate-900 text-slate-900"></textarea>
+                    </div>
+
+                    <div id="email-error" class="hidden p-3 bg-red-50 text-red-700 rounded-lg text-[8px] font-black uppercase tracking-widest text-center border border-red-100">
+                        Error al enviar
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-50 flex flex-col gap-2 text-slate-900">
+                        <button id="btn-confirm-email" onclick="confirmAndSendEmail()" class="w-full py-4 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-md text-white">
+                            Confirmar y Enviar
+                        </button>
+                        <button onclick="closeEmailModal()" class="w-full py-3 text-[8px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 space-y-2 text-slate-900 text-slate-900 text-slate-900 text-slate-900">
+                    <label class="text-[7px] font-black text-slate-400 uppercase ml-2 flex items-center gap-2">
+                        <i class="fa-solid fa-eye text-red-800"></i> Vista Previa Correo
+                    </label>
+                    <div id="email-body-preview" class="w-full h-[400px] bg-white border-2 border-slate-100 rounded-2xl overflow-y-auto custom-scrollbar p-0 shadow-inner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, getDocs, setDoc, doc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+        authDomain: "cic5-pp.firebaseapp.com",
+        projectId: "cic5-pp",
+        storageBucket: "cic5-pp.firebasestorage.app",
+        messagingSenderId: "577576116946",
+        appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
+        measurementId: "G-G02GSE321T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const appId = 'cic5-pp';
+
+    const globalDateInput = document.getElementById('global-report-date');
+    if(!globalDateInput.value) globalDateInput.valueAsDate = new Date();
+
+    let currentReportState = { assigns: [], usersMap: {}, date: "", isHybrid: false, prevDate: "" };
+
+    window.switchReportTab = (tab) => {
+        const wt = document.getElementById('content-whatsapp');
+        const dt = document.getElementById('content-daily');
+        const btW = document.getElementById('tab-whatsapp');
+        const btD = document.getElementById('tab-daily');
+        const nightToggle = document.getElementById('ribbon-night-toggle');
+        const emailAction = document.getElementById('ribbon-email-action');
+
+        if(tab === 'whatsapp') {
+            wt.classList.remove('hidden');
+            dt.classList.add('hidden');
+            nightToggle.classList.add('hidden');
+            emailAction.classList.add('hidden');
+            btW.className = "px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all bg-white text-slate-900 shadow-sm border border-slate-100";
+            btD.className = "px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-900";
+        } else {
+            wt.classList.add('hidden');
+            dt.classList.remove('hidden');
+            nightToggle.classList.remove('hidden');
+            emailAction.classList.remove('hidden');
+            btD.className = "px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all bg-white text-slate-900 shadow-sm border border-slate-100";
+            btW.className = "px-4 py-1.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-900";
+            generateDailyTableReport();
+        }
+    };
+
+    window.syncAndLoad = () => {
+        const activeTab = document.getElementById('tab-daily').classList.contains('bg-white') ? 'daily' : 'whatsapp';
+        if (activeTab === 'daily') generateDailyTableReport();
+        else generateReport();
+    };
+
+    const formatDateLongLocale = (d) => new Date(d + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+
+    // --- HELPER: ASIGNAR CLASES DE ETIQUETA POR MOTIVO ---
+    function getAbsenceClasses(reason) {
+        switch(reason) {
+            case 'Vacaciones': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            case 'Falta': return 'bg-yellow-100 text-red-700 border-yellow-200';
+            case 'Permiso': return 'bg-orange-50 text-orange-700 border-orange-100';
+            default: return 'bg-red-50 text-red-700 border-red-100';
+        }
+    }
+
+    // --- HELPER: ASIGNAR ESTILOS DE ETIQUETA PARA EMAIL POR MOTIVO ---
+    function getAbsenceEmailStyles(reason) {
+        switch(reason) {
+            case 'Vacaciones': return 'background:#ecfdf5;color:#047857;border:1px solid #d1fae5;';
+            case 'Falta': return 'background:#fef9c3;color:#b91c1c;border:1px solid #fef08a;';
+            case 'Permiso': return 'background:#fff7ed;color:#c2410c;border:1px solid #ffedd5;';
+            default: return 'background:#fef2f2;color:#991b1b;border:1px solid #fee2e2;';
+        }
+    }
+
+    window.generateDailyTableReport = async () => {
+        const date = globalDateInput.value;
+        const isHybrid = document.getElementById('hybrid-night-mode').checked;
+        const container = document.getElementById('daily-tables-container');
+        const titleDateEl = document.getElementById('daily-title-date');
+        
+        if (titleDateEl) titleDateEl.innerText = `Jornada Administrativa: ${date}${isHybrid ? ' (Ciclo Nocturno)' : ''}`;
+        container.innerHTML = '<div class="py-20 text-center opacity-20 text-slate-900"><i class="fa-solid fa-circle-notch animate-spin text-xl"></i></div>';
+
+        const dObj = new Date(date + 'T00:00:00');
+        dObj.setDate(dObj.getDate() - 1);
+        const prevDate = dObj.toISOString().split('T')[0];
+
+        try {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
+            const usersMap = {};
+            usersSnap.forEach(d => { 
+                const u = d.data();
+                usersMap[u.email] = { name: u.name, id: u.employeeId }; 
+            });
+
+            const assignsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'assignments'));
+            const allAssignments = assignsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+            
+            currentReportState = { assigns: allAssignments, usersMap, date, isHybrid, prevDate };
+
+            let html = "";
+            
+            if (isHybrid) {
+                const nightPrev = allAssignments.filter(a => a.date === prevDate && a.shift === 'N' && a.type !== 'ausentismo');
+                const morningCurr = allAssignments.filter(a => a.date === date && a.shift === 'M' && a.type !== 'ausentismo');
+                const absPrev = allAssignments.filter(a => a.date === prevDate && a.type === 'ausentismo' && a.reason !== 'Descanso');
+                const absCurr = allAssignments.filter(a => a.date === date && a.type === 'ausentismo' && a.reason !== 'Descanso');
+
+                if (nightPrev.length > 0) html += renderTable(`ASISTENCIA TURNO NOCTURNO - ${formatDateLongLocale(prevDate)}`, 'fa-moon', nightPrev, usersMap, false);
+                if (absPrev.length > 0) html += renderTable(`AUSENCIAS E INCIDENCIAS - ${formatDateLongLocale(prevDate)}`, 'fa-user-xmark', absPrev, usersMap, true);
+                if (morningCurr.length > 0) html += renderTable(`ASISTENCIA TURNO MATUTINO - ${formatDateLongLocale(date)}`, 'fa-sun', morningCurr, usersMap, false);
+                if (absCurr.length > 0) html += renderTable(`AUSENCIAS E INCIDENCIAS - ${formatDateLongLocale(date)}`, 'fa-user-xmark', absCurr, usersMap, true);
+            } else {
+                ['M', 'V', 'N'].forEach(sID => {
+                    const label = sID === 'M' ? 'Matutino' : sID === 'V' ? 'Vespertino' : 'Nocturno';
+                    const icon = sID === 'M' ? 'fa-sun' : sID === 'V' ? 'fa-cloud-sun' : 'fa-moon';
+                    const list = allAssignments.filter(a => a.date === date && a.shift === sID && a.type !== 'ausentismo');
+                    if (list.length > 0) html += renderTable(`ASISTENCIA ${label.toUpperCase()} - ${formatDateLongLocale(date)}`, icon, list, usersMap, false);
+                });
+                const abs = allAssignments.filter(a => a.date === date && a.type === 'ausentismo' && a.reason !== 'Descanso');
+                if (abs.length > 0) html += renderTable(`AUSENCIAS E INCIDENCIAS - ${formatDateLongLocale(date)}`, 'fa-user-xmark', abs, usersMap, true);
+            }
+
+            container.innerHTML = html || `<div class="py-20 text-center opacity-30 text-[8px] font-black uppercase tracking-[0.4em]">Sin registros</div>`;
+            showSyncToast();
+        } catch (e) { console.error(e); }
+    };
+
+    function renderTable(title, icon, list, users, isAbsence) {
+        return `
+            <div class="space-y-0 overflow-hidden rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-1 duration-500 bg-white text-slate-900">
+                <div class="flex items-center justify-between px-5 py-3 bg-slate-950 text-white">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid ${icon} text-[10px] opacity-40 text-white"></i>
+                        <h4 class="text-[9px] font-black uppercase tracking-[0.2em] text-white">${title}</h4>
+                    </div>
+                    <span class="text-[7px] font-black bg-white/10 px-2 py-0.5 rounded-md text-white">${list.length} Registros</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="bg-red-900 text-white text-[7px] font-black uppercase tracking-[0.2em]">
+                                <th class="px-5 py-2 text-white">ID</th>
+                                <th class="px-5 py-2 text-white">Personal</th>
+                                ${isAbsence ? `<th class="px-5 py-2 text-center text-white">Causa</th>` : `<th class="px-5 py-2 text-white">Estatus</th><th class="px-5 py-2 text-center text-white">E</th><th class="px-5 py-2 text-center text-white">S</th>`}
+                                <th class="px-5 py-2 text-white">Comentario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            ${list.map(a => {
+                                const isL = a.realEntry && a.assignedEntry && (a.realEntry > a.assignedEntry);
+                                const u = users[a.email] || { name: a.email, id: '---' };
+                                return `
+                                <tr class="group hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-5 py-3 text-[9px] font-black text-slate-400 tracking-widest">${u.id}</td>
+                                    <td class="px-5 py-3 text-[10px] font-black text-slate-900 uppercase leading-tight">${u.name}</td>
+                                    ${isAbsence ? `
+                                        <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 ${getAbsenceClasses(a.reason)} text-[7px] font-black uppercase rounded border">${a.reason || 'Falta'}</span></td>
+                                    ` : `
+                                        <td class="px-5 py-3">
+                                            <div class="flex flex-wrap gap-1">
+                                                ${isL ? '<span class="px-1.5 py-0.5 bg-red-800 text-white text-[7px] font-black uppercase rounded shadow-sm">Retardo</span>' : ''}
+                                                ${a.isExtra ? '<span class="px-1.5 py-0.5 bg-fuchsia-600 text-white text-[7px] font-black uppercase rounded shadow-sm">Extra</span>' : ''}
+                                                ${a.isHoliday ? '<span class="px-1.5 py-0.5 bg-purple-700 text-white text-[7px] font-black uppercase rounded shadow-sm">Festivo</span>' : ''}
+                                                ${a.isRecovery ? '<span class="px-1.5 py-0.5 bg-emerald-600 text-white text-[7px] font-black uppercase rounded shadow-sm">Recupera</span>' : ''}
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-3 text-center text-[10px] font-mono font-black ${a.realEntry ? (isL ? 'text-red-700' : 'text-emerald-600') : 'text-slate-200'}">${a.realEntry || '--:--'}</td>
+                                        <td class="px-5 py-3 text-center text-[10px] font-mono font-black ${a.realExit ? 'text-slate-900' : 'text-slate-200'}">${a.realExit || '--:--'}</td>
+                                    `}
+                                    <td class="px-5 py-3">
+                                        <input type="text" value="${a.note || ''}" onchange="saveRowNote('${a.docId}', this.value)" placeholder="..." class="w-full bg-transparent border-none p-0 text-[9px] font-medium text-slate-500 outline-none focus:text-slate-900">
+                                    </td>
+                                </tr>`;}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    function showSyncToast() {
+        const toast = document.getElementById('ribbon-status');
+        if (toast) { toast.style.opacity = "1"; setTimeout(() => toast.style.opacity = "0", 2000); }
+    }
+
+    function generateEmailHtml() {
+        const { assigns, usersMap, date, isHybrid, prevDate } = currentReportState;
+        const style = `body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; } .card { background-color: #fff; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; margin-bottom: 15px; } .header { background-color: #020617; color: #fff; padding: 10px 20px; font-weight: bold; font-size: 10px; text-transform: uppercase; } table { width: 100%; border-collapse: collapse; } th { background-color: #7f1d1d; color: #fff; font-size: 8px; text-align: left; padding: 8px 15px; text-transform: uppercase; } td { padding: 10px 15px; border-bottom: 1px solid #f8fafc; font-size: 10px; } .badge { padding: 2px 5px; border-radius: 3px; font-size: 7px; color: #fff; display: inline-block; margin-right: 2px; }`;
+        let html = `<!DOCTYPE html><html><head><style>${style}</style></head><body>`;
+        
+        const blocks = isHybrid ? [
+            {d:prevDate, s:'N', l:'NOCTURNO', a:false},
+            {d:prevDate, a:true},
+            {d:date, s:'M', l:'MATUTINO', a:false},
+            {d:date, a:true}
+        ] : [
+            {d:date,s:'M',l:'MATUTINO',a:false},
+            {d:date,s:'V',l:'VESPERTINO',a:false},
+            {d:date,s:'N',l:'NOCTURNO',a:false},
+            {d:date,a:true}
+        ];
+
+        blocks.forEach(b => {
+            const list = b.a 
+                ? assigns.filter(a => a.date === b.d && a.type === 'ausentismo' && a.reason !== 'Descanso') 
+                : assigns.filter(a => a.date === b.d && a.shift === b.s && a.type !== 'ausentismo');
+            
+            if (list.length > 0) {
+                html += `<div class="card"><div class="header">ASISTENCIA ${b.l || 'AUSENCIAS'} - ${formatDateLongLocale(b.d)}</div><table><thead><tr><th>ID</th><th>Personal</th><th>${b.a?'Causa':'Status'}</th>${b.a?'':'<th>E</th><th>S</th>'}<th>Comentario</th></tr></thead><tbody>`;
+                html += list.map(a => {
+                    const u = usersMap[a.email] || { name: a.email, id: '---' };
+                    const isL = a.realEntry && a.assignedEntry && (a.realEntry > a.assignedEntry);
+                    
+                    let statusLabel = "";
+                    if(b.a) {
+                        statusLabel = `<span style="padding:2px 6px;border-radius:3px;font-size:7px;font-weight:bold;${getAbsenceEmailStyles(a.reason)}">${a.reason}</span>`;
+                    } else {
+                        statusLabel = (isL ? '<span class="badge" style="background:#991b1b">Retardo</span>' : '') + 
+                                      (a.isExtra ? '<span class="badge" style="background:#c026d3">Extra</span>' : '') +
+                                      (a.isHoliday ? '<span class="badge" style="background:#7e22ce">Festivo</span>' : '') +
+                                      (a.isRecovery ? '<span class="badge" style="background:#059669">Recupera</span>' : '');
+                    }
+
+                    return `<tr><td>${u.id}</td><td style="font-weight:bold">${u.name}</td><td>${statusLabel}</td>${b.a?'':`<td>${a.realEntry||'--'}</td><td>${a.realExit||'--'}</td>`}<td>${a.note||''}</td></tr>`;
+                }).join('');
+                html += `</tbody></table></div>`;
+            }
+        });
+        return html + `</body></html>`;
+    }
+
+    window.openEmailModal = () => {
+        document.getElementById('email-to').value = "jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com";
+        document.getElementById('email-cc').value = "roberto.rodriguez@armur.com;josedavid.montano@armur.com";
+        document.getElementById('email-body-preview').innerHTML = generateEmailHtml();
+        document.getElementById('email-modal').classList.remove('hidden');
+    };
+
+    window.closeEmailModal = () => document.getElementById('email-modal').classList.add('hidden');
+
+    window.confirmAndSendEmail = async () => {
+        const to = document.getElementById('email-to').value.trim();
+        const cc = document.getElementById('email-cc').value.trim();
+        if (!to) return;
+        const btn = document.getElementById('btn-confirm-email');
+        btn.disabled = true; btnText.innerText = "Enviando...";
+        try {
+            await fetch("https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/507bea91c30c4743b4749a474f92ad3f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PzEbbL5wNoHu-b78wQtE7JP0H-RKDb3btp2iHGbM6vU", {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, cc, body: generateEmailHtml() })
+            });
+            btn.innerText = "¡Enviado!";
+            setTimeout(() => { closeEmailModal(); btn.disabled = false; btn.innerText = "Confirmar y Enviar"; }, 2000);
+        } catch (err) { btn.disabled = false; btnText.innerText = "Error - Reintentar"; }
+    };
+
+    window.saveRowNote = async (id, note) => { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id), { note, updatedAt: serverTimestamp() }, { merge: true }); } catch (e) {} };
+
+    window.generateReport = async () => {
+        const date = globalDateInput.value;
+        const shift = document.getElementById('report-shift').value;
+        const out = document.getElementById('report-output');
+        out.value = "Generando...";
+        
+        try {
+            const shiftLabels = { 'M': 'MATUTINO', 'V': 'VESPERTINO', 'N': 'NOCTURNO' };
+            const fullShiftName = shiftLabels[shift] || shift;
+
+            const stationsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'stations'));
+            const stations = stationsSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.order||0) - (b.order||0));
+            
+            const assignsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'assignments'));
+            const assigns = assignsSnap.docs.map(d => d.data()).filter(a => a.date === date && a.shift === shift);
+            
+            const statusSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status'));
+            const dailyStatuses = statusSnap.docs.map(d => d.data()).filter(s => s.date === date && s.shift === shift);
+
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
+            const usersMap = {}; 
+            usersSnap.forEach(d => { usersMap[d.data().email] = d.data().name; });
+            
+            let txt = `*DISTRIBUCIÓN TURNO ${fullShiftName}*\n\`${formatDateLongLocale(date)}\`\n\n`;
+            
+            stations.forEach(st => {
+                const elements = assigns.filter(a => a.station === st.name && a.type !== 'ausentismo');
+                const isClosed = dailyStatuses.find(s => s.stationId === st.id)?.isClosed;
+
+                if (elements.length > 0 || isClosed) {
+                    txt += `*${st.name.toUpperCase()}*\n`;
+                    if (isClosed) {
+                        txt += `Sin elemento\n`;
+                    } else {
+                        elements.forEach(el => {
+                            const name = usersMap[el.email] || el.email;
+                            const timeStr = document.getElementById('include-times').checked ? ` (${el.realEntry || '--:--'})` : '';
+                            txt += `${name}${timeStr}\n`;
+                        });
+                    }
+                    txt += `\n`;
+                }
+            });
+            
+            out.value = txt.trim() || `Sin registros para el turno ${fullShiftName}.`;
+            document.getElementById('copy-btn').classList.remove('hidden');
+        } catch (e) { out.value = "Error al generar reporte."; }
+    };
+
+    window.copyToClipboard = () => {
+        const text = document.getElementById('report-output').value;
+        const toast = document.getElementById('copy-toast');
+        const textarea = document.createElement("textarea");
+        textarea.value = text; document.body.appendChild(textarea); textarea.select();
+        document.execCommand('copy'); document.body.removeChild(textarea);
+        toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 3000);
+    };
+
+    if (window.lucide) lucide.createIcons();
+</script>
+
+</body>
+</html>

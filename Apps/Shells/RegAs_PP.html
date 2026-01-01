@@ -1,0 +1,84 @@
+<!-- Shell principal de RegAs Protección Patrimonial - Optimizado y Compacto -->
+<div class="flex flex-col h-full bg-white animate-in fade-in duration-500">
+    
+    <!-- ENCABEZADO DE MÓDULO STICKY Y COMPACTO -->
+    <header class="sticky top-0 z-[60] bg-white/95 backdrop-blur-md border-b border-slate-100 p-3 md:px-10 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-7 h-7 bg-red-800 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-900 tracking-tighter uppercase leading-none">
+                        Protección <span class="text-red-800">Patrimonial</span>
+                    </h2>
+                    <p class="text-slate-400 text-[6px] font-bold uppercase tracking-[0.4em] mt-0.5 leading-none">Control Operativo</p>
+                </div>
+            </div>
+
+            <!-- NAVEGACIÓN COMPACTA -->
+            <nav id="regas-tabs" class="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200">
+                <button onclick="loadRegAsModule('VistaDia.html', this)" class="regas-tab-btn active px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                    Vista Día
+                </button>
+                <button onclick="loadRegAsModule('Planeacion.html', this)" class="regas-tab-btn px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
+                    Planeación
+                </button>
+                <button onclick="loadRegAsModule('Reportes.html', this)" class="regas-tab-btn px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
+                    Reportes
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ÁREA DE CARGA SIN MÁRGENES EXTERNOS PARA MÁXIMO APROVECHAMIENTO -->
+    <main id="regas-component-container" class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-center h-full opacity-20">
+            <i class="fa-solid fa-circle-notch animate-spin text-2xl"></i>
+        </div>
+    </main>
+
+</div>
+
+<script>
+    async function loadRegAsModule(file, btn) {
+        const container = document.getElementById('regas-component-container');
+        const path = `Apps/Componentes/RegAs_PP/${file}`;
+        
+        document.querySelectorAll('.regas-tab-btn').forEach(b => {
+            b.classList.remove('active', 'bg-slate-900', 'text-white', 'shadow-md');
+            b.classList.add('text-slate-400');
+        });
+        
+        if (btn) {
+            btn.classList.add('active', 'bg-slate-900', 'text-white', 'shadow-md');
+            btn.classList.remove('text-slate-400');
+        }
+
+        try {
+            const response = await fetch(path);
+            if (response.ok) {
+                const html = await response.text();
+                const fragment = document.createRange().createContextualFragment(html);
+                container.innerHTML = "";
+                container.appendChild(fragment);
+                if (window.lucide) lucide.createIcons();
+            } else {
+                container.innerHTML = `<div class="p-20 text-center opacity-30 text-[10px] font-black uppercase tracking-widest">Módulo en Desarrollo</div>`;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    (function initRegAsDefault() {
+        setTimeout(() => {
+            const firstTab = document.querySelector('.regas-tab-btn');
+            if (firstTab) loadRegAsModule('VistaDia.html', firstTab);
+        }, 50);
+    })();
+</script>
+
+<style>
+    .regas-tab-btn.active { background-color: #0f172a; color: white; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+</style>

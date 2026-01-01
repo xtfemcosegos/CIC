@@ -1,0 +1,486 @@
+<!-- Detalle y Editor Operativo en Línea de Tiempo Colapsable - Módulo CIC Protection -->
+<div class="p-6 space-y-10 animate-in slide-in-from-right duration-500 pb-32 h-full overflow-y-auto custom-scrollbar">
+    
+    <!-- Perfil Compacto -->
+    <header class="text-center space-y-4 relative">
+        <div id="detail-photo-container" class="w-24 h-24 mx-auto bg-slate-900 rounded-full flex items-center justify-center text-white border-4 border-slate-50 shadow-xl overflow-hidden relative">
+            <i class="fa-solid fa-user text-3xl text-white/20"></i>
+        </div>
+        <div>
+            <p id="detail-display-date" class="text-red-800 text-[8px] font-black uppercase tracking-widest mb-1">—</p>
+            <h2 id="detail-display-name" class="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight">Cargando...</h2>
+            <div class="flex items-center justify-center gap-2 mt-1">
+                <span id="detail-display-role" class="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Consultando Sistema</span>
+                <div id="save-indicator" class="opacity-0 transition-opacity">
+                    <i class="fa-solid fa-circle-notch animate-spin text-[8px] text-red-800"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Semáforo de Puntualidad (Dinámico) -->
+    <div id="status-container" class="w-full p-4 rounded-2xl text-center text-[9px] font-black uppercase tracking-widest border border-slate-100 bg-slate-50 text-slate-400 shadow-inner">
+        Buscando Registro...
+    </div>
+
+    <!-- FLUJO OPERATIVO (LÍNEA DE TIEMPO) -->
+    <div class="relative space-y-8 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+        
+        <!-- ETAPA 1: PLANEACIÓN -->
+        <div class="relative pl-12">
+            <div class="absolute left-0 w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white shadow-lg z-10">
+                <i class="fa-solid fa-calendar-plus text-xs"></i>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between cursor-pointer group" onclick="toggleSection('plan-section')">
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        1. Planeación Operativa
+                        <i id="plan-section-icon" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span id="plan-status" class="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Sin Datos</span>
+                        <button id="btn-delete-assign" onclick="deleteAssignment(event)" class="hidden w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Eliminar Asignación">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="no-assign-view" class="hidden p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-center space-y-3">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">No hay turno asignado para esta fecha</p>
+                    <button onclick="createInitialAssignment()" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-md">Asignar Registro</button>
+                </div>
+
+                <div id="plan-section-content" class="space-y-4 transition-all duration-300 overflow-hidden">
+                    <div id="assign-form" class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4 shadow-inner">
+                        <div class="space-y-1.5">
+                            <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Categoría</label>
+                            <select id="edit-type" onchange="handleTypeChange(); triggerDetailSave()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-[10px] font-bold outline-none focus:border-red-800 transition-all">
+                                <option value="turno">Turno Ordinario</option>
+                                <option value="evento">Evento Especial</option>
+                                <option value="ausentismo">Ausentismo / Incidencia</option>
+                            </select>
+                        </div>
+
+                        <div id="shift-group" class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5">
+                                <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Turno</label>
+                                <select id="edit-shift" onchange="updateDefaultTimes(); triggerDetailSave()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-[10px] font-bold outline-none focus:border-red-800 transition-all">
+                                    <option value="M">Matutino</option>
+                                    <option value="V">Vespertino</option>
+                                    <option value="N">Nocturno</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Caseta</label>
+                                <select id="edit-station" onchange="triggerDetailSave()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-[10px] font-bold outline-none focus:border-red-800 transition-all">
+                                    <!-- Dinámico -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="extra-fields" class="hidden space-y-3"></div>
+
+                        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-200 mt-2">
+                            <label class="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-white rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition-all">
+                                <input type="checkbox" id="check-extra" onchange="triggerDetailSave()" class="accent-red-800">
+                                <span class="text-[7px] font-black uppercase text-slate-400">Extra</span>
+                            </label>
+                            <label class="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-white rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition-all">
+                                <input type="checkbox" id="check-holiday" onchange="triggerDetailSave()" class="accent-red-800">
+                                <span class="text-[7px] font-black uppercase text-slate-400">Festivo</span>
+                            </label>
+                            <label class="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-white rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition-all">
+                                <input type="checkbox" id="check-recovery" onchange="triggerDetailSave()" class="accent-red-800">
+                                <span class="text-[7px] font-black uppercase text-slate-400">Recupera</span>
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <div class="space-y-1">
+                                <p class="text-[7px] font-black text-slate-300 uppercase ml-2">Entrada Plan.</p>
+                                <input type="time" id="plan-entry" onchange="triggerDetailSave()" class="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-black text-center outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-[7px] font-black text-slate-300 uppercase ml-2">Salida Plan.</p>
+                                <input type="time" id="plan-exit" onchange="triggerDetailSave()" class="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-black text-center outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ETAPA 2: OPERACIÓN -->
+        <div id="operation-step" class="relative pl-12 opacity-50 transition-all duration-500">
+            <div class="absolute left-0 w-10 h-10 bg-red-800 rounded-full flex items-center justify-center text-white shadow-lg z-10">
+                <i class="fa-solid fa-bolt-lightning text-xs"></i>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between cursor-pointer group" onclick="toggleSection('operation-section')">
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        2. Seguimiento Real
+                        <i id="operation-section-icon" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    </h3>
+                    <div id="entry-badge" class="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Pendiente</div>
+                </div>
+
+                <div id="operation-section-content" class="bg-white border border-slate-100 p-6 rounded-[2rem] space-y-6 shadow-sm overflow-hidden transition-all duration-300">
+                    <!-- Botón Registro de Entrada Automático -->
+                    <div id="quick-entry-container" class="hidden">
+                        <button onclick="registerEntryNow()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-circle-check"></i> Registrar Entrada Ahora
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 relative">
+                        <div class="space-y-1.5">
+                            <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Entrada Real</label>
+                            <input type="time" id="real-entry" onchange="triggerDetailSave()" class="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[10px] font-bold outline-none focus:border-red-800 transition-all">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Salida Real</label>
+                            <input type="time" id="real-exit" onchange="triggerDetailSave()" class="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[10px] font-bold outline-none focus:border-red-800 transition-all">
+                        </div>
+                        
+                        <!-- Nota de Retardo -->
+                        <div id="late-warning" class="hidden absolute top-[-10px] left-2 px-2 bg-red-800 text-white text-[7px] font-black uppercase rounded shadow-sm">
+                            Retardo Detectado
+                        </div>
+                    </div>
+
+                    <!-- CAMPO DE COMENTARIOS / OBSERVACIONES -->
+                    <div class="space-y-1.5 pt-2 border-t border-slate-50">
+                        <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Comentarios de Turno</label>
+                        <textarea id="edit-note" oninput="triggerDetailSave()" rows="3" placeholder="Observaciones, novedades o incidencias..." class="w-full bg-slate-50 border border-slate-100 p-4 rounded-3xl text-[10px] font-medium outline-none focus:border-red-800 transition-all resize-none shadow-inner"></textarea>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-50">
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2 text-center italic">Si el elemento no se presenta:</p>
+                        <button onclick="declareAbsence()" id="btn-mark-absence" class="w-full py-3 bg-red-50 text-red-700 border border-red-100 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 hover:text-white transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-xmark"></i> Declarar Causa de Ausencia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestión de Perfil -->
+    <div class="pt-6 border-t border-slate-100">
+        <button onclick="goToFullProfile()" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-shield"></i> Ver Expediente Completo
+        </button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+        authDomain: "cic5-pp.firebaseapp.com",
+        projectId: "cic5-pp",
+        storageBucket: "cic5-pp.firebasestorage.app",
+        messagingSenderId: "577576116946",
+        appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
+        measurementId: "G-G02GSE321T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const appId = 'cic5-pp';
+
+    const targetEmail = window.selectedUserEmail;
+    const selectedDate = window.selectedOperationDate;
+    
+    let personalConfig = null;
+    let saveTimeout = null;
+    let isInitialLoad = true;
+
+    onAuthStateChanged(auth, (user) => { if (user) init(); });
+
+    async function init() {
+        if (!targetEmail || !selectedDate) return;
+        document.getElementById('detail-display-date').innerText = `Jornada: ${selectedDate}`;
+
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'stations'), (snap) => {
+            const stations = snap.docs.map(d => d.data().name);
+            const sel = document.getElementById('edit-station');
+            const current = sel.value;
+            sel.innerHTML = stations.map(s => `<option value="${s}">${s}</option>`).join('');
+            if(current) sel.value = current;
+        });
+
+        const configSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_operational_configs', targetEmail));
+        if (configSnap.exists()) personalConfig = configSnap.data();
+
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+            const user = snap.docs.map(d => d.data()).find(u => u.email === targetEmail);
+            if (user) {
+                document.getElementById('detail-display-name').innerText = user.name || targetEmail;
+                document.getElementById('detail-display-role').innerText = user.role || "Seguridad";
+                if (user.photo) document.getElementById('detail-photo-container').innerHTML = `<img src="${user.photo}" class="w-full h-full object-cover">`;
+            }
+        });
+
+        loadAssignment();
+    }
+
+    async function loadAssignment() {
+        const docId = `${selectedDate}_${targetEmail}`;
+        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', docId));
+        
+        if (snap.exists()) {
+            const d = snap.data();
+            document.getElementById('no-assign-view').classList.add('hidden');
+            document.getElementById('assign-form').classList.remove('hidden');
+            document.getElementById('operation-step').classList.remove('opacity-50', 'pointer-events-none');
+            document.getElementById('btn-delete-assign').classList.remove('hidden');
+            fillData(d);
+        } else {
+            document.getElementById('no-assign-view').classList.remove('hidden');
+            document.getElementById('assign-form').classList.add('hidden');
+            document.getElementById('operation-step').classList.add('opacity-50', 'pointer-events-none');
+            document.getElementById('btn-delete-assign').classList.add('hidden');
+            isInitialLoad = false;
+        }
+    }
+
+    function fillData(d) {
+        document.getElementById('edit-type').value = d.type || 'turno';
+        handleTypeChange();
+        
+        if (d.type === 'turno') {
+            document.getElementById('edit-shift').value = d.shift || 'M';
+            document.getElementById('edit-station').value = d.station || '';
+        } else if (d.type === 'evento') {
+            document.getElementById('event-input').value = d.eventName || '';
+        } else {
+            const absInput = document.getElementById('abs-reason-select');
+            if(absInput) absInput.value = d.reason || 'Falta';
+        }
+
+        document.getElementById('plan-entry').value = d.assignedEntry || '';
+        document.getElementById('plan-exit').value = d.assignedExit || '';
+        document.getElementById('real-entry').value = d.realEntry || '';
+        document.getElementById('real-exit').value = d.realExit || '';
+        document.getElementById('edit-note').value = d.note || ''; // Carga del comentario
+        
+        document.getElementById('check-extra').checked = d.isExtra || false;
+        document.getElementById('check-holiday').checked = d.isHoliday || false;
+        document.getElementById('check-recovery').checked = d.isRecovery || false;
+
+        updateVisualElements(d);
+        
+        if (isInitialLoad) {
+            checkAutoCollapse();
+            isInitialLoad = false;
+        }
+    }
+
+    window.toggleSection = (id) => {
+        const content = document.getElementById(`${id}-content`);
+        const icon = document.getElementById(`${id}-icon`);
+        const isHidden = content.classList.contains('hidden');
+        
+        if (isHidden) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            content.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    };
+
+    function checkAutoCollapse() {
+        const type = document.getElementById('edit-type').value;
+        const entry = document.getElementById('plan-entry').value;
+        const exit = document.getElementById('plan-exit').value;
+        const station = document.getElementById('edit-station').value;
+        
+        let isComplete = false;
+        if (type === 'turno') isComplete = entry && exit && station;
+        else if (type === 'evento') isComplete = entry && exit && document.getElementById('event-input')?.value;
+        else if (type === 'ausentismo') isComplete = true;
+
+        if (isComplete) {
+            document.getElementById('plan-section-content').classList.add('hidden');
+            document.getElementById('plan-section-icon').classList.remove('rotate-180');
+            document.getElementById('operation-section-content').classList.remove('hidden');
+            document.getElementById('operation-section-icon').classList.add('rotate-180');
+        }
+    }
+
+    window.handleTypeChange = () => {
+        const type = document.getElementById('edit-type').value;
+        const shiftG = document.getElementById('shift-group');
+        const extraG = document.getElementById('extra-fields');
+        
+        shiftG.classList.toggle('hidden', type === 'ausentismo');
+        extraG.classList.remove('hidden');
+
+        if (type === 'evento') {
+            extraG.innerHTML = `
+                <div class="space-y-1.5">
+                    <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Nombre del Evento</label>
+                    <input type="text" id="event-input" placeholder="Ej: Servicio Estadio" oninput="triggerDetailSave()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-[10px] font-bold outline-none">
+                </div>`;
+        } else if (type === 'ausentismo') {
+            extraG.innerHTML = `
+                <div class="space-y-1.5">
+                    <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Causa / Motivo</label>
+                    <select id="abs-reason-select" onchange="triggerDetailSave()" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-[10px] font-bold outline-none">
+                        <option value="Falta">Falta / Inasistencia</option>
+                        <option value="Vacaciones">Vacaciones</option>
+                        <option value="Incapacidad">Incapacidad Médica</option>
+                        <option value="Permiso">Permiso Especial</option>
+                        <option value="Descanso">Descanso Programado</option>
+                        <option value="Suspensión">Suspensión Administrativa</option>
+                    </select>
+                </div>`;
+        } else {
+            extraG.classList.add('hidden');
+        }
+    };
+
+    window.updateDefaultTimes = () => {
+        if (!personalConfig) return;
+        const shift = document.getElementById('edit-shift').value;
+        const entry = personalConfig[shift];
+        const dur = personalConfig['dur_' + shift] || 8;
+        if (entry) {
+            document.getElementById('plan-entry').value = entry;
+            let [h, m] = entry.split(':').map(Number);
+            h = (h + dur) % 24;
+            document.getElementById('plan-exit').value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+    };
+
+    window.registerEntryNow = () => {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('real-entry').value = `${hh}:${mm}`;
+        triggerDetailSave();
+    };
+
+    window.createInitialAssignment = () => {
+        document.getElementById('no-assign-view').classList.add('hidden');
+        document.getElementById('assign-form').classList.remove('hidden');
+        document.getElementById('operation-step').classList.remove('opacity-50', 'pointer-events-none');
+        document.getElementById('btn-delete-assign').classList.remove('hidden');
+        updateDefaultTimes();
+        triggerDetailSave();
+    };
+
+    window.deleteAssignment = async (e) => {
+        e.stopPropagation();
+        if(!confirm("¿Deseas eliminar esta asignación? Todos los datos de esta jornada se borrarán.")) return;
+        try {
+            const docId = `${selectedDate}_${targetEmail}`;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', docId));
+            location.reload();
+        } catch (err) { console.error(err); }
+    };
+
+    window.declareAbsence = () => {
+        document.getElementById('edit-type').value = 'ausentismo';
+        handleTypeChange();
+        document.getElementById('plan-section-content').classList.remove('hidden');
+        document.getElementById('plan-section-icon').classList.add('rotate-180');
+        setTimeout(() => {
+            const sel = document.getElementById('abs-reason-select');
+            if(sel) sel.focus();
+        }, 300);
+    };
+
+    window.triggerDetailSave = () => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        document.getElementById('save-indicator').style.opacity = "1";
+
+        saveTimeout = setTimeout(async () => {
+            const type = document.getElementById('edit-type').value;
+            const data = {
+                date: selectedDate, email: targetEmail, type,
+                updatedAt: serverTimestamp(),
+                assignedEntry: document.getElementById('plan-entry').value,
+                assignedExit: document.getElementById('plan-exit').value,
+                realEntry: document.getElementById('real-entry').value,
+                realExit: document.getElementById('real-exit').value,
+                note: document.getElementById('edit-note').value, // Guardado de comentario
+                isExtra: document.getElementById('check-extra').checked,
+                isHoliday: document.getElementById('check-holiday').checked,
+                isRecovery: document.getElementById('check-recovery').checked
+            };
+
+            if (type === 'turno') {
+                data.shift = document.getElementById('edit-shift').value;
+                data.station = document.getElementById('edit-station').value;
+            } else if (type === 'evento') {
+                data.eventName = document.getElementById('event-input')?.value || '';
+                data.station = document.getElementById('edit-station').value;
+            } else {
+                data.reason = document.getElementById('abs-reason-select')?.value || 'Falta';
+                data.realEntry = "";
+                data.realExit = "";
+            }
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', `${selectedDate}_${targetEmail}`), data, { merge: true });
+            document.getElementById('save-indicator').style.opacity = "0";
+            updateVisualElements(data);
+        }, 800);
+    };
+
+    function updateVisualElements(d) {
+        const planStat = document.getElementById('plan-status');
+        const entryBadge = document.getElementById('entry-badge');
+        const statusBox = document.getElementById('status-container');
+        const quickEntry = document.getElementById('quick-entry-container');
+        const lateWarning = document.getElementById('late-warning');
+        
+        planStat.innerText = d.type.toUpperCase();
+        planStat.className = `text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${d.type === 'turno' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`;
+
+        quickEntry.classList.toggle('hidden', !!d.realEntry || d.type === 'ausentismo' || !d.assignedEntry);
+
+        if (d.type === 'ausentismo') {
+            entryBadge.innerText = "Ausente";
+            entryBadge.className = "text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-red-800 text-white";
+            statusBox.className = "w-full p-4 rounded-2xl text-center text-[9px] font-black uppercase bg-red-50 text-red-800 border border-red-100 shadow-inner";
+            statusBox.innerText = `Novedad: ${d.reason || 'Sin causa'}`;
+            lateWarning.classList.add('hidden');
+        } else if (!d.realEntry) {
+            entryBadge.innerText = "Pendiente";
+            entryBadge.className = "text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-400";
+            statusBox.className = "w-full p-4 rounded-2xl text-center text-[9px] font-black uppercase bg-slate-50 text-slate-400 border border-slate-100 shadow-inner";
+            statusBox.innerText = "Esperando Registro de Entrada";
+            lateWarning.classList.add('hidden');
+        } else {
+            const isLate = d.realEntry > (d.assignedEntry || "00:00");
+            entryBadge.innerText = isLate ? "Retardo" : "Puntual";
+            entryBadge.className = `text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${isLate ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`;
+            statusBox.className = `w-full p-4 rounded-2xl text-center text-[9px] font-black uppercase border shadow-sm ${isLate ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`;
+            statusBox.innerText = isLate ? "Entrada con Retardo" : "Entrada Puntual";
+            lateWarning.classList.toggle('hidden', !isLate);
+        }
+    }
+
+    window.goToFullProfile = () => {
+        window.selectedUserEmail = targetEmail;
+        if(typeof window.loadContent === 'function') window.loadContent('Perfil.html');
+        if(typeof window.toggleRightPanel === 'function') window.toggleRightPanel(false);
+    };
+</script>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: opacity(0.3); cursor: pointer; }
+    .rotate-180 { transform: rotate(180deg); }
+</style>

@@ -1,0 +1,467 @@
+<!-- Vista Operativa Diaria con Gestión Dinámica y Sección de Ausentismos - Módulo CIC Protection -->
+<div class="max-w-[1600px] mx-auto p-2 md:p-4 space-y-6 animate-in fade-in duration-700 pb-24 h-full overflow-y-auto custom-scrollbar">
+    
+    <!-- Encabezado de Control Sticky y Compacto -->
+    <header class="sticky top-0 z-[55] flex flex-col lg:flex-row items-center justify-between gap-4 bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-slate-100 shadow-sm relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-red-50/50 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+        
+        <div class="z-10 flex items-center gap-3 text-slate-900">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-calendar-day text-sm text-white"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-black tracking-tighter uppercase leading-none text-slate-900">
+                    Despliegue <span class="text-red-800">Operativo</span>
+                </h2>
+                <p id="current-view-date" class="text-slate-400 text-[7px] font-bold uppercase tracking-[0.3em] mt-1">
+                    Sincronizando...
+                </p>
+            </div>
+        </div>
+
+        <div class="z-10 flex flex-wrap items-center gap-2">
+            <!-- Selector de Fecha Compacto -->
+            <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100 text-slate-900">
+                <button onclick="changeDay(-1)" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white hover:text-red-800 transition-all text-slate-400">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                </button>
+                <input type="date" id="view-date-input" onchange="loadDailyView()" class="bg-transparent border-none text-[9px] font-black uppercase tracking-widest text-slate-900 outline-none cursor-pointer px-1">
+                <button onclick="changeDay(1)" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white hover:text-red-800 transition-all text-slate-400">
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+            </div>
+
+            <button onclick="openProfilesPanel()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-md flex items-center gap-2 text-white">
+                <i class="fa-solid fa-users-viewfinder text-xs text-white"></i>
+                <span>Personal</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Dashboard de Turnos -->
+    <div id="shifts-container" class="flex flex-col gap-8 text-slate-900">
+        
+        <!-- Turno Matutino -->
+        <div class="space-y-3">
+            <div class="sticky top-[72px] z-40 flex items-center justify-between px-4 border-l-4 border-amber-500 bg-white/90 backdrop-blur-sm py-2 rounded-r-lg shadow-sm cursor-pointer group" onclick="toggleShiftGroup('M')">
+                <div class="flex items-center gap-3">
+                    <i id="icon-toggle-M" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    <div class="w-6 h-6 bg-amber-500 rounded flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-sun text-[10px] text-white"></i>
+                    </div>
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-tighter">Turno Matutino</h3>
+                </div>
+                <button onclick="event.stopPropagation(); showNewStationUI('M')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[7px] font-black text-slate-500 hover:text-red-800 uppercase transition-all">
+                    + Caseta
+                </button>
+            </div>
+            <div id="container-M" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 transition-all"></div>
+        </div>
+
+        <!-- Turno Vespertino -->
+        <div class="space-y-3">
+            <div class="sticky top-[72px] z-40 flex items-center justify-between px-4 border-l-4 border-blue-500 bg-white/90 backdrop-blur-sm py-2 rounded-r-lg shadow-sm cursor-pointer group" onclick="toggleShiftGroup('V')">
+                <div class="flex items-center gap-3">
+                    <i id="icon-toggle-V" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    <div class="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-cloud-sun text-[10px] text-white"></i>
+                    </div>
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-tighter">Turno Vespertino</h3>
+                </div>
+                <button onclick="event.stopPropagation(); showNewStationUI('V')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[7px] font-black text-slate-500 hover:text-red-800 uppercase transition-all">
+                    + Caseta
+                </button>
+            </div>
+            <div id="container-V" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 transition-all"></div>
+        </div>
+
+        <!-- Turno Nocturno -->
+        <div class="space-y-3">
+            <div class="sticky top-[72px] z-40 flex items-center justify-between px-4 border-l-4 border-slate-800 bg-white/90 backdrop-blur-sm py-2 rounded-r-lg shadow-sm cursor-pointer group" onclick="toggleShiftGroup('N')">
+                <div class="flex items-center gap-3">
+                    <i id="icon-toggle-N" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    <div class="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-moon text-[10px] text-white"></i>
+                    </div>
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-tighter">Turno Nocturno</h3>
+                </div>
+                <button onclick="event.stopPropagation(); showNewStationUI('N')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[7px] font-black text-slate-500 hover:text-red-800 uppercase transition-all">
+                    + Caseta
+                </button>
+            </div>
+            <div id="container-N" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 transition-all"></div>
+        </div>
+
+        <!-- Sección de Ausentismos -->
+        <div class="space-y-3 pb-10">
+            <div class="sticky top-[72px] z-40 flex items-center justify-between px-4 border-l-4 border-red-800 bg-white/90 backdrop-blur-sm py-2 rounded-r-lg shadow-sm cursor-pointer group" onclick="toggleShiftGroup('ABS')">
+                <div class="flex items-center gap-3">
+                    <i id="icon-toggle-ABS" class="fa-solid fa-chevron-down text-[8px] text-slate-300 transition-transform"></i>
+                    <div class="w-6 h-6 bg-red-800 rounded flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-user-xmark text-[10px] text-white"></i>
+                    </div>
+                    <h3 class="text-[10px] font-black text-slate-900 uppercase tracking-tighter">Ausentismos e Incidencias</h3>
+                </div>
+            </div>
+            <div id="container-ABS" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3 transition-all"></div>
+        </div>
+    </div>
+
+    <!-- UI Modal Rápido para Nueva Caseta -->
+    <div id="new-station-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm text-slate-900">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm space-y-4 animate-in zoom-in duration-300 text-slate-900">
+            <h4 class="text-base font-black text-slate-900 uppercase tracking-tighter text-center">Registrar <span class="text-red-800">Caseta</span></h4>
+            <input type="text" id="new-station-name" placeholder="Nombre..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-red-800 transition-all text-slate-900">
+            <p id="station-error" class="hidden text-[8px] font-black text-red-600 uppercase text-center">Nombre ya registrado</p>
+            <input type="hidden" id="new-station-shift">
+            <div class="flex gap-2 text-slate-900">
+                <button onclick="hideNewStationUI()" class="flex-1 py-3 text-[9px] font-black uppercase text-slate-400">Cerrar</button>
+                <button onclick="createNewStation()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-800 transition-all text-white">Crear</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, setDoc, doc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+        authDomain: "cic5-pp.firebaseapp.com",
+        projectId: "cic5-pp",
+        storageBucket: "cic5-pp.firebasestorage.app",
+        messagingSenderId: "577576116946",
+        appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
+        measurementId: "G-G02GSE321T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const appId = 'cic5-pp';
+
+    let allUsers = [];
+    let currentStations = [];
+    let currentDayAssignments = [];
+    let stationDailyStatuses = {}; 
+    
+    const absenceReasons = ['Descanso', 'Permiso', 'Vacaciones', 'Falta', 'Incapacidades', 'Suspensión'];
+    
+    const dateInput = document.getElementById('view-date-input');
+    if(!dateInput.value) dateInput.valueAsDate = new Date();
+
+    onAuthStateChanged(auth, (user) => { if (user) syncData(); });
+
+    async function syncData() {
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+            allUsers = snap.docs.map(d => d.data());
+            renderAll();
+        });
+
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'stations'), (snap) => {
+            currentStations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderAll();
+        });
+
+        const assignRef = collection(db, 'artifacts', appId, 'public', 'data', 'assignments');
+        onSnapshot(assignRef, (snap) => {
+            currentDayAssignments = snap.docs.map(d => d.data()).filter(a => a.date === dateInput.value);
+            renderAll();
+        });
+
+        const statusRef = collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status');
+        onSnapshot(statusRef, (snap) => {
+            stationDailyStatuses = {};
+            snap.docs.forEach(d => {
+                const data = d.data();
+                if (data.date === dateInput.value) {
+                    stationDailyStatuses[`${data.shift}_${data.stationId}`] = data.isClosed;
+                }
+            });
+            renderAll();
+        });
+    }
+
+    window.changeDay = (delta) => {
+        const d = new Date(dateInput.value + 'T00:00:00');
+        d.setDate(d.getDate() + delta);
+        dateInput.valueAsDate = d;
+        loadDailyView();
+    };
+
+    window.loadDailyView = () => {
+        const selectedDate = dateInput.value;
+        const displayDate = document.getElementById('current-view-date');
+        if (displayDate) displayDate.innerText = `Jornada: ${selectedDate}`;
+        window.selectedOperationDate = selectedDate; 
+        syncData();
+    };
+
+    window.toggleShiftGroup = (shift) => {
+        const container = document.getElementById(`container-${shift}`);
+        const icon = document.getElementById(`icon-toggle-${shift}`);
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            icon.classList.remove('-rotate-90');
+        } else {
+            container.classList.add('hidden');
+            icon.classList.add('-rotate-90');
+        }
+    };
+
+    function renderAll() {
+        // Renderizar Turnos Ordinarios
+        ['M', 'V', 'N'].forEach(shift => {
+            const container = document.getElementById(`container-${shift}`);
+            if (!container) return;
+            
+            const isHidden = container.classList.contains('hidden');
+            container.innerHTML = '';
+            if(isHidden) container.classList.add('hidden');
+
+            const sortedStations = [...currentStations].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            sortedStations.forEach(st => {
+                const elements = currentDayAssignments.filter(a => a.shift === shift && a.station === st.name && a.type !== 'ausentismo');
+                const isClosed = stationDailyStatuses[`${shift}_${st.id}`] || false;
+                
+                const card = createStationCard(st, shift, elements, isClosed);
+                container.appendChild(card);
+            });
+        });
+
+        // Renderizar Sección de Ausentismos
+        const absContainer = document.getElementById('container-ABS');
+        if (absContainer) {
+            const isHidden = absContainer.classList.contains('hidden');
+            absContainer.innerHTML = '';
+            if(isHidden) absContainer.classList.add('hidden');
+
+            absenceReasons.forEach(reason => {
+                const elements = currentDayAssignments.filter(a => a.type === 'ausentismo' && a.reason === reason);
+                const card = createAbsenceCard(reason, elements);
+                absContainer.appendChild(card);
+            });
+        }
+    }
+
+    window.toggleCardExpansion = (event, id) => {
+        event.stopPropagation();
+        const strip = document.getElementById(id);
+        const icon = event.currentTarget.querySelector('i');
+        
+        if (strip.classList.contains('max-h-[64px]')) {
+            strip.classList.remove('max-h-[64px]');
+            strip.classList.add('max-h-[500px]');
+            if(icon) icon.classList.add('rotate-180');
+        } else {
+            strip.classList.add('max-h-[64px]');
+            strip.classList.remove('max-h-[500px]');
+            if(icon) icon.classList.remove('rotate-180');
+        }
+    };
+
+    function createStationCard(st, shift, elements, isClosed) {
+        const cardId = `strip-${st.id}-${shift}`;
+        const card = document.createElement('div');
+        card.className = `rounded-2xl border transition-all relative group cursor-pointer overflow-hidden flex flex-col ${isClosed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-100 shadow-sm hover:border-red-800 hover:shadow-lg'}`;
+        
+        card.onclick = () => {
+            window.filterStationInProfiles = st.name;
+            openProfilesPanel();
+        };
+
+        card.draggable = true;
+        card.ondragstart = (ev) => {
+            ev.stopPropagation();
+            ev.dataTransfer.setData("text/stationId", st.id);
+            ev.dataTransfer.setData("text/dragType", "station_reorder");
+        };
+
+        card.ondragover = (ev) => {
+            ev.preventDefault();
+            if (isClosed) return; 
+            card.classList.add('bg-red-50/50', 'border-red-200');
+        };
+        card.ondragleave = () => card.classList.remove('bg-red-50/50', 'border-red-200');
+        
+        card.ondrop = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            card.classList.remove('bg-red-50/50', 'border-red-200');
+            if (isClosed) return;
+            const email = ev.dataTransfer.getData("text/elementEmail");
+            const draggedId = ev.dataTransfer.getData("text/stationId");
+            if (email) assignElementToStation(email, st.name, shift);
+            else if (draggedId && draggedId !== st.id) reorderStations(draggedId, st.id);
+        };
+
+        card.innerHTML = `
+            <div class="flex justify-between items-center bg-slate-950 text-white px-3 py-2 flex-shrink-0">
+                <div class="flex items-center gap-1.5 overflow-hidden">
+                    <p class="text-[8px] font-black uppercase tracking-widest truncate text-white">${st.name}</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="event.stopPropagation(); toggleStationStatus('${st.id}', '${shift}', ${isClosed})" 
+                            class="w-5 h-5 flex items-center justify-center rounded-md ${isClosed ? 'bg-red-800' : 'bg-white/10'} transition-all">
+                        <i class="fa-solid ${isClosed ? 'fa-lock' : 'fa-lock-open'} text-[7px] text-white"></i>
+                    </button>
+                    <span class="text-[7px] font-black opacity-40 text-white">${elements.length}</span>
+                </div>
+            </div>
+            <div id="${cardId}" class="p-3 flex flex-wrap gap-2 transition-all duration-500 ease-in-out overflow-hidden max-h-[64px]">
+                ${isClosed ? `<div class="w-full text-center py-1 opacity-40"><p class="text-[7px] font-black uppercase tracking-tighter text-slate-400">Cerrada</p></div>` : `
+                    ${elements.map(el => renderAvatar(el)).join('')}
+                    ${elements.length === 0 ? '<div class="w-full h-10 flex items-center justify-center border border-dashed border-slate-100 rounded-full opacity-20"><i class="fa-solid fa-plus text-xs"></i></div>' : ''}
+                `}
+            </div>
+            ${!isClosed && elements.length > 4 ? `
+                <button onclick="toggleCardExpansion(event, '${cardId}')" class="w-full py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-300 hover:text-red-800 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-down text-[8px] transition-transform"></i>
+                </button>
+            ` : ''}
+        `;
+        return card;
+    }
+
+    function createAbsenceCard(reason, elements) {
+        const cardId = `strip-abs-${reason.toLowerCase()}`;
+        const card = document.createElement('div');
+        card.className = `rounded-2xl border bg-white border-slate-100 shadow-sm transition-all hover:border-red-800 hover:shadow-lg cursor-pointer overflow-hidden flex flex-col`;
+        
+        card.ondragover = (ev) => {
+            ev.preventDefault();
+            card.classList.add('bg-red-50/50', 'border-red-200');
+        };
+        card.ondragleave = () => card.classList.remove('bg-red-50/50', 'border-red-200');
+        
+        card.ondrop = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            card.classList.remove('bg-red-50/50', 'border-red-200');
+            const email = ev.dataTransfer.getData("text/elementEmail");
+            if (email) declareAbsenceForElement(email, reason);
+        };
+
+        card.innerHTML = `
+            <div class="flex justify-between items-center bg-slate-900 text-white px-3 py-2 text-white flex-shrink-0">
+                <p class="text-[8px] font-black uppercase tracking-widest truncate text-white">${reason}</p>
+                <span class="text-[7px] font-black opacity-40 text-white">${elements.length}</span>
+            </div>
+            <div id="${cardId}" class="p-3 flex flex-wrap gap-2 transition-all duration-500 ease-in-out overflow-hidden max-h-[64px]">
+                ${elements.map(el => renderAvatar(el)).join('')}
+                ${elements.length === 0 ? '<div class="w-full h-10 flex items-center justify-center border border-dashed border-slate-100 rounded-full opacity-20"><i class="fa-solid fa-user-slash text-xs"></i></div>' : ''}
+            </div>
+            ${elements.length > 4 ? `
+                <button onclick="toggleCardExpansion(event, '${cardId}')" class="w-full py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-300 hover:text-red-800 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-down text-[8px] transition-transform"></i>
+                </button>
+            ` : ''}
+        `;
+        return card;
+    }
+
+    function renderAvatar(el) {
+        const u = allUsers.find(usr => usr.email === el.email) || { photo: null, name: 'S/N' };
+        const hasEntry = !!el.realEntry;
+        const hasExit = !!el.realExit;
+        return `
+            <div class="relative flex-shrink-0" draggable="true" onclick="event.stopPropagation(); viewElementDetail('${el.email}')" ondragstart="event.dataTransfer.setData('text/elementEmail', '${el.email}'); event.dataTransfer.setData('text/dragType', 'element_assign');">
+                <div class="w-12 h-12 rounded-full border-2 border-white bg-slate-50 overflow-hidden cursor-pointer hover:border-red-800 hover:scale-105 transition-all shadow-md">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-slate-300 flex items-center justify-center h-full text-base"></i>`}
+                </div>
+                ${hasEntry ? `<div class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 ${hasExit ? 'bg-slate-400' : 'bg-emerald-500'} rounded-full border-2 border-white shadow-sm"></div>` : ''}
+            </div>
+        `;
+    }
+
+    window.toggleStationStatus = async (stationId, shift, currentStatus) => {
+        const date = dateInput.value;
+        const statusDocId = `${date}_${shift}_${stationId}`;
+        try {
+            const statusRef = doc(db, 'artifacts', appId, 'public', 'data', 'station_daily_status', statusDocId);
+            await setDoc(statusRef, { stationId, date, shift, isClosed: !currentStatus, updatedAt: serverTimestamp() });
+        } catch (e) { console.error(e); }
+    };
+
+    async function reorderStations(draggedId, targetId) {
+        const dragged = currentStations.find(s => s.id === draggedId);
+        const target = currentStations.find(s => s.id === targetId);
+        if (!dragged || !target) return;
+        const oldOrder = dragged.order || 0;
+        const newOrder = target.order || 0;
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stations', draggedId), { order: newOrder });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stations', targetId), { order: oldOrder });
+        } catch (e) { console.error(e); }
+    }
+
+    async function assignElementToStation(email, stationName, shift) {
+        const date = dateInput.value;
+        const configSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_operational_configs', email));
+        const conf = configSnap.exists() ? configSnap.data() : {};
+        const entry = conf[shift] || "08:00";
+        const duration = conf['dur_' + shift] || 8;
+        let [h, m] = entry.split(':').map(Number);
+        const exit = `${String((h + duration) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const data = {
+            date, email, station: stationName, shift,
+            type: 'turno', assignedEntry: entry, assignedExit: exit,
+            updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', `${date}_${email}`), data, { merge: true });
+    }
+
+    async function declareAbsenceForElement(email, reason) {
+        const date = dateInput.value;
+        const data = {
+            date, email, type: 'ausentismo', reason: reason,
+            assignedEntry: "", assignedExit: "", realEntry: "", realExit: "",
+            updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', `${date}_${email}`), data, { merge: true });
+    }
+
+    window.showNewStationUI = (shift) => {
+        document.getElementById('new-station-shift').value = shift;
+        document.getElementById('station-error').classList.add('hidden');
+        document.getElementById('new-station-modal').classList.remove('hidden');
+    };
+    
+    window.hideNewStationUI = () => document.getElementById('new-station-modal').classList.add('hidden');
+
+    window.createNewStation = async () => {
+        const name = document.getElementById('new-station-name').value.trim();
+        if(!name) return;
+        const exists = currentStations.some(s => s.name.toLowerCase() === name.toLowerCase());
+        if (exists) { document.getElementById('station-error').classList.remove('hidden'); return; }
+        const id = name.toLowerCase().replace(/\s+/g, '-');
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stations', id), {
+            name, order: currentStations.length, isClosed: false, createdAt: serverTimestamp()
+        });
+        document.getElementById('new-station-name').value = '';
+        hideNewStationUI();
+    };
+
+    window.openProfilesPanel = () => { if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Perfiles.html'); };
+
+    window.viewElementDetail = (email) => {
+        window.selectedUserEmail = email;
+        window.selectedOperationDate = dateInput.value;
+        if(typeof window.loadRightContent === 'function') {
+            window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html');
+        }
+    };
+</script>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    [draggable="true"] { cursor: grab; }
+    [draggable="true"]:active { cursor: grabbing; }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.2; cursor: pointer; transform: scale(0.7); }
+    .-rotate-90 { transform: rotate(-90deg); }
+</style>

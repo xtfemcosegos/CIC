@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .glass-card { background: white; border-radius: 2rem; border: 1px solid #f1f5f9; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .loader { border-top-color: #720000; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .incident-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .incident-card:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(114, 0, 0, 0.08); border-color: #fee2e2; }
+    </style>
+</head>
+<body class="p-4 md:p-10 min-h-screen">
+
+    <!-- Pantalla de carga -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-10 h-10 border-4 border-slate-100 loader rounded-full mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Bitácora CIC...</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-red-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-100">
+                    <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Historial de Reportes</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">Bitácora central de siniestros registrados</p>
+                </div>
+            </div>
+            
+            <button onclick="window.location.href='RegSin.html'" class="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-red-800 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Nuevo Reporte
+            </button>
+        </header>
+
+        <!-- Filtros -->
+        <div class="mb-8 flex flex-wrap gap-4 items-center">
+            <div class="relative flex-1 min-w-[240px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input type="text" id="search-input" placeholder="Buscar por negocio, sede o descripción..." class="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold focus:ring-4 focus:ring-red-800/5 outline-none transition-all shadow-sm uppercase">
+            </div>
+            
+            <select id="filter-type" class="px-4 py-3.5 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none shadow-sm cursor-pointer hover:bg-slate-50">
+                <option value="all">Todas las Categorías</option>
+            </select>
+        </div>
+
+        <!-- Contenedor Grid (Cambiado a una sola columna) -->
+        <div id="incidents-container" class="grid grid-cols-1 gap-6 w-full">
+            <div class="col-span-full py-40 text-center opacity-10">
+                <i class="fa-solid fa-database text-6xl mb-4"></i>
+                <p class="text-xs font-black uppercase tracking-widest">Conectando con la base de datos...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalles -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-xl w-full p-8 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-300 hover:text-red-900 transition-all">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+            <div id="modal-content" class="space-y-6">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { 
+            apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+            authDomain: "cic5-pp.firebaseapp.com",
+            projectId: "cic5-pp",
+            storageBucket: "cic5-pp.firebasestorage.app",
+            messagingSenderId: "577576116946",
+            appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
+            measurementId: "G-G02GSE321T"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let allIncidents = [];
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) startSync();
+            else initAuth();
+        });
+
+        function startSync() {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'siniestros');
+            
+            onSnapshot(colRef, (snap) => {
+                allIncidents = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                updateFilters();
+                renderIncidents();
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, (error) => console.error("Error Firestore:", error));
+        }
+
+        function updateFilters() {
+            const select = document.getElementById('filter-type');
+            const currentVal = select.value;
+            const types = [...new Set(allIncidents.map(i => i.tipoSiniestroSeleccionado))].filter(t => t);
+            
+            select.innerHTML = '<option value="all">Todas las Categorías</option>' + 
+                types.map(t => `<option value="${t}" ${t === currentVal ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+        }
+
+        function renderIncidents() {
+            const container = document.getElementById('incidents-container');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const filter = document.getElementById('filter-type').value;
+
+            const filtered = allIncidents.filter(i => {
+                const matchesSearch = 
+                    (i.negocioSeleccionado || '').toLowerCase().includes(search) ||
+                    (i.edificioSeleccionado || '').toLowerCase().includes(search) ||
+                    (i.descripcionTextoPlano || '').toLowerCase().includes(search);
+                
+                const matchesFilter = filter === 'all' || i.tipoSiniestroSeleccionado === filter;
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center opacity-20">
+                        <i class="fa-solid fa-magnifying-glass text-4xl mb-4"></i>
+                        <p class="text-[10px] font-black uppercase">No se encontraron reportes</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(i => {
+                const date = new Date(i.timestamp);
+                const dateStr = date.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+                const timeStr = date.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+
+                return `
+                    <div onclick="openDetails('${i.id}')" class="glass-card incident-card p-6 md:p-8 flex flex-col md:flex-row justify-between gap-6 cursor-pointer border border-transparent w-full">
+                        <div class="flex-1 space-y-4">
+                            <!-- Titulo y Subtitulo -->
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 uppercase tracking-tighter">${i.tipoSiniestroSeleccionado || 'Siniestro General'}</h3>
+                                <p class="text-xs font-bold text-red-800 uppercase tracking-widest mt-1">${i.subtipoSeleccionado || 'Sin clasificación'}</p>
+                            </div>
+
+                            <!-- Información de Ubicación -->
+                            <div class="flex flex-wrap gap-x-6 gap-y-2">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-building text-slate-300 text-[10px]"></i>
+                                    <span class="text-[11px] font-bold text-slate-700 uppercase">${i.negocioSeleccionado}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-slate-400">
+                                    <i class="fa-solid fa-location-dot text-[10px]"></i>
+                                    <span class="text-[11px] font-bold uppercase">${i.edificioSeleccionado}</span>
+                                </div>
+                            </div>
+
+                            <p class="text-[12px] font-medium text-slate-500 leading-relaxed line-clamp-2 italic">
+                                "${i.descripcionTextoPlano || 'Sin descripción disponible.'}"
+                            </p>
+                        </div>
+
+                        <!-- Metadata Derecha -->
+                        <div class="flex flex-col justify-between items-end shrink-0 border-t md:border-t-0 md:border-l border-slate-50 pt-4 md:pt-0 md:pl-6 text-right">
+                            <div class="space-y-1">
+                                <p class="text-[10px] font-black text-slate-900 uppercase">${dateStr}</p>
+                                <p class="text-[9px] font-bold text-slate-400">${timeStr}</p>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-4">
+                                <span class="text-[9px] font-black text-slate-400 uppercase truncate max-w-[120px]">${i.nombreReporta || 'Anónimo'}</span>
+                                <div class="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-user-pen text-[10px] text-slate-500"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.openDetails = (id) => {
+            const i = allIncidents.find(item => item.id === id);
+            if (!i) return;
+
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('modal-content');
+            
+            const personas = i.personasAfectadas || [];
+            const lesionados = personas.find(p => p.Lesionados)?.Lesionados === "Sí";
+            const detenidos = personas.find(p => p.Detenidos)?.Detenidos === "Sí";
+
+            content.innerHTML = `
+                <header class="border-b border-slate-100 pb-6">
+                    <span class="px-3 py-1 bg-red-900 text-white rounded-full text-[8px] font-black uppercase tracking-widest">EXPEDIENTE DIGITAL</span>
+                    <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tighter mt-4">${i.tipoSiniestroSeleccionado}</h2>
+                    <p class="text-[10px] text-red-800 font-bold uppercase tracking-widest mt-1">${i.subtipoSeleccionado || '-'}</p>
+                </header>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl">
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Negocio / Plaza</p>
+                        <p class="text-[10px] font-bold text-slate-800 uppercase leading-tight">${i.negocioSeleccionado}<br><span class="text-slate-400">${i.plazaSeleccionada}</span></p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl">
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Sede / Edificio</p>
+                        <p class="text-[10px] font-bold text-slate-800 uppercase">${i.edificioSeleccionado}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[8px] font-black text-slate-400 uppercase">Detalles del Incidente</p>
+                    <div class="p-6 bg-white border border-slate-100 rounded-3xl text-sm text-slate-600 leading-relaxed shadow-inner">
+                        ${i.descripcionIncidente || i.descripcionTextoPlano}
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="flex-1 p-3 rounded-xl border ${lesionados ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'} flex items-center justify-between">
+                        <span class="text-[9px] font-black uppercase ${lesionados ? 'text-red-900' : 'text-slate-400'}">🚑 Lesionados</span>
+                        <span class="text-[10px] font-black">${lesionados ? 'SÍ' : 'NO'}</span>
+                    </div>
+                    <div class="flex-1 p-3 rounded-xl border ${detenidos ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-100'} flex items-center justify-between">
+                        <span class="text-[9px] font-black uppercase ${detenidos ? 'text-white' : 'text-slate-400'}">⚖️ Detenidos</span>
+                        <span class="text-[10px] font-black ${detenidos ? 'text-white' : ''}">${detenidos ? 'SÍ' : 'NO'}</span>
+                    </div>
+                </div>
+
+                <div class="pt-6 grid grid-cols-2 gap-6 border-t border-slate-50">
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Reportado por</p>
+                        <p class="text-[10px] font-bold text-slate-800 uppercase">${i.nombreReporta}</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Realiza Registro (CCO)</p>
+                        <p class="text-[10px] font-bold text-slate-800 uppercase">${i.nombreRealiza}</p>
+                    </div>
+                </div>
+
+                <button onclick="closeModal()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all mt-4">
+                    Cerrar Expediente
+                </button>
+            `;
+            modal.classList.remove('hidden');
+        };
+
+        window.closeModal = () => document.getElementById('detail-modal').classList.add('hidden');
+        document.getElementById('search-input').addEventListener('input', renderIncidents);
+        document.getElementById('filter-type').addEventListener('change', renderIncidents);
+    </script>
+</body>
+</html>

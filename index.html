@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protección Patrimonial - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hero-gradient { background: radial-gradient(circle at top right, #fff5f5 0%, #ffffff 100%); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        #login-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .logo-container img { max-height: 48px; width: auto; display: block; cursor: pointer; transition: transform 0.2s; }
+        .logo-container img:hover { transform: scale(1.05); }
+        
+        #app-main { height: calc(100vh - 4rem - 2rem); }
+        .avatar-group:hover #avatar-dropdown { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- PANTALLA DE INICIO DE SESIÓN -->
+    <div id="login-screen" class="p-6">
+        <button id="close-login-btn" onclick="toggleLoginScreen(false)" class="absolute top-8 right-8 text-slate-400 hover:text-red-800 transition-colors flex items-center gap-2 group">
+            <span class="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Regresar</span>
+            <i data-lucide="x" class="w-8 h-8"></i>
+        </button>
+
+        <div class="w-full max-w-md space-y-12 text-center">
+            <div class="space-y-4">
+                <div class="inline-block p-6 bg-slate-50 rounded-[3rem] shadow-sm border border-slate-100 mb-2">
+                    <i data-lucide="shield-check" class="w-12 h-12 text-red-800"></i>
+                </div>
+                <h2 class="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                    Acceso al <span class="text-red-800 tracking-widest">CIC</span>
+                </h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-[0.3em]">Identificación Requerida</p>
+            </div>
+
+            <form id="login-form" class="space-y-4 text-left">
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Correo Institucional</label>
+                    <input id="login-email" type="email" required placeholder="usuario@cic.com.mx" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl text-sm font-bold outline-none focus:border-red-800 focus:bg-white transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Contraseña</label>
+                    <input id="login-password" type="password" required placeholder="••••••••••••" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl text-sm font-bold outline-none focus:border-red-800 focus:bg-white transition-all">
+                </div>
+                <div id="login-error" class="hidden text-[10px] font-black text-red-600 bg-red-50 p-4 rounded-xl uppercase tracking-widest text-center">
+                    Credenciales inválidas
+                </div>
+                <button id="login-submit" type="submit" class="w-full bg-slate-900 text-white p-5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl shadow-slate-200 mt-6 flex items-center justify-center gap-2">
+                    <span>Entrar al Sistema</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ENCABEZADO -->
+    <header id="app-header" class="hidden h-16 bg-white/95 backdrop-blur-md border-b border-gray-200 flex-shrink-0 z-50 px-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-4 w-1/4">
+            <button id="toggle-left-btn" class="p-2 text-slate-500 hover:text-red-800 hover:bg-slate-50 rounded-xl transition-all">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center h-10 overflow-hidden cursor-pointer" onclick="loadContent('home.html')">
+                <img src="Multimedia/Logo.png" alt="Logo CIC" class="object-contain h-full" onerror="this.outerHTML='<div class=\'bg-slate-900 text-white px-3 py-1 rounded-lg font-black text-sm cursor-pointer tracking-tighter\'>CIC</div>'">
+            </div>
+        </div>
+
+        <div class="flex-1 text-center hidden md:block">
+            <h1 class="text-xl font-black text-slate-900 tracking-tighter uppercase flex items-center justify-center gap-2">
+                <span class="text-red-800">●</span>
+                Protección Patrimonial
+            </h1>
+        </div>
+
+        <div class="w-1/4 flex justify-end items-center gap-2">
+            <button id="admin-nav-btn" onclick="loadContent('adminUser.html')" class="hidden items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all group" title="Administrar Usuarios">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest">Usuarios</span>
+            </button>
+
+            <button id="notif-btn" class="p-2.5 text-slate-500 hover:text-red-800 hover:bg-slate-50 rounded-full relative transition-all">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span id="notif-badge" class="hidden absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border-2 border-white"></span>
+            </button>
+            
+            <div class="relative avatar-group ml-1 h-full flex items-center group">
+                <div class="flex items-center h-full px-2 cursor-pointer">
+                    <div class="flex items-center p-0.5 rounded-full border border-slate-200 group-hover:border-red-800 group-hover:shadow-md transition-all bg-white overflow-hidden relative w-10 h-10">
+                        <div id="user-avatar-circle" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-white overflow-hidden relative border border-slate-100">
+                            <i id="header-avatar-icon" data-lucide="user" class="w-5 h-5 text-white/50"></i>
+                            <img id="header-avatar-img" class="hidden absolute inset-0 w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="avatar-dropdown" class="hidden absolute right-0 top-[100%] w-60 bg-white border border-slate-200 rounded-[2rem] shadow-2xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div id="user-info-box" class="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Sesión Activa</p>
+                        <p id="user-display-name" class="text-[11px] font-black text-slate-900 truncate uppercase tracking-tight">Cargando...</p>
+                    </div>
+                    <div class="p-1.5 space-y-1">
+                        <button id="profile-dropdown-btn" onclick="window.selectedUserEmail = null; loadContent('Perfil.html')" class="w-full flex items-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-red-800 rounded-2xl transition-all">
+                            <i data-lucide="user-cog" class="w-4 h-4 mr-3 opacity-60"></i> Mi Perfil
+                        </button>
+                        <button id="logout-nav-btn" class="w-full flex items-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 rounded-2xl transition-all">
+                            <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main id="app-main" class="hidden flex flex-1 overflow-hidden relative">
+        <aside id="left-panel" class="flex flex-col w-72 min-w-[18rem] bg-slate-50 border-r border-slate-200 h-full overflow-hidden">
+            <div id="nav-container" class="h-full w-full"></div>
+        </aside>
+
+        <section id="main-view" class="flex-1 bg-white overflow-y-auto custom-scrollbar h-full">
+            <div id="central-content" class="w-full min-h-full"></div>
+        </section>
+
+        <!-- PANEL DERECHO DINÁMICO (DRAWER) -->
+        <aside id="right-panel" class="hidden flex flex-col w-96 min-w-[24rem] bg-white border-l border-slate-200 shadow-2xl z-40 h-full overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Información Detallada</h3>
+                <button onclick="toggleRightPanel(false)" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-800 hover:bg-red-50 transition-all">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar" id="right-panel-content">
+                <div class="p-10 text-center opacity-20"><i class="fa-solid fa-circle-notch animate-spin text-2xl"></i></div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer id="app-footer" class="hidden h-8 bg-slate-950 flex-shrink-0 z-[60] flex items-center justify-between px-6 border-t border-white/5 relative">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sincronización Activa</p>
+        </div>
+        <p class="text-[8px] font-black text-slate-600 uppercase tracking-[0.4em]">CIC — Protection System</p>
+        <div class="text-[9px] text-slate-500 font-bold uppercase">v5.2.0</div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+            authDomain: "cic5-pp.firebaseapp.com",
+            projectId: "cic5-pp",
+            storageBucket: "cic5-pp.firebasestorage.app",
+            messagingSenderId: "577576116946",
+            appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
+            measurementId: "G-G02GSE321T"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic5-pp';
+
+        let profileUnsubscribe = null;
+
+        // FUNCIÓN: SINCRONIZAR IDENTIDAD EN HEADER
+        function syncHeaderIdentity(email) {
+            if (profileUnsubscribe) profileUnsubscribe();
+
+            const nameDisplay = document.getElementById('user-display-name');
+            const headerImg = document.getElementById('header-avatar-img');
+            const headerIcon = document.getElementById('header-avatar-icon');
+            const adminNavBtn = document.getElementById('admin-nav-btn');
+
+            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+            profileUnsubscribe = onSnapshot(usersRef, (snap) => {
+                const profile = snap.docs.map(d => d.data()).find(u => u.email === email);
+                
+                if (profile) {
+                    nameDisplay.innerText = profile.name || email.split('@')[0];
+                    adminNavBtn.classList.toggle('hidden', profile.role !== 'Administrador');
+                    adminNavBtn.classList.toggle('lg:flex', profile.role === 'Administrador');
+
+                    if (profile.photo) {
+                        headerImg.src = profile.photo;
+                        headerImg.classList.remove('hidden');
+                        headerIcon.classList.add('hidden');
+                    } else {
+                        headerImg.classList.add('hidden');
+                        headerIcon.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        // CARGA EN PANEL DERECHO
+        window.loadRightContent = async (file) => {
+            const container = document.getElementById('right-panel-content');
+            toggleRightPanel(true);
+            container.innerHTML = '<div class="p-10 text-center opacity-20"><i class="fa-solid fa-circle-notch animate-spin text-2xl"></i></div>';
+
+            try {
+                const response = await fetch(file);
+                if (response.ok) {
+                    const html = await response.text();
+                    const fragment = document.createRange().createContextualFragment(html);
+                    container.innerHTML = "";
+                    container.appendChild(fragment);
+                    if (window.lucide) lucide.createIcons();
+                }
+            } catch (e) { console.error("Error cargando panel derecho:", e); }
+        };
+
+        // CARGA CONTENIDO CENTRAL
+        window.loadContent = async (file) => {
+            const container = document.getElementById('central-content');
+            if (file !== 'Perfil.html') window.selectedUserEmail = null;
+            try {
+                const response = await fetch(file);
+                if (response.ok) {
+                    const html = await response.text();
+                    const fragment = document.createRange().createContextualFragment(html);
+                    container.innerHTML = "";
+                    container.appendChild(fragment);
+                    if (window.lucide) lucide.createIcons();
+                    if (file === 'home.html') loadNotices();
+                }
+            } catch (e) { console.error("Error:", e); }
+        };
+
+        // UI HELPERS
+        window.toggleRightPanel = (show) => {
+            const rp = document.getElementById('right-panel');
+            rp.classList.toggle('hidden', !show);
+            if(show) rp.classList.add('flex');
+        };
+
+        const loginForm = document.getElementById('login-form');
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass);
+                document.getElementById('login-error').classList.add('hidden');
+            } 
+            catch (error) { document.getElementById('login-error').classList.remove('hidden'); }
+        };
+
+        document.getElementById('logout-nav-btn').onclick = async () => { 
+            await signOut(auth); 
+            location.reload(); 
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && !user.isAnonymous) {
+                document.getElementById('app-header').classList.remove('hidden');
+                document.getElementById('app-main').classList.remove('hidden');
+                document.getElementById('app-footer').classList.remove('hidden');
+                document.getElementById('login-screen').style.display = 'none';
+                
+                syncHeaderIdentity(user.email);
+                loadNavigation();
+                loadContent('home.html');
+            } else {
+                document.getElementById('app-header').classList.add('hidden');
+                document.getElementById('app-main').classList.add('hidden');
+                document.getElementById('app-footer').classList.add('hidden');
+                document.getElementById('login-screen').style.display = 'flex';
+                if (!user) signInAnonymously(auth);
+            }
+        });
+
+        async function loadNavigation() {
+            const container = document.getElementById('nav-container');
+            try {
+                const response = await fetch('Nav.html');
+                if (response.ok) {
+                    const html = await response.text();
+                    const fragment = document.createRange().createContextualFragment(html);
+                    container.innerHTML = "";
+                    container.appendChild(fragment);
+                    if (window.lucide) lucide.createIcons();
+                }
+            } catch (e) { console.error("Error Nav:", e); }
+        }
+
+        function loadNotices() {
+            const container = document.getElementById('notices-container-home');
+            if (!container) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notices'), (snap) => {
+                const notices = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                if (notices.length === 0) {
+                    container.innerHTML = `<div class="col-span-full py-10 text-center opacity-20"><p class="text-[9px] font-black uppercase tracking-widest">Sin avisos oficiales.</p></div>`;
+                    return;
+                }
+                container.innerHTML = notices.map(n => `
+                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 relative shadow-sm transition-all hover:shadow-md group">
+                        <div class="absolute top-[-10px] left-1/2 translate-x-[-50%] w-4 h-4 bg-red-800 rounded-full border-2 border-white shadow-sm"></div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-2">${n.author || 'Sistema CIC'}</p>
+                        <h4 class="text-[11px] font-black text-slate-900 uppercase leading-snug mb-2">${n.title}</h4>
+                        <p class="text-[10px] font-medium text-slate-500 leading-relaxed">${n.message}</p>
+                    </div>
+                `).join('');
+            });
+        }
+    </script>
+</body>
+</html>
