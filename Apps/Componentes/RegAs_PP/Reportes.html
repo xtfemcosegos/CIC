@@ -13,6 +13,10 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         #reportes-container { height: 100vh; overflow: hidden; }
         body { margin: 0; padding: 0; background-color: #f8fafc; }
+        
+        /* Tooltip simple para estados */
+        .status-picker { display: none; }
+        .status-container:not(.is-absence):hover .status-picker { display: flex; }
     </style>
 </head>
 <body>
@@ -145,7 +149,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, getDoc, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
@@ -166,10 +170,10 @@
         'vacaciones': { bg: '#22C55E', text: '#FFFFFF', border: '#16A34A' },
         'incapacidad': { bg: '#E0F2FE', text: '#0369A1', border: '#BAE6FD' },
         'permiso': { bg: '#FEF9C3', text: '#A16207', border: '#FEF08A' },
-        'recupera': { bg: '#16a34a', text: '#FFFFFF', border: '#15803d' },
-        'extra': { bg: '#d946ef', text: '#FFFFFF', border: '#a21caf' },
-        'retardo': { bg: '#991b1b', text: '#FFFFFF', border: '#7f1d1d' },
-        'festivo': { bg: '#7e22ce', text: '#FFFFFF', border: '#6b21a8' },
+        'recupera': { bg: '#16a34a', text: '#FFFFFF', border: '#15803d', label: 'RECUPERA' },
+        'extra': { bg: '#d946ef', text: '#FFFFFF', border: '#a21caf', label: 'EXTRA' },
+        'retardo': { bg: '#991b1b', text: '#FFFFFF', border: '#7f1d1d', label: 'RETARDO' },
+        'festivo': { bg: '#7e22ce', text: '#FFFFFF', border: '#6b21a8', label: 'FESTIVO' },
         'default': { bg: '#FEE2E2', text: '#B91C1C', border: '#FECACA' }
     };
 
@@ -308,18 +312,17 @@
             ['M', 'V', 'N'].forEach(sID => {
                 const label = sID === 'M' ? 'MATUTINO' : sID === 'V' ? 'VESPERTINO' : 'NOCTURNO';
                 const list = [];
-                // Ordenar por estaciones según catálogo (mismo orden que WhatsApp)
                 stations.forEach(st => {
                     allAssignments.forEach(doc => {
                         if (doc.date === date) {
                             if (doc.shifts && Array.isArray(doc.shifts)) {
-                                doc.shifts.forEach(s => {
+                                doc.shifts.forEach((s, idx) => {
                                     if (s.shift === sID && s.station === st.name && s.type !== 'ausentismo') {
-                                        list.push({ ...s, email: doc.email, docId: doc.docId });
+                                        list.push({ ...s, email: doc.email, docId: doc.docId, isFromShifts: true, shiftIndex: idx });
                                     }
                                 });
                             } else if (doc.shift === sID && doc.station === st.name && doc.type !== 'ausentismo') {
-                                list.push(doc);
+                                list.push({ ...doc, isFromShifts: false });
                             }
                         }
                     });
@@ -331,13 +334,13 @@
             allAssignments.forEach(doc => {
                 if (doc.date === date) {
                     if (doc.shifts && Array.isArray(doc.shifts)) {
-                        doc.shifts.forEach(s => {
+                        doc.shifts.forEach((s, idx) => {
                             if (s.type === 'ausentismo' && s.reason !== 'Descanso') {
-                                absList.push({ ...s, email: doc.email, docId: doc.docId });
+                                absList.push({ ...s, email: doc.email, docId: doc.docId, isFromShifts: true, shiftIndex: idx });
                             }
                         });
                     } else if (doc.type === 'ausentismo' && doc.reason !== 'Descanso') {
-                        absList.push(doc);
+                        absList.push({ ...doc, isFromShifts: false });
                     }
                 }
             });
@@ -348,6 +351,17 @@
             window.generateEmailHtml = () => {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = container.innerHTML;
+                
+                // Limpieza absoluta de controles interactivos para el correo
+                tempDiv.querySelectorAll('.status-picker-btn').forEach(btn => btn.remove());
+                tempDiv.querySelectorAll('.status-picker').forEach(picker => picker.remove());
+                tempDiv.querySelectorAll('.tag-btn').forEach(tag => {
+                    tag.style.cursor = 'default';
+                    tag.removeAttribute('onclick');
+                    tag.style.margin = '2px';
+                    tag.style.display = 'inline-block';
+                });
+                
                 tempDiv.querySelectorAll('input[type="text"]').forEach(inp => {
                     const span = document.createElement('span');
                     span.style.color = '#64748b'; span.style.fontStyle = 'italic'; span.style.fontSize = '10px';
@@ -359,7 +373,6 @@
         } catch (e) { console.error(e); }
     };
 
-    // FUNCIÓN DE RENDERIZADO OPTIMIZADA PARA OUTLOOK (SIN FOTOS, TABLAS ROBUSTAS)
     function renderTable(title, list, users, isAbsence) {
         return `
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; width: 100%;">
@@ -373,9 +386,10 @@
                         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="width: 100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background-color: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 9px; font-weight: 900; border-bottom: 2px solid #f1f5f9;">
-                                    <th width="100" style="padding: 12px 15px; text-align: left;">ID</th>
+                                    <th width="80" style="padding: 12px 15px; text-align: left;">ID</th>
                                     <th style="padding: 12px 15px; text-align: left;">PERSONAL</th>
-                                    ${isAbsence ? `<th width="140" style="padding: 12px 15px; text-align: center;">MOTIVO</th>` : `<th width="100" style="padding: 12px 15px; text-align: center;">ENTRADA</th><th width="100" style="padding: 12px 15px; text-align: center;">SALIDA</th>`}
+                                    ${isAbsence ? `<th width="120" style="padding: 12px 15px; text-align: center;">MOTIVO</th>` : `<th width="80" style="padding: 12px 15px; text-align: center;">ENTRADA</th><th width="80" style="padding: 12px 15px; text-align: center;">SALIDA</th>`}
+                                    <th width="140" style="padding: 12px 15px; text-align: center;">ESTADO</th>
                                     <th style="padding: 12px 15px; text-align: left;">NOTAS</th>
                                 </tr>
                             </thead>
@@ -383,6 +397,16 @@
                                 ${list.map(a => {
                                     const u = users[a.email] || { name: a.email, id: '---' };
                                     const isL = a.realEntry && a.assignedEntry && (a.realEntry > a.assignedEntry);
+                                    
+                                    // Tags: Retardo automático + manuales + flags de base de datos
+                                    let currentTags = [...(a.tags || [])];
+                                    
+                                    // Sincronización con Detalle.html (isExtra, isHoliday, isRecovery)
+                                    if (a.isExtra && !currentTags.includes('extra')) currentTags.push('extra');
+                                    if (a.isHoliday && !currentTags.includes('festivo')) currentTags.push('festivo');
+                                    if (a.isRecovery && !currentTags.includes('recupera')) currentTags.push('recupera');
+                                    if (isL && !currentTags.includes('retardo')) currentTags.push('retardo');
+
                                     let statusCol = "";
                                     if (isAbsence) {
                                         const c = ESTILOS_REPORTES[(a.reason || 'Falta').toLowerCase()] || ESTILOS_REPORTES['default'];
@@ -391,16 +415,40 @@
                                         </td>`;
                                     } else {
                                         statusCol = `<td style="padding: 10px 15px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-                                                        ${isL ? '<span style="color: #b91c1c; font-weight: bold; font-size: 8px; margin-right: 4px;">RETARDO</span>' : ''}
                                                         <b style="color: ${isL ? '#b91c1c' : '#059669'}; font-family: Courier, monospace;">${a.realEntry || '--:--'}</b>
                                                      </td>
                                                      <td style="padding: 10px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: bold; font-family: Courier, monospace;">${a.realExit || '--:--'}</td>`;
                                     }
+
+                                    // Renderizado de Etiquetas (Solo si NO es ausencia)
+                                    const tagsHtml = !isAbsence ? currentTags.map(t => {
+                                        const s = ESTILOS_REPORTES[t] || ESTILOS_REPORTES['default'];
+                                        return `<span class="tag-btn" onclick="window.toggleAssignmentTag('${a.docId}', '${t}', ${a.isFromShifts}, ${a.shiftIndex})" style="background-color: ${s.bg}; color: ${s.text}; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; border: 1px solid ${s.border}; cursor: pointer; text-transform: uppercase; margin: 1px;">${s.label || t}</span>`;
+                                    }).join('') : "";
+
+                                    // Botón Plus (Solo si NO es ausencia)
+                                    const plusBtn = !isAbsence ? `
+                                        <button class="status-picker-btn w-5 h-5 flex items-center justify-center rounded bg-slate-100 text-slate-400 hover:bg-slate-200 text-[10px]"><i class="fa-solid fa-plus"></i></button>
+                                        <div class="status-picker absolute z-50 bg-white shadow-xl border border-slate-200 rounded-xl p-2 top-full left-1/2 -translate-x-1/2 flex-col gap-1 min-w-[100px]">
+                                            ${['extra', 'recupera', 'festivo', 'retardo'].map(tag => `
+                                                <button onclick="window.toggleAssignmentTag('${a.docId}', '${tag}', ${a.isFromShifts}, ${a.shiftIndex})" class="text-[8px] font-black uppercase p-1.5 hover:bg-slate-50 rounded text-left flex items-center justify-between">
+                                                    ${tag} ${currentTags.includes(tag) ? '❌' : '➕'}
+                                                </button>
+                                            `).join('')}
+                                        </div>
+                                    ` : "";
+
                                     return `
                                     <tr>
                                         <td style="padding: 10px 15px; color: #64748b; font-weight: bold; border-bottom: 1px solid #f1f5f9;">${u.id}</td>
                                         <td style="padding: 10px 15px; font-weight: bold; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${u.name}</td>
                                         ${statusCol}
+                                        <td style="padding: 10px 15px; border-bottom: 1px solid #f1f5f9; text-align: center;" class="status-container relative ${isAbsence ? 'is-absence' : ''}">
+                                            <div class="flex flex-wrap justify-center items-center gap-1">
+                                                ${tagsHtml}
+                                                ${plusBtn}
+                                            </div>
+                                        </td>
                                         <td style="padding: 10px 15px; border-bottom: 1px solid #f1f5f9; color: #64748b; font-style: italic;">
                                             <input type="text" value="${a.note || ''}" onchange="window.saveRowNote('${a.docId}', this.value)" placeholder="..." style="width: 100%; background: transparent; border: none; font-size: 10px; outline: none; color: #64748b;">
                                         </td>
@@ -442,7 +490,6 @@
         btn.disabled = true; const originalText = btn.innerHTML;
         btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Enviando...`;
 
-        // PLANTILLA DE CORREO "ROBUSTA" CON TABLAS ANIDADAS (PARA OUTLOOK)
         const finalEmailBody = `
             <div style="background-color: #f1f5f9; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
                 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 800px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; border-collapse: separate; overflow: hidden;">
@@ -472,7 +519,7 @@
             });
 
             if (response.ok) {
-                btn.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> Enviado`;
+                btn.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> Reporte Enviado`;
                 btn.classList.replace('bg-slate-900', 'bg-emerald-600');
                 setTimeout(() => { 
                     window.closeEmailModal(); 
@@ -484,9 +531,48 @@
         }
     };
 
-    // CONEXIÓN CON EL SHELL
-    window.sendEmailFromShell = () => window.openEmailModal();
+    // GESTIÓN DE ETIQUETAS (TAGS)
+    window.toggleAssignmentTag = async (docId, tag, isFromShifts, shiftIndex) => {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', docId);
+        try {
+            const snap = await getDoc(docRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
 
+            // Mapeo de tag a campo de base de datos (Sincronizado con Detalle.html)
+            const tagToField = { 'extra': 'isExtra', 'recupera': 'isRecovery', 'festivo': 'isHoliday' };
+            const field = tagToField[tag];
+
+            if (isFromShifts) {
+                let shifts = [...data.shifts];
+                let currentTags = shifts[shiftIndex].tags || [];
+                if (currentTags.includes(tag)) {
+                    currentTags = currentTags.filter(t => t !== tag);
+                    if(field) shifts[shiftIndex][field] = false;
+                } else {
+                    currentTags.push(tag);
+                    if(field) shifts[shiftIndex][field] = true;
+                }
+                shifts[shiftIndex].tags = currentTags;
+                await updateDoc(docRef, { shifts, updatedAt: serverTimestamp() });
+            } else {
+                let currentTags = data.tags || [];
+                let updateObj = { updatedAt: serverTimestamp() };
+                if (currentTags.includes(tag)) {
+                    currentTags = currentTags.filter(t => t !== tag);
+                    if(field) updateObj[field] = false;
+                } else {
+                    currentTags.push(tag);
+                    if(field) updateObj[field] = true;
+                }
+                updateObj.tags = currentTags;
+                await updateDoc(docRef, updateObj);
+            }
+            window.generateDailyTableReport();
+        } catch (e) { console.error("Error toggling tag:", e); }
+    };
+
+    window.sendEmailFromShell = () => window.openEmailModal();
     window.saveRowNote = async (id, note) => { 
         if (!id) return; 
         try { 
@@ -519,7 +605,6 @@
     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     #reportes-container { height: 100%; max-height: calc(100vh - 12rem); }
-    /* Ajustes específicos para mejorar renderizado en emuladores de Outlook */
     table td { border-collapse: collapse; }
 </style>
 </body>
