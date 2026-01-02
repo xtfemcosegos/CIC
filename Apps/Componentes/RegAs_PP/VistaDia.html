@@ -80,13 +80,14 @@
     </section>
 </div>
 
-<!-- Menú Contextual para Asignación -->
-<div id="custom-context-menu" class="fixed z-[300] hidden min-w-[200px] bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-100">
+<!-- Menú Contextual para Asignación mejorado para evitar recortes -->
+<div id="custom-context-menu" class="fixed z-[300] hidden min-w-[220px] bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-100 overflow-visible">
     <div class="px-4 py-2 border-b border-slate-100 mb-1">
         <p id="menu-user-name" class="text-[9px] font-black uppercase text-slate-900 truncate">Usuario</p>
         <p class="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Asignar a Caseta</p>
     </div>
-    <div id="stations-menu-list" class="max-h-[300px] overflow-y-auto custom-scrollbar">
+    <!-- Se quitó overflow-y-auto para evitar el recorte del submenú horizontal -->
+    <div id="stations-menu-list" class="max-h-[400px] overflow-y-visible">
         <!-- Las casetas se cargan aquí dinámicamente -->
     </div>
 </div>
@@ -419,11 +420,16 @@
         currentStations.sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(st => {
             const item = document.createElement('div');
             item.className = "group relative px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors";
+            
+            // Lógica para detectar si el submenú debe abrirse a la izquierda
+            const shouldOpenLeft = e.clientX + 400 > window.innerWidth;
+            const submenuPosClass = shouldOpenLeft ? 'right-full mr-0.5' : 'left-full ml-0.5';
+
             item.innerHTML = `
                 <span class="text-[8px] font-black uppercase text-slate-600 tracking-tighter">${st.name}</span>
-                <i class="fa-solid fa-chevron-right text-[6px] text-slate-300 group-hover:text-red-800"></i>
-                <!-- Submenú de Turnos -->
-                <div class="absolute left-full top-0 hidden group-hover:block ml-0.5 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[100px]">
+                <i class="fa-solid ${shouldOpenLeft ? 'fa-chevron-left' : 'fa-chevron-right'} text-[6px] text-slate-300 group-hover:text-red-800"></i>
+                <!-- Submenú de Turnos con posicionamiento inteligente -->
+                <div class="absolute top-0 hidden group-hover:block ${submenuPosClass} bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[120px] z-[310]">
                     <button onclick="directAssign('${st.name}', 'M')" class="w-full text-left px-4 py-2 text-[7px] font-black uppercase hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50">Turno M</button>
                     <button onclick="directAssign('${st.name}', 'V')" class="w-full text-left px-4 py-2 text-[7px] font-black uppercase hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-slate-50">Turno V</button>
                     <button onclick="directAssign('${st.name}', 'N')" class="w-full text-left px-4 py-2 text-[7px] font-black uppercase hover:bg-slate-900 hover:text-white transition-colors">Turno N</button>
@@ -432,9 +438,22 @@
             stationsList.appendChild(item);
         });
 
-        // Posicionamiento inteligente del menú
-        menu.style.top = `${e.clientY}px`;
-        menu.style.left = `${e.clientX}px`;
+        // Posicionamiento inteligente del menú principal
+        let top = e.clientY;
+        let left = e.clientX;
+
+        // Ajuste si el menú se sale por abajo
+        if (top + 400 > window.innerHeight) {
+            top = window.innerHeight - 410;
+        }
+        
+        // Ajuste si el menú se sale por la derecha
+        if (left + 220 > window.innerWidth) {
+            left = window.innerWidth - 230;
+        }
+
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
         menu.classList.remove('hidden');
 
         // Cerrar menú al hacer clic fuera
