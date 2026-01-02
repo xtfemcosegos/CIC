@@ -1,8 +1,23 @@
 <!-- Shell principal de Registros de Asistencia - Envío de Correo con Formato -->
-<div class="flex flex-col h-full w-full bg-slate-50/50 animate-in fade-in duration-500 relative text-slate-900">
+<div class="flex flex-col h-full w-full bg-slate-50/50 animate-in fade-in duration-500 relative text-slate-900 overflow-hidden">
     
+    <style>
+        /* Bloquear el scroll del contenedor principal en el index para que el Shell tome el control del layout */
+        #main-view { overflow: hidden !important; }
+        
+        /* Forzar que el contenedor donde se inyecta este shell ocupe toda la altura */
+        #central-content { height: 100% !important; display: flex; flex-direction: column; }
+        
+        /* Asegurar que el contenedor interno sea un flex-container para sus hijos */
+        #regas-component-container { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* Ajuste para el Ribbon sticky si el flex fallara en algún navegador */
+        #shell-header-main { position: relative; z-index: 120; flex-shrink: 0; }
+        #module-ribbon { position: relative; z-index: 110; flex-shrink: 0; }
+    </style>
+
     <!-- ENCABEZADO FIJO -->
-    <header id="shell-header-main" class="sticky top-0 flex-shrink-0 z-[110] bg-white border-b border-slate-100 p-4 md:px-10 shadow-sm">
+    <header id="shell-header-main" class="flex-shrink-0 bg-white border-b border-slate-100 p-4 md:px-10 shadow-sm">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-9 h-9 bg-red-800 rounded-xl flex items-center justify-center text-white shadow-xl shadow-red-800/20 rotate-3">
@@ -25,14 +40,15 @@
     </header>
 
     <!-- CINTA DE HERRAMIENTAS (RIBBON) -->
-    <div id="module-ribbon" class="sticky top-[73px] md:top-[68px] flex-shrink-0 z-[100] bg-slate-900 border-b border-slate-950 p-3 px-10 min-h-[64px] flex items-center shadow-lg">
-        <div id="ribbon-content" class="w-full flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300">
-            <!-- Dinámico -->
+    <div id="module-ribbon" class="flex-shrink-0 bg-slate-900 border-b border-slate-950 min-h-[64px] flex items-center shadow-lg relative overflow-hidden">
+        <div id="ribbon-content" class="w-full flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-300 h-full">
+            <!-- Contenido dinámico inyectado -->
         </div>
     </div>
 
-    <main id="regas-component-container" class="flex-1 bg-slate-50/20 scroll-smooth min-h-screen">
-        <div class="flex items-center justify-center h-full py-20 opacity-20">
+    <!-- CONTENEDOR DE MÓDULOS -->
+    <main id="regas-component-container" class="flex-1 bg-slate-50/20 overflow-hidden relative">
+        <div class="flex items-center justify-center h-full opacity-20">
             <i class="fa-solid fa-circle-notch animate-spin text-3xl text-red-800"></i>
         </div>
     </main>
@@ -74,34 +90,26 @@
 
     const getDateInput = () => document.getElementById('global-report-date') || document.getElementById('view-date-input');
 
-    /**
-     * Calcula el turno correspondiente según la hora actual
-     */
     function getAutoShift() {
         const hour = new Date().getHours();
-        if (hour >= 7 && hour < 13) return 'M';      // 07:00 a 12:59
-        if (hour >= 13 && hour < 21) return 'V';     // 13:00 a 20:59
-        return 'N';                                  // 21:00 a 06:59
+        if (hour >= 7 && hour < 13) return 'M';
+        if (hour >= 13 && hour < 21) return 'V';
+        return 'N';
     }
 
-    /**
-     * Ajusta la fecha actual y notifica al módulo cargado
-     */
     window.changeDay = (delta) => {
         const dateInput = getDateInput();
         if(!dateInput) return;
         const d = new Date(dateInput.value + 'T00:00:00');
         d.setDate(d.getDate() + delta);
         dateInput.value = d.toISOString().split('T')[0];
-        
-        // Ejecutar actualización del módulo cargado
         if (window.syncAndLoad) window.syncAndLoad();
         else if (window.loadDailyView) window.loadDailyView();
     };
 
     const ribbonConfigs = {
         'VistaDia.html': `
-            <div class="flex items-center justify-between w-full">
+            <div class="flex items-center justify-between w-full px-10">
                 <div class="flex items-center gap-6">
                     <div class="flex items-center gap-2">
                         <p id="current-view-date" class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Sincronizando...</p>
@@ -112,15 +120,31 @@
                         <button onclick="window.changeDay?.(1)" class="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 hover:text-white hover:bg-red-800 transition-all"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
-                
                 <button onclick="window.openProfilesPanel?.()" class="px-5 py-2.5 bg-red-800 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-3 shadow-lg shadow-red-900/20 active:scale-95">
                     <i class="fa-solid fa-users-viewfinder"></i>
                     <span>Asignar Personal</span>
                 </button>
             </div>
         `,
+        'Planeacion.html': `
+            <div class="flex w-full h-full">
+                <!-- Espaciador fijo para coincidir con la columna de nombres (320px) -->
+                <div class="w-[320px] bg-slate-950 border-r border-slate-800 flex items-center px-8 shrink-0">
+                    <div class="flex items-center gap-3">
+                         <i class="fa-solid fa-calendar-days text-red-500 text-xs"></i>
+                         <span class="text-[10px] font-black uppercase text-white tracking-[0.2em]">Planeación</span>
+                    </div>
+                </div>
+                <!-- Contenedor de fechas que se sincronizará con el scroll de la tabla -->
+                <div id="ribbon-sync-header" class="flex-1 overflow-hidden flex items-center bg-slate-900">
+                    <div id="ribbon-date-row" class="flex h-full items-center">
+                        <!-- Las fechas se inyectan desde Planeacion.html -->
+                    </div>
+                </div>
+            </div>
+        `,
         'Reportes.html': `
-            <div class="flex items-center justify-between w-full">
+            <div class="flex items-center justify-between w-full px-10">
                 <div class="flex items-center gap-4">
                     <div class="flex flex-col">
                         <label class="text-[7px] font-black text-white/40 uppercase mb-1 ml-1 tracking-widest">Fecha</label>
@@ -149,9 +173,6 @@
         `
     };
 
-    /**
-     * Función global para abrir el panel derecho con Perfiles
-     */
     window.openProfilesPanel = () => {
         if (typeof window.loadRightContent === 'function') {
             window.loadRightContent('Apps/Perfiles.html');
@@ -187,7 +208,7 @@
         const ribbon = document.getElementById('ribbon-content');
         const path = `Apps/Componentes/RegAs_PP/${file}`;
         
-        ribbon.innerHTML = ribbonConfigs[file] || '<p class="text-white/20 text-[9px] uppercase font-black">Módulo sin controles</p>';
+        ribbon.innerHTML = ribbonConfigs[file] || '<p class="text-white/20 text-[9px] uppercase font-black px-10">Módulo sin controles</p>';
         document.querySelectorAll('.regas-tab-btn').forEach(b => { b.classList.remove('active', 'bg-slate-900', 'text-white'); b.classList.add('text-slate-400'); });
         if (btn) { btn.classList.add('active', 'bg-slate-900', 'text-white'); btn.classList.remove('text-slate-400'); }
 
@@ -198,6 +219,7 @@
                 container.innerHTML = "";
                 const fragment = document.createRange().createContextualFragment(html);
                 container.appendChild(fragment);
+                
                 const now = new Date();
                 const localDate = now.toLocaleDateString('en-CA');
                 const dateInp = document.getElementById('global-report-date') || document.getElementById('view-date-input');
@@ -206,7 +228,10 @@
                 const shiftInp = document.getElementById('report-shift');
                 if (shiftInp) shiftInp.value = getAutoShift();
 
-                setTimeout(() => { if (window.syncAndLoad) window.syncAndLoad(); else if (window.loadDailyView) window.loadDailyView(); }, 150);
+                setTimeout(() => { 
+                    if (window.syncAndLoad) window.syncAndLoad(); 
+                    else if (window.loadDailyView) window.loadDailyView(); 
+                }, 150);
             }
         } catch (e) { console.error(e); }
     }
@@ -214,7 +239,6 @@
     window.sendEmailFromShell = async () => {
         if (typeof window.generateEmailHtml !== 'function') return;
         const rawContent = window.generateEmailHtml();
-        
         const emailBody = `
             <div style="background-color: #f1f5f9; padding: 30px 10px; font-family: 'Segoe UI', Arial, sans-serif;">
                 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 700px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; border-collapse: separate; overflow: hidden;">
@@ -265,4 +289,5 @@
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     select option { background-color: #1e293b; color: white; padding: 10px; }
+    #ribbon-sync-header::-webkit-scrollbar { display: none; }
 </style>
