@@ -1,13 +1,20 @@
-<!-- Módulo de Planeación Operativa - Sincronizado con Shell Ribbon y Panel de Patrones -->
+<!-- Módulo de Planeación Operativa - Interactividad Avanzada: Colapso y Ocultamiento -->
 <div id="planeacion-container" class="flex flex-col h-full bg-white select-none text-slate-900 font-sans">
     
     <div id="scroll-wrapper" class="flex-1 overflow-auto custom-scrollbar relative bg-slate-50/30">
-        <table id="planning-table" class="w-full border-separate border-spacing-0 bg-white">
+        <!-- Uso de colgroup para forzar anchos en table-fixed -->
+        <table id="planning-table" class="w-fit border-separate border-spacing-0 bg-white table-fixed">
+            <colgroup id="table-columns-defs">
+                <!-- Columna de Nombres Fija -->
+                <col style="width: 320px;">
+                <!-- Las columnas de fechas se generarán dinámicamente -->
+            </colgroup>
             <tbody id="planning-body" class="divide-y divide-slate-100">
-                <!-- Filas inyectadas -->
+                <!-- Filas inyectadas por JS -->
             </tbody>
         </table>
         
+        <!-- Indicador de Carga -->
         <div id="infinite-loader" class="hidden sticky right-0 bottom-0 bg-white/80 backdrop-blur-md p-4 flex items-center justify-center border-l border-t border-slate-100 rounded-tl-3xl shadow-2xl z-[70]">
             <i class="fa-solid fa-circle-notch animate-spin text-red-800 mr-2"></i>
             <span class="text-[10px] font-black uppercase tracking-widest text-slate-900">Cargando días...</span>
@@ -15,7 +22,7 @@
     </div>
 </div>
 
-<!-- Menú Contextual Actualizado -->
+<!-- Menú Contextual -->
 <div id="planning-context-menu" class="fixed z-[300] hidden min-w-[240px] bg-white rounded-3xl shadow-2xl border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-100 text-slate-900">
     <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
         <p id="menu-target-name" class="text-[11px] font-black uppercase text-slate-900 truncate">Nombre</p>
@@ -23,7 +30,6 @@
     </div>
     
     <div class="p-1.5 space-y-1">
-        <!-- OPCIÓN DE PATRONES -->
         <button onclick="window.openPatternManager()" class="w-full text-left px-4 py-3 bg-red-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-red-700 shadow-lg shadow-red-900/10 mb-2">
             <div class="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center"><i class="fa-solid fa-gears text-xs"></i></div>
             Asignar Patrón / Días
@@ -82,6 +88,10 @@
     let dates = [];
     let isLoadingMore = false;
 
+    // ESTADOS DE INTERFAZ (Persistentes por sesión de vista)
+    let collapsedGroups = new Set();
+    let hiddenUsers = new Set();
+
     const absenceReasons = [
         { label: 'Descanso', icon: 'fa-bed', color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200' },
         { label: 'Falta', icon: 'fa-user-xmark', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
@@ -137,8 +147,22 @@
                 dates.push(formatLocalDate(d));
             }
         }
+        updateColgroup(); // Actualizar estructuralmente los anchos
         renderRibbonHeaders();
         renderPlanning();
+    }
+
+    function updateColgroup() {
+        const colgroup = document.getElementById('table-columns-defs');
+        if (!colgroup) return;
+        // Reiniciar con la columna de nombres
+        colgroup.innerHTML = '<col style="width: 320px;">';
+        // Añadir una columna de 85px por cada fecha cargada
+        dates.forEach(() => {
+            const col = document.createElement('col');
+            col.style.width = '85px';
+            colgroup.appendChild(col);
+        });
     }
 
     function formatLocalDate(d) {
@@ -157,7 +181,7 @@
             const dayName = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
             const dayNum = d.getDate();
             const cell = document.createElement('div');
-            cell.className = "flex flex-col items-center justify-center min-w-[85px] h-full border-r border-slate-800 transition-colors hover:bg-slate-800/50 cursor-default";
+            cell.className = "flex flex-col items-center justify-center w-[85px] min-w-[85px] h-full border-r border-slate-800 transition-colors hover:bg-slate-800/50 cursor-default";
             cell.innerHTML = `
                 <p class="text-[8px] font-black text-slate-500 mb-0.5 tracking-widest">${dayName}</p>
                 <p class="text-xs font-black text-white">${dayNum}</p>
@@ -209,6 +233,23 @@
         });
     }
 
+    // ACCIONES DE INTERFAZ
+    window.toggleGroupCollapse = (gName) => {
+        if (collapsedGroups.has(gName)) collapsedGroups.delete(gName);
+        else collapsedGroups.add(gName);
+        renderPlanning();
+    };
+
+    window.hideElement = (email) => {
+        hiddenUsers.add(email);
+        renderPlanning();
+    };
+
+    window.restoreHiddenElements = () => {
+        hiddenUsers.clear();
+        renderPlanning();
+    };
+
     function renderPlanning() {
         const body = document.getElementById('planning-body');
         if (!body) return;
@@ -222,34 +263,80 @@
             if (!groups[station]) groups[station] = [];
             groups[station].push(u);
         });
+        
         const groupOrder = [...stations.map(s => s.name), "Sin Caseta"];
+        
+        // Actualizar Ribbon/Header con botón de restauración si hay elementos ocultos
+        const ribbonHeaderFirstCell = document.querySelector('#ribbon-sync-header')?.previousElementSibling;
+        if(ribbonHeaderFirstCell) {
+            const restBtn = hiddenUsers.size > 0 ? `<button onclick="restoreHiddenElements()" class="ml-auto text-[7px] font-black text-red-400 border border-red-800/30 px-2 py-0.5 rounded-full hover:bg-red-800 hover:text-white transition-all uppercase tracking-tighter">Restaurar (${hiddenUsers.size})</button>` : '';
+            const titleSpan = ribbonHeaderFirstCell.querySelector('span');
+            if(titleSpan) titleSpan.parentElement.innerHTML = `<i class="fa-solid fa-calendar-days text-red-500 text-xs"></i><span class="text-[10px] font-black uppercase text-white tracking-[0.2em]">Planeación</span> ${restBtn}`;
+        }
+
         groupOrder.forEach(gName => {
             const usersInGroup = groups[gName];
             if (!usersInGroup || usersInGroup.length === 0) return;
+            
+            const isCollapsed = collapsedGroups.has(gName);
+            const visibleUsers = usersInGroup.filter(u => !hiddenUsers.has(u.email));
+            
+            if (visibleUsers.length === 0 && !isCollapsed) return;
+
             const groupRow = document.createElement('tr');
-            groupRow.className = "bg-slate-50";
-            groupRow.innerHTML = `<td class="p-0 border-y border-slate-200 bg-slate-100" colspan="${dates.length + 1}"><div class="sticky left-0 z-[40] p-4 pl-8 flex items-center gap-3 w-fit min-w-[320px] shadow-[1px_0_0_#f1f5f9]"><div class="w-2 h-4 bg-red-800 rounded-full"></div><span class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600">${gName}</span></div></td>`;
+            groupRow.className = "bg-slate-50 cursor-pointer hover:bg-slate-100 transition-all";
+            groupRow.onclick = () => window.toggleGroupCollapse(gName);
+            groupRow.innerHTML = `
+                <td class="p-0 border-y border-slate-200 bg-slate-100" colspan="${dates.length + 1}">
+                    <div class="sticky left-0 z-[40] p-4 pl-8 flex items-center justify-between w-[320px] min-w-[320px] max-w-[320px] shadow-[1px_0_0_#f1f5f9]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-4 bg-red-800 rounded-full"></div>
+                            <span class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600">${gName}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[8px] font-bold text-slate-400">${visibleUsers.length}</span>
+                            <i class="fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[8px] text-slate-300"></i>
+                        </div>
+                    </div>
+                </td>`;
             body.appendChild(groupRow);
-            usersInGroup.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/30 transition-colors group";
-                const nameCell = document.createElement('td');
-                nameCell.className = "sticky left-0 z-[45] bg-white group-hover:bg-slate-50 p-5 border-r border-slate-100 flex items-center gap-4 cursor-pointer shadow-[1px_0_0_#f1f5f9]";
-                nameCell.onclick = () => openCellDetail(u.email, dates[0]);
-                nameCell.innerHTML = `<div class="w-10 h-10 rounded-xl overflow-hidden border-2 border-slate-100 shrink-0 bg-slate-50 shadow-sm transition-transform group-hover:scale-105">${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>`}</div><div class="truncate"><p class="text-[12px] font-black uppercase text-slate-800 truncate leading-tight mb-1">${u.name || 'S/N'}</p><p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${u.role}</p></div>`;
-                tr.appendChild(nameCell);
-                dates.forEach(date => {
-                    const td = document.createElement('td');
-                    td.className = "p-0 border-r border-slate-100 text-center relative cursor-pointer hover:bg-red-50/30 transition-all min-w-[85px]";
-                    td.onclick = () => openCellDetail(u.email, date);
-                    td.oncontextmenu = (e) => handleCellRightClick(e, u.email, date, u.name, u.role);
-                    const assign = assignMap[`${u.email}_${date}`];
-                    if (assign) td.innerHTML = renderShiftIndicator(assign);
-                    else td.innerHTML = `<div class="w-full h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus text-[10px] text-slate-200"></i></div>`;
-                    tr.appendChild(td);
+
+            if (!isCollapsed) {
+                visibleUsers.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/30 transition-colors group";
+                    const nameCell = document.createElement('td');
+                    nameCell.className = "sticky left-0 z-[45] bg-white group-hover:bg-slate-50 border-r border-slate-100 shadow-[1px_0_0_#f1f5f9] w-[320px] min-w-[320px] max-w-[320px]";
+                    
+                    nameCell.innerHTML = `
+                        <div class="flex items-center gap-4 p-5 relative overflow-hidden group/cell">
+                            <div onclick="window.openCellDetail('${u.email}', '${dates[0]}')" class="w-10 h-10 rounded-xl overflow-hidden border-2 border-slate-100 shrink-0 bg-slate-50 shadow-sm transition-transform cursor-pointer hover:scale-105">
+                                ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>`}
+                            </div>
+                            <div class="truncate flex-1" onclick="window.openCellDetail('${u.email}', '${dates[0]}')">
+                                <p class="text-[12px] font-black uppercase text-slate-800 truncate leading-tight mb-1 cursor-pointer">${u.name || 'S/N'}</p>
+                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${u.role}</p>
+                            </div>
+                            <!-- BOTÓN PARA OCULTAR ELEMENTO -->
+                            <button onclick="event.stopPropagation(); window.hideElement('${u.email}')" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-200 hover:text-red-800 opacity-0 group-hover/cell:opacity-100 transition-all" title="Ocultar de la lista">
+                                <i class="fa-solid fa-eye-slash text-[10px]"></i>
+                            </button>
+                        </div>`;
+                    tr.appendChild(nameCell);
+                    
+                    dates.forEach(date => {
+                        const td = document.createElement('td');
+                        td.className = "p-0 border-r border-slate-100 text-center relative cursor-pointer hover:bg-red-50/30 transition-all w-[85px] min-w-[85px] max-w-[85px]";
+                        td.onclick = () => openCellDetail(u.email, date);
+                        td.oncontextmenu = (e) => handleCellRightClick(e, u.email, date, u.name, u.role);
+                        const assign = assignMap[`${u.email}_${date}`];
+                        if (assign) td.innerHTML = renderShiftIndicator(assign);
+                        else td.innerHTML = `<div class="w-full h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus text-[10px] text-slate-200"></i></div>`;
+                        tr.appendChild(td);
+                    });
+                    body.appendChild(tr);
                 });
-                body.appendChild(tr);
-            });
+            }
         });
     }
 
@@ -320,14 +407,12 @@
         menu.style.left = `${left}px`;
         menu.classList.remove('hidden');
 
-        // Función simplificada para cerrar el menú en el siguiente clic
         const closeMenu = () => { 
             menu.classList.add('hidden'); 
             document.removeEventListener('click', closeMenu); 
             document.removeEventListener('contextmenu', closeMenu);
         };
         
-        // El retraso evita que el clic derecho actual dispare el cierre inmediato
         setTimeout(() => {
             document.addEventListener('click', closeMenu);
             document.addEventListener('contextmenu', closeMenu);
@@ -397,8 +482,25 @@
 <style>
     .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 12px; }
-    #planning-table td { min-height: 72px; height: 72px; }
-    #planning-table td.sticky.left-0 { border-right: 1px solid #f1f5f9; }
+    
+    /* Configuración para tabla con anchos fijos estrictos */
+    #planning-table {
+        border-collapse: separate;
+        table-layout: fixed;
+    }
+    
+    #planning-table td { 
+        min-height: 72px; 
+        height: 72px; 
+        overflow: hidden;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    /* Efecto de separación para columna fija */
+    #planning-table td.sticky.left-0 { 
+        border-right: 1px solid #f1f5f9; 
+    }
+
     #planning-context-menu { animation: menuEnter 0.15s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.35); }
     @keyframes menuEnter { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 </style>
