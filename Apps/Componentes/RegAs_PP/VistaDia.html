@@ -87,26 +87,21 @@
     </section>
 </div>
 
-<!-- MENÚ CONTEXTUAL PRINCIPAL (Limitado a 3 elementos con scroll) -->
+<!-- MENÚ CONTEXTUAL PRINCIPAL -->
 <div id="custom-context-menu" class="fixed z-[300] hidden min-w-[260px] bg-white rounded-[2rem] shadow-2xl border border-slate-200 py-4 animate-in fade-in zoom-in-95 duration-100 text-slate-900 overflow-visible">
     <div class="px-6 py-3 border-b border-slate-100 mb-2">
         <p id="menu-user-name" class="text-[11px] font-black uppercase text-slate-900 truncate">Personal</p>
         <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Seleccionar Destino</p>
     </div>
-    <!-- Altura máxima fijada para mostrar ~3 elementos -->
-    <div id="stations-menu-list" class="max-h-[165px] overflow-y-auto custom-scrollbar px-3 space-y-1">
-        <!-- Listado de casetas -->
-    </div>
+    <div id="stations-menu-list" class="max-h-[165px] overflow-y-auto custom-scrollbar px-3 space-y-1"></div>
 </div>
 
-<!-- SUBMENÚ FLOTANTE (Menú del Menú) -->
+<!-- SUBMENÚ FLOTANTE -->
 <div id="custom-submenu" class="fixed z-[310] hidden min-w-[200px] bg-white rounded-[2rem] shadow-2xl border border-slate-200 py-4 animate-in fade-in zoom-in-95 duration-150 text-slate-900">
     <div class="px-6 py-2 border-b border-slate-50 mb-2">
         <p id="submenu-title" class="text-[9px] font-black uppercase text-red-800 tracking-widest truncate">Destino</p>
     </div>
-    <div id="submenu-list" class="px-3 space-y-1">
-        <!-- Opciones de turno o motivos -->
-    </div>
+    <div id="submenu-list" class="px-3 space-y-1"></div>
 </div>
 
 <script type="module">
@@ -133,14 +128,15 @@
     let currentStations = [];
     let rawAssignments = [];
     let rawStationStatuses = [];
-    let stationDailyStatuses = {}; 
     let showClosedStations = false; 
-    let currentActiveTab = 'M';
     let expandedGroups = new Set();
     let selectedElementForMenu = { email: null, name: null };
+    let unsubscribers = [];
     
     const defaultAbsenceReasons = ['Descanso', 'Permiso', 'Vacaciones', 'Falta', 'Incapacidad', 'Suspensión'];
-    const getDateInput = () => document.getElementById('view-date-input');
+    
+    // Obtener fecha directamente del Shell (compatibilidad robusta)
+    const getDateInput = () => document.getElementById('view-date-input') || document.getElementById('global-report-date');
 
     function calculateDuration(start, end) {
         if (!start || !end) return 0;
@@ -168,45 +164,53 @@
         return { in: '07:00', out: '15:00' };
     }
 
-    onAuthStateChanged(auth, (user) => { if (user) { initDateLogic(); syncData(); } });
+    onAuthStateChanged(auth, (user) => { 
+        if (user) { 
+            syncData(); 
+            // Iniciar lógica de renderizado con pequeño delay para esperar al Shell
+            setTimeout(initComponent, 100);
+        } 
+    });
 
-    function initDateLogic() {
+    function initComponent() {
         const dateInput = getDateInput();
-        if(!dateInput) { setTimeout(initDateLogic, 200); return; }
-        const now = new Date();
-        const hour = now.getHours();
-        let targetDate = new Date(now);
-        let initialShift = 'M';
-        if (hour >= 5 && hour < 12) initialShift = 'M';
-        else if (hour >= 12 && hour < 20) initialShift = 'V';
-        else if (hour >= 20) initialShift = 'N';
-        else if (hour < 5) { initialShift = 'N'; targetDate.setDate(now.getDate() - 1); }
-        const year = targetDate.getFullYear();
-        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(targetDate.getDate()).padStart(2, '0');
-        dateInput.value = `${year}-${month}-${day}`;
-        window.loadDailyView = () => renderAll();
-        switchActiveTab(initialShift);
+        if(!dateInput) { setTimeout(initComponent, 200); return; }
+        
+        // No sobreescribir si ya tiene valor (respetar selección del Shell)
+        if(!dateInput.value) {
+            const now = new Date();
+            dateInput.value = now.toLocaleDateString('en-CA');
+        }
+
+        // Exponer función de carga para el Shell
+        window.loadDailyView = () => {
+            renderAll();
+        };
+
         renderAll();
     }
 
     async function syncData() {
-        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+        // Limpiar suscripciones previas si existen
+        unsubscribers.forEach(unsub => unsub());
+        unsubscribers = [];
+
+        unsubscribers.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
             allUsers = snap.docs.map(d => d.data());
             renderAll();
-        });
-        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'stations'), (snap) => {
+        }));
+        unsubscribers.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'stations'), (snap) => {
             currentStations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderAll();
-        });
-        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'assignments'), (snap) => {
+        }));
+        unsubscribers.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'assignments'), (snap) => {
             rawAssignments = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
             renderAll();
-        });
-        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status'), (snap) => {
+        }));
+        unsubscribers.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status'), (snap) => {
             rawStationStatuses = snap.docs.map(d => d.data());
             renderAll();
-        });
+        }));
     }
 
     window.allowDrop = (ev) => ev.preventDefault();
@@ -269,6 +273,8 @@
         const dateInput = getDateInput();
         if(!dateInput || !dateInput.value) return;
         const targetDate = dateInput.value;
+        
+        // Filtrar datos para el día actual
         const currentDayAssignments = rawAssignments.filter(a => a.date === targetDate);
         const flattenedElements = [];
         currentDayAssignments.forEach(doc => {
@@ -281,8 +287,10 @@
             }
         });
 
-        stationDailyStatuses = {};
-        rawStationStatuses.forEach(d => { if (d.date === targetDate) stationDailyStatuses[`${d.shift}_${d.stationId}`] = d.isClosed; });
+        const dailyStationStatusMap = {};
+        rawStationStatuses.forEach(d => { 
+            if (d.date === targetDate) dailyStationStatusMap[`${d.shift}_${d.stationId}`] = d.isClosed; 
+        });
 
         ['M', 'V', 'N'].forEach(shift => {
             const listContainer = document.getElementById(`list-${shift}`);
@@ -290,7 +298,7 @@
             listContainer.innerHTML = '';
             const sortedStations = [...currentStations].sort((a, b) => (a.order || 0) - (b.order || 0));
             sortedStations.forEach(st => {
-                const isClosed = stationDailyStatuses[`${shift}_${st.id}`] || false;
+                const isClosed = dailyStationStatusMap[`${shift}_${st.id}`] || false;
                 const elements = flattenedElements.filter(el => el.shift === shift && el.station === st.name && el.type !== 'ausentismo');
                 if (!isClosed || showClosedStations) listContainer.appendChild(createStationSection(st, shift, elements, isClosed));
             });
@@ -357,7 +365,7 @@
         return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-4 bg-white rounded-[1.8rem] border border-slate-100 hover:border-red-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md" onclick="window.viewElementDetail('${el.email}')"><div class="flex items-center justify-between"><div class="flex items-center gap-4 min-w-0"><div class="w-14 h-14 rounded-[1.2rem] overflow-hidden border-2 border-slate-50 relative bg-slate-50 shrink-0 shadow-inner">${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-xl"></i></div>`}</div><div class="truncate"><p class="text-[13px] font-black uppercase tracking-tight text-slate-800 truncate leading-tight mb-1.5">${u.name}</p>${timeInfo}</div></div><div class="flex items-center gap-2 shrink-0">${actionBtn}<button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-lg"></i></button></div></div>${configCard}</div>`;
     }
 
-    // --- MANEJO DE MENÚ CONTEXTUAL (SISTEMA DE SUBMENÚ SEPARADO) ---
+    // --- MANEJO DE MENÚ CONTEXTUAL ---
     window.handleElementRightClick = (e, email, name) => {
         e.preventDefault(); e.stopPropagation();
         selectedElementForMenu = { email, name };
@@ -366,7 +374,7 @@
         const sub = document.getElementById('custom-submenu');
         
         document.getElementById('menu-user-name').innerText = name;
-        sub.classList.add('hidden'); // Ocultar submenú previo
+        sub.classList.add('hidden');
 
         let top = e.clientY;
         let left = e.clientX;
@@ -419,12 +427,10 @@
         
         document.getElementById('submenu-title').innerText = title;
 
-        // Posicionamiento lateral al menú principal
         const menuRect = menu.getBoundingClientRect();
         let subLeft = menuRect.right + 10;
         let subTop = menuRect.top;
 
-        // Si no cabe a la derecha, mostrar a la izquierda
         if (subLeft + 200 > window.innerWidth) subLeft = menuRect.left - 210;
         if (subTop + 300 > window.innerHeight) subTop = window.innerHeight - 310;
 
@@ -540,7 +546,6 @@
     window.toggleClosedStations = () => { showClosedStations = !showClosedStations; renderAll(); };
 
     window.switchActiveTab = (shift) => {
-        currentActiveTab = shift;
         ['M','V','N','ABS'].forEach(s => {
             const col = document.getElementById(`col-${s}`);
             const tab = document.getElementById(`tab-${s}`);
@@ -564,7 +569,6 @@
         if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html');
     };
 
-    setTimeout(renderAll, 500);
 </script>
 
 <style>
