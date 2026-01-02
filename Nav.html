@@ -48,7 +48,8 @@
             { id: 'siniestros', label: 'Siniestros', icon: 'fa-triangle-exclamation', color: 'rose' }
         ];
 
-        let selectedAppId = null;
+        // PERSISTENCIA: Intentar recuperar el ID de la app previamente seleccionada
+        let selectedAppId = localStorage.getItem('lastSelectedAppId') || null;
 
         function renderApps() {
             const grid = document.getElementById('apps-grid');
@@ -76,6 +77,9 @@
 
         function selectApp(id) {
             selectedAppId = id;
+            // PERSISTENCIA: Guardar la selección en el almacenamiento local
+            localStorage.setItem('lastSelectedAppId', id);
+            
             const app = appsList.find(a => a.id === id);
             document.getElementById('module-tool-title').innerText = app.label;
             renderApps();
@@ -128,14 +132,12 @@
                             <div class="w-1 h-3 bg-rose-600 rounded-full"></div>
                             <p class="text-[9px] font-black text-slate-800 uppercase tracking-widest">Gestión Siniestros</p>
                         </div>
-                        <!-- Botón principal de registro actualizado -->
                         <button onclick="loadContent('Apps/Shells/RegSin.html')" class="w-full text-left p-3 bg-rose-50 border border-rose-100 rounded-xl text-[9px] font-black uppercase tracking-wide hover:bg-rose-600 hover:text-white transition-all flex items-center gap-3 group">
                             <div class="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-sm">
                                 <i class="fa-solid fa-file-circle-exclamation text-rose-600 text-xs"></i>
                             </div>
                             <span>Registrar Siniestro</span>
                         </button>
-                        <!-- Historial actualizado para apuntar a HistorialReportes.html -->
                         ${toolBtn('fa-clock-rotate-left', 'Historial de Eventos', 'text-slate-500', 'Apps/Shells/HistorialReportes.html')}
                         ${toolBtn('fa-chart-pie', 'Estadísticas Mensuales', 'text-slate-500')}
                     </div>
@@ -143,7 +145,15 @@
             }
         }
 
+        // Ejecución inicial para renderizar y restaurar estado si existe
         renderApps();
+        if (selectedAppId) {
+            const lastApp = appsList.find(a => a.id === selectedAppId);
+            if (lastApp) {
+                document.getElementById('module-tool-title').innerText = lastApp.label;
+                updateModuleTools(lastApp);
+            }
+        }
     })();
 </script>
 

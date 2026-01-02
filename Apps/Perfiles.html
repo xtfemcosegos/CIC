@@ -1,36 +1,43 @@
-<!-- Catálogo de Personal Operativo Agrupado por Preferencia - Módulo CIC Protection -->
-<div class="p-6 space-y-6 animate-in slide-in-from-right duration-500 pb-24 h-full overflow-y-auto no-scrollbar">
+<!-- Catálogo de Personal Operativo - Versión Compacta y Estética -->
+<div class="flex flex-col h-full bg-slate-50 select-none text-slate-900 font-sans">
     
-    <!-- Encabezado y Buscador -->
-    <header class="space-y-4">
-        <div>
-            <h3 class="text-xs font-black text-slate-900 uppercase tracking-[0.3em]">
-                <i class="fa-solid fa-users-viewfinder text-red-800"></i> Fuerza Operativa
-            </h3>
-            <div class="flex items-center justify-between mt-1">
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Organizado por Orden de Casetas</p>
-                <button onclick="toggleShowAssigned()" id="btn-show-assigned" class="text-[8px] font-black uppercase text-slate-400 hover:text-red-800 transition-colors">
-                    Ver Asignados
-                </button>
+    <!-- HEADER DISCRETO -->
+    <header class="p-4 bg-white border-b border-slate-100 space-y-3 shrink-0 shadow-sm">
+        <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-users-viewfinder text-red-800 text-xs"></i>
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-700">Fuerza Operativa</h3>
             </div>
+            <button onclick="toggleShowAssigned()" id="btn-show-assigned" class="text-[9px] font-bold uppercase text-slate-400 hover:text-red-800 transition-colors">
+                Asignados
+            </button>
         </div>
 
+        <!-- BUSCADOR COMPACTO -->
         <div class="relative group">
-            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-            <input type="text" id="profile-search" oninput="filterProfiles()" placeholder="BUSCAR POR NOMBRE O ID..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-red-800 transition-all shadow-inner">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]"></i>
+            <input type="text" id="profile-search" oninput="filterProfiles()" placeholder="Buscar elemento..." 
+                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] font-semibold uppercase outline-none focus:bg-white focus:border-red-800 focus:ring-4 focus:ring-red-500/5 transition-all shadow-inner">
+        </div>
+
+        <!-- FILTRO POR CASETA (CHIPS) -->
+        <div id="station-filter-chips" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            <button onclick="setStationFilter(null)" class="station-chip active shrink-0 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border transition-all">Todos</button>
+            <!-- Inyectado dinámicamente -->
         </div>
     </header>
 
-    <!-- Lista de Elementos Agrupados -->
-    <div id="profiles-list-container" class="space-y-8">
-        <div class="flex items-center justify-center py-20 opacity-20">
-            <i class="fa-solid fa-circle-notch animate-spin text-2xl text-red-800"></i>
+    <!-- LISTA PRINCIPAL -->
+    <div id="profiles-list-container" class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+        <div class="flex flex-col items-center justify-center py-20 opacity-20">
+            <i class="fa-solid fa-circle-notch animate-spin text-2xl text-red-800 mb-2"></i>
+            <p class="text-[9px] font-black uppercase tracking-widest">Sincronizando...</p>
         </div>
     </div>
 
-    <!-- Sección de Asignados (Oculta por defecto) -->
-    <div id="assigned-elements-section" class="hidden pt-10 border-t border-slate-100 space-y-4">
-        <p class="text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] text-center">Personal ya asignado en esta fecha</p>
+    <!-- SECCIÓN ASIGNADOS -->
+    <div id="assigned-elements-section" class="hidden bg-slate-100/50 border-t border-slate-200 p-4 max-h-[35%] overflow-y-auto custom-scrollbar">
+        <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 text-center">En Servicio Actualmente</p>
         <div id="assigned-list-container" class="space-y-2 opacity-50"></div>
     </div>
 </div>
@@ -60,6 +67,7 @@
     let userConfigs = {};
     let stationsMasterList = []; 
     let showAlreadyAssigned = false;
+    let currentStationFilter = null;
 
     const normalizeText = (str) => {
         if (!str) return "";
@@ -67,58 +75,63 @@
     };
 
     onAuthStateChanged(auth, (user) => {
-        if (user) {
-            syncProfilesData();
-        }
+        if (user) syncProfilesData();
     });
 
     window.toggleShowAssigned = () => {
         showAlreadyAssigned = !showAlreadyAssigned;
         document.getElementById('assigned-elements-section').classList.toggle('hidden', !showAlreadyAssigned);
-        document.getElementById('btn-show-assigned').innerText = showAlreadyAssigned ? 'Ocultar Asignados' : 'Ver Asignados';
+        document.getElementById('btn-show-assigned').innerText = showAlreadyAssigned ? 'Ocultar' : 'Asignados';
         renderGroupedProfiles();
     };
 
+    window.setStationFilter = (stationName) => {
+        currentStationFilter = stationName;
+        renderGroupedProfiles();
+        renderFilterChips();
+    };
+
     async function syncProfilesData() {
-        // 1. Escuchar Casetas
-        const stationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'stations');
-        onSnapshot(stationsRef, (snap) => {
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'stations'), (snap) => {
             stationsMasterList = snap.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
+            renderFilterChips();
             renderGroupedProfiles();
         });
 
-        // 2. Escuchar Configuraciones Personales
-        const configRef = collection(db, 'artifacts', appId, 'public', 'data', 'user_operational_configs');
-        onSnapshot(configRef, (snap) => {
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'user_operational_configs'), (snap) => {
             userConfigs = {};
             snap.docs.forEach(d => userConfigs[d.id] = d.data());
             renderGroupedProfiles();
         });
 
-        // 3. Escuchar Asignaciones del día
-        const assignRef = collection(db, 'artifacts', appId, 'public', 'data', 'assignments');
-        onSnapshot(assignRef, (snap) => {
-            const dateToFilter = window.selectedOperationDate || new Date().toISOString().split('T')[0];
-            assignedEmails = snap.docs
-                .map(d => d.data())
-                .filter(a => a.date === dateToFilter)
-                .map(a => a.email);
-            
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'assignments'), (snap) => {
+            const dateInput = document.getElementById('view-date-input') || document.getElementById('global-report-date');
+            const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+            assignedEmails = snap.docs.map(d => d.data()).filter(a => a.date === date).map(a => a.email);
             renderGroupedProfiles();
         });
 
-        // 4. Escuchar Usuarios (Ajustado para incluir Centro de Control)
-        const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-        onSnapshot(usersRef, (snap) => {
-            const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            // Se incluye "Centro de Control" por ser rol operativo
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
             const rolesPermitidos = ["Administrador", "Guardia", "Encargado", "Operador CCO", "Centro de Control"];
-            allOperationalUsers = users.filter(u => rolesPermitidos.includes(u.role));
-            
+            allOperationalUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => rolesPermitidos.includes(u.role));
             renderGroupedProfiles();
         });
+    }
+
+    function renderFilterChips() {
+        const container = document.getElementById('station-filter-chips');
+        if (!container) return;
+
+        const baseChips = `<button onclick="setStationFilter(null)" class="shrink-0 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border transition-all ${currentStationFilter === null ? 'bg-red-800 border-red-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-red-800'}">Todos</button>`;
+        
+        container.innerHTML = baseChips + stationsMasterList.map(s => `
+            <button onclick="setStationFilter('${s.name}')" 
+                    class="shrink-0 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border transition-all ${currentStationFilter === s.name ? 'bg-red-800 border-red-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-red-800'}">
+                ${s.name}
+            </button>
+        `).join('') + `<button onclick="setStationFilter('Sin Preferencia')" class="shrink-0 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border transition-all ${currentStationFilter === 'Sin Preferencia' ? 'bg-red-800 border-red-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-red-800'}">Sin Pref.</button>`;
     }
 
     function renderGroupedProfiles() {
@@ -126,100 +139,88 @@
         const assignedContainer = document.getElementById('assigned-list-container');
         if (!container) return;
         
-        const searchInput = document.getElementById('profile-search').value;
-        const normalizedTerm = normalizeText(searchInput);
+        const term = normalizeText(document.getElementById('profile-search').value);
         
-        // Usuarios disponibles (No asignados)
-        const availableUsers = allOperationalUsers.filter(u => {
-            const isNotAssigned = !assignedEmails.includes(u.email);
-            const matchesSearch = normalizeText(u.name || "").includes(normalizedTerm) || 
-                                 normalizeText(u.employeeId || "").includes(normalizedTerm);
-            return isNotAssigned && matchesSearch;
-        });
+        const filtered = allOperationalUsers.filter(u => 
+            normalizeText(u.name || "").includes(term) || normalizeText(u.employeeId || "").includes(term)
+        );
 
-        // Usuarios ya asignados (Para depuración/verificación)
-        const busyUsers = allOperationalUsers.filter(u => {
-            const isAssigned = assignedEmails.includes(u.email);
-            const matchesSearch = normalizeText(u.name || "").includes(normalizedTerm) || 
-                                 normalizeText(u.employeeId || "").includes(normalizedTerm);
-            return isAssigned && matchesSearch;
-        });
+        const available = filtered.filter(u => !assignedEmails.includes(u.email));
+        const busy = filtered.filter(u => assignedEmails.includes(u.email));
 
-        if (availableUsers.length === 0 && busyUsers.length === 0) {
-            container.innerHTML = `<div class="py-10 text-center opacity-20 text-[9px] font-black uppercase tracking-widest">Sin personal encontrado</div>`;
-            assignedContainer.innerHTML = '';
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="py-10 text-center opacity-30 text-[10px] font-black uppercase tracking-widest">Sin resultados</div>`;
             return;
         }
 
-        // Renderizar Disponibles agrupados
         const groups = {};
-        availableUsers.forEach(user => {
-            const config = userConfigs[user.email] || {};
-            const station = config.defaultStation || "Sin Preferencia";
+        available.forEach(u => {
+            const station = userConfigs[u.email]?.defaultStation || "Sin Preferencia";
             if (!groups[station]) groups[station] = [];
-            groups[station].push(user);
+            groups[station].push(u);
         });
 
-        const groupOrder = stationsMasterList.map(s => s.name);
-        const sortedGroupNames = [...new Set([...groupOrder, "Sin Preferencia"])].filter(name => groups[name]);
+        // Aplicar filtro de caseta si existe
+        let sortedNames = [...new Set([...stationsMasterList.map(s => s.name), "Sin Preferencia"])].filter(n => groups[n]);
+        if (currentStationFilter) {
+            sortedNames = sortedNames.filter(n => n === currentStationFilter);
+        }
 
-        container.innerHTML = sortedGroupNames.map(groupName => `
-            <div class="space-y-4">
-                <div class="flex items-center gap-3 px-2">
-                    <span class="w-1 h-3 bg-red-800 rounded-full"></span>
-                    <h4 class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">${groupName}</h4>
-                    <span class="text-[7px] font-bold text-slate-300">(${groups[groupName].length})</span>
+        if (sortedNames.length === 0 && available.length > 0 && currentStationFilter) {
+             container.innerHTML = `<div class="py-10 text-center opacity-30 text-[10px] font-black uppercase tracking-widest">Nadie en esta caseta</div>`;
+             return;
+        }
+
+        container.innerHTML = sortedNames.map(gName => `
+            <div class="space-y-3">
+                <div class="flex items-center gap-2 px-1">
+                    <div class="w-1 h-3 bg-red-800/30 rounded-full"></div>
+                    <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${gName}</h4>
                 </div>
-                <div class="space-y-2">
-                    ${groups[groupName].map(user => renderUserCard(user, false)).join('')}
+                <div class="grid grid-cols-1 gap-2">
+                    ${groups[gName].map(u => renderUserCard(u, false)).join('')}
                 </div>
             </div>
         `).join('');
 
-        // Renderizar Asignados
-        assignedContainer.innerHTML = busyUsers.map(user => renderUserCard(user, true)).join('');
+        assignedContainer.innerHTML = busy.map(u => renderUserCard(u, true)).join('');
     }
 
     function renderUserCard(user, isAssigned) {
         const config = userConfigs[user.email] || {};
-        const hasStation = !!config.defaultStation;
         const dragAttr = isAssigned ? '' : `draggable="true" ondragstart="handleDragStart(event, '${user.email}')"`;
-        
+        const roleColors = {
+            'Administrador': 'bg-red-800 text-white',
+            'Encargado': 'bg-slate-900 text-white',
+            'Operador CCO': 'bg-blue-100 text-blue-700',
+            'Centro de Control': 'bg-emerald-100 text-emerald-700',
+            'default': 'bg-slate-100 text-slate-500'
+        };
+        const colorClass = roleColors[user.role] || roleColors['default'];
+
         return `
-            <div ${dragAttr}
-                 class="bg-white border border-slate-100 p-4 rounded-3xl flex flex-col gap-4 ${isAssigned ? 'opacity-60 grayscale' : 'cursor-grab hover:border-red-200 hover:shadow-md transition-all group active:cursor-grabbing'}">
-                
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full ${user.role === 'Administrador' ? 'bg-red-800' : 'bg-slate-900'} overflow-hidden flex-shrink-0 border-2 border-slate-50 shadow-sm relative">
-                        ${user.photo 
-                            ? `<img src="${user.photo}" class="w-full h-full object-cover">` 
-                            : `<i class="fa-solid fa-user text-white/20 absolute inset-0 flex items-center justify-center text-[10px] mt-2.5 ml-2.5"></i>`}
+            <div ${dragAttr} class="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col gap-3 transition-all ${isAssigned ? 'opacity-50' : 'cursor-grab hover:border-red-200 hover:shadow-sm active:cursor-grabbing active:scale-[0.98] shadow-sm'}">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-50 shadow-inner relative bg-slate-50">
+                        ${user.photo ? `<img src="${user.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-sm"></i></div>`}
                     </div>
 
                     <div class="flex-1 min-w-0">
-                        <h4 class="text-[9px] font-black text-slate-900 uppercase truncate leading-tight">${user.name || 'Sin Nombre'}</h4>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="text-[6px] font-black uppercase px-1.5 py-0.5 rounded ${getRoleColor(user.role)}">
-                                ${user.role}
-                            </span>
-                            <p class="text-[7px] font-mono text-slate-400">${user.employeeId || 'S/ID'}</p>
+                        <h4 class="text-[11px] font-black text-slate-800 uppercase truncate leading-tight">${user.name || 'S/N'}</h4>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="text-[6px] font-black uppercase px-1.5 py-0.5 rounded ${colorClass}">${user.role}</span>
+                            <p class="text-[8px] font-bold text-slate-300 tracking-wider">${user.employeeId || 'S/ID'}</p>
                         </div>
                     </div>
 
-                    ${!isAssigned ? `
-                        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i class="fa-solid fa-grip-vertical text-slate-200"></i>
-                        </div>
-                    ` : `
-                        <div class="text-[7px] font-black text-emerald-600 uppercase">En Servicio</div>
-                    `}
+                    ${!isAssigned ? `<i class="fa-solid fa-grip-vertical text-slate-100 text-[10px]"></i>` : `<i class="fa-solid fa-check-circle text-emerald-500"></i>`}
                 </div>
 
-                ${!hasStation && !isAssigned ? `
+                ${!config.defaultStation && !isAssigned ? `
                     <div class="pt-2 border-t border-slate-50">
                         <select onchange="updateDefaultStation('${user.email}', this.value)" 
-                                class="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest outline-none focus:border-red-800 transition-all cursor-pointer">
-                            <option value="">Asignar Caseta Predeterminada...</option>
+                                class="w-full bg-slate-50 border-none px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest outline-none focus:bg-red-50 focus:text-red-800 transition-all cursor-pointer">
+                            <option value="">+ Definir Caseta</option>
                             ${stationsMasterList.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
                         </select>
                     </div>
@@ -232,18 +233,9 @@
         if (!stationName) return;
         try {
             const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_operational_configs', email);
-            const currentConfig = userConfigs[email] || {};
-            await setDoc(configRef, { ...currentConfig, defaultStation: stationName, updatedAt: serverTimestamp() }, { merge: true });
+            await setDoc(configRef, { defaultStation: stationName, updatedAt: serverTimestamp() }, { merge: true });
         } catch (e) { console.error(e); }
     };
-
-    function getRoleColor(role) {
-        if (role === 'Administrador') return 'bg-red-800 text-white';
-        if (role === 'Encargado') return 'bg-slate-900 text-white';
-        if (role === 'Operador CCO') return 'bg-blue-50 text-blue-700';
-        if (role === 'Centro de Control') return 'bg-emerald-50 text-emerald-700';
-        return 'bg-amber-50 text-amber-700';
-    }
 
     window.filterProfiles = () => renderGroupedProfiles();
 
@@ -251,10 +243,12 @@
         ev.dataTransfer.setData("text/elementEmail", email);
         ev.dataTransfer.setData("text/dragType", "element_assign");
         ev.dataTransfer.effectAllowed = "move";
+        
         const ghost = ev.currentTarget.cloneNode(true);
-        ghost.style.width = "240px";
+        ghost.style.width = "220px";
         ghost.style.position = "absolute";
         ghost.style.top = "-1000px";
+        ghost.classList.add('shadow-2xl', 'border-red-800');
         document.body.appendChild(ghost);
         ev.dataTransfer.setDragImage(ghost, 0, 0);
         setTimeout(() => document.body.removeChild(ghost), 0);
@@ -262,8 +256,17 @@
 </script>
 
 <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     [draggable="true"] { -webkit-user-drag: element; }
+    
+    .station-chip.active {
+        background-color: #991b1b;
+        color: white;
+        border-color: #991b1b;
+    }
+    
     select {
         -webkit-appearance: none;
         -moz-appearance: none;
@@ -271,6 +274,6 @@
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23cbd5e1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='C19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 0.75rem center;
-        background-size: 1rem;
+        background-size: 0.8rem;
     }
 </style>

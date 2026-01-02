@@ -68,6 +68,18 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div class="lg:col-span-1 space-y-6">
+                    <!-- Botones de Acción Rápida -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="loadDefaultRecipients()" class="p-3 border border-slate-200 rounded-2xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex flex-col items-center gap-2">
+                            <i class="fa-solid fa-address-book text-slate-400"></i>
+                            Predeterminados
+                        </button>
+                        <button onclick="loadTestRecipients()" class="p-3 border border-slate-200 rounded-2xl text-[8px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-800 transition-all flex flex-col items-center gap-2">
+                            <i class="fa-solid fa-flask-vial text-red-400"></i>
+                            Modo Prueba
+                        </button>
+                    </div>
+
                     <div class="space-y-2">
                         <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Destinatarios (Para)</label>
                         <textarea id="email-to" rows="2" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-[10px] font-bold outline-none focus:border-red-800 transition-all resize-none shadow-inner text-slate-900"></textarea>
@@ -77,8 +89,9 @@
                         <textarea id="email-cc" rows="2" class="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-[10px] font-bold outline-none focus:border-red-800 transition-all resize-none shadow-inner text-slate-900"></textarea>
                     </div>
 
-                    <button id="btn-confirm-email" onclick="confirmAndSendEmail()" class="w-full py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl shadow-red-900/10 active:scale-95">
-                        Confirmar y Enviar vía Power Automate
+                    <button id="btn-confirm-email" onclick="confirmAndSendEmail()" class="w-full py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl shadow-red-900/10 active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Confirmar y Enviar</span>
                     </button>
                 </div>
 
@@ -95,7 +108,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, setDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
@@ -110,6 +123,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const appId = 'cic5-pp';
+
+    // ================================================================
+    // SECCIÓN DE PERSONALIZACIÓN DE COLORES (PARA COMPATIBILIDAD EMAIL)
+    // ================================================================
+    const ESTILOS_REPORTES = {
+        'falta': { bg: '#FFFF00', text: '#FF0000', border: '#EAB308' },    // Amarillo / Rojo
+        'vacaciones': { bg: '#22C55E', text: '#FFFFFF', border: '#16A34A' }, // Verde / Blanco
+        'incapacidad': { bg: '#E0F2FE', text: '#0369A1', border: '#BAE6FD' },
+        'permiso': { bg: '#FEF9C3', text: '#A16207', border: '#FEF08A' },
+        'recupera': { bg: '#16a34a', text: '#FFFFFF', border: '#15803d' }, // Verde (Recuperación)
+        'extra': { bg: '#d946ef', text: '#FFFFFF', border: '#a21caf' },    // Fiusiha (Extra)
+        'retardo': { bg: '#991b1b', text: '#FFFFFF', border: '#7f1d1d' },   // Rojo (Retardo)
+        'festivo': { bg: '#7e22ce', text: '#FFFFFF', border: '#6b21a8' },   // Morado (Festivo)
+        'default': { bg: '#FEE2E2', text: '#B91C1C', border: '#FECACA' } // Otros ausentismos
+    };
 
     let currentReportState = { assigns: [], usersMap: {}, date: "", isHybrid: false, prevDate: "" };
 
@@ -166,11 +194,11 @@
             const shiftLabels = { 'M': 'MATUTINO', 'V': 'VESPERTINO', 'N': 'NOCTURNO' };
             const fullShiftName = shiftLabels[shift] || shift;
 
-            const [stationsSnap, assignsSnap, statusSnap, usersSnap] = await Promise.all([
+            const [stationsSnap, assignsSnap, usersSnap, statusSnap] = await Promise.all([
                 getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'stations')),
                 getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'assignments')),
-                getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status')),
-                getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users'))
+                getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users')),
+                getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'station_daily_status'))
             ]);
 
             const stations = stationsSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.order||0) - (b.order||0));
@@ -180,21 +208,6 @@
             const usersMap = {}; 
             usersSnap.forEach(d => { usersMap[d.data().email] = d.data().name; });
 
-            // LÓGICA DE CONTINUIDAD (Turno Anterior)
-            let prevShift = '';
-            let prevDateStr = date;
-            if (shift === 'V') {
-                prevShift = 'M';
-            } else if (shift === 'N') {
-                prevShift = 'V';
-            } else if (shift === 'M') {
-                prevShift = 'N';
-                const d = new Date(date + 'T00:00:00');
-                d.setDate(d.getDate() - 1);
-                prevDateStr = d.toISOString().split('T')[0];
-            }
-            const prevAssigns = allAssigns.filter(a => a.date === prevDateStr && a.shift === prevShift);
-            
             let txt = `*DISTRIBUCIÓN TURNO ${fullShiftName}*\n\`${formatDateLongLocale(date)}\`\n\n`;
             
             stations.forEach(st => {
@@ -204,20 +217,13 @@
                 if (elements.length > 0 || isClosed) {
                     txt += `*${st.name.toUpperCase()}*\n`;
                     if (isClosed) {
-                        txt += `Sin elemento\n`;
+                        txt += `Sin elementos\n`;
                     } else {
                         elements.forEach(el => {
                             const name = usersMap[el.email] || el.email;
                             const includeTimes = document.getElementById('include-times')?.checked;
-                            
-                            // Verificar si continúa turno
-                            const isContinued = prevAssigns.some(pa => pa.email === el.email && pa.station === st.name);
-
-                            if (isContinued) {
-                                txt += `• Continúa Turno. ${name}\n`;
-                            } else if (includeTimes) {
-                                const timeVal = el.realEntry || '--:--';
-                                txt += `• ${timeVal} Hrs. ${name}\n`;
+                            if (includeTimes) {
+                                txt += `• ${el.realEntry || '--:--'} Hrs. ${name}\n`;
                             } else {
                                 txt += `• ${name}\n`;
                             }
@@ -274,70 +280,118 @@
                 const absPrev = allAssignments.filter(a => a.date === prevDate && a.type === 'ausentismo' && a.reason !== 'Descanso');
                 const absCurr = allAssignments.filter(a => a.date === date && a.type === 'ausentismo' && a.reason !== 'Descanso');
 
-                if (nightPrev.length > 0) html += renderTable(`ASISTENCIA NOCTURNO - ${formatDateLongLocale(prevDate)}`, 'fa-moon', nightPrev, usersMap, false);
-                if (absPrev.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(prevDate)}`, 'fa-user-xmark', absPrev, usersMap, true);
-                if (morningCurr.length > 0) html += renderTable(`ASISTENCIA MATUTINO - ${formatDateLongLocale(date)}`, 'fa-sun', morningCurr, usersMap, false);
-                if (absCurr.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(date)}`, 'fa-user-xmark', absCurr, usersMap, true);
+                if (nightPrev.length > 0) html += renderTable(`ASISTENCIA NOCTURNO - ${formatDateLongLocale(prevDate)}`, nightPrev, usersMap, false);
+                if (absPrev.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(prevDate)}`, absPrev, usersMap, true);
+                if (morningCurr.length > 0) html += renderTable(`ASISTENCIA MATUTINO - ${formatDateLongLocale(date)}`, morningCurr, usersMap, false);
+                if (absCurr.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(date)}`, absCurr, usersMap, true);
             } else {
                 ['M', 'V', 'N'].forEach(sID => {
                     const label = sID === 'M' ? 'MATUTINO' : sID === 'V' ? 'VESPERTINO' : 'NOCTURNO';
-                    const icon = sID === 'M' ? 'fa-sun' : sID === 'V' ? 'fa-cloud-sun' : 'fa-moon';
                     const list = allAssignments.filter(a => a.date === date && a.shift === sID && a.type !== 'ausentismo');
-                    if (list.length > 0) html += renderTable(`ASISTENCIA ${label} - ${formatDateLongLocale(date)}`, icon, list, usersMap, false);
+                    if (list.length > 0) html += renderTable(`ASISTENCIA ${label} - ${formatDateLongLocale(date)}`, list, usersMap, false);
                 });
                 const abs = allAssignments.filter(a => a.date === date && a.type === 'ausentismo' && a.reason !== 'Descanso');
-                if (abs.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(date)}`, 'fa-user-xmark', abs, usersMap, true);
+                if (abs.length > 0) html += renderTable(`AUSENCIAS - ${formatDateLongLocale(date)}`, abs, usersMap, true);
             }
 
             container.innerHTML = html || `<div class="py-40 text-center opacity-30 text-[10px] font-black uppercase tracking-[0.4em]">Sin registros</div>`;
+            
+            // Función mejorada para generar el HTML del correo: convierte inputs en texto plano para que no se corten
+            window.generateEmailHtml = () => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = container.innerHTML;
+                
+                // Buscar todos los inputs de notas en la tabla clonada
+                const inputs = tempDiv.querySelectorAll('input[type="text"]');
+                inputs.forEach(inp => {
+                    const textValue = inp.value || '---';
+                    const span = document.createElement('span');
+                    span.style.color = '#64748b';
+                    span.style.fontStyle = 'italic';
+                    span.style.fontSize = '10px';
+                    span.style.wordBreak = 'break-word';
+                    span.innerText = textValue;
+                    // Reemplazar el input por el span de texto plano
+                    inp.parentNode.replaceChild(span, inp);
+                });
+                
+                return tempDiv.innerHTML;
+            };
+
         } catch (e) { console.error(e); }
     };
 
-    function renderTable(title, icon, list, users, isAbsence) {
+    function renderTable(title, list, users, isAbsence) {
+        // TABLA OPTIMIZADA CON ESTILOS INLINE PARA EMAIL COMPATIBILITY
         return `
-            <div class="overflow-hidden rounded-[2rem] border border-slate-100 shadow-sm bg-white animate-in slide-in-from-bottom-2">
-                <div class="flex items-center justify-between px-8 py-4 bg-slate-900 text-white">
-                    <div class="flex items-center gap-4">
-                        <i class="fa-solid ${icon} text-red-500"></i>
-                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em]">${title}</h4>
-                    </div>
+            <div style="margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="background-color: #0f172a; color: #ffffff; padding: 16px 24px; font-size: 10px; font-family: 'Segoe UI', Arial, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">
+                    ${title}
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                <div style="overflow-x: auto;">
+                    <table width="100%" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px;">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-400 text-[8px] font-black uppercase tracking-widest border-b border-slate-100">
-                                <th class="px-8 py-4">ID</th>
-                                <th class="px-8 py-4">Personal</th>
-                                ${isAbsence ? `<th class="px-8 py-4 text-center">Motivo</th>` : `<th class="px-8 py-4">Estatus</th><th class="px-8 py-4 text-center">Entrada</th><th class="px-8 py-4 text-center">Salida</th>`}
-                                <th class="px-8 py-4">Notas</th>
+                            <tr style="background-color: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 8px; font-weight: bold; border-bottom: 1px solid #f1f5f9;">
+                                <th style="padding: 12px 24px; text-align: left; width: 80px;">ID</th>
+                                <th style="padding: 12px 24px; text-align: left;">PERSONAL</th>
+                                ${isAbsence ? `<th style="padding: 12px 24px; text-align: center; width: 120px;">MOTIVO</th>` : `<th style="padding: 12px 24px; text-align: center; width: 120px;">ESTADO / ENTRADA</th><th style="padding: 12px 24px; text-align: center; width: 100px;">SALIDA</th>`}
+                                <th style="padding: 12px 24px; text-align: left;">NOTAS</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
+                        <tbody style="color: #1e293b;">
                             ${list.map(a => {
                                 const u = users[a.email] || { name: a.email, id: '---' };
                                 const isL = a.realEntry && a.assignedEntry && (a.realEntry > a.assignedEntry);
-                                return `
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-8 py-4 text-[10px] font-black text-slate-400 tracking-widest">${u.id}</td>
-                                    <td class="px-8 py-4 text-[11px] font-black text-slate-900 uppercase">${u.name}</td>
-                                    ${isAbsence ? `
-                                        <td class="px-8 py-4 text-center"><span class="px-3 py-1 bg-red-50 text-red-700 text-[8px] font-black uppercase rounded-full border border-red-100">${a.reason || 'Falta'}</span></td>
-                                    ` : `
-                                        <td class="px-8 py-4">
-                                            <div class="flex flex-wrap gap-1">
-                                                ${isL ? '<span class="px-2 py-0.5 bg-red-800 text-white text-[7px] font-black uppercase rounded shadow-sm">Retardo</span>' : ''}
-                                                ${a.isExtra ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white text-[7px] font-black uppercase rounded shadow-sm">Extra</span>' : ''}
-                                                ${a.isHoliday ? '<span class="px-2 py-0.5 bg-purple-700 text-white text-[7px] font-black uppercase rounded shadow-sm">Festivo</span>' : ''}
-                                                ${a.isRecovery ? '<span class="px-2 py-0.5 bg-emerald-600 text-white text-[7px] font-black uppercase rounded shadow-sm">Recupera</span>' : ''}
-                                            </div>
+                                
+                                let statusCol = "";
+                                if (isAbsence) {
+                                    const reasonKey = (a.reason || 'Falta').toLowerCase();
+                                    const config = ESTILOS_REPORTES[reasonKey] || ESTILOS_REPORTES['default'];
+                                    statusCol = `<td style="padding: 12px 24px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                                        <span style="background-color: ${config.bg}; color: ${config.text}; padding: 4px 12px; border-radius: 99px; font-size: 8px; font-weight: 900; border: 1px solid ${config.border}; text-transform: uppercase;">${a.reason || 'Falta'}</span>
+                                    </td>`;
+                                } else {
+                                    // Generar etiquetas de estado para asistencia
+                                    let assistBadges = "";
+                                    if (isL) {
+                                        const c = ESTILOS_REPORTES['retardo'];
+                                        assistBadges += `<span style="background-color: ${c.bg}; color: ${c.text}; padding: 2px 6px; border-radius: 4px; font-size: 7px; font-weight: 900; margin-right: 4px; border: 1px solid ${c.border}; vertical-align: middle;">RETARDO</span>`;
+                                    }
+                                    if (a.isExtra) {
+                                        const c = ESTILOS_REPORTES['extra'];
+                                        assistBadges += `<span style="background-color: ${c.bg}; color: ${c.text}; padding: 2px 6px; border-radius: 4px; font-size: 7px; font-weight: 900; margin-right: 4px; border: 1px solid ${c.border}; vertical-align: middle;">EXTRA</span>`;
+                                    }
+                                    if (a.isHoliday) {
+                                        const c = ESTILOS_REPORTES['festivo'];
+                                        assistBadges += `<span style="background-color: ${c.bg}; color: ${c.text}; padding: 2px 6px; border-radius: 4px; font-size: 7px; font-weight: 900; margin-right: 4px; border: 1px solid ${c.border}; vertical-align: middle;">FESTIVO</span>`;
+                                    }
+                                    if (a.isRecovery) {
+                                        const c = ESTILOS_REPORTES['recupera'];
+                                        assistBadges += `<span style="background-color: ${c.bg}; color: ${c.text}; padding: 2px 6px; border-radius: 4px; font-size: 7px; font-weight: 900; margin-right: 4px; border: 1px solid ${c.border}; vertical-align: middle;">RECUPERA</span>`;
+                                    }
+
+                                    statusCol = `
+                                        <td style="padding: 12px 24px; text-align: center; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+                                            ${assistBadges}
+                                            <b style="color: ${isL ? '#b91c1c' : '#059669'}; font-family: monospace; font-size: 11px;">${a.realEntry || '--:--'}</b>
                                         </td>
-                                        <td class="px-8 py-4 text-center text-[11px] font-mono font-black ${isL ? 'text-red-700' : 'text-emerald-600'}">${a.realEntry || '--:--'}</td>
-                                        <td class="px-8 py-4 text-center text-[11px] font-mono font-black text-slate-900">${a.realExit || '--:--'}</td>
-                                    `}
-                                    <td class="px-8 py-4">
-                                        <input type="text" value="${a.note || ''}" onchange="saveRowNote('${a.docId}', this.value)" placeholder="..." class="w-full bg-transparent border-none text-[10px] font-medium text-slate-500 outline-none focus:text-slate-900 italic">
+                                        <td style="padding: 12px 24px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 900; font-family: monospace; font-size: 11px;">${a.realExit || '--:--'}</td>
+                                    `;
+                                }
+
+                                return `
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 12px 24px; color: #94a3b8; font-weight: 900; letter-spacing: 1px; font-size: 10px; border-bottom: 1px solid #f1f5f9;">${u.id}</td>
+                                    <td style="padding: 12px 24px; font-weight: 900; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${u.name}</td>
+                                    ${statusCol}
+                                    <td style="padding: 12px 24px; border-bottom: 1px solid #f1f5f9;">
+                                        <input type="text" value="${a.note || ''}" 
+                                            onchange="window.saveRowNote('${a.docId}', this.value)" 
+                                            placeholder="..." 
+                                            style="width: 100%; background: transparent; border: none; color: #64748b; font-style: italic; font-size: 10px; outline: none; display: block;">
                                     </td>
-                                </tr>`;}).join('')}
+                                </tr>`;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -345,10 +399,108 @@
         `;
     }
 
+    // --- LÓGICA DE ENVÍO DE CORREO (POWER AUTOMATE) ---
+
+    window.openEmailModal = () => {
+        const modal = document.getElementById('email-modal');
+        if(!modal) return;
+        
+        window.loadDefaultRecipients();
+        const preview = document.getElementById('email-body-preview');
+        // Usar la función generadora que limpia los inputs
+        const content = window.generateEmailHtml ? window.generateEmailHtml() : "<p class='p-10 text-center text-slate-400'>No hay tablas generadas para enviar.</p>";
+        preview.innerHTML = content;
+        
+        modal.classList.remove('hidden');
+    };
+
+    window.closeEmailModal = () => document.getElementById('email-modal').classList.add('hidden');
+
+    window.loadDefaultRecipients = () => {
+        document.getElementById('email-to').value = "jesuseduardo.gutierrez@armur.com; juan.paniagua@armur.com";
+        document.getElementById('email-cc').value = "roberto.rodriguez@armur.com;josedavid.montano@armur.com";
+    };
+
+    window.loadTestRecipients = () => {
+        document.getElementById('email-to').value = "proteccion.instalaciones@armur.com";
+        document.getElementById('email-cc').value = "";
+    };
+
+    window.confirmAndSendEmail = async () => {
+        const to = document.getElementById('email-to').value.trim();
+        const cc = document.getElementById('email-cc').value.trim();
+        const bodyRaw = window.generateEmailHtml ? window.generateEmailHtml() : "";
+        const btn = document.getElementById('btn-confirm-email');
+        
+        const dateEl = document.getElementById('global-report-date');
+        const dateVal = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
+        const longDateStr = formatDateLongLocale(dateVal);
+
+        if (!to) { alert("El campo 'Para' es obligatorio."); return; }
+        if (!bodyRaw) { alert("No hay contenido para enviar."); return; }
+
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Enviando...`;
+
+        // Envoltura Institucional para el Email con Encabezado Dinámico
+        const finalEmailBody = `
+            <div style="background-color: #f1f5f9; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 900px; background-color: #ffffff; border-radius: 24px; border: 1px solid #e2e8f0; border-collapse: separate; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="background-color: #991b1b; padding: 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900;">Reporte de asistencias para el ${longDateStr}</h1>
+                            <p style="color: rgba(255,255,255,0.6); margin: 5px 0 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 4px;">CIC - Protección Patrimonial</p>
+                        </td>
+                    </tr>
+                    <tr><td style="padding: 30px;">${bodyRaw}</td></tr>
+                    <tr><td style="padding: 20px; text-align: center; background-color: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 9px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Generado automáticamente por el Sistema CIC Protection</td></tr>
+                </table>
+            </div>
+        `;
+
+        const apiURL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/507bea91c30c4743b4749a474f92ad3f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PzEbbL5wNoHu-b78wQtE7JP0H-RKDb3btp2iHGbM6vU";
+
+        try {
+            const response = await fetch(apiURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, cc, body: finalEmailBody })
+            });
+
+            if (response.ok) {
+                btn.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> ¡Enviado con Éxito!`;
+                btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+                setTimeout(() => {
+                    window.closeEmailModal();
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.classList.replace('bg-emerald-600', 'bg-slate-900');
+                }, 2000);
+            } else { throw new Error(); }
+        } catch (e) {
+            console.error(e);
+            alert("Error al enviar. Verifica tu conexión.");
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+
+    window.sendEmailFromShell = () => window.openEmailModal();
+
     window.saveRowNote = async (id, note) => { 
+        if (!id || id === 'undefined') return;
         try { 
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id), { note, updatedAt: serverTimestamp() }, { merge: true }); 
-        } catch (e) { console.error(e); } 
+            // Usamos updateDoc para asegurar que solo se actualice el campo 'note'
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+            await updateDoc(docRef, { 
+                note: note, 
+                updatedAt: serverTimestamp() 
+            }); 
+            console.log("Nota actualizada correctamente:", id);
+        } catch (e) { 
+            console.error("Error al actualizar la nota en Firebase:", e); 
+        } 
     };
 
     window.copyToClipboard = () => {
@@ -360,21 +512,7 @@
         toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 3000);
     };
 
-    window.openEmailModal = () => {
-        const modal = document.getElementById('email-modal');
-        if(!modal) return;
-        document.getElementById('email-to').value = "jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com";
-        document.getElementById('email-cc').value = "roberto.rodriguez@armur.com";
-        document.getElementById('email-body-preview').innerHTML = "<p class='p-10 text-center text-slate-400'>Generando vista previa...</p>";
-        modal.classList.remove('hidden');
-    };
-
-    window.closeEmailModal = () => document.getElementById('email-modal').classList.add('hidden');
-
-    // Inicialización al cargar el fragmento
-    setTimeout(() => {
-        if(window.syncAndLoad) window.syncAndLoad();
-    }, 200);
+    setTimeout(() => { if(window.syncAndLoad) window.syncAndLoad(); }, 200);
 
 </script>
 
