@@ -1,22 +1,51 @@
-<!-- Vista Operativa Diaria Refinada - Arquitectura de 4 Pestañas consolidada y Optimizada para Pantalla Completa -->
+<!-- Vista Operativa Diaria Optimizada - Sin controles internos (Navegación vía Shell) -->
 <div id="vista-dia-content" class="w-full px-2 space-y-4 animate-in fade-in duration-700 pb-10 pt-4 h-full flex flex-col overflow-hidden text-slate-900">
     
     <!-- BLOQUE PRINCIPAL DE OPERACIÓN -->
     <section id="duty-section" class="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 transition-all duration-300">
         
-        <!-- BARRA DE PESTAÑAS (4 OPCIONES) -->
-        <div class="flex items-center justify-center bg-slate-50 border-b border-slate-100 p-3 gap-2 shrink-0">
-            <button onclick="switchActiveTab('M')" id="tab-M" class="px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-slate-400 bg-white hover:bg-slate-100 border border-transparent shadow-sm">Matutino</button>
-            <button onclick="switchActiveTab('V')" id="tab-V" class="px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-slate-400 bg-white hover:bg-slate-100 border border-transparent shadow-sm">Vespertino</button>
-            <button onclick="switchActiveTab('N')" id="tab-N" class="px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-slate-400 bg-white hover:bg-slate-100 border border-transparent shadow-sm">Nocturno</button>
-            <button onclick="switchActiveTab('ABS')" id="tab-ABS" class="px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-red-400 bg-white hover:bg-red-50 border border-transparent shadow-sm flex items-center gap-2">
-                <i class="fa-solid fa-user-xmark text-[11px]"></i> Ausentismos
-            </button>
-        </div>
-
-        <!-- CONTENEDOR DINÁMICO DE CONTENIDO -->
+        <!-- El Shell ahora controla las pestañas. Aquí solo reside el contenedor dinámico -->
         <div class="flex-1 overflow-hidden relative flex flex-col">
             
+            <!-- Pestaña Inicio Inteligente -->
+            <div id="col-I" class="hidden flex-col flex-1 overflow-y-auto custom-scrollbar p-6 gap-8 bg-slate-50/20">
+                <!-- Sección: Salidas Pendientes -->
+                <div>
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-person-walking-arrow-right text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Personal para Salida</h3>
+                                <p id="label-date-exit" class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Analizando...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="container-pending-exit" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+
+                <!-- Sección: Próximos a Ingresar -->
+                <div>
+                    <div class="flex items-center justify-between mb-4 px-2 pt-6 border-t border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-id-badge text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Personal para Entrada</h3>
+                                <p id="label-current-shift" class="text-[8px] font-bold text-blue-600 uppercase tracking-tighter">Analizando horario...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="container-incoming" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Columna Matutino -->
             <div id="col-M" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'M')" class="hidden flex-col shift-column w-full h-full overflow-hidden">
                 <div class="sticky top-0 z-20 bg-amber-50/90 backdrop-blur-md px-6 py-4 border-b border-amber-100/50 flex items-center justify-between">
@@ -132,10 +161,10 @@
     let expandedGroups = new Set();
     let selectedElementForMenu = { email: null, name: null };
     let unsubscribers = [];
+    let activeShiftTab = 'I';
     
     const defaultAbsenceReasons = ['Descanso', 'Permiso', 'Vacaciones', 'Falta', 'Incapacidad', 'Suspensión'];
     
-    // Obtener fecha directamente del Shell (compatibilidad robusta)
     const getDateInput = () => document.getElementById('view-date-input') || document.getElementById('global-report-date');
 
     function calculateDuration(start, end) {
@@ -167,7 +196,6 @@
     onAuthStateChanged(auth, (user) => { 
         if (user) { 
             syncData(); 
-            // Iniciar lógica de renderizado con pequeño delay para esperar al Shell
             setTimeout(initComponent, 100);
         } 
     });
@@ -175,23 +203,16 @@
     function initComponent() {
         const dateInput = getDateInput();
         if(!dateInput) { setTimeout(initComponent, 200); return; }
-        
-        // No sobreescribir si ya tiene valor (respetar selección del Shell)
         if(!dateInput.value) {
             const now = new Date();
             dateInput.value = now.toLocaleDateString('en-CA');
         }
-
-        // Exponer función de carga para el Shell
-        window.loadDailyView = () => {
-            renderAll();
-        };
-
-        renderAll();
+        window.loadDailyView = () => renderAll();
+        // Carga inicial
+        switchActiveTab(activeShiftTab);
     }
 
     async function syncData() {
-        // Limpiar suscripciones previas si existen
         unsubscribers.forEach(unsub => unsub());
         unsubscribers = [];
 
@@ -213,6 +234,7 @@
         }));
     }
 
+    // Funciones globales para Drag & Drop
     window.allowDrop = (ev) => ev.preventDefault();
     window.handleDragStartInternal = (ev, email) => {
         ev.dataTransfer.setData("text/elementEmail", email);
@@ -269,28 +291,86 @@
         }
     }
 
+    /**
+     * Renderizado de Inicio Inteligente con cálculo dinámico
+     */
+    function renderInicioTab() {
+        const now = new Date();
+        const hour = now.getHours();
+        const dateToday = now.toISOString().split('T')[0];
+        const yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
+        const dateYesterday = yesterday.toISOString().split('T')[0];
+
+        let exitShift = null; let entryShift = null;
+        let exitDate = dateToday; let entryDate = dateToday;
+        let exitLabel = ""; let entryLabel = "";
+
+        if (hour >= 0 && hour < 8) {
+            exitShift = 'N'; exitDate = dateYesterday; entryShift = 'M';
+            exitLabel = `Nocturno (${dateYesterday})`; entryLabel = `Matutino (Hoy)`;
+        } else if (hour >= 8 && hour < 16) {
+            exitShift = 'M'; entryShift = 'V';
+            exitLabel = "Matutino (Saliente)"; entryLabel = "Vespertino (Entrante)";
+        } else if (hour >= 16 && hour < 22) {
+            exitShift = 'V'; entryShift = 'N';
+            exitLabel = "Vespertino (Saliente)"; entryLabel = "Nocturno (Entrante)";
+        } else { 
+            exitShift = 'N'; entryShift = null;
+            exitLabel = "Nocturno (Saliente)"; entryLabel = "Sin ingresos próximos";
+        }
+
+        const lE = document.getElementById('label-date-exit');
+        const lI = document.getElementById('label-current-shift');
+        if (lE) lE.innerText = exitLabel;
+        if (lI) lI.innerText = entryLabel;
+
+        const pendingExits = [];
+        rawAssignments.filter(a => a.date === exitDate).forEach(doc => {
+            const shifts = doc.shifts?.length ? doc.shifts : [doc];
+            shifts.forEach((s, idx) => {
+                if (s.shift === exitShift && s.realEntry && !s.realExit) {
+                    pendingExits.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: !!doc.shifts, shiftIndex: idx });
+                }
+            });
+        });
+
+        const incomingUsers = [];
+        if (entryShift) {
+            rawAssignments.filter(a => a.date === entryDate).forEach(doc => {
+                const shifts = doc.shifts?.length ? doc.shifts : [doc];
+                shifts.forEach((s, idx) => {
+                    if (s.shift === entryShift && !s.realEntry && s.type !== 'ausentismo') {
+                        incomingUsers.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: !!doc.shifts, shiftIndex: idx });
+                    }
+                });
+            });
+        }
+
+        const exitCont = document.getElementById('container-pending-exit');
+        const inCont = document.getElementById('container-incoming');
+        if(exitCont) exitCont.innerHTML = pendingExits.length > 0 ? pendingExits.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin salidas pendientes</div>`;
+        if(inCont) inCont.innerHTML = incomingUsers.length > 0 ? incomingUsers.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin ingresos pendientes</div>`;
+    }
+
     function renderAll() {
         const dateInput = getDateInput();
-        if(!dateInput || !dateInput.value) return;
+        if(!dateInput?.value) return;
         const targetDate = dateInput.value;
         
-        // Filtrar datos para el día actual
         const currentDayAssignments = rawAssignments.filter(a => a.date === targetDate);
         const flattenedElements = [];
         currentDayAssignments.forEach(doc => {
-            if (doc.shifts && doc.shifts.length > 0) {
-                doc.shifts.forEach((s, idx) => {
-                    flattenedElements.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: true, shiftIndex: idx });
-                });
+            if (doc.shifts?.length) {
+                doc.shifts.forEach((s, idx) => flattenedElements.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: true, shiftIndex: idx }));
             } else if (doc.shift || doc.type === 'ausentismo') {
                 flattenedElements.push({ ...doc, isFromShifts: false });
             }
         });
 
+        if (activeShiftTab === 'I') renderInicioTab();
+
         const dailyStationStatusMap = {};
-        rawStationStatuses.forEach(d => { 
-            if (d.date === targetDate) dailyStationStatusMap[`${d.shift}_${d.stationId}`] = d.isClosed; 
-        });
+        rawStationStatuses.forEach(d => { if (d.date === targetDate) dailyStationStatusMap[`${d.shift}_${d.stationId}`] = d.isClosed; });
 
         ['M', 'V', 'N'].forEach(shift => {
             const listContainer = document.getElementById(`list-${shift}`);
@@ -318,6 +398,7 @@
         }
     }
 
+    // --- FUNCIONES DE SOPORTE UI ---
     window.toggleGroupExpansion = (groupId) => {
         if (expandedGroups.has(groupId)) expandedGroups.delete(groupId);
         else expandedGroups.add(groupId);
@@ -360,37 +441,139 @@
         const exit = el.assignedExit || '--:--';
         const duration = el.shiftDuration || (el.assignedEntry && el.assignedExit ? calculateDuration(entry, exit) : 8);
         const timeInfo = isAbsence ? '' : `<p class="text-[10px] font-black uppercase tracking-tighter text-slate-400">${entry} a ${exit} · ${duration}H</p>`;
+        
         let actionBtn = !isAbsence ? (!el.realEntry ? `<button onclick="event.stopPropagation(); window.quickRegisterEntry('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-90"><i class="fa-solid fa-right-to-bracket text-sm"></i></button>` : (!el.realExit ? `<button onclick="event.stopPropagation(); window.quickRegisterExit('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-red-800 text-white rounded-2xl shadow-xl shadow-red-800/20 active:scale-90"><i class="fa-solid fa-right-from-bracket text-sm"></i></button>` : `<div class="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-400 rounded-2xl"><i class="fa-solid fa-check text-sm"></i></div>`)) : "";
         let configCard = !isConfirmed && !isAbsence && !el.assignedEntry ? `<div class="mt-4 p-4 bg-red-50 border border-red-100 rounded-[1.5rem] space-y-3 animate-in slide-in-from-top-1" onclick="event.stopPropagation()"><div class="grid grid-cols-2 gap-3"><input type="time" value="${entry}" onchange="window.updateTimeConfig('${el.docId}', 'assignedEntry', this.value, ${duration}, ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-full text-[13px] font-bold bg-white border border-red-200 rounded-xl p-3 outline-none"><input type="number" value="${duration}" onchange="window.updateTimeConfig('${el.docId}', 'shiftDuration', this.value, null, ${el.isFromShifts || false}, ${el.shiftIndex || 0}, '${entry}')" class="w-full text-[13px] font-bold bg-white border border-red-200 rounded-xl p-3 outline-none"></div><button onclick="window.confirmAssignment('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-full py-3 bg-slate-900 text-white text-[11px] font-black uppercase rounded-2xl hover:bg-emerald-600 transition-all active:scale-95">Confirmar Jornada</button></div>` : "";
-        return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-4 bg-white rounded-[1.8rem] border border-slate-100 hover:border-red-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md" onclick="window.viewElementDetail('${el.email}')"><div class="flex items-center justify-between"><div class="flex items-center gap-4 min-w-0"><div class="w-14 h-14 rounded-[1.2rem] overflow-hidden border-2 border-slate-50 relative bg-slate-50 shrink-0 shadow-inner">${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-xl"></i></div>`}</div><div class="truncate"><p class="text-[13px] font-black uppercase tracking-tight text-slate-800 truncate leading-tight mb-1.5">${u.name}</p>${timeInfo}</div></div><div class="flex items-center gap-2 shrink-0">${actionBtn}<button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-lg"></i></button></div></div>${configCard}</div>`;
+        
+        return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-4 bg-white rounded-[1.8rem] border border-slate-100 hover:border-red-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md" onclick="window.viewElementDetail('${el.email}')">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 min-w-0">
+                    <div class="w-14 h-14 rounded-[1.2rem] overflow-hidden border-2 border-slate-50 relative bg-slate-50 shrink-0 shadow-inner">
+                        ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-xl"></i></div>`}
+                    </div>
+                    <div class="truncate">
+                        <p class="text-[13px] font-black uppercase tracking-tight text-slate-800 truncate leading-tight mb-1.5">${u.name}</p>
+                        ${timeInfo}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${actionBtn}
+                    <button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-lg"></i></button>
+                </div>
+            </div>
+            ${configCard}
+        </div>`;
     }
 
-    // --- MANEJO DE MENÚ CONTEXTUAL ---
+    // --- ACCIONES DE FIREBASE ---
+    window.quickRegisterEntry = async (id, isFromShifts, shiftIndex) => {
+        const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+        if (isFromShifts) {
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data(); data.shifts[shiftIndex].realEntry = t;
+                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
+        } else await updateDoc(docRef, { realEntry: t, updatedAt: serverTimestamp() });
+    };
+
+    window.quickRegisterExit = async (id, isFromShifts, shiftIndex) => {
+        const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+        if (isFromShifts) {
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data(); data.shifts[shiftIndex].realExit = t;
+                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
+        } else await updateDoc(docRef, { realExit: t, updatedAt: serverTimestamp() });
+    };
+
+    window.updateTimeConfig = async (id, field, value, dur, isS, idx, entry) => {
+        const dR = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+        if (isS) {
+            const snap = await getDoc(dR);
+            if (snap.exists()) {
+                const data = snap.data(); const s = data.shifts[idx];
+                if (field === 'assignedEntry') { s.assignedEntry = value; s.assignedExit = calculateExitTime(value, dur); }
+                else if (field === 'shiftDuration') { s.shiftDuration = parseFloat(value); s.assignedExit = calculateExitTime(entry, value); }
+                await updateDoc(dR, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
+        } else {
+            const uO = { updatedAt: serverTimestamp() };
+            if (field === 'assignedEntry') { uO.assignedEntry = value; uO.assignedExit = calculateExitTime(value, dur); }
+            else if (field === 'shiftDuration') { uO.shiftDuration = parseFloat(value); uO.assignedExit = calculateExitTime(entry, value); }
+            await updateDoc(dR, uO);
+        }
+    };
+
+    window.confirmAssignment = async (id, isS, idx) => {
+        const dR = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+        if (isS) {
+            const snap = await getDoc(dR);
+            if (snap.exists()) {
+                const d = snap.data(); d.shifts[idx].isConfirmed = true;
+                await updateDoc(dR, { shifts: d.shifts, updatedAt: serverTimestamp() });
+            }
+        } else await updateDoc(dR, { isConfirmed: true, updatedAt: serverTimestamp() });
+    };
+
+    window.deleteAssignment = async (id) => { if (confirm("¿Eliminar asignación?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id)); };
+
+    window.toggleStationStatus = async (stationId, shift, currentStatus) => {
+        const dInp = getDateInput(); if(!dInp) return;
+        const statusRef = doc(db, 'artifacts', appId, 'public', 'data', 'station_daily_status', `${dInp.value}_${shift}_${stationId}`);
+        await setDoc(statusRef, { stationId, date: dInp.value, shift, isClosed: !currentStatus, updatedAt: serverTimestamp() });
+    };
+
+    window.toggleClosedStations = () => { showClosedStations = !showClosedStations; renderAll(); };
+
+    // --- FUNCIÓN DE NAVEGACIÓN (CONTROLADA POR SHELL) ---
+    window.switchActiveTab = (shift) => {
+        activeShiftTab = shift;
+        ['I', 'M','V','N','ABS'].forEach(s => {
+            const col = document.getElementById(`col-${s}`);
+            if(!col) return;
+            if (s === shift) {
+                col.classList.remove('hidden'); col.classList.add('flex');
+            } else {
+                col.classList.add('hidden'); col.classList.remove('flex');
+            }
+        });
+        
+        // Sincronizar UI del Shell si la función existe
+        if (typeof window.updateShellTabUI === 'function') {
+            window.updateShellTabUI(shift);
+        }
+
+        renderAll();
+    };
+
+    window.viewElementDetail = (email) => {
+        const dInp = getDateInput();
+        window.selectedUserEmail = email;
+        window.selectedOperationDate = dInp ? dInp.value : '';
+        if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html');
+    };
+
+    // --- MENÚ CONTEXTUAL ---
     window.handleElementRightClick = (e, email, name) => {
         e.preventDefault(); e.stopPropagation();
         selectedElementForMenu = { email, name };
-        
         const menu = document.getElementById('custom-context-menu');
         const sub = document.getElementById('custom-submenu');
-        
         document.getElementById('menu-user-name').innerText = name;
         sub.classList.add('hidden');
-
-        let top = e.clientY;
-        let left = e.clientX;
+        let top = e.clientY; let left = e.clientX;
         if (top + 300 > window.innerHeight) top = window.innerHeight - 310;
         if (left + 500 > window.innerWidth) left = window.innerWidth - 510;
-
-        menu.style.top = `${top}px`;
-        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`; menu.style.left = `${left}px`;
         menu.classList.remove('hidden');
-
         renderContextMenuList();
-
         const closeAll = (ev) => { 
             if(!menu.contains(ev.target) && !sub.contains(ev.target)) { 
-                menu.classList.add('hidden'); 
-                sub.classList.add('hidden');
+                menu.classList.add('hidden'); sub.classList.add('hidden');
                 document.removeEventListener('click', closeAll); 
             } 
         };
@@ -400,22 +583,8 @@
     function renderContextMenuList() {
         const stationsList = document.getElementById('stations-menu-list');
         const sortedStations = [...currentStations].sort((a,b) => (a.order||0) - (b.order||0));
-        
-        let html = sortedStations.map(st => `
-            <button onclick="window.openSubMenu(event, '${st.id}', 'station', '${st.name}')" 
-                    class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-red-800 hover:text-white transition-all group/item shadow-sm">
-                <span class="truncate">${st.name}</span>
-                <i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i>
-            </button>
-        `).join('');
-
-        html += `
-            <button onclick="window.openSubMenu(event, 'abs_list', 'abs', 'Ausentismos')" 
-                    class="w-full flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-800 hover:bg-red-800 hover:text-white transition-all group/item mt-2 shadow-sm">
-                <span>Ausentismos</span>
-                <i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i>
-            </button>
-        `;
+        let html = sortedStations.map(st => `<button onclick="window.openSubMenu(event, '${st.id}', 'station', '${st.name}')" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-red-800 hover:text-white transition-all group/item shadow-sm"><span class="truncate">${st.name}</span><i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i></button>`).join('');
+        html += `<button onclick="window.openSubMenu(event, 'abs_list', 'abs', 'Ausentismos')" class="w-full flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-800 hover:bg-red-800 hover:text-white transition-all group/item mt-2 shadow-sm"><span>Ausentismos</span><i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i></button>`;
         stationsList.innerHTML = html;
     }
 
@@ -424,30 +593,17 @@
         const sub = document.getElementById('custom-submenu');
         const menu = document.getElementById('custom-context-menu');
         const list = document.getElementById('submenu-list');
-        
         document.getElementById('submenu-title').innerText = title;
-
         const menuRect = menu.getBoundingClientRect();
-        let subLeft = menuRect.right + 10;
-        let subTop = menuRect.top;
-
+        let subLeft = menuRect.right + 10; let subTop = menuRect.top;
         if (subLeft + 200 > window.innerWidth) subLeft = menuRect.left - 210;
         if (subTop + 300 > window.innerHeight) subTop = window.innerHeight - 310;
-
-        sub.style.left = `${subLeft}px`;
-        sub.style.top = `${subTop}px`;
+        sub.style.left = `${subLeft}px`; sub.style.top = `${subTop}px`;
         sub.classList.remove('hidden');
-
         if (type === 'station') {
-            list.innerHTML = `
-                <button onclick="window.directContextAssign('${title}', 'M')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-all shadow-sm">Turno Matutino (M)</button>
-                <button onclick="window.directContextAssign('${title}', 'V')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all shadow-sm">Turno Vespertino (V)</button>
-                <button onclick="window.directContextAssign('${title}', 'N')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm">Turno Nocturno (N)</button>
-            `;
+            list.innerHTML = `<button onclick="window.directContextAssign('${title}', 'M')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-all shadow-sm">Matutino (M)</button><button onclick="window.directContextAssign('${title}', 'V')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all shadow-sm">Vespertino (V)</button><button onclick="window.directContextAssign('${title}', 'N')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm">Nocturno (N)</button>`;
         } else {
-            list.innerHTML = defaultAbsenceReasons.map(r => `
-                <button onclick="window.directContextAbsence('${r}')" class="w-full text-left px-4 py-2.5 text-[9px] font-black uppercase rounded-xl bg-red-50 text-red-800 hover:bg-red-800 hover:text-white transition-all shadow-sm">${r}</button>
-            `).join('');
+            list.innerHTML = defaultAbsenceReasons.map(r => `<button onclick="window.directContextAbsence('${r}')" class="w-full text-left px-4 py-2.5 text-[9px] font-black uppercase rounded-xl bg-red-50 text-red-800 hover:bg-red-800 hover:text-white transition-all shadow-sm">${r}</button>`).join('');
         }
     };
 
@@ -469,106 +625,6 @@
         document.getElementById('custom-submenu').classList.add('hidden');
     };
 
-    // --- ACCIONES DE FIREBASE ---
-    window.quickRegisterEntry = async (id, isFromShifts, shiftIndex) => {
-        const timeStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        try {
-            if (isFromShifts) {
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    data.shifts[shiftIndex].realEntry = timeStr;
-                    await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-                }
-            } else await updateDoc(docRef, { realEntry: timeStr, updatedAt: serverTimestamp() });
-        } catch (e) { console.error(e); }
-    };
-
-    window.quickRegisterExit = async (id, isFromShifts, shiftIndex) => {
-        const timeStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        try {
-            if (isFromShifts) {
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    data.shifts[shiftIndex].realExit = timeStr;
-                    await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-                }
-            } else await updateDoc(docRef, { realExit: timeStr, updatedAt: serverTimestamp() });
-        } catch (e) { console.error(e); }
-    };
-
-    window.updateTimeConfig = async (id, field, value, currentDuration, isFromShifts, shiftIndex, currentEntry) => {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        try {
-            if (isFromShifts) {
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const s = data.shifts[shiftIndex];
-                    if (field === 'assignedEntry') { s.assignedEntry = value; s.assignedExit = calculateExitTime(value, currentDuration); }
-                    else if (field === 'shiftDuration') { s.shiftDuration = parseFloat(value); s.assignedExit = calculateExitTime(currentEntry, value); }
-                    await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-                }
-            } else {
-                const updateObj = { updatedAt: serverTimestamp() };
-                if (field === 'assignedEntry') { updateObj.assignedEntry = value; updateObj.assignedExit = calculateExitTime(value, currentDuration); }
-                else if (field === 'shiftDuration') { updateObj.shiftDuration = parseFloat(value); updateObj.assignedExit = calculateExitTime(currentEntry, value); }
-                await updateDoc(docRef, updateObj);
-            }
-        } catch (e) { console.error(e); }
-    };
-
-    window.confirmAssignment = async (id, isFromShifts, shiftIndex) => {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        try {
-            if (isFromShifts) {
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    data.shifts[shiftIndex].isConfirmed = true;
-                    await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-                }
-            } else await updateDoc(docRef, { isConfirmed: true, updatedAt: serverTimestamp() });
-        } catch (e) { console.error(e); }
-    };
-
-    window.deleteAssignment = async (id) => { if (confirm("¿Eliminar asignación?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id)); };
-
-    window.toggleStationStatus = async (stationId, shift, currentStatus) => {
-        const dInp = getDateInput(); if(!dInp) return;
-        const statusRef = doc(db, 'artifacts', appId, 'public', 'data', 'station_daily_status', `${dInp.value}_${shift}_${stationId}`);
-        await setDoc(statusRef, { stationId, date: dInp.value, shift, isClosed: !currentStatus, updatedAt: serverTimestamp() });
-    };
-
-    window.toggleClosedStations = () => { showClosedStations = !showClosedStations; renderAll(); };
-
-    window.switchActiveTab = (shift) => {
-        ['M','V','N','ABS'].forEach(s => {
-            const col = document.getElementById(`col-${s}`);
-            const tab = document.getElementById(`tab-${s}`);
-            if(!col || !tab) return;
-            if (s === shift) {
-                col.classList.remove('hidden');
-                col.classList.add('flex');
-                tab.className = `px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all bg-slate-900 text-white shadow-xl border-slate-900 scale-105 z-10`;
-            } else {
-                col.classList.add('hidden');
-                col.classList.remove('flex');
-                tab.className = `px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-slate-400 bg-white hover:bg-slate-100 border-transparent`;
-            }
-        });
-    };
-
-    window.viewElementDetail = (email) => {
-        const dInp = getDateInput();
-        window.selectedUserEmail = email;
-        window.selectedOperationDate = dInp ? dInp.value : '';
-        if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html');
-    };
-
 </script>
 
 <style>
@@ -577,4 +633,6 @@
     .shift-column { height: 100%; }
     input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.2; cursor: pointer; }
     [draggable="true"] { -webkit-user-drag: element; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

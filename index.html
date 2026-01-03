@@ -31,36 +31,34 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        .logo-container img { max-height: 48px; width: auto; display: block; cursor: pointer; transition: transform 0.2s; }
-        .logo-container img:hover { transform: scale(1.05); }
-        
         #app-main { height: calc(100vh - 4rem - 2rem); }
         .avatar-group:hover #avatar-dropdown { display: block; }
 
-        /* Estilo para los paneles cuando están en modo móvil */
         @media (max-width: 768px) {
             .mobile-panel {
                 position: fixed;
                 top: 0;
                 bottom: 0;
                 z-index: 100;
-                width: 100% !important; /* Panel al 100% en móviles */
+                width: 100% !important;
                 box-shadow: none;
             }
             #left-panel { left: 0; }
             #right-panel { right: 0; }
         }
+
+        /* Estados de Sincronización */
+        .sync-state-pending { color: #f59e0b; }
+        .sync-state-success { color: #10b981; }
+        .sync-state-error { color: #ef4444; }
+        
+        #sync-details-modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
 
     <!-- PANTALLA DE INICIO DE SESIÓN -->
     <div id="login-screen" class="p-6">
-        <button id="close-login-btn" onclick="toggleLoginScreen(false)" class="absolute top-8 right-8 text-slate-400 hover:text-red-800 transition-colors flex items-center gap-2 group">
-            <span class="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Regresar</span>
-            <i data-lucide="x" class="w-8 h-8"></i>
-        </button>
-
         <div class="w-full max-w-md space-y-12 text-center">
             <div class="space-y-4">
                 <div class="inline-block p-6 bg-slate-50 rounded-[3rem] shadow-sm border border-slate-100 mb-2">
@@ -111,33 +109,28 @@
         </div>
 
         <div class="w-1/3 md:w-1/4 flex justify-end items-center gap-1 md:gap-2">
-            <button id="admin-nav-btn" onclick="loadContent('adminUser.html')" class="hidden items-center gap-2 px-2 md:px-3 py-2 text-slate-500 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all group" title="Administrar Usuarios">
+            <button id="admin-nav-btn" onclick="loadContent('adminUser.html')" class="hidden items-center gap-2 px-2 md:px-3 py-2 text-slate-500 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all group">
                 <i data-lucide="users" class="w-4 h-4"></i>
                 <span class="hidden lg:inline text-[9px] font-black uppercase tracking-widest">Usuarios</span>
-            </button>
-
-            <button id="notif-btn" class="p-2 text-slate-500 hover:text-red-800 hover:bg-slate-50 rounded-full relative transition-all">
-                <i data-lucide="bell" class="w-5 h-5"></i>
-                <span id="notif-badge" class="hidden absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border-2 border-white"></span>
             </button>
             
             <div class="relative avatar-group ml-1 h-full flex items-center group">
                 <div class="flex items-center h-full px-1 md:px-2 cursor-pointer">
                     <div class="flex items-center p-0.5 rounded-full border border-slate-200 group-hover:border-red-800 group-hover:shadow-md transition-all bg-white overflow-hidden relative w-8 h-8 md:w-10 md:h-10">
-                        <div id="user-avatar-circle" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-white overflow-hidden relative border border-slate-100">
+                        <div id="user-avatar-circle" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-white overflow-hidden relative">
                             <i id="header-avatar-icon" data-lucide="user" class="w-4 h-4 md:w-5 md:h-5 text-white/50"></i>
                             <img id="header-avatar-img" class="hidden absolute inset-0 w-full h-full object-cover">
                         </div>
                     </div>
                 </div>
                 
-                <div id="avatar-dropdown" class="hidden absolute right-0 top-[100%] w-56 md:w-60 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] shadow-2xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                <div id="avatar-dropdown" class="hidden absolute right-0 top-[100%] w-56 md:w-60 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] shadow-2xl py-2 z-50 overflow-hidden">
                     <div id="user-info-box" class="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
                         <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Sesión Activa</p>
-                        <p id="user-display-name" class="text-[11px] font-black text-slate-900 truncate uppercase tracking-tight">Cargando...</p>
+                        <p id="user-display-name" class="text-[11px] font-black text-slate-900 truncate uppercase">Cargando...</p>
                     </div>
                     <div class="p-1.5 space-y-1">
-                        <button id="profile-dropdown-btn" onclick="window.selectedUserEmail = null; loadContent('Perfil.html')" class="w-full flex items-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-red-800 rounded-2xl transition-all">
+                        <button onclick="loadContent('Perfil.html')" class="w-full flex items-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-red-800 rounded-2xl transition-all">
                             <i data-lucide="user-cog" class="w-4 h-4 mr-3 opacity-60"></i> Mi Perfil
                         </button>
                         <button id="logout-nav-btn" class="w-full flex items-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 rounded-2xl transition-all">
@@ -151,17 +144,15 @@
 
     <!-- ÁREA DE CONTENIDO -->
     <main id="app-main" class="hidden flex flex-1 overflow-hidden relative">
-        <!-- PANEL IZQUIERDO -->
         <aside id="left-panel" class="hidden md:flex mobile-panel flex-col w-72 min-w-[18rem] bg-slate-50 border-r border-slate-200 h-full overflow-hidden transition-all duration-300">
-            <div id="nav-container" class="h-full w-full"></div>
+            <!-- Navegación aislada en iframe para evitar injerencia de lógica -->
+            <iframe src="Nav.html" frameborder="0" class="w-full h-full"></iframe>
         </aside>
 
-        <!-- VISTA CENTRAL -->
         <section id="main-view" class="flex-1 bg-white overflow-y-auto custom-scrollbar h-full z-10">
             <div id="central-content" class="w-full min-h-full"></div>
         </section>
 
-        <!-- PANEL DERECHO (30% ancho en desktop) -->
         <aside id="right-panel" class="hidden mobile-panel flex-col md:w-[30%] min-w-[300px] bg-white border-l border-slate-200 shadow-2xl md:shadow-none h-full overflow-hidden transition-all duration-300">
             <div class="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Detalles</h3>
@@ -169,26 +160,64 @@
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar" id="right-panel-content">
-                <div class="p-10 text-center opacity-20"><i class="fa-solid fa-circle-notch animate-spin text-2xl"></i></div>
-            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar" id="right-panel-content"></div>
         </aside>
     </main>
 
     <!-- PIE DE PÁGINA -->
     <footer id="app-footer" class="hidden h-8 bg-slate-950 flex-shrink-0 z-[60] flex items-center justify-between px-4 md:px-6 border-t border-white/5 relative">
-        <div class="flex items-center gap-3">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-            <p class="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest">Sincronizado</p>
-        </div>
+        <button onclick="toggleSyncModal(true)" class="flex items-center gap-3 hover:bg-white/5 px-2 rounded-lg transition-all group">
+            <div id="sync-status-indicator" class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <p id="sync-status-text" class="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">Base Actualizada</p>
+        </button>
         <p class="hidden sm:block text-[8px] font-black text-slate-600 uppercase tracking-[0.4em]">CIC — Protection System</p>
-        <div class="text-[9px] text-slate-500 font-bold uppercase">v5.2.0</div>
+        <div class="text-[9px] text-slate-500 font-bold uppercase">v5.6.0</div>
     </footer>
+
+    <!-- MODAL DE DETALLES DE SINCRONIZACIÓN -->
+    <div id="sync-details-modal" class="invisible opacity-0 fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl space-y-6 animate-in zoom-in duration-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest">Sincronización Local</h4>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">Estado del almacenamiento en caché</p>
+                    </div>
+                </div>
+                <button onclick="toggleSyncModal(false)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-800 transition-all">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-2" id="sync-collection-status">
+                    <!-- Dinámico: Estado por colección -->
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Cambios Recientes</p>
+                    <div id="sync-logs-container" class="max-h-60 overflow-y-auto custom-scrollbar space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <!-- Dinámico: Logs de cambios -->
+                        <div class="py-10 text-center opacity-30 text-[9px] font-black uppercase">Sin cambios registrados</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-2">
+                <button onclick="syncDatabase(true)" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-800 transition-all shadow-xl shadow-slate-200">
+                    Forzar Sincronización Total
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
@@ -205,145 +234,255 @@
         const db = getFirestore(app);
         const appId = 'cic5-pp';
 
-        let profileUnsubscribe = null;
+        // --- SISTEMA DE GESTIÓN DE CACHÉ LOCAL ---
+        const DB_LOCAL = {
+            users: [],
+            stations: [],
+            notices: [],
+            lastSync: null,
+            syncLogs: [],
+            status: {
+                users: 'none',
+                stations: 'none',
+                notices: 'none'
+            }
+        };
 
-        function syncHeaderIdentity(email) {
-            if (profileUnsubscribe) profileUnsubscribe();
-            const nameDisplay = document.getElementById('user-display-name');
-            const headerImg = document.getElementById('header-avatar-img');
-            const headerIcon = document.getElementById('header-avatar-icon');
-            const adminNavBtn = document.getElementById('admin-nav-btn');
-            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-            profileUnsubscribe = onSnapshot(usersRef, (snap) => {
-                const profile = snap.docs.map(d => d.data()).find(u => u.email === email);
-                if (profile) {
-                    nameDisplay.innerText = profile.name || email.split('@')[0];
-                    adminNavBtn.classList.toggle('hidden', profile.role !== 'Administrador');
-                    adminNavBtn.classList.toggle('lg:flex', profile.role === 'Administrador');
-                    if (profile.photo) {
-                        headerImg.src = profile.photo;
-                        headerImg.classList.remove('hidden');
-                        headerIcon.classList.add('hidden');
-                    } else {
-                        headerImg.classList.add('hidden');
-                        headerIcon.classList.remove('hidden');
+        const CacheManager = {
+            STORAGE_KEY: 'CIC5_LOCAL_DB',
+
+            init: function() {
+                const stored = localStorage.getItem(this.STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    Object.assign(DB_LOCAL, parsed);
+                    return true;
+                }
+                return false;
+            },
+
+            save: function() {
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(DB_LOCAL));
+                DB_LOCAL.lastSync = new Date().toISOString();
+                this.updateGlobalIndicator();
+                this.renderSyncModalContent();
+            },
+
+            destroy: function() {
+                localStorage.removeItem(this.STORAGE_KEY);
+                localStorage.removeItem('lastLoadedModule');
+            },
+
+            log: function(msg, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                DB_LOCAL.syncLogs.unshift({ timestamp, msg, type });
+                if (DB_LOCAL.syncLogs.length > 30) DB_LOCAL.syncLogs.pop();
+            },
+
+            updateGlobalIndicator: function() {
+                const indicator = document.getElementById('sync-status-indicator');
+                const textEl = document.getElementById('sync-status-text');
+                if (!indicator || !textEl) return;
+
+                const states = Object.values(DB_LOCAL.status);
+                if (states.some(s => s === 'error')) {
+                    indicator.className = "w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)]";
+                    textEl.innerText = "No se pudo actualizar";
+                    textEl.className = "text-[7px] md:text-[8px] font-black text-red-600 uppercase tracking-widest";
+                } else if (states.some(s => s === 'pending')) {
+                    indicator.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]";
+                    textEl.innerText = "En proceso de actualización";
+                    textEl.className = "text-[7px] md:text-[8px] font-black text-amber-500 uppercase tracking-widest";
+                } else {
+                    indicator.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    textEl.innerText = "Base Actualizada";
+                    textEl.className = "text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-widest";
+                }
+            },
+
+            renderSyncModalContent: function() {
+                const logsCont = document.getElementById('sync-logs-container');
+                const statusCont = document.getElementById('sync-collection-status');
+                if (!logsCont || !statusCont) return;
+
+                statusCont.innerHTML = Object.entries(DB_LOCAL.status).map(([name, state]) => {
+                    const colors = {
+                        success: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+                        pending: 'text-amber-600 bg-amber-50 border-amber-100',
+                        error: 'text-red-600 bg-red-50 border-red-100',
+                        none: 'text-slate-400 bg-slate-50 border-slate-100'
+                    };
+                    const icons = {
+                        success: 'fa-check-circle',
+                        pending: 'fa-circle-notch fa-spin',
+                        error: 'fa-exclamation-circle',
+                        none: 'fa-clock'
+                    };
+                    return `
+                        <div class="p-3 border rounded-xl text-center ${colors[state] || colors.none}">
+                            <i class="fa-solid ${icons[state] || icons.none} text-[10px] mb-1"></i>
+                            <p class="text-[7px] font-black uppercase tracking-tighter">${name}</p>
+                        </div>
+                    `;
+                }).join('');
+
+                logsCont.innerHTML = DB_LOCAL.syncLogs.length > 0 ? DB_LOCAL.syncLogs.map(l => `
+                    <div class="flex gap-3 text-[9px] border-b border-slate-100/50 pb-2 mb-2 last:border-0">
+                        <span class="text-slate-400 font-bold shrink-0">${l.timestamp}</span>
+                        <p class="font-medium ${l.type === 'update' ? 'text-emerald-700' : 'text-slate-600'}">${l.msg}</p>
+                    </div>
+                `).join('') : `<div class="py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest">Sin actividad</div>`;
+            }
+        };
+
+        // --- SINCRONIZACIÓN ---
+        async function syncDatabase(forceFull = false) {
+            if (forceFull) {
+                CacheManager.log("Iniciando sincronización forzada total...", "info");
+                toggleSyncModal(false);
+            }
+            
+            const collectionsToSync = ['users', 'stations', 'notices'];
+            collectionsToSync.forEach(c => DB_LOCAL.status[c] = 'pending');
+            CacheManager.updateGlobalIndicator();
+
+            const syncPromises = collectionsToSync.map(async (colName) => {
+                try {
+                    if (DB_LOCAL[colName].length > 0 && !forceFull) {
+                        CacheManager.log(`Caché verificada para ${colName}.`, 'info');
+                        DB_LOCAL.status[colName] = 'success';
+                        listenForUpdates(colName);
+                        return;
                     }
+
+                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', colName));
+                    DB_LOCAL[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    DB_LOCAL.status[colName] = 'success';
+                    CacheManager.log(`${colName}: Descarga completa (${snap.size} registros).`, 'update');
+                    listenForUpdates(colName);
+                } catch (e) {
+                    DB_LOCAL.status[colName] = 'error';
+                    CacheManager.log(`${colName}: Fallo en sincronización.`, 'error');
+                }
+            });
+
+            await Promise.all(syncPromises);
+            CacheManager.save();
+        }
+
+        function listenForUpdates(colName) {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', colName), (snap) => {
+                let hasChanges = false;
+                snap.docChanges().forEach(change => {
+                    hasChanges = true;
+                    const data = { id: change.doc.id, ...change.doc.data() };
+                    
+                    if (change.type === "added" || change.type === "modified") {
+                        const idx = DB_LOCAL[colName].findIndex(i => i.id === data.id);
+                        if (idx > -1) {
+                            DB_LOCAL[colName][idx] = data;
+                            CacheManager.log(`${colName}: Registro editado (${data.id}).`, 'update');
+                        } else {
+                            DB_LOCAL[colName].push(data);
+                            CacheManager.log(`${colName}: Nuevo registro detectado.`, 'update');
+                        }
+                    }
+                    if (change.type === "removed") {
+                        DB_LOCAL[colName] = DB_LOCAL[colName].filter(i => i.id !== data.id);
+                        CacheManager.log(`${colName}: Registro eliminado (${data.id}).`, 'info');
+                    }
+                });
+                
+                if (hasChanges) {
+                    CacheManager.save();
+                    if (colName === 'users') updateHeaderUI();
+                    if (colName === 'notices' && document.getElementById('notices-container-home')) loadNoticesFromLocal();
                 }
             });
         }
 
-        // CONTROL DE PANELES EXCLUYENTES MEJORADO
+        window.toggleSyncModal = (show) => {
+            const modal = document.getElementById('sync-details-modal');
+            if (show) {
+                modal.classList.remove('invisible', 'opacity-0');
+                CacheManager.renderSyncModalContent();
+                if (window.lucide) lucide.createIcons();
+            } else {
+                modal.classList.add('invisible', 'opacity-0');
+            }
+        };
+
+        // --- NAVEGACIÓN SPA ---
+        function updateHeaderUI() {
+            const email = auth.currentUser?.email;
+            const profile = DB_LOCAL.users?.find(u => u.email === email);
+            if (profile) {
+                document.getElementById('user-display-name').innerText = profile.name || email.split('@')[0];
+                const adminBtn = document.getElementById('admin-nav-btn');
+                adminBtn.classList.toggle('hidden', profile.role !== 'Administrador');
+                const img = document.getElementById('header-avatar-img');
+                const icon = document.getElementById('header-avatar-icon');
+                if (profile.photo) {
+                    img.src = profile.photo;
+                    img.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                }
+            }
+        }
+
+        function loadNoticesFromLocal() {
+            const container = document.getElementById('notices-container-home');
+            if (!container || !DB_LOCAL.notices) return;
+            const sorted = [...DB_LOCAL.notices].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            container.innerHTML = sorted.map(n => `
+                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 relative shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-2">${n.author || 'Sistema CIC'}</p>
+                    <h4 class="text-[11px] font-black text-slate-900 uppercase leading-snug mb-2">${n.title}</h4>
+                    <p class="text-[10px] font-medium text-slate-500 leading-relaxed">${n.message}</p>
+                </div>
+            `).join('');
+        }
+
+        window.loadContent = async (file) => {
+            localStorage.setItem('lastLoadedModule', file);
+            const container = document.getElementById('central-content');
+            try {
+                const response = await fetch(file);
+                if (response.ok) {
+                    const html = await response.text();
+                    container.innerHTML = "";
+                    container.appendChild(document.createRange().createContextualFragment(html));
+                    if (window.lucide) lucide.createIcons();
+                    if (file === 'home.html') loadNoticesFromLocal();
+                }
+            } catch (e) { console.error("Error cargando contenido:", e); }
+        };
+
         window.toggleLeftPanel = (show) => {
             const lp = document.getElementById('left-panel');
-            // Si no se define 'show', se alterna basado en la clase 'hidden'
             if (show === undefined) show = lp.classList.contains('hidden');
-            
-            if (show) {
-                // Abrir Izquierdo: Limpiar 'hidden' y forzar visualización
-                lp.classList.remove('hidden');
-                lp.classList.add('flex', 'md:flex');
-                // Al abrir izquierda, cerramos derecha SIEMPRE
-                window.toggleRightPanel(false);
-            } else {
-                // Cerrar Izquierdo: Añadir 'hidden' y quitar clases de flex
-                lp.classList.add('hidden');
-                lp.classList.remove('flex', 'md:flex');
-            }
+            if (show) { lp.classList.remove('hidden'); lp.classList.add('flex'); window.toggleRightPanel(false); }
+            else { lp.classList.add('hidden'); lp.classList.remove('flex'); }
         };
 
         window.toggleRightPanel = (show) => {
             const rp = document.getElementById('right-panel');
             if (show === undefined) show = rp.classList.contains('hidden');
-
-            if (show) {
-                // Abrir Derecho
-                rp.classList.remove('hidden');
-                rp.classList.add('flex', 'md:flex');
-                // Al abrir derecha, cerramos izquierda SIEMPRE
-                window.toggleLeftPanel(false);
-            } else {
-                // Cerrar Derecho
-                rp.classList.add('hidden');
-                rp.classList.remove('flex', 'md:flex');
-            }
+            if (show) { rp.classList.remove('hidden'); rp.classList.add('flex'); window.toggleLeftPanel(false); }
+            else { rp.classList.add('hidden'); rp.classList.remove('flex'); }
         };
 
-        window.loadRightContent = async (file) => {
-            const container = document.getElementById('right-panel-content');
-            window.toggleRightPanel(true); // Cierra automáticamente el panel izquierdo
-            container.innerHTML = '<div class="p-10 text-center opacity-20"><i class="fa-solid fa-circle-notch animate-spin text-2xl"></i></div>';
-            try {
-                const response = await fetch(file);
-                if (response.ok) {
-                    const html = await response.text();
-                    const fragment = document.createRange().createContextualFragment(html);
-                    container.innerHTML = "";
-                    container.appendChild(fragment);
-                    if (window.lucide) lucide.createIcons();
-                }
-            } catch (e) { console.error("Error cargando panel derecho:", e); }
-        };
-
-        window.loadContent = async (file) => {
-            localStorage.setItem('lastLoadedModule', file);
-            const container = document.getElementById('central-content');
-            if (file !== 'Perfil.html') window.selectedUserEmail = null;
-            
-            // En pantallas móviles, ocultamos cualquier panel al cargar contenido
-            if (window.innerWidth < 768) {
-                window.toggleLeftPanel(false);
-                window.toggleRightPanel(false);
-            }
-
-            try {
-                const response = await fetch(file);
-                if (response.ok) {
-                    const html = await response.text();
-                    const fragment = document.createRange().createContextualFragment(html);
-                    container.innerHTML = "";
-                    container.appendChild(fragment);
-                    if (window.lucide) lucide.createIcons();
-                    if (file === 'home.html') loadNotices();
-                }
-            } catch (e) { console.error("Error:", e); }
-        };
-
-        const loginForm = document.getElementById('login-form');
-        loginForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            try { 
-                await signInWithEmailAndPassword(auth, email, pass);
-                document.getElementById('login-error').classList.add('hidden');
-            } 
-            catch (error) { document.getElementById('login-error').classList.remove('hidden'); }
-        };
-
-        document.getElementById('logout-nav-btn').onclick = async () => { 
-            localStorage.removeItem('lastLoadedModule');
-            localStorage.removeItem('lastSelectedAppId');
-            await signOut(auth); 
-            location.reload(); 
-        };
-
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user && !user.isAnonymous) {
                 document.getElementById('app-header').classList.remove('hidden');
                 document.getElementById('app-main').classList.remove('hidden');
                 document.getElementById('app-footer').classList.remove('hidden');
                 document.getElementById('login-screen').style.display = 'none';
                 
-                syncHeaderIdentity(user.email);
-                loadNavigation();
-
-                const lastModule = localStorage.getItem('lastLoadedModule') || 'home.html';
-                loadContent(lastModule);
-
-                // En desktop, mostramos el panel izquierdo por defecto si no es móvil
-                if (window.innerWidth >= 768) {
-                    window.toggleLeftPanel(true);
-                }
+                const hasLocal = CacheManager.init();
+                await syncDatabase(!hasLocal);
+                updateHeaderUI();
+                loadContent(localStorage.getItem('lastLoadedModule') || 'home.html');
             } else {
                 document.getElementById('app-header').classList.add('hidden');
                 document.getElementById('app-main').classList.add('hidden');
@@ -353,39 +492,20 @@
             }
         });
 
-        async function loadNavigation() {
-            const container = document.getElementById('nav-container');
-            try {
-                const response = await fetch('Nav.html');
-                if (response.ok) {
-                    const html = await response.text();
-                    const fragment = document.createRange().createContextualFragment(html);
-                    container.innerHTML = "";
-                    container.appendChild(fragment);
-                    if (window.lucide) lucide.createIcons();
-                }
-            } catch (e) { console.error("Error Nav:", e); }
-        }
+        document.getElementById('logout-nav-btn').onclick = async () => { 
+            CacheManager.destroy();
+            await signOut(auth); 
+            location.reload(); 
+        };
 
-        function loadNotices() {
-            const container = document.getElementById('notices-container-home');
-            if (!container) return;
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notices'), (snap) => {
-                const notices = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                if (notices.length === 0) {
-                    container.innerHTML = `<div class="col-span-full py-10 text-center opacity-20"><p class="text-[9px] font-black uppercase tracking-widest">Sin avisos oficiales.</p></div>`;
-                    return;
-                }
-                container.innerHTML = notices.map(n => `
-                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 relative shadow-sm transition-all hover:shadow-md group">
-                        <div class="absolute top-[-10px] left-1/2 translate-x-[-50%] w-4 h-4 bg-red-800 rounded-full border-2 border-white shadow-sm"></div>
-                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-2">${n.author || 'Sistema CIC'}</p>
-                        <h4 class="text-[11px] font-black text-slate-900 uppercase leading-snug mb-2">${n.title}</h4>
-                        <p class="text-[10px] font-medium text-slate-500 leading-relaxed">${n.message}</p>
-                    </div>
-                `).join('');
-            });
-        }
+        const loginForm = document.getElementById('login-form');
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch (error) { document.getElementById('login-error').classList.remove('hidden'); }
+        };
     </script>
 </body>
 </html>

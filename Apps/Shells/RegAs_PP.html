@@ -14,6 +14,18 @@
         /* Ajuste para el Ribbon sticky si el flex fallara en algún navegador */
         #shell-header-main { position: relative; z-index: 120; flex-shrink: 0; }
         #module-ribbon { position: relative; z-index: 110; flex-shrink: 0; }
+
+        .shell-tab-v-btn.active {
+            background-color: white;
+            color: #0f172a;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .regas-tab-btn.active { 
+            background-color: #0f172a !important; 
+            color: white !important; 
+        }
     </style>
 
     <!-- ENCABEZADO FIJO -->
@@ -111,15 +123,23 @@
         'VistaDia.html': `
             <div class="flex items-center justify-between w-full px-10">
                 <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-2">
-                        <p id="current-view-date" class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Sincronizando...</p>
-                    </div>
+                    <!-- Selector de Fecha -->
                     <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700 shadow-inner">
                         <button onclick="window.changeDay?.(-1)" class="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 hover:text-white hover:bg-red-800 transition-all"><i class="fa-solid fa-chevron-left"></i></button>
                         <input type="date" id="view-date-input" onchange="window.loadDailyView?.()" class="bg-transparent text-[10px] font-black text-white outline-none cursor-pointer px-2">
                         <button onclick="window.changeDay?.(1)" class="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 hover:text-white hover:bg-red-800 transition-all"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
+
+                    <!-- Selector de Turnos (Navegación Interna de Vista Día) -->
+                    <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 shadow-inner gap-1">
+                        <button onclick="window.switchActiveTab?.('I')" id="shell-tab-I" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all bg-white text-slate-900">Inicio</button>
+                        <button onclick="window.switchActiveTab?.('M')" id="shell-tab-M" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white">Matutino</button>
+                        <button onclick="window.switchActiveTab?.('V')" id="shell-tab-V" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white">Vespertino</button>
+                        <button onclick="window.switchActiveTab?.('N')" id="shell-tab-N" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white">Nocturno</button>
+                        <button onclick="window.switchActiveTab?.('ABS')" id="shell-tab-ABS" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-red-400 hover:bg-red-900/30">Ausentismos</button>
+                    </div>
                 </div>
+                
                 <button onclick="window.openProfilesPanel?.()" class="px-5 py-2.5 bg-red-800 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-3 shadow-lg shadow-red-900/20 active:scale-95">
                     <i class="fa-solid fa-users-viewfinder"></i>
                     <span>Asignar Personal</span>
@@ -128,18 +148,14 @@
         `,
         'Planeacion.html': `
             <div class="flex w-full h-full">
-                <!-- Espaciador fijo para coincidir con la columna de nombres (320px) -->
                 <div class="w-[320px] bg-slate-950 border-r border-slate-800 flex items-center px-8 shrink-0">
                     <div class="flex items-center gap-3">
                          <i class="fa-solid fa-calendar-days text-red-500 text-xs"></i>
                          <span class="text-[10px] font-black uppercase text-white tracking-[0.2em]">Planeación</span>
                     </div>
                 </div>
-                <!-- Contenedor de fechas que se sincronizará con el scroll de la tabla -->
                 <div id="ribbon-sync-header" class="flex-1 overflow-hidden flex items-center bg-slate-900">
-                    <div id="ribbon-date-row" class="flex h-full items-center">
-                        <!-- Las fechas se inyectan desde Planeacion.html -->
-                    </div>
+                    <div id="ribbon-date-row" class="flex h-full items-center"></div>
                 </div>
             </div>
         `,
@@ -171,6 +187,18 @@
                 </div>
             </div>
         `
+    };
+
+    window.updateShellTabUI = (activeTabId) => {
+        document.querySelectorAll('.shell-tab-v-btn').forEach(btn => {
+            if (btn.id === `shell-tab-${activeTabId}`) {
+                btn.className = "shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all bg-white text-slate-900 scale-105 shadow-md";
+            } else if (btn.id === 'shell-tab-ABS') {
+                btn.className = "shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-red-400 hover:bg-red-900/30";
+            } else {
+                btn.className = "shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white";
+            }
+        });
     };
 
     window.openProfilesPanel = () => {
@@ -208,9 +236,14 @@
         const ribbon = document.getElementById('ribbon-content');
         const path = `Apps/Componentes/RegAs_PP/${file}`;
         
+        // Inyectar ribbon primero
         ribbon.innerHTML = ribbonConfigs[file] || '<p class="text-white/20 text-[9px] uppercase font-black px-10">Módulo sin controles</p>';
-        document.querySelectorAll('.regas-tab-btn').forEach(b => { b.classList.remove('active', 'bg-slate-900', 'text-white'); b.classList.add('text-slate-400'); });
-        if (btn) { btn.classList.add('active', 'bg-slate-900', 'text-white'); btn.classList.remove('text-slate-400'); }
+        
+        // Actualizar estados visuales de las pestañas principales
+        document.querySelectorAll('.regas-tab-btn').forEach(b => { 
+            b.classList.remove('active'); 
+        });
+        if (btn) btn.classList.add('active');
 
         try {
             const response = await fetch(path);
@@ -274,17 +307,21 @@
         }
     };
 
+    // Inicialización automática del Shell
     (function initRegAsShell() {
-        const lastFile = localStorage.getItem('lastRegAsSubModule') || 'VistaDia.html';
+        // Forzar 'VistaDia.html' si no hay nada guardado, para cumplir con el requerimiento de carga por defecto
+        const defaultModule = 'VistaDia.html';
+        const lastFile = localStorage.getItem('lastRegAsSubModule') || defaultModule;
+        
+        // Pequeña pausa para asegurar que el DOM del Shell esté listo antes de inyectar el primer módulo
         setTimeout(() => {
-            const btn = document.getElementById(`tab-btn-${lastFile}`) || document.querySelector('.regas-tab-btn');
-            loadRegAsModule(lastFile, btn);
+            const targetBtn = document.getElementById(`tab-btn-${lastFile}`) || document.getElementById(`tab-btn-${defaultModule}`);
+            loadRegAsModule(lastFile, targetBtn);
         }, 50);
     })();
 </script>
 
 <style>
-    .regas-tab-btn.active { background-color: #0f172a; color: white; }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.8; cursor: pointer; }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }

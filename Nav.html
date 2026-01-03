@@ -1,163 +1,218 @@
-<!-- Contenedor principal de la navegación -->
-<div class="flex flex-col h-full bg-slate-50 select-none">
-    <div class="p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         
-        <!-- SECCIÓN DE APLICACIONES FIJAS -->
-        <section id="nav-apps-container">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-3">Módulos CIC</p>
-            <div id="apps-grid" class="grid grid-cols-3 gap-2">
-                <!-- Se genera vía JS -->
+        .app-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .app-btn.active {
+            background-color: white;
+            border-color: currentColor;
+            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
+        }
+
+        .submenu-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+        .submenu-container.active {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden border-r border-slate-200 select-none">
+
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-1">
+        
+        <!-- SECCIÓN DE APLICACIONES -->
+        <section id="apps-section">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Aplicaciones</p>
+            
+            <!-- Grid Principal (Siempre 3 columnas) -->
+            <div class="grid grid-cols-3 gap-2" id="main-grid">
+                <!-- Accesos -->
+                <button onclick="handleAppClick('accesos', this, 'text-indigo-600')" id="btn-accesos"
+                    class="app-btn flex flex-col items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-id-card-clip text-indigo-600 text-lg"></i>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-tighter text-indigo-900">Accesos</span>
+                </button>
+
+                <!-- Marbetes -->
+                <button onclick="handleAppClick('marbetes', this, 'text-emerald-600', 'Apps/Shells/Marbetes.html')" id="btn-marbetes"
+                    class="app-btn flex flex-col items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-tags text-emerald-600 text-lg"></i>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-tighter text-emerald-900">Marbetes</span>
+                </button>
+
+                <!-- Siniestros -->
+                <button onclick="handleAppClick('siniestros', this, 'text-rose-600')" id="btn-siniestros"
+                    class="app-btn flex flex-col items-center gap-2 p-3 bg-rose-50 border border-rose-100 rounded-2xl">
+                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg"></i>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-tighter text-rose-900">Siniestros</span>
+                </button>
+            </div>
+
+            <!-- Barra "Ver más" -->
+            <button onclick="toggleExtraApps()" id="more-apps-bar" class="w-full mt-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                <span id="more-apps-text" class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Ver más aplicaciones</span>
+                <i id="more-apps-icon" class="fa-solid fa-chevron-down text-[8px] text-slate-400"></i>
+            </button>
+
+            <!-- Grid Extra (Oculto, 3 columnas) -->
+            <div id="extra-grid" class="hidden grid grid-cols-3 gap-2 mt-2">
+                <button onclick="handleAppClick('esquema', this, 'text-slate-600', 'Apps/Esquema.html')" id="btn-esquema"
+                    class="app-btn flex flex-col items-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-layer-group text-slate-600 text-lg"></i>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-tighter text-slate-900">Esquema</span>
+                </button>
+            </div>
+
+            <!-- Contenedores de Submenús -->
+            <div id="sub-accesos" class="submenu-container bg-white rounded-2xl border border-indigo-100 p-3 shadow-sm relative">
+                <button onclick="closeCurrentSubmenu()" class="absolute top-2 right-2 text-slate-300 hover:text-red-800"><i class="fa-solid fa-xmark text-xs"></i></button>
+                <div class="space-y-1 pr-4">
+                    <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-2">Opciones de Acceso</p>
+                    <button onclick="navigate('Apps/Shells/RegAs_PP.html')" class="w-full text-left p-2.5 hover:bg-indigo-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div> Elementos P. Patrimonial
+                    </button>
+                    <button class="w-full text-left p-2.5 hover:bg-indigo-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> Prestadores de servicios
+                    </button>
+                    <button class="w-full text-left p-2.5 hover:bg-indigo-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> Consultores
+                    </button>
+                    <button class="w-full text-left p-2.5 hover:bg-indigo-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> Visitas
+                    </button>
+                </div>
+            </div>
+
+            <div id="sub-siniestros" class="submenu-container bg-white rounded-2xl border border-rose-100 p-3 shadow-sm relative">
+                <button onclick="closeCurrentSubmenu()" class="absolute top-2 right-2 text-slate-300 hover:text-red-800"><i class="fa-solid fa-xmark text-xs"></i></button>
+                <div class="space-y-1 pr-4">
+                    <p class="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-2">Gestión de Siniestros</p>
+                    <button onclick="navigate('Apps/Shells/HistorialReportes.html')" class="w-full text-left p-2.5 hover:bg-rose-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <i class="fa-solid fa-clock-rotate-left text-rose-400"></i> Historial de Reportes
+                    </button>
+                    <button onclick="navigate('Apps/Shells/RegSin.html')" class="w-full text-left p-2.5 hover:bg-rose-50 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-3 transition-all">
+                        <i class="fa-solid fa-plus text-rose-400"></i> Nuevo Siniestro
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- SECCIÓN DE BUSCADOR -->
-        <section id="nav-search-area" class="pt-4 border-t border-slate-200">
+        <!-- BUSCADOR -->
+        <section id="search-section" class="pt-1">
             <div class="relative group">
-                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-800 transition-colors text-sm"></i>
-                <input type="text" placeholder="Buscar..." class="w-full bg-white border border-slate-200 p-4 pl-12 rounded-2xl text-xs font-bold outline-none focus:border-red-800 shadow-sm transition-all placeholder:text-slate-300">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-800 transition-colors text-xs"></i>
+                <input type="text" placeholder="Buscar módulos..." 
+                    class="w-full bg-white border border-slate-200 p-3 pl-10 rounded-2xl text-[11px] font-bold outline-none focus:border-red-800 focus:ring-1 focus:ring-red-100 shadow-sm transition-all">
             </div>
         </section>
+
     </div>
 
-    <!-- SECCIÓN CONTEXTUAL -->
-    <section id="nav-module-tools" class="bg-white border-t border-slate-200 mt-auto shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.05)]">
-        <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-1.5 h-1.5 bg-red-800 rounded-full animate-pulse"></div>
-                <h4 id="module-tool-title" class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Módulo Activo</h4>
-            </div>
-            <i class="fa-solid fa-microchip text-[10px] text-slate-300"></i>
-        </div>
-        
-        <div id="module-tool-body" class="p-6 min-h-[180px]">
-            <div id="context-default" class="flex flex-col items-center justify-center opacity-30 py-10 text-center space-y-3">
-                <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-                    <i class="fa-solid fa-layer-group text-slate-400 text-lg"></i>
-                </div>
-                <p class="text-[8px] font-black uppercase tracking-widest leading-tight text-slate-500">Seleccione un módulo<br>para operar</p>
-            </div>
-        </div>
-    </section>
-</div>
+    <script>
+        let currentSubmenuId = null;
 
-<script>
-    (function() {
-        const appsList = [
-            { id: 'regas', label: 'RegAs', icon: 'fa-user-clock', color: 'blue' },
-            { id: 'marbetes', label: 'Marbetes', icon: 'fa-car', color: 'amber' },
-            { id: 'siniestros', label: 'Siniestros', icon: 'fa-triangle-exclamation', color: 'rose' }
-        ];
-
-        // PERSISTENCIA: Intentar recuperar el ID de la app previamente seleccionada
-        let selectedAppId = localStorage.getItem('lastSelectedAppId') || null;
-
-        function renderApps() {
-            const grid = document.getElementById('apps-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            appsList.forEach((app) => {
-                const isSelected = app.id === selectedAppId;
-                const btn = document.createElement('button');
-                let bgClass = isSelected ? 'border-red-800 ring-2 ring-red-800/10 bg-white shadow-lg z-10 scale-[1.02]' : 'border-white bg-white shadow-sm hover:shadow-md';
-                if (app.id === 'siniestros' && !isSelected) bgClass = 'bg-rose-600 border-rose-700 text-white shadow-sm hover:bg-rose-700';
-                btn.className = `flex flex-col items-center justify-center p-3 border rounded-2xl transition-all duration-300 group ${bgClass}`;
-                btn.onclick = () => selectApp(app.id);
-                const iconWrapper = document.createElement('div');
-                let iconColor = isSelected ? 'text-red-800' : 'text-slate-400';
-                let iconBg = isSelected ? 'bg-red-50' : 'bg-slate-50';
-                if (app.id === 'siniestros' && !isSelected) { iconBg = 'bg-white/20'; iconColor = 'text-white'; }
-                iconWrapper.className = `w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center ${iconColor} group-hover:scale-110 transition-all duration-300 mb-2 shadow-inner`;
-                iconWrapper.innerHTML = `<i class="fa-solid ${app.icon} text-sm"></i>`;
-                const span = document.createElement('span');
-                span.className = `text-[9px] font-black uppercase tracking-tighter text-center ${isSelected ? 'text-red-800' : (app.id === 'siniestros' ? 'text-white' : 'text-slate-500')}`;
-                span.innerText = app.label;
-                btn.appendChild(iconWrapper); btn.appendChild(span); grid.appendChild(btn);
-            });
-        }
-
-        function selectApp(id) {
-            selectedAppId = id;
-            // PERSISTENCIA: Guardar la selección en el almacenamiento local
-            localStorage.setItem('lastSelectedAppId', id);
+        function handleAppClick(appId, btn, activeColorClass, directPath = null) {
+            localStorage.setItem('activeAppModule', appId);
             
-            const app = appsList.find(a => a.id === id);
-            document.getElementById('module-tool-title').innerText = app.label;
-            renderApps();
-            updateModuleTools(app);
-        }
+            document.querySelectorAll('.app-btn').forEach(b => {
+                b.classList.remove('active', 'border-indigo-600', 'border-emerald-600', 'border-rose-600', 'border-slate-600');
+            });
+            btn.classList.add('active', activeColorClass.replace('text-', 'border-'));
 
-        function updateModuleTools(app) {
-            const bodyEl = document.getElementById('module-tool-body');
-            if (!bodyEl) return;
-
-            // Función auxiliar para generar botones de herramientas con navegación
-            const toolBtn = (icon, text, colorClass, file = null) => `
-                <button ${file ? `onclick="loadContent('${file}')"` : ''} class="w-full text-left p-3.5 bg-slate-50 border border-transparent rounded-xl text-[9px] font-black uppercase tracking-wide hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all flex items-center gap-3 group">
-                    <div class="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-100">
-                        <i class="fa-solid ${icon} ${colorClass} text-xs transition-transform group-hover:scale-110"></i>
-                    </div>
-                    <span class="text-slate-600 group-hover:text-red-800 transition-colors">${text}</span>
-                </button>
-            `;
-
-            if (app.id === 'regas') {
-                bodyEl.innerHTML = `
-                    <div class="space-y-2 animate-in">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-1 h-3 bg-blue-600 rounded-full"></div>
-                            <p class="text-[9px] font-black text-slate-800 uppercase tracking-widest">Registros RegAs</p>
-                        </div>
-                        ${toolBtn('fa-shield-halved', 'Protección Patrimonial', 'text-red-800', 'Apps/Shells/RegAs_PP.html')}
-                        ${toolBtn('fa-handshake', 'Prestadores', 'text-blue-600')}
-                        ${toolBtn('fa-user-tie', 'Consultores', 'text-amber-600')}
-                        ${toolBtn('fa-user-plus', 'Visitas Externas', 'text-emerald-600')}
-                    </div>
-                `;
-            } else if (app.id === 'marbetes') {
-                bodyEl.innerHTML = `
-                    <div class="space-y-2 animate-in">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-1 h-3 bg-amber-500 rounded-full"></div>
-                            <p class="text-[9px] font-black text-slate-800 uppercase tracking-widest">Gestión Marbetes</p>
-                        </div>
-                        ${toolBtn('fa-plus-circle', 'Emitir Nuevo Marbete', 'text-amber-500')}
-                        ${toolBtn('fa-pen-to-square', 'Actualizar Datos', 'text-slate-400')}
-                        ${toolBtn('fa-print', 'Impresión Masiva', 'text-blue-500')}
-                    </div>
-                `;
-            } else if (app.id === 'siniestros') {
-                bodyEl.innerHTML = `
-                    <div class="space-y-2 animate-in">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-1 h-3 bg-rose-600 rounded-full"></div>
-                            <p class="text-[9px] font-black text-slate-800 uppercase tracking-widest">Gestión Siniestros</p>
-                        </div>
-                        <button onclick="loadContent('Apps/Shells/RegSin.html')" class="w-full text-left p-3 bg-rose-50 border border-rose-100 rounded-xl text-[9px] font-black uppercase tracking-wide hover:bg-rose-600 hover:text-white transition-all flex items-center gap-3 group">
-                            <div class="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                                <i class="fa-solid fa-file-circle-exclamation text-rose-600 text-xs"></i>
-                            </div>
-                            <span>Registrar Siniestro</span>
-                        </button>
-                        ${toolBtn('fa-clock-rotate-left', 'Historial de Eventos', 'text-slate-500', 'Apps/Shells/HistorialReportes.html')}
-                        ${toolBtn('fa-chart-pie', 'Estadísticas Mensuales', 'text-slate-500')}
-                    </div>
-                `;
+            if (directPath) {
+                closeCurrentSubmenu();
+                navigate(directPath);
+            } else {
+                openSubmenu(`sub-${appId}`);
             }
         }
 
-        // Ejecución inicial para renderizar y restaurar estado si existe
-        renderApps();
-        if (selectedAppId) {
-            const lastApp = appsList.find(a => a.id === selectedAppId);
-            if (lastApp) {
-                document.getElementById('module-tool-title').innerText = lastApp.label;
-                updateModuleTools(lastApp);
+        function openSubmenu(id) {
+            const menu = document.getElementById(id);
+            if (!menu) return;
+
+            if (currentSubmenuId === id) {
+                closeCurrentSubmenu();
+                return;
+            }
+
+            closeCurrentSubmenu();
+            menu.classList.add('active');
+            currentSubmenuId = id;
+        }
+
+        function closeCurrentSubmenu() {
+            document.querySelectorAll('.submenu-container').forEach(m => m.classList.remove('active'));
+            currentSubmenuId = null;
+        }
+
+        function toggleExtraApps() {
+            const grid = document.getElementById('extra-grid');
+            const icon = document.getElementById('more-apps-icon');
+            const text = document.getElementById('more-apps-text');
+            
+            const isHidden = grid.classList.contains('hidden');
+            if (isHidden) {
+                grid.classList.remove('hidden');
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                text.innerText = "Menos aplicaciones";
+            } else {
+                grid.classList.add('hidden');
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                text.innerText = "Ver más aplicaciones";
             }
         }
-    })();
-</script>
 
-<style>
-    .animate-in { animation: enter 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-</style>
+        function navigate(path) {
+            if (window.parent && typeof window.parent.loadContent === 'function') {
+                window.parent.loadContent(path);
+            }
+        }
+
+        window.onload = () => {
+            const lastAppId = localStorage.getItem('activeAppModule');
+            if (lastAppId) {
+                const btn = document.getElementById(`btn-${lastAppId}`);
+                if (btn) {
+                    const colorMap = {
+                        'accesos': 'border-indigo-600',
+                        'marbetes': 'border-emerald-600',
+                        'siniestros': 'border-rose-600',
+                        'esquema': 'border-slate-600'
+                    };
+                    btn.classList.add('active', colorMap[lastAppId]);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
