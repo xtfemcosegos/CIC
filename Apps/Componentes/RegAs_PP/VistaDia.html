@@ -1,134 +1,148 @@
-<!-- Vista Operativa Diaria Optimizada - Con Lógica de Dobletes y Reasignación -->
-<div id="vista-dia-content" class="w-full px-2 space-y-4 animate-in fade-in duration-700 pb-10 pt-4 h-full flex flex-col overflow-hidden text-slate-900 relative">
+<!-- Vista Operativa Diaria - Versión Ultra-Adaptativa (Contenedor Dinámico) -->
+<div id="vista-dia-content" class="w-full px-2 sm:px-4 space-y-4 animate-in fade-in duration-700 pb-20 sm:pb-10 pt-4 h-full flex flex-col overflow-hidden text-slate-900 relative">
     
-    <!-- BOTÓN FLOTANTE: ASIGNAR PERSONAL (Abre Perfiles.html) -->
-    <button onclick="window.openPersonalPanel()" class="fixed bottom-6 right-6 z-[100] w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
-        <i class="fa-solid fa-user-plus text-xl"></i>
-        <span class="absolute right-full mr-4 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Asignar Personal</span>
+    <!-- BOTÓN FLOTANTE ADAPTATIVO -->
+    <button onclick="window.openPersonalPanel()" class="fixed bottom-6 right-6 z-[100] w-12 h-12 sm:w-14 sm:h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white">
+        <i class="fa-solid fa-user-plus text-lg sm:text-xl"></i>
+        <span class="hidden md:block absolute right-full mr-4 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Asignar Personal</span>
     </button>
 
     <!-- BLOQUE PRINCIPAL DE OPERACIÓN -->
-    <section id="duty-section" class="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 transition-all duration-300">
+    <section id="duty-section" class="bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 transition-all duration-300">
         
         <div class="flex-1 overflow-hidden relative flex flex-col">
             
             <!-- Pestaña Inicio Inteligente -->
-            <div id="col-I" class="hidden flex-col flex-1 overflow-y-auto custom-scrollbar p-6 gap-8 bg-slate-50/20">
-                <!-- Secciones dinámicas de entrada/salida -->
-                <div>
-                    <div class="flex items-center justify-between mb-4 px-2">
+            <div id="col-I" class="hidden flex-col flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 gap-6 sm:gap-8 bg-slate-50/20">
+                
+                <!-- Sección: Retardos Detectados (Oculta por petición) -->
+                <div id="section-retardos" class="space-y-4 hidden">
+                    <div class="flex items-center justify-between px-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <i class="fa-solid fa-person-walking-arrow-right text-sm"></i>
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg animate-pulse">
+                                <i class="fa-solid fa-clock-rotate-left text-xs sm:text-sm"></i>
                             </div>
                             <div>
-                                <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Personal para Salida</h3>
-                                <p id="label-date-exit" class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Analizando...</p>
+                                <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Retardos Detectados</h3>
+                                <p class="text-[7px] sm:text-[8px] font-bold text-red-600 uppercase tracking-tighter">Acción requerida inmediata</p>
                             </div>
                         </div>
                     </div>
-                    <div id="container-pending-exit" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                    <div id="container-retardos" class="dynamic-grid gap-3 sm:gap-4">
+                        <!-- Dinámico -->
+                    </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-4 px-2 pt-6 border-t border-slate-100">
+                <!-- Sección: Salidas Pendientes -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between px-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <i class="fa-solid fa-id-badge text-sm"></i>
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-person-walking-arrow-right text-xs sm:text-sm"></i>
                             </div>
                             <div>
-                                <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Personal para Entrada</h3>
-                                <p id="label-current-shift" class="text-[8px] font-bold text-blue-600 uppercase tracking-tighter">Analizando horario...</p>
+                                <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Personal en Turno</h3>
+                                <p id="label-date-exit" class="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Monitoreo de asistencia activa</p>
                             </div>
                         </div>
                     </div>
-                    <div id="container-incoming" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                    <div id="container-pending-exit" class="dynamic-grid gap-3 sm:gap-4">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+
+                <!-- Sección: Próximos a Ingresar -->
+                <div id="section-incoming" class="space-y-4">
+                    <div class="flex items-center justify-between px-2 pt-6 border-t border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-id-badge text-xs sm:text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Próximos Ingresos</h3>
+                                <p id="label-current-shift" class="text-[7px] sm:text-[8px] font-bold text-blue-600 uppercase tracking-tighter">Analizando horario...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="container-incoming" class="dynamic-grid gap-3 sm:gap-4">
+                        <!-- Dinámico -->
+                    </div>
                 </div>
             </div>
 
-            <!-- Columna Matutino -->
+            <!-- Columnas de Turnos (M, V, N) -->
             <div id="col-M" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'M')" class="hidden flex-col shift-column w-full h-full overflow-hidden">
-                <div class="sticky top-0 z-20 bg-amber-50/90 backdrop-blur-md px-6 py-4 border-b border-amber-100/50 flex items-center justify-between">
+                <div class="sticky top-0 z-20 bg-amber-50/90 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-amber-100/50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                            <i class="fa-solid fa-sun text-sm"></i>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-sun text-xs sm:text-sm"></i>
                         </div>
-                        <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Distribución Matutina</h3>
+                        <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Matutino</h3>
                     </div>
-                    <button onclick="toggleClosedStations()" class="text-[10px] font-bold text-slate-500 uppercase hover:text-amber-700 flex items-center gap-2">
-                        <i id="toggle-icon-M" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-M">Cerrados</span>
+                    <button onclick="toggleClosedStations()" class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase hover:text-amber-700 flex items-center gap-2">
+                        <i id="toggle-icon-M" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-M" class="hidden sm:inline">Ver Cerrados</span>
                     </button>
                 </div>
-                <div id="list-M" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
+                <div id="list-M" class="p-3 sm:p-4 dynamic-grid gap-3 sm:gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
             </div>
 
-            <!-- Columna Vespertino -->
             <div id="col-V" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'V')" class="hidden flex-col shift-column w-full h-full overflow-hidden">
-                <div class="sticky top-0 z-20 bg-blue-50/90 backdrop-blur-md px-6 py-4 border-b border-blue-100/50 flex items-center justify-between">
+                <div class="sticky top-0 z-20 bg-blue-50/90 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-blue-100/50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white shadow-lg">
-                            <i class="fa-solid fa-cloud-sun text-sm"></i>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-cloud-sun text-xs sm:text-sm"></i>
                         </div>
-                        <h3 class="text-[11px] font-black uppercase tracking-widest text-slate-900">Distribución Vespertina</h3>
+                        <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Vespertino</h3>
                     </div>
-                    <button onclick="toggleClosedStations()" class="text-[10px] font-bold text-slate-500 uppercase hover:text-blue-700 flex items-center gap-2">
-                        <i id="toggle-icon-V" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-V">Cerrados</span>
+                    <button onclick="toggleClosedStations()" class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase hover:text-blue-700 flex items-center gap-2">
+                        <i id="toggle-icon-V" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-V" class="hidden sm:inline">Ver Cerrados</span>
                     </button>
                 </div>
-                <div id="list-V" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
+                <div id="list-V" class="p-3 sm:p-4 dynamic-grid gap-3 sm:gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
             </div>
 
-            <!-- Columna Nocturno -->
             <div id="col-N" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'N')" class="hidden flex-col shift-column w-full h-full overflow-hidden">
-                <div class="sticky top-0 z-20 bg-slate-900 px-6 py-4 border-b border-white/5 flex items-center justify-between text-white">
+                <div class="sticky top-0 z-20 bg-slate-900 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5 flex items-center justify-between text-white">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg">
-                            <i class="fa-solid fa-moon text-sm"></i>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-moon text-xs sm:text-sm"></i>
                         </div>
-                        <h3 class="text-[11px] font-black uppercase tracking-widest text-white">Distribución Nocturna</h3>
+                        <h3 class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white">Nocturno</h3>
                     </div>
-                    <button onclick="toggleClosedStations()" class="text-[10px] font-bold text-slate-400 uppercase hover:text-white flex items-center gap-2">
-                        <i id="toggle-icon-N" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-N">Cerrados</span>
+                    <button onclick="toggleClosedStations()" class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase hover:text-white flex items-center gap-2">
+                        <i id="toggle-icon-N" class="fa-solid fa-eye-slash"></i> <span id="toggle-text-N" class="hidden sm:inline">Ver Cerrados</span>
                     </button>
                 </div>
-                <div id="list-N" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
+                <div id="list-N" class="p-3 sm:p-4 dynamic-grid gap-3 sm:gap-4 overflow-y-auto flex-1 custom-scrollbar"></div>
             </div>
 
             <!-- Pestaña Ausentismos -->
             <div id="col-ABS" class="hidden flex-col w-full h-full overflow-hidden">
-                <div class="sticky top-0 z-20 bg-red-50/90 backdrop-blur-md px-6 py-4 border-b border-red-100 flex items-center justify-between">
+                <div class="sticky top-0 z-20 bg-red-50/90 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-red-100 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-red-800 rounded-xl flex items-center justify-center text-white shadow-lg">
-                            <i class="fa-solid fa-user-slash text-sm"></i>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-red-800 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid fa-user-slash text-xs sm:text-sm"></i>
                         </div>
                         <div>
-                            <h3 class="text-[11px] font-black text-red-900 uppercase tracking-widest leading-none">Gestión de Inasistencias</h3>
-                            <p class="text-[8px] font-bold text-red-800/60 uppercase tracking-tighter mt-1">Haga scroll para ver más motivos</p>
+                            <h3 class="text-[10px] sm:text-[11px] font-black text-red-900 uppercase tracking-widest leading-none">Inasistencias</h3>
+                            <p class="text-[7px] sm:text-[8px] font-bold text-red-800/60 uppercase tracking-tighter mt-1 hidden sm:block">Control de ausentismos</p>
                         </div>
                     </div>
                 </div>
-                <div id="container-ABS" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'ABS')" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/30"></div>
+                <div id="container-ABS" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'ABS')" class="p-3 sm:p-4 dynamic-grid gap-3 sm:gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/30"></div>
             </div>
 
         </div>
     </section>
 </div>
 
-<!-- MENÚ CONTEXTUAL PRINCIPAL -->
-<div id="custom-context-menu" class="fixed z-[300] hidden min-w-[260px] bg-white rounded-[2rem] shadow-2xl border border-slate-200 py-4 animate-in fade-in zoom-in-95 duration-100 text-slate-900 overflow-visible">
+<!-- MENÚ CONTEXTUAL -->
+<div id="custom-context-menu" class="fixed z-[300] hidden min-w-[260px] bg-white rounded-[2rem] shadow-2xl border border-slate-200 py-4 animate-in fade-in zoom-in-95 duration-100 text-slate-900">
     <div class="px-6 py-3 border-b border-slate-100 mb-2">
-        <p id="menu-user-name" class="text-[11px] font-black uppercase text-slate-900 truncate">Personal</p>
-        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Seleccionar Destino</p>
+        <p id="menu-user-name" class="text-[10px] sm:text-[11px] font-black uppercase text-slate-900 truncate">Personal</p>
+        <p class="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest">Seleccionar Destino</p>
     </div>
-    <div id="stations-menu-list" class="max-h-[165px] overflow-y-auto custom-scrollbar px-3 space-y-1"></div>
-</div>
-
-<!-- SUBMENÚ FLOTANTE -->
-<div id="custom-submenu" class="fixed z-[310] hidden min-w-[200px] bg-white rounded-[2rem] shadow-2xl border border-slate-200 py-4 animate-in fade-in zoom-in-95 duration-150 text-slate-900">
-    <div class="px-6 py-2 border-b border-slate-50 mb-2">
-        <p id="submenu-title" class="text-[9px] font-black uppercase text-red-800 tracking-widest truncate">Destino</p>
-    </div>
-    <div id="submenu-list" class="px-3 space-y-1"></div>
+    <div id="stations-menu-list" class="max-h-[220px] overflow-y-auto custom-scrollbar px-3 space-y-1"></div>
 </div>
 
 <script type="module">
@@ -164,26 +178,17 @@
     const defaultAbsenceReasons = ['Descanso', 'Permiso', 'Vacaciones', 'Falta', 'Incapacidad', 'Suspensión'];
     const getDateInput = () => document.getElementById('view-date-input') || document.getElementById('global-report-date');
 
-    function calculateDuration(start, end) {
-        if (!start || !end) return 0;
-        const [h1, m1] = start.split(':').map(Number);
-        const [h2, m2] = end.split(':').map(Number);
-        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-        if (diff < 0) diff += 24 * 60; 
-        return Math.round((diff / 60) * 10) / 10;
-    }
-
-    function calculateExitTime(start, hours) {
-        if (!start) return "";
-        const [h, m] = start.split(':').map(Number);
-        let totalMinutes = h * 60 + m + (parseFloat(hours) * 60);
-        let finalH = Math.floor((totalMinutes / 60) % 24);
-        let finalM = Math.floor(totalMinutes % 60);
-        return `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`;
+    function isPastTime(timeStr) {
+        if(!timeStr) return false;
+        const now = new Date();
+        const [h, m] = timeStr.split(':').map(Number);
+        const scheduled = new Date();
+        scheduled.setHours(h, m, 0, 0);
+        return now > scheduled;
     }
 
     function getCalculatedTimes(shift, stationName) {
-        const isCC = stationName.toLowerCase().includes('centro de control');
+        const isCC = stationName && stationName.toLowerCase().includes('centro de control');
         if (shift === 'M') return isCC ? { in: '06:00', out: '14:00' } : { in: '07:00', out: '15:00' };
         if (shift === 'V') return isCC ? { in: '14:00', out: '22:00' } : { in: '13:00', out: '21:00' };
         if (shift === 'N') return isCC ? { in: '22:00', out: '06:00' } : { in: '21:00', out: '05:00' };
@@ -230,12 +235,6 @@
         }));
     }
 
-    window.allowDrop = (ev) => ev.preventDefault();
-    window.handleDragStartInternal = (ev, email) => {
-        ev.dataTransfer.setData("text/elementEmail", email);
-        ev.dataTransfer.effectAllowed = "move";
-    };
-
     window.handleDrop = async (ev, shift, absenceReason = null) => {
         ev.preventDefault();
         const email = ev.dataTransfer.getData("text/elementEmail") || ev.dataTransfer.getData("text/plain");
@@ -244,7 +243,6 @@
         const user = allUsers.find(u => u.email === email);
         if(!user) return;
         
-        // Determinar estación destino
         const stationEl = ev.target.closest('.station-container');
         const stationName = shift === 'ABS' ? 'General' : (stationEl ? stationEl.dataset.stationName : 'General');
         
@@ -263,7 +261,9 @@
             isConfirmed: false,
             assignedEntry: times.in, 
             assignedExit: times.out,
-            shiftDuration: isAbs ? 0 : 8
+            shiftDuration: isAbs ? 0 : 8,
+            realEntry: null, // Limpiar timestamps previos al reasignar
+            realExit: null
         };
         if(isAbs) newShiftObj.reason = absenceReason || 'Falta';
 
@@ -273,26 +273,18 @@
         if (snap.exists()) {
             const data = snap.data();
             let shifts = data.shifts || [];
-            
-            // LÓGICA DE ACTUALIZACIÓN / DOBLETE
             if (isAbs) {
-                // "si tiene una asignacion previa y se arrastra a ausentismo se borra la asignacion previa"
                 shifts = [newShiftObj]; 
             } else {
-                // "Si tiene ausentismo y se le arrastra a un turno se borra el ausentismo"
-                // "si tiene turno y se le asigna el mismo turno en otra caseta se modifica la caseta" (filtramos turno actual)
-                // "si se le asigna en otro turno se asigna como doblete" (el filtro de shift permite conservar otros turnos)
                 shifts = shifts.filter(s => s.type !== 'ausentismo' && s.shift !== shift);
                 shifts.push(newShiftObj);
             }
-            
             await setDoc(docRef, { email, name, date, shifts, updatedAt: serverTimestamp(), type: shifts[0].type, reason: shifts.find(s => s.type === 'ausentismo')?.reason || null });
         } else {
             await setDoc(docRef, { email, name, date, shifts: [newShiftObj], type: newShiftObj.type, reason: newShiftObj.reason || null, updatedAt: serverTimestamp() });
         }
     }
 
-    // --- RENDERIZADO Y OTROS MÉTODOS ---
     function renderAll() {
         const dateInput = getDateInput();
         if(!dateInput?.value) return;
@@ -317,7 +309,7 @@
             const sortedStations = [...currentStations].sort((a, b) => (a.order || 0) - (b.order || 0));
             sortedStations.forEach(st => {
                 const isClosed = dailyStationStatusMap[`${shift}_${st.id}`] || false;
-                const elements = flattenedElements.filter(el => el.shift === shift && el.station === st.name && el.type !== 'ausentismo');
+                const elements = flattenedElements.filter(el => el.shift === shift && el.station === st.name && el.type === 'asignacion');
                 if (!isClosed || showClosedStations) listContainer.appendChild(createStationSection(st, shift, elements, isClosed));
             });
         });
@@ -341,52 +333,129 @@
         const yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
         const dateYesterday = yesterday.toISOString().split('T')[0];
 
-        let exitShift = null, entryShift = null, exitDate = dateToday, entryDate = dateToday, exitLabel = "", entryLabel = "";
+        const pendingExits = [];
+        const retardos = [];
+        const incomingUsers = [];
+        const todayEmailsWithAnyActivity = new Set();
 
-        if (hour >= 0 && hour < 8) {
-            exitShift = 'N'; exitDate = dateYesterday; entryShift = 'M';
-            exitLabel = `Personal en Turno (Nocturno)`; entryLabel = `Matutino (Próximo)`;
-        } else if (hour >= 8 && hour < 16) {
-            exitShift = 'M'; entryShift = 'V';
-            exitLabel = "Personal en Turno (Matutino)"; entryLabel = "Vespertino (Próximo)";
-        } else if (hour >= 16 && hour < 22) {
-            exitShift = 'V'; entryShift = 'N';
-            exitLabel = "Personal en Turno (Vespertino)"; entryLabel = "Nocturno (Próximo)";
-        } else { 
-            exitShift = 'N'; entryShift = null;
-            exitLabel = "Personal en Turno (Nocturno)"; entryLabel = "Sin ingresos próximos";
-        }
+        // 1. Identificar quién tiene ACTIVIDAD hoy (entrada marcada)
+        rawAssignments.filter(a => a.date === dateToday).forEach(doc => {
+            (doc.shifts || []).forEach(s => { 
+                if(s.realEntry) todayEmailsWithAnyActivity.add(doc.email); 
+            });
+        });
 
-        const lE = document.getElementById('label-date-exit');
-        const lI = document.getElementById('label-current-shift');
-        if (lE) lE.innerText = exitLabel;
-        if (lI) lI.innerText = entryLabel;
-
-        const pendingExits = [], incomingUsers = [];
-        
-        // MODIFICACIÓN: Buscamos en todas las asignaciones del día y del día anterior (por nocturnos)
-        // a cualquier elemento que tenga entrada pero NO tenga salida.
+        // 2. Filtrado Exhaustivo
         rawAssignments.filter(a => a.date === dateToday || a.date === dateYesterday).forEach(doc => {
             (doc.shifts || []).forEach((s, idx) => {
-                // Condición: tiene entrada real pero no salida real
-                if (s.realEntry && !s.realExit && s.type !== 'ausentismo') {
-                    pendingExits.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx });
+                const isYesterday = doc.date === dateYesterday;
+                const isToday = doc.date === dateToday;
+
+                // REGLA DE EXCLUSIÓN: Ignorar si ya se completó el ciclo (E y S)
+                if (s.realEntry && s.realExit) return;
+
+                // SALIDAS PENDIENTES
+                if (s.type === 'asignacion' && s.realEntry && !s.realExit) {
+                    if (!isYesterday || !todayEmailsWithAnyActivity.has(doc.email)) {
+                        pendingExits.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx, isOverdue: isYesterday });
+                    }
+                } 
+                
+                // EVALUACIÓN DE HOY (Retardos y Próximos)
+                else if (isToday && s.type === 'asignacion' && !s.realEntry && !s.realExit) {
+                    if (isPastTime(s.assignedEntry)) {
+                        // RETARDO: Ya pasó la hora, no tiene entrada y no ha marcado ninguna entrada hoy
+                        if(!todayEmailsWithAnyActivity.has(doc.email)) {
+                            retardos.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx, isLate: true });
+                        }
+                    } else {
+                        // PRÓXIMO: Aún no llega la hora, no ha marcado entrada
+                        let targetShift = null;
+                        if (hour < 8) targetShift = 'M';
+                        else if (hour < 16) targetShift = 'V';
+                        else if (hour < 23) targetShift = 'N';
+
+                        if (s.shift === targetShift && !todayEmailsWithAnyActivity.has(doc.email)) {
+                            incomingUsers.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx });
+                        }
+                    }
                 }
             });
         });
 
-        if (entryShift) {
-            rawAssignments.filter(a => a.date === entryDate).forEach(doc => {
-                (doc.shifts || []).forEach((s, idx) => {
-                    if (s.shift === entryShift && !s.realEntry && s.type !== 'ausentismo') incomingUsers.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx });
-                });
-            });
-        }
-
+        // Renderizado UI
         const exitCont = document.getElementById('container-pending-exit');
         const inCont = document.getElementById('container-incoming');
-        if(exitCont) exitCont.innerHTML = pendingExits.length > 0 ? pendingExits.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin personal en servicio</div>`;
-        if(inCont) inCont.innerHTML = incomingUsers.length > 0 ? incomingUsers.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin ingresos pendientes</div>`;
+        const retCont = document.getElementById('container-retardos');
+        const retSection = document.getElementById('section-retardos');
+        const inSection = document.getElementById('section-incoming');
+        const entryLabel = document.getElementById('label-current-shift');
+
+        if(retCont) {
+            retCont.innerHTML = retardos.map(el => renderElementRow(el)).join('');
+            // Mantenemos la sección de retardos siempre oculta por petición del usuario
+            retSection.classList.add('hidden'); 
+        }
+
+        if(exitCont) exitCont.innerHTML = pendingExits.length > 0 ? pendingExits.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-8 text-center opacity-30 text-[9px] font-black uppercase border-2 border-dashed border-slate-100 rounded-[1.5rem]">Sin personal activo</div>`;
+        
+        if(inCont) {
+            let currentLabelShift = hour < 8 ? 'M' : hour < 16 ? 'V' : hour < 23 ? 'N' : null;
+            if (!currentLabelShift) {
+                inSection.classList.add('hidden');
+            } else {
+                inSection.classList.remove('hidden');
+                entryLabel.innerText = `Turno actual: ${currentLabelShift === 'M' ? 'Matutino' : currentLabelShift === 'V' ? 'Vespertino' : 'Nocturno'}`;
+                inCont.innerHTML = incomingUsers.length > 0 ? incomingUsers.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-8 text-center opacity-30 text-[9px] font-black uppercase border-2 border-dashed border-slate-100 rounded-[1.5rem]">Sin ingresos próximos</div>`;
+            }
+        }
+    }
+
+    function renderElementRow(el, isAbsence = false) {
+        const u = allUsers.find(usr => usr.email === el.email) || { photo: null, name: 'S/N' };
+        const entry = el.assignedEntry || '--:--';
+        const exit = el.assignedExit || '--:--';
+        const duration = el.shiftDuration || 8;
+        
+        let statusBadge = "";
+        if (el.isLate) statusBadge = `<span class="px-2 py-0.5 bg-red-50 text-red-600 text-[7px] font-black uppercase rounded-full border border-red-100 animate-pulse">Retardo</span>`;
+        else if (el.isOverdue) statusBadge = `<span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[7px] font-black uppercase rounded-full border border-amber-100">De Ayer</span>`;
+
+        const timeInfo = isAbsence ? '' : `<div class="flex items-center gap-2 mb-0.5"><p class="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter text-slate-400">${entry} a ${exit} · ${duration}H</p>${statusBadge}</div>`;
+        
+        let actionBtns = "";
+        if (!isAbsence) {
+            if (!el.realEntry) {
+                actionBtns = `
+                    <div class="flex flex-col gap-1">
+                        <button title="Registrar Entrada" onclick="event.stopPropagation(); window.quickRegisterEntry('${el.docId}', ${el.shiftIndex || 0})" class="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-emerald-500 text-white rounded-xl sm:rounded-2xl shadow-lg active:scale-90 transition-all shrink-0"><i class="fa-solid fa-right-to-bracket text-xs sm:text-sm"></i></button>
+                        ${el.isLate ? `<button title="Marcar Falta" onclick="event.stopPropagation(); window.markAsFalta('${el.docId}', ${el.shiftIndex || 0})" class="w-9 h-6 sm:w-11 sm:h-7 flex items-center justify-center bg-red-100 text-red-600 rounded-lg text-[8px] font-black uppercase active:scale-90 transition-all">Falta</button>` : ''}
+                    </div>`;
+            } else if (!el.realExit) {
+                actionBtns = `<button title="Registrar Salida" onclick="event.stopPropagation(); window.quickRegisterExit('${el.docId}', ${el.shiftIndex || 0})" class="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-red-800 text-white rounded-xl sm:rounded-2xl shadow-lg active:scale-90 transition-all shrink-0"><i class="fa-solid fa-right-from-bracket text-xs sm:text-sm"></i></button>`;
+            } else {
+                actionBtns = `<div class="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-slate-100 text-slate-400 rounded-xl sm:rounded-2xl shrink-0"><i class="fa-solid fa-check text-xs sm:text-sm"></i></div>`;
+            }
+        }
+        
+        return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-3 sm:p-4 bg-white rounded-[1.2rem] sm:rounded-[1.8rem] border border-slate-100 hover:border-blue-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md ${el.isLate ? 'border-l-4 border-l-red-500' : (el.isOverdue ? 'border-l-4 border-l-amber-400' : '')}" onclick="window.viewElementDetail('${el.email}')">
+            <div class="flex items-center justify-between gap-2 overflow-hidden">
+                <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden border-2 border-slate-50 bg-slate-50 shrink-0 shadow-inner">
+                        ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-lg"></i></div>`}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] sm:text-[13px] font-black uppercase tracking-tight text-slate-800 truncate leading-tight mb-0.5">${u.name}</p>
+                        ${timeInfo}
+                        <p class="text-[7px] font-bold text-slate-300 uppercase truncate">${el.station || 'Sin Destino'}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                    ${actionBtns}
+                    <button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-1.5 sm:p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-base sm:text-lg"></i></button>
+                </div>
+            </div>
+        </div>`;
     }
 
     function createAbsenceSection(reason, elements) {
@@ -395,13 +464,13 @@
         const isExpanded = expandedGroups.has(groupId);
         const displayElements = isExpanded ? elements : elements.slice(0, 3);
         const hiddenCount = elements.length - 3;
-        section.className = "bg-white p-5 rounded-[2.5rem] border border-slate-200/60 shadow-sm space-y-4 flex flex-col transition-all hover:border-red-100";
+        section.className = "bg-white p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-200/60 shadow-sm space-y-3 sm:space-y-4 flex flex-col transition-all hover:border-red-100";
         section.ondragover = (e) => allowDrop(e);
         section.ondrop = (e) => handleDrop(e, 'ABS', reason);
         const reasonColors = { 'falta': 'bg-red-500', 'vacaciones': 'bg-emerald-500', 'descanso': 'bg-slate-400', 'incapacidad': 'bg-blue-500', 'suspensión': 'bg-orange-500', 'permiso': 'bg-purple-500' };
         const colorClass = reasonColors[reason.toLowerCase()] || 'bg-slate-300';
-        let showMoreBtn = elements.length > 3 ? `<button onclick="window.toggleGroupExpansion('${groupId}')" class="w-full py-2.5 mt-1 bg-slate-50 hover:bg-slate-100 text-[9px] font-black uppercase text-slate-500 rounded-xl transition-all border border-slate-100 active:scale-95">${isExpanded ? 'Mostrar menos' : `<i class="fa-solid fa-plus mr-1"></i> Ver ${hiddenCount} más`}</button>` : "";
-        section.innerHTML = `<div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-1 text-slate-900"><div class="flex items-center gap-2"><div class="w-2.5 h-5 ${colorClass} rounded-full"></div><h4 class="text-[11px] font-black uppercase tracking-widest text-slate-600">${reason}</h4></div><span class="text-[13px] font-black text-slate-300">${elements.length}</span></div><div class="space-y-3 flex-1">${elements.length > 0 ? displayElements.map(el => renderElementRow(el, true)).join('') : `<div class="py-8 text-center border-2 border-dashed border-slate-50 rounded-[2rem] text-[9px] font-bold text-slate-200 uppercase tracking-widest">Sin registros</div>`}${showMoreBtn}</div>`;
+        let showMoreBtn = elements.length > 3 ? `<button onclick="window.toggleGroupExpansion('${groupId}')" class="w-full py-2 bg-slate-50 hover:bg-slate-100 text-[8px] sm:text-[9px] font-black uppercase text-slate-500 rounded-xl transition-all border border-slate-100">${isExpanded ? 'Ver menos' : `+${hiddenCount} más`}</button>` : "";
+        section.innerHTML = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-1 text-slate-900"><div class="flex items-center gap-2"><div class="w-2 h-4 ${colorClass} rounded-full"></div><h4 class="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-600">${reason}</h4></div><span class="text-xs font-black text-slate-300">${elements.length}</span></div><div class="space-y-2 flex-1">${elements.length > 0 ? displayElements.map(el => renderElementRow(el, true)).join('') : `<div class="py-6 text-center border-2 border-dashed border-slate-50 rounded-[1.5rem] text-[8px] font-bold text-slate-200 uppercase">Vacío</div>`}${showMoreBtn}</div>`;
         return section;
     }
 
@@ -411,50 +480,24 @@
         const isExpanded = expandedGroups.has(groupId);
         const displayElements = isExpanded ? elements : elements.slice(0, 3);
         const hiddenCount = elements.length - 3;
-        section.className = `station-container space-y-4 ${isClosed ? 'opacity-40 grayscale bg-slate-50 p-5 rounded-[2rem] border border-dashed border-slate-200' : ''}`;
+        section.className = `station-container space-y-3 ${isClosed ? 'opacity-40 grayscale bg-slate-50 p-4 rounded-[1.5rem] border border-dashed border-slate-200' : ''}`;
         section.dataset.stationName = st.name;
-        let showMoreBtn = elements.length > 3 && !isClosed ? `<button onclick="window.toggleGroupExpansion('${groupId}')" class="w-full py-2.5 mt-1 bg-slate-50 hover:bg-slate-100 text-[9px] font-black uppercase text-slate-400 rounded-xl transition-all border border-slate-100 active:scale-95">${isExpanded ? 'Mostrar menos' : `<i class="fa-solid fa-plus mr-1"></i> Ver ${hiddenCount} más`}</button>` : "";
-        section.innerHTML = `<div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 text-slate-900"><h4 class="text-[11px] font-black uppercase tracking-widest ${isClosed ? 'text-slate-400' : 'text-slate-500'}">${st.name}</h4><div class="flex items-center gap-3">${isClosed ? `<button onclick="window.toggleStationStatus('${st.id}', '${shift}', true)" class="text-[10px] font-black text-emerald-600 uppercase">Abrir</button>` : `<button onclick="window.toggleStationStatus('${st.id}', '${shift}', false)" class="text-[10px] font-black text-slate-300 hover:text-red-800 uppercase">Cerrar</button>`}<span class="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[11px] font-black text-slate-400">${elements.length}</span></div></div><div class="space-y-3">${elements.length > 0 ? displayElements.map(el => renderElementRow(el)).join('') : (isClosed ? '' : `<div class="py-6 border-2 border-dashed border-slate-50 flex items-center justify-center text-[10px] font-bold text-slate-300 uppercase tracking-widest rounded-[2rem]">Sin personal</div>`)}${showMoreBtn}</div>`;
+        let showMoreBtn = elements.length > 3 && !isClosed ? `<button onclick="window.toggleGroupExpansion('${groupId}')" class="w-full py-2 bg-slate-50 hover:bg-slate-100 text-[8px] sm:text-[9px] font-black uppercase text-slate-400 rounded-xl transition-all border border-slate-100 shadow-sm">${isExpanded ? 'Ver menos' : `+${hiddenCount} más`}</button>` : "";
+        section.innerHTML = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2"><h4 class="text-[9px] sm:text-[11px] font-black uppercase tracking-widest ${isClosed ? 'text-slate-400' : 'text-slate-500'} truncate mr-2">${st.name}</h4><div class="flex items-center gap-2 sm:gap-3 shrink-0">${isClosed ? `<button onclick="window.toggleStationStatus('${st.id}', '${shift}', true)" class="text-[8px] sm:text-[10px] font-black text-emerald-600 uppercase">Abrir</button>` : `<button onclick="window.toggleStationStatus('${st.id}', '${shift}', false)" class="text-[8px] sm:text-[10px] font-black text-slate-300 hover:text-red-800 uppercase">Cerrar</button>`}<span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[9px] sm:text-[11px] font-black text-slate-400">${elements.length}</span></div></div><div class="space-y-2">${elements.length > 0 ? displayElements.map(el => renderElementRow(el)).join('') : (isClosed ? '' : `<div class="py-4 border-2 border-dashed border-slate-50 flex items-center justify-center text-[8px] sm:text-[10px] font-bold text-slate-300 uppercase rounded-[1.5rem]">Vacío</div>`)}${showMoreBtn}</div>`;
         return section;
     }
 
-    function renderElementRow(el, isAbsence = false) {
-        const u = allUsers.find(usr => usr.email === el.email) || { photo: null, name: 'S/N' };
-        const isConfirmed = el.isConfirmed === true;
-        const entry = el.assignedEntry || '--:--';
-        const exit = el.assignedExit || '--:--';
-        const duration = el.shiftDuration || (el.assignedEntry && el.assignedExit ? calculateDuration(entry, exit) : 8);
-        const timeInfo = isAbsence ? '' : `<p class="text-[10px] font-black uppercase tracking-tighter text-slate-400">${entry} a ${exit} · ${duration}H</p>`;
-        
-        let actionBtn = !isAbsence ? (!el.realEntry ? `<button onclick="event.stopPropagation(); window.quickRegisterEntry('${el.docId}', ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-emerald-500 text-white rounded-2xl shadow-xl active:scale-90"><i class="fa-solid fa-right-to-bracket text-sm"></i></button>` : (!el.realExit ? `<button onclick="event.stopPropagation(); window.quickRegisterExit('${el.docId}', ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-red-800 text-white rounded-2xl shadow-xl active:scale-90"><i class="fa-solid fa-right-from-bracket text-sm"></i></button>` : `<div class="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-400 rounded-2xl"><i class="fa-solid fa-check text-sm"></i></div>`)) : "";
-        
-        return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-4 bg-white rounded-[1.8rem] border border-slate-100 hover:border-red-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md" onclick="window.viewElementDetail('${el.email}')">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4 min-w-0">
-                    <div class="w-14 h-14 rounded-[1.2rem] overflow-hidden border-2 border-slate-50 relative bg-slate-50 shrink-0 shadow-inner">
-                        ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-200"><i class="fa-solid fa-user text-xl"></i></div>`}
-                    </div>
-                    <div class="truncate">
-                        <p class="text-[13px] font-black uppercase tracking-tight text-slate-800 truncate leading-tight mb-1.5">${u.name}</p>
-                        ${timeInfo}
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    ${actionBtn}
-                    <button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-lg"></i></button>
-                </div>
-            </div>
-        </div>`;
-    }
-
-    // --- ACCIONES DE FIREBASE ---
+    // --- FIREBASE OPS ---
     window.quickRegisterEntry = async (id, idx) => {
         const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-            const data = snap.data(); data.shifts[idx].realEntry = t;
-            await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            const data = snap.data(); 
+            if(data.shifts[idx]) {
+                data.shifts[idx].realEntry = t;
+                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
         }
     };
 
@@ -463,28 +506,52 @@
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-            const data = snap.data(); data.shifts[idx].realExit = t;
-            await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            const data = snap.data(); 
+            if(data.shifts[idx]) {
+                data.shifts[idx].realExit = t;
+                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
+        }
+    };
+
+    window.markAsFalta = async (docId, idx) => {
+        if(!confirm("¿Marcar este elemento como FALTA?")) return;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', docId);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            const data = snap.data();
+            if(data.shifts[idx]) {
+                data.shifts[idx].type = 'ausentismo';
+                data.shifts[idx].reason = 'Falta';
+                data.shifts[idx].realEntry = null;
+                data.shifts[idx].realExit = null;
+                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+            }
         }
     };
 
     window.deleteAssignment = async (id) => { if (confirm("¿Eliminar asignación completa del día?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id)); };
-
     window.toggleStationStatus = async (stationId, shift, currentStatus) => {
         const dInp = getDateInput(); if(!dInp) return;
         const statusRef = doc(db, 'artifacts', appId, 'public', 'data', 'station_daily_status', `${dInp.value}_${shift}_${stationId}`);
         await setDoc(statusRef, { stationId, date: dInp.value, shift, isClosed: !currentStatus, updatedAt: serverTimestamp() });
     };
 
+    window.allowDrop = (ev) => ev.preventDefault();
+    window.handleDragStartInternal = (ev, email) => {
+        ev.dataTransfer.setData("text/elementEmail", email);
+        ev.dataTransfer.effectAllowed = "move";
+    };
+
     window.toggleClosedStations = () => { showClosedStations = !showClosedStations; renderAll(); };
+    window.toggleGroupExpansion = (groupId) => { if (expandedGroups.has(groupId)) expandedGroups.delete(groupId); else expandedGroups.add(groupId); renderAll(); };
 
-    window.openPersonalPanel = () => { if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Perfiles.html', 'Asignar Fuerza'); };
-
+    window.openPersonalPanel = () => { if(window.parent && typeof window.parent.loadRightContent === 'function') window.parent.loadRightContent('Apps/Perfiles.html', 'Asignar Fuerza'); };
     window.viewElementDetail = (email) => {
         const dInp = getDateInput();
         window.selectedUserEmail = email;
         window.selectedOperationDate = dInp ? dInp.value : '';
-        if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html', 'Detalle de Jornada');
+        if(window.parent && typeof window.parent.loadRightContent === 'function') window.parent.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html', 'Detalle de Jornada');
     };
 
     window.switchActiveTab = (shift) => {
@@ -495,78 +562,66 @@
             if (s === shift) { col.classList.remove('hidden'); col.classList.add('flex'); } 
             else { col.classList.add('hidden'); col.classList.remove('flex'); }
         });
-        if (typeof window.updateShellTabUI === 'function') window.updateShellTabUI(shift);
         renderAll();
     };
 
     window.handleElementRightClick = (e, email, name) => {
+        if (window.innerWidth < 1024) return;
         e.preventDefault(); e.stopPropagation();
         selectedElementForMenu = { email, name };
         const menu = document.getElementById('custom-context-menu');
-        const sub = document.getElementById('custom-submenu');
         document.getElementById('menu-user-name').innerText = name;
-        sub.classList.add('hidden');
         let top = e.clientY, left = e.clientX;
         if (top + 300 > window.innerHeight) top = window.innerHeight - 310;
-        if (left + 500 > window.innerWidth) left = window.innerWidth - 510;
+        if (left + 260 > window.innerWidth) left = window.innerWidth - 270;
         menu.style.top = `${top}px`; menu.style.left = `${left}px`;
         menu.classList.remove('hidden');
         renderContextMenuList();
-        const closeAll = (ev) => { 
-            if(!menu.contains(ev.target) && !sub.contains(ev.target)) { 
-                menu.classList.add('hidden'); sub.classList.add('hidden');
-                document.removeEventListener('click', closeAll); 
-            } 
-        };
+        const closeAll = (ev) => { if(!menu.contains(ev.target)) { menu.classList.add('hidden'); document.removeEventListener('click', closeAll); } };
         setTimeout(() => document.addEventListener('click', closeAll), 10);
     };
 
     function renderContextMenuList() {
-        const stationsList = document.getElementById('stations-menu-list');
-        const sortedStations = [...currentStations].sort((a,b) => (a.order||0) - (b.order||0));
-        let html = sortedStations.map(st => `<button onclick="window.openSubMenu(event, '${st.id}', 'station', '${st.name}')" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-red-800 hover:text-white transition-all group/item shadow-sm"><span class="truncate">${st.name}</span><i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i></button>`).join('');
-        html += `<button onclick="window.openSubMenu(event, 'abs_list', 'abs', 'Ausentismos')" class="w-full flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-800 hover:bg-red-800 hover:text-white transition-all group/item mt-2 shadow-sm"><span>Ausentismos</span><i class="fa-solid fa-chevron-right text-[8px] opacity-30 group-hover/item:opacity-100"></i></button>`;
-        stationsList.innerHTML = html;
+        const list = document.getElementById('stations-menu-list');
+        const sorted = [...currentStations].sort((a,b) => (a.order||0) - (b.order||0));
+        list.innerHTML = sorted.map(st => `
+            <div class="group/item py-1">
+                <p class="px-3 py-1 text-[7px] font-black uppercase text-slate-300 truncate">${st.name}</p>
+                <div class="flex gap-1 px-1">
+                    <button onclick="directAssign('${st.name}', 'M')" class="flex-1 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all">M</button>
+                    <button onclick="directAssign('${st.name}', 'V')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-all">V</button>
+                    <button onclick="directAssign('${st.name}', 'N')" class="flex-1 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[8px] font-black uppercase hover:bg-slate-900 hover:text-white transition-all">N</button>
+                </div>
+            </div>`).join('');
+        list.innerHTML += `<div class="pt-2 mt-2 border-t border-slate-50"><p class="px-3 py-1 text-[7px] font-black uppercase text-red-300">Ausencia</p><div class="grid grid-cols-2 gap-1 px-1">${defaultAbsenceReasons.slice(0,4).map(r => `<button onclick="directAbsence('${r}')" class="py-1.5 bg-red-50 text-red-800 rounded-lg text-[8px] font-black uppercase hover:bg-red-800 hover:text-white transition-all">${r}</button>`).join('')}</div></div>`;
     }
 
-    window.openSubMenu = (e, id, type, title) => {
-        e.stopPropagation();
-        const sub = document.getElementById('custom-submenu'), menu = document.getElementById('custom-context-menu'), list = document.getElementById('submenu-list');
-        document.getElementById('submenu-title').innerText = title;
-        const menuRect = menu.getBoundingClientRect();
-        let subLeft = menuRect.right + 10, subTop = menuRect.top;
-        if (subLeft + 200 > window.innerWidth) subLeft = menuRect.left - 210;
-        if (subTop + 300 > window.innerHeight) subTop = window.innerHeight - 310;
-        sub.style.left = `${subLeft}px`; sub.style.top = `${subTop}px`;
-        sub.classList.remove('hidden');
-        if (type === 'station') {
-            list.innerHTML = `<button onclick="window.directContextAssign('${title}', 'M')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-all shadow-sm">Matutino (M)</button><button onclick="window.directContextAssign('${title}', 'V')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all shadow-sm">Vespertino (V)</button><button onclick="window.directContextAssign('${title}', 'N')" class="w-full text-left px-4 py-3 text-[10px] font-black uppercase rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm">Nocturno (N)</button>`;
-        } else {
-            list.innerHTML = defaultAbsenceReasons.map(r => `<button onclick="window.directContextAbsence('${r}')" class="w-full text-left px-4 py-2.5 text-[9px] font-black uppercase rounded-xl bg-red-50 text-red-800 hover:bg-red-800 hover:text-white transition-all shadow-sm">${r}</button>`).join('');
-        }
+    window.directAssign = async (st, shift) => {
+        const { email, name } = selectedElementForMenu, dateInp = getDateInput();
+        if(email && dateInp) await performAssignmentUpdate(email, name, dateInp.value, shift, st);
+        document.getElementById('custom-context-menu').classList.add('hidden');
     };
 
-    window.directContextAssign = async (stationName, shift) => {
-        const { email, name } = selectedElementForMenu, dateInput = getDateInput();
-        if(!email || !dateInput) return;
-        await performAssignmentUpdate(email, name, dateInput.value, shift, stationName);
+    window.directAbsence = async (reason) => {
+        const { email, name } = selectedElementForMenu, dateInp = getDateInput();
+        if(email && dateInp) await performAssignmentUpdate(email, name, dateInp.value, 'ABS', 'General', reason);
         document.getElementById('custom-context-menu').classList.add('hidden');
-        document.getElementById('custom-submenu').classList.add('hidden');
-    };
-
-    window.directContextAbsence = async (reason) => {
-        const { email, name } = selectedElementForMenu, dateInput = getDateInput();
-        if(!email || !dateInput) return;
-        await performAssignmentUpdate(email, name, dateInput.value, 'ABS', 'General', reason);
-        document.getElementById('custom-context-menu').classList.add('hidden');
-        document.getElementById('custom-submenu').classList.add('hidden');
     };
 
 </script>
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .shift-column { height: 100%; }
-    [draggable="true"] { -webkit-user-drag: element; }
+    .dynamic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    }
+    @media (max-width: 768px) {
+        .cursor-grab { cursor: pointer; }
+        .dynamic-grid {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+        }
+    }
 </style>

@@ -34,17 +34,30 @@
         #app-main { height: calc(100vh - 4rem - 2rem); }
         .avatar-group:hover #avatar-dropdown { display: block; }
 
+        /* Estilos mejorados para Paneles Responsivos */
+        .side-panel {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         @media (max-width: 768px) {
             .mobile-panel {
                 position: fixed;
                 top: 0;
                 bottom: 0;
-                z-index: 100;
-                width: 100% !important;
-                box-shadow: none;
+                z-index: 150;
+                width: 85% !important; /* No ocupa el 100% para dejar ver el fondo */
+                max-width: 320px;
+                box-shadow: 20px 0 50px rgba(0,0,0,0.1);
             }
-            #left-panel { left: 0; }
-            #right-panel { right: 0; }
+            #left-panel { left: 0; transform: translateX(-100%); }
+            #right-panel { right: 0; transform: translateX(100%); width: 90% !important; max-width: 400px; }
+            
+            #left-panel.active { transform: translateX(0); }
+            #right-panel.active { transform: translateX(0); }
+        }
+
+        #panel-overlay {
+            transition: opacity 0.3s ease;
         }
 
         /* Clase para ocultar módulos cargados en segundo plano (Keep-Alive) */
@@ -55,12 +68,14 @@
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
 
+    <!-- OVERLAY PARA MÓVILES -->
+    <div id="panel-overlay" onclick="closeAllPanels()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[140] opacity-0 pointer-events-none transition-opacity"></div>
+
     <!-- PANTALLA DE INICIO DE SESIÓN -->
     <div id="login-screen" class="p-6">
         <div class="w-full max-w-md space-y-12 text-center">
             <div class="space-y-4">
                 <div class="inline-block p-6 bg-slate-50 rounded-[3rem] shadow-sm border border-slate-100 mb-2">
-                    <!-- Logo CIC - Ruta corregida -->
                     <img src="Multimedia/Logo.png" alt="Logo CIC" class="h-16 w-auto object-contain mx-auto" onerror="this.src='https://via.placeholder.com/150?text=CIC'">
                 </div>
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
@@ -91,26 +106,24 @@
 
     <!-- ENCABEZADO -->
     <header id="app-header" class="hidden h-16 bg-white/95 backdrop-blur-md border-b border-gray-200 flex-shrink-0 z-50 px-4 flex items-center justify-between shadow-sm">
-        <div class="flex items-center gap-2 md:gap-4 w-1/3 md:w-1/4">
+        <div class="flex items-center gap-2 md:gap-4 w-1/4">
             <button id="toggle-left-btn" onclick="toggleLeftPanel()" class="p-2 text-slate-500 hover:text-red-800 hover:bg-slate-50 rounded-xl transition-all">
                 <i data-lucide="menu" class="w-5 h-5"></i>
             </button>
-            <!-- Logo CIC Header - Ruta corregida -->
-            <div class="flex items-center h-8 md:h-10 overflow-hidden cursor-pointer" onclick="loadContent('home.html')">
+            <div class="flex items-center h-8 md:h-10 overflow-hidden cursor-pointer shrink-0" onclick="loadContent('home.html')">
                 <img src="Multimedia/Logo.png" alt="Logo CIC" class="object-contain h-full" onerror="this.outerHTML='<div class=\'bg-slate-900 text-white px-3 py-1 rounded-lg font-black text-[10px] md:text-sm cursor-pointer tracking-tighter\'>CIC</div>'">
             </div>
         </div>
 
-        <div class="flex-1 text-center">
-            <h1 class="text-xs md:text-xl font-black text-slate-900 tracking-tighter uppercase flex items-center justify-center gap-2">
-                <span class="text-red-800 hidden md:inline">●</span>
-                <span class="truncate">Protección Patrimonial</span>
+        <div class="flex-1 text-center px-2">
+            <h1 class="text-sm sm:text-base md:text-xl font-black text-slate-900 tracking-tighter uppercase flex items-center justify-center gap-2">
+                <span class="text-red-800 hidden sm:inline">●</span>
+                <span class="truncate max-w-[120px] sm:max-w-none">Protección Patrimonial</span>
             </h1>
         </div>
 
-        <div class="w-1/3 md:w-1/4 flex justify-end items-center gap-1 md:gap-2">
-            <!-- Botón de Usuarios reducido solo a icono -->
-            <button id="admin-nav-btn" onclick="loadContent('adminUser.html')" class="hidden items-center justify-center w-10 h-10 text-slate-500 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all group" title="Administrar Usuarios">
+        <div class="w-1/4 flex justify-end items-center gap-1 md:gap-2">
+            <button id="admin-nav-btn" onclick="loadContent('adminUser.html')" class="hidden items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-slate-500 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all group" title="Administrar Usuarios">
                 <i data-lucide="users" class="w-5 h-5"></i>
             </button>
             
@@ -124,7 +137,7 @@
                     </div>
                 </div>
                 
-                <div id="avatar-dropdown" class="hidden absolute right-0 top-[100%] w-56 md:w-60 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] shadow-2xl py-2 z-50 overflow-hidden">
+                <div id="avatar-dropdown" class="hidden absolute right-0 top-[100%] w-48 sm:w-56 md:w-60 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] shadow-2xl py-2 z-50 overflow-hidden">
                     <div id="user-info-box" class="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
                         <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Sesión Activa</p>
                         <p id="user-display-name" class="text-[11px] font-black text-slate-900 truncate uppercase">Cargando...</p>
@@ -144,8 +157,7 @@
 
     <!-- ÁREA DE CONTENIDO -->
     <main id="app-main" class="hidden flex flex-1 overflow-hidden relative">
-        <aside id="left-panel" class="hidden md:flex mobile-panel flex-col w-72 min-w-[18rem] bg-slate-50 border-r border-slate-200 h-full overflow-hidden transition-all duration-300">
-            <!-- Iframe para Nav.html - Ruta corregida -->
+        <aside id="left-panel" class="side-panel hidden md:flex mobile-panel flex-col w-72 min-w-[18rem] bg-slate-50 border-r border-slate-200 h-full overflow-hidden">
             <iframe src="Nav.html" frameborder="0" class="w-full h-full"></iframe>
         </aside>
 
@@ -155,7 +167,7 @@
         </section>
 
         <!-- PANEL DERECHO DINÁMICO -->
-        <aside id="right-panel" class="hidden mobile-panel flex-col md:w-[30%] min-w-[300px] bg-white border-l border-slate-200 shadow-2xl md:shadow-none h-full overflow-hidden transition-all duration-300">
+        <aside id="right-panel" class="side-panel hidden mobile-panel flex-col md:w-[30%] min-w-[300px] bg-white border-l border-slate-200 shadow-2xl md:shadow-none h-full overflow-hidden">
             <div class="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                 <h3 id="right-panel-title" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Detalles</h3>
                 <button onclick="toggleRightPanel(false)" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-800 hover:bg-red-50 transition-all">
@@ -339,25 +351,24 @@
             localStorage.setItem('lastLoadedModule', file);
             const container = document.getElementById('central-content');
             
+            // Cerrar paneles en móvil al navegar
+            if (window.innerWidth <= 768) closeAllPanels();
+
             // Ocultar todos los módulos cargados anteriormente sin eliminarlos del DOM
             loadedModules.forEach(div => div.classList.add('hidden-module'));
 
             if (loadedModules.has(file)) {
-                // Si el módulo ya fue cargado, simplemente lo mostramos para mantener su estado
                 loadedModules.get(file).classList.remove('hidden-module');
                 window.dispatchEvent(new CustomEvent('moduleShow', { detail: { file } }));
             } else {
-                // Si es la primera vez que se llama, lo descargamos y creamos su contenedor único
                 try {
                     const response = await fetch(file);
                     if (response.ok) {
                         const html = await response.text();
                         const moduleDiv = document.createElement('div');
-                        // Generar ID único basado en la ruta para evitar colisiones
                         moduleDiv.id = `module-${file.replace(/\//g, '-').replace('.', '-')}`;
                         moduleDiv.className = "module-container w-full h-full";
                         
-                        // Inyectar HTML procesando los scripts
                         moduleDiv.appendChild(document.createRange().createContextualFragment(html));
                         container.appendChild(moduleDiv);
                         loadedModules.set(file, moduleDiv);
@@ -369,7 +380,7 @@
             }
         };
 
-        // --- SIDE PANEL CONTROLS ---
+        // --- BRIDGE PARA VISTA DÍA ---
         window.loadRightContent = (path, title = "Detalles") => {
             const iframe = document.getElementById('right-panel-iframe');
             const titleEl = document.getElementById('right-panel-title');
@@ -417,16 +428,55 @@
 
         window.toggleLeftPanel = (show) => {
             const lp = document.getElementById('left-panel');
-            if (show === undefined) show = lp.classList.contains('hidden');
-            if (show) { lp.classList.remove('hidden'); lp.classList.add('flex'); window.toggleRightPanel(false); }
-            else { lp.classList.add('hidden'); lp.classList.remove('flex'); }
+            const overlay = document.getElementById('panel-overlay');
+            
+            if (show === undefined) show = !lp.classList.contains('active') && lp.classList.contains('hidden');
+            
+            if (show) { 
+                lp.classList.remove('hidden'); 
+                lp.classList.add('flex', 'active'); 
+                if (window.innerWidth <= 768) {
+                    overlay.classList.add('opacity-100', 'pointer-events-auto');
+                    window.toggleRightPanel(false); 
+                }
+            } else { 
+                lp.classList.remove('active');
+                if (window.innerWidth > 768) lp.classList.add('hidden');
+                else setTimeout(() => lp.classList.add('hidden'), 300);
+                
+                if (!document.getElementById('right-panel').classList.contains('active')) {
+                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                }
+            }
         };
 
         window.toggleRightPanel = (show) => {
             const rp = document.getElementById('right-panel');
-            if (show === undefined) show = rp.classList.contains('hidden');
-            if (show) { rp.classList.remove('hidden'); rp.classList.add('flex'); window.toggleLeftPanel(false); }
-            else { rp.classList.add('hidden'); rp.classList.remove('flex'); }
+            const overlay = document.getElementById('panel-overlay');
+
+            if (show === undefined) show = !rp.classList.contains('active') && rp.classList.contains('hidden');
+            
+            if (show) { 
+                rp.classList.remove('hidden'); 
+                rp.classList.add('flex', 'active'); 
+                if (window.innerWidth <= 768) {
+                    overlay.classList.add('opacity-100', 'pointer-events-auto');
+                    window.toggleLeftPanel(false); 
+                }
+            } else { 
+                rp.classList.remove('active');
+                if (window.innerWidth > 768) rp.classList.add('hidden');
+                else setTimeout(() => rp.classList.add('hidden'), 300);
+
+                if (!document.getElementById('left-panel').classList.contains('active')) {
+                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                }
+            }
+        };
+
+        window.closeAllPanels = () => {
+            window.toggleLeftPanel(false);
+            window.toggleRightPanel(false);
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -436,7 +486,6 @@
                 const hasLocal = CacheManager.init();
                 await syncDatabase(!hasLocal);
                 updateHeaderUI();
-                // Iniciar con home.html por defecto
                 loadContent(localStorage.getItem('lastLoadedModule') || 'home.html');
             } else {
                 ['app-header', 'app-main', 'app-footer'].forEach(id => document.getElementById(id).classList.add('hidden'));

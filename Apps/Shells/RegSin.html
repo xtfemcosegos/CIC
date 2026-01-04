@@ -1,58 +1,18 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Siniestros - CIC</title>
+<div id="reg-sin-container" class="h-full w-full overflow-y-auto custom-scrollbar bg-slate-50 flex flex-col">
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        
-        :root { --brand-red: #720000; }
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; 
-            color: #1e293b;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        /* Mejora del Placeholder */
-        .editor-content:focus:before,
-        .editor-content:not(:empty):before {
-            display: none;
-        }
-
         .editor-content:empty:before {
             content: attr(placeholder);
             color: #94a3b8;
             pointer-events: none;
             display: block;
         }
-
         .form-card {
             background: white;
             border-radius: 2.5rem;
             border: 1px solid #f1f5f9;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
         }
-
-        .input-group label {
-            font-size: 10px;
-            font-weight: 900;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 6px;
-            display: block;
-        }
-
         .standard-input {
             width: 100%;
             padding: 12px 16px;
@@ -62,15 +22,14 @@
             font-size: 14px;
             font-weight: 500;
             transition: all 0.2s ease;
-        }
-
-        .standard-input:focus {
             outline: none;
-            border-color: var(--brand-red);
+            color: #1e293b;
+        }
+        .standard-input:focus {
+            border-color: #720000;
             background-color: white;
             box-shadow: 0 0 0 4px rgba(114, 0, 0, 0.05);
         }
-
         .ribbon-toolbar {
             background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
@@ -80,7 +39,6 @@
             gap: 4px;
             align-items: center;
         }
-
         .toolbar-group {
             display: flex;
             align-items: center;
@@ -88,9 +46,7 @@
             padding: 2px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
-            margin-right: 2px;
         }
-
         .toolbar-btn {
             width: 34px;
             height: 34px;
@@ -101,399 +57,305 @@
             color: #475569;
             transition: all 0.1s;
             font-size: 13px;
-            background: transparent;
-            border: none;
             cursor: pointer;
             position: relative;
         }
-
-        .toolbar-btn:hover {
-            background-color: #f1f5f9;
-            color: var(--brand-red);
-        }
-
-        .toolbar-btn.active {
-            background-color: #fee2e2;
-            color: var(--brand-red);
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        /* Menú de Colores - Corregido display para usar con clases de Tailwind */
+        .toolbar-btn:hover { background-color: #f1f5f9; color: #720000; }
+        .toolbar-btn.active { background-color: #fee2e2; color: #720000; }
+        
         .color-palette-container {
             padding: 12px;
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
             position: absolute;
             z-index: 1000;
             top: 110%;
             left: 0;
-            width: 220px;
+            width: 240px;
         }
-
-        .color-row {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
+        .color-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .color-swatch { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .color-swatch:hover { transform: scale(1.2); z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .color-indicator-bar { 
+            position: absolute; 
+            bottom: 4px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 18px; 
+            height: 3px; 
+            border-radius: 1px; 
+            background: #000; 
         }
-
-        .color-label {
-            font-size: 7px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #94a3b8;
-            letter-spacing: 0.05em;
-            margin-bottom: 2px;
-            margin-top: 4px;
-        }
-
-        .color-swatch {
-            width: 22px;
-            height: 22px;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 1px solid rgba(0,0,0,0.1);
-            transition: all 0.1s ease;
-        }
-
-        .color-swatch:hover {
-            transform: scale(1.2);
-            box-shadow: 0 0 0 2px white, 0 0 0 3.5px rgba(0,0,0,0.15);
-            z-index: 10;
-        }
-
-        .color-indicator-bar {
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 4px;
-            border-radius: 1px;
-            background: #000;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .editor-content {
-            min-height: 350px;
-            padding: 2rem;
-            outline: none;
-            font-size: 15px;
-            line-height: 1.7;
-            color: #1e293b;
-            background: white;
-        }
-
-        #search-results {
-            max-height: 250px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            margin-top: 4px;
-            background: white;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            position: absolute;
-            width: 100%;
-            z-index: 100;
-        }
-
-        .result-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .result-item:hover { background-color: #fff1f1; }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+        
+        .editor-content { min-height: 350px; padding: 2rem; outline: none; font-size: 15px; line-height: 1.7; color: #1e293b; background: white; }
+        #search-results { max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 1rem; margin-top: 4px; background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); position: absolute; width: 100%; z-index: 100; }
+        .result-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
+        .result-item:hover, .result-item.focused { background-color: #fff1f1; border-left: 4px solid #720000; padding-left: 12px; }
     </style>
-</head>
-<body class="min-h-screen p-4 md:p-10 text-slate-900">
 
-    <!-- OVERLAY DE CARGA -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[2000] flex flex-col justify-center items-center transition-opacity duration-500">
-        <div class="w-12 h-12 border-4 border-slate-100 border-t-red-800 rounded-full animate-spin mb-4 text-red-800"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400" id="loadingText">Sincronizando Sistema...</p>
+    <!-- OVERLAY DE CARGA LOCAL -->
+    <div id="loadingOverlaySin" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[2000] flex flex-col justify-center items-center transition-opacity duration-500">
+        <div class="w-12 h-12 border-4 border-slate-100 border-t-red-800 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sincronizando Módulo...</p>
     </div>
 
-    <div class="max-w-4xl mx-auto">
-        
+    <div class="max-w-4xl mx-auto w-full p-4 md:p-10 space-y-10">
         <!-- CABECERA -->
-        <header class="mb-10 flex items-center justify-between gap-4 text-slate-900">
+        <header class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-red-800 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-900/20">
-                    <i class="fa-solid fa-triangle-exclamation text-xl text-white"></i>
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none text-slate-900">Registro de Siniestros</h1>
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Registro de Siniestros</h1>
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Protocolo centralizado CIC</p>
                 </div>
             </div>
-            <div id="clock" class="text-[10px] font-black text-slate-300 uppercase tracking-widest">00:00:00</div>
+            <div id="clockSin" class="text-[10px] font-black text-slate-300 uppercase tracking-widest">00:00:00</div>
         </header>
 
-        <!-- FORMULARIO PRINCIPAL -->
-        <main class="animate-slide-up">
-            <form id="formSiniestros" class="form-card overflow-hidden">
-                <div class="p-8 md:p-12">
+        <!-- FORMULARIO -->
+        <main class="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <form id="formSiniestros" class="form-card overflow-hidden" autocomplete="off">
+                <div class="p-6 md:p-12 space-y-10" id="formUI">
                     
-                    <div id="formUI" class="space-y-10">
-                        
-                        <!-- PASO 1: UBICACIÓN -->
-                        <div class="space-y-6">
-                            <div class="flex items-center gap-4">
-                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full text-red-800">Paso 1</span>
-                                <div class="h-px bg-slate-100 flex-1"></div>
-                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ubicación del Evento</h3>
-                            </div>
+                    <!-- PASO 1: UBICACIÓN -->
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 1</span>
+                            <div class="h-px bg-slate-100 flex-1"></div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ubicación</h3>
+                        </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="input-group text-slate-900">
-                                    <label>🏢 Negocio</label>
-                                    <select id="Negocio" class="standard-input text-slate-900" required>
-                                        <option value="">Seleccione</option>
-                                        <option value="Club de Futbol Monterrey">Club de Futbol Monterrey</option>
-                                        <option value="Femsa">Femsa</option>
-                                        <option value="Oficinas de servicio Oxxo" selected>Oficinas de servicio Oxxo</option>
-                                        <option value="Otras">Otras</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label>📍 Plaza / Oficina</label>
-                                    <select id="Plaza" class="standard-input text-slate-900" required>
-                                        <option value="">Seleccione</option>
-                                        <option value="Oficina de servicio (OS)" selected>Oficina de servicio (OS)</option>
-                                        <option value="Otras">Otras</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="input-group">
-                                <label>🏗️ Edificio / Sede</label>
-                                <select id="Edificio" class="standard-input text-slate-900" required>
-                                    <option value="">Seleccione</option>
-                                    <option value="Almacén Dr. Mora">Almacén Dr. Mora</option>
-                                    <option value="Almacén Luis Mora">Almacén Luis Mora</option>
-                                    <option value="Anexo OS">Anexo OS</option>
-                                    <option value="Cash Center">Cash Center</option>
-                                    <option value="Corporativo Femsa">Corporativo Femsa</option>
-                                    <option value="Crisoles">Crisoles</option>
-                                    <option value="Edison" selected>Edison</option>
-                                    <option value="Fundadores">Fundadores</option>
-                                    <option value="Lucas Alemán">Lucas Alemán</option>
-                                    <option value="Michelena">Michelena</option>
-                                    <option value="Patio 4">Patio 4</option>
-                                    <option value="Proyectos culturales">Proyectos culturales</option>
-                                    <option value="Simón Bolivar">Simón Bolivar</option>
-                                    <option value="Xpertal">Xpertal</option>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">🏢 Negocio</label>
+                                <select id="Negocio" class="standard-input" required>
+                                    <option value="Oficinas de servicio Oxxo" selected>Oficinas de servicio Oxxo</option>
+                                    <option value="Club de Futbol Monterrey">Club de Futbol Monterrey</option>
+                                    <option value="Femsa">Femsa</option>
+                                    <option value="Otras">Otras</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <!-- PASO 2: CLASIFICACIÓN -->
-                        <div class="space-y-6">
-                            <div class="flex items-center gap-4">
-                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full text-red-800">Paso 2</span>
-                                <div class="h-px bg-slate-100 flex-1"></div>
-                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Tipo de Incidente</h3>
-                            </div>
-
-                            <div class="space-y-4 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
-                                <div class="input-group relative text-slate-900">
-                                    <label>🔍 Buscar Subtipo de Siniestro</label>
-                                    <input type="text" id="subtipoSearch" class="standard-input text-slate-900" placeholder="Escriba para filtrar incidentes...">
-                                    <div id="search-results" class="hidden custom-scrollbar"></div>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-900">
-                                    <div class="input-group text-slate-900">
-                                        <label>⚠️ Categoría Detectada</label>
-                                        <input type="text" id="TipoSiniestroDisplay" class="standard-input bg-white/80 text-slate-500 font-bold uppercase" readonly placeholder="-">
-                                        <input type="hidden" id="TipoSiniestro" required>
-                                    </div>
-                                    <div class="input-group">
-                                        <label>📌 Subtipo Confirmado</label>
-                                        <input type="text" id="SubtipoDisplay" class="standard-input bg-white/80 text-slate-500 font-bold uppercase" readonly placeholder="-">
-                                        <input type="hidden" id="Subtipo" required>
-                                    </div>
-                                </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">📍 Plaza / Oficina</label>
+                                <select id="Plaza" class="standard-input" required>
+                                    <option value="Oficina de servicio (OS)" selected>Oficina de servicio (OS)</option>
+                                    <option value="Otras">Otras</option>
+                                </select>
+                                <input type="text" id="PlazaOtro" class="standard-input mt-2 hidden" placeholder="Escriba el nombre de la plaza u oficina">
                             </div>
                         </div>
 
-                        <!-- PASO 3: DETALLES NARRATIVOS (EDITOR MEJORADO) -->
-                        <div class="space-y-6">
-                            <div class="flex items-center gap-4">
-                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full text-red-800">Paso 3</span>
-                                <div class="h-px bg-slate-100 flex-1"></div>
-                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Descripción y Afectados</h3>
-                            </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">🏗️ Edificio / Sede</label>
+                            <select id="Edificio" class="standard-input" required>
+                                <option value="Edison" selected>Edison</option>
+                                <option value="Almacén Dr. Mora">Almacén Dr. Mora</option>
+                                <option value="Anexo OS">Anexo OS</option>
+                                <option value="Corporativo Femsa">Corporativo Femsa</option>
+                                <option value="Fundadores">Fundadores</option>
+                                <option value="Michelena">Michelena</option>
+                                <option value="Xpertal">Xpertal</option>
+                            </select>
+                        </div>
+                    </div>
 
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📝 Descripción Narrativa</label>
-                                <div class="border border-slate-200 rounded-3xl overflow-hidden bg-white focus-within:ring-4 focus-within:ring-red-800/5 transition-all shadow-sm">
-                                    
-                                    <div class="ribbon-toolbar" id="editorToolbar">
-                                        <div class="toolbar-group">
-                                            <button type="button" class="toolbar-btn" data-command="bold" title="Negrita"><i class="fa-solid fa-bold"></i></button>
-                                            <button type="button" class="toolbar-btn" data-command="italic" title="Cursiva"><i class="fa-solid fa-italic"></i></button>
-                                            <button type="button" class="toolbar-btn" data-command="underline" title="Subrayado"><i class="fa-solid fa-underline"></i></button>
-                                        </div>
-                                        <div class="toolbar-group text-slate-900">
-                                            <button type="button" class="toolbar-btn text-slate-900 font-bold" data-command="fontSize" data-value="3" title="Texto Normal">A</button>
-                                            <button type="button" class="toolbar-btn text-slate-900 font-black" data-command="fontSize" data-value="5" title="Texto Grande"><b>A</b></button>
-                                            
-                                            <!-- Menú de Color Corregido -->
-                                            <div class="relative">
-                                                <button type="button" class="toolbar-btn" id="colorBtn" title="Color de Fuente">
-                                                    <i class="fa-solid fa-font"></i>
-                                                    <div id="currentColorIndicator" class="color-indicator-bar"></div>
-                                                </button>
-                                                <!-- Usamos flex-col de Tailwind para asegurar comportamiento de bloque interno -->
-                                                <div id="colorPalette" class="color-palette-container hidden flex flex-col gap-2">
-                                                    <!-- Se genera dinámicamente -->
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="toolbar-group">
-                                            <button type="button" class="toolbar-btn" data-command="justifyLeft"><i class="fa-solid fa-align-left"></i></button>
-                                            <button type="button" class="toolbar-btn" data-command="justifyCenter"><i class="fa-solid fa-align-center"></i></button>
-                                            <button type="button" class="toolbar-btn" data-command="insertUnorderedList"><i class="fa-solid fa-list-ul"></i></button>
-                                        </div>
-                                        <div class="toolbar-group">
-                                            <button type="button" class="toolbar-btn" data-command="removeFormat" title="Limpiar Formato"><i class="fa-solid fa-eraser"></i></button>
-                                        </div>
-                                    </div>
-
-                                    <div id="descripcion" contenteditable="true" class="editor-content custom-scrollbar overflow-y-auto text-slate-900" placeholder="Relate detalladamente los hechos ocurridos..."></div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-900">
-                                <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors text-slate-900">
-                                    <span class="text-xs font-bold text-slate-600 uppercase tracking-tighter text-slate-600">🚑 Lesionados en sitio</span>
-                                    <input type="checkbox" name="personasAfectadas[]" value="Lesionados" class="w-5 h-5 accent-red-800">
-                                </label>
-                                <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors text-slate-900">
-                                    <span class="text-xs font-bold text-slate-600 uppercase tracking-tighter text-slate-600">⚖️ Personas Detenidas</span>
-                                    <input type="checkbox" name="personasAfectadas[]" value="Detenidos" class="w-5 h-5 accent-red-800">
-                                </label>
-                            </div>
+                    <!-- PASO 2: CLASIFICACIÓN -->
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 2</span>
+                            <div class="h-px bg-slate-100 flex-1"></div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Tipo de Incidente</h3>
                         </div>
 
-                        <!-- PASO 4: RESPONSABLES -->
-                        <div class="space-y-6 text-slate-900">
-                            <div class="flex items-center gap-4 text-slate-900">
-                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full text-red-800">Paso 4</span>
-                                <div class="h-px bg-slate-100 flex-1"></div>
-                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest text-slate-300">Personal Responsable</h3>
+                        <div class="space-y-4 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
+                            <div class="relative space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">🔍 Buscar Subtipo</label>
+                                <input type="text" id="subtipoSearch" class="standard-input" placeholder="Escriba para filtrar incidentes..." autocomplete="off">
+                                <div id="search-results" class="hidden custom-scrollbar"></div>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-900">
-                                <div class="input-group">
-                                    <label>👤 Nombre de quien reporta</label>
-                                    <input type="text" id="reporta" class="standard-input text-slate-900" placeholder="Nombre completo" required>
-                                </div>
-                                <div class="input-group">
-                                    <label>🧑‍💼 Realiza el reporte (CCO)</label>
-                                    <select id="realiza" class="standard-input text-slate-900 text-slate-900" required>
-                                        <option value="">Seleccione Operador</option>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">⚠️ Categoría</label>
+                                    <select id="TipoSiniestroSelect" class="standard-input font-bold uppercase" required>
+                                        <option value="">Seleccione Tipo</option>
                                     </select>
-                                    <input type="text" id="realizaOtro" class="standard-input mt-2 hidden text-slate-900" placeholder="Escriba el nombre completo del operador">
+                                    <input type="hidden" id="TipoSiniestro" required>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">📌 Subtipo</label>
+                                    <select id="SubtipoSelect" class="standard-input font-bold uppercase" required>
+                                        <option value="">Seleccione Subtipo</option>
+                                    </select>
+                                    <input type="hidden" id="Subtipo" required>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- PASO 5: NOTIFICACIONES -->
-                        <div class="space-y-6 text-slate-900">
-                            <div class="flex items-center gap-4 text-slate-900">
-                                <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full text-red-800">Paso 5</span>
-                                <div class="h-px bg-slate-100 flex-1"></div>
-                                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Canales de Notificación</h3>
-                            </div>
+                    <!-- PASO 3: NARRATIVA -->
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 3</span>
+                            <div class="h-px bg-slate-100 flex-1"></div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Descripción y Afectados</h3>
+                        </div>
 
-                            <div class="space-y-4">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">📨 Notificar adicionalmente a:</label>
-                                <div class="grid grid-cols-1 gap-2 text-slate-900">
-                                    <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors text-slate-900 text-slate-900">
-                                        <input type="checkbox" class="w-4 h-4 accent-red-800 text-red-800" name="correosExtra" value="jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com">
-                                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Seguridad Operativa (Armur / Gutierrez / Paniagua)</span>
-                                    </label>
-                                    <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors text-slate-900 text-slate-900">
-                                        <input type="checkbox" class="w-4 h-4 accent-red-800 text-red-800" name="correosExtra" value="emmanuel.zapata@oxxogas.com;andreac.rodriguez@oxxogas.com">
-                                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Oxxo Gas (Zapata / Rodriguez)</span>
-                                    </label>
-                                    <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900 text-slate-900">
-                                        <input type="checkbox" class="w-4 h-4 accent-red-800 text-red-800" name="correosExtra" value="treycy.arreguin@oxxo.com">
-                                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Treycy Arreguin</span>
-                                    </label>
-                                    <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors text-slate-900 text-slate-900 text-slate-900">
-                                        <input type="checkbox" class="w-4 h-4 accent-red-800 text-red-800 text-red-800 text-red-800 text-red-800 text-red-800">
-                                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">José Antonio Palacios</span>
-                                    </label>
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">📝 Relato de los hechos ocurridos</label>
+                            <div class="border border-slate-200 rounded-3xl overflow-hidden bg-white focus-within:ring-4 focus-within:ring-red-800/5 transition-all shadow-sm">
+                                <div class="ribbon-toolbar" id="editorToolbar">
+                                    <div class="toolbar-group">
+                                        <button type="button" class="toolbar-btn" onclick="formatDocSin('bold')"><i class="fa-solid fa-bold"></i></button>
+                                        <button type="button" class="toolbar-btn" onclick="formatDocSin('italic')"><i class="fa-solid fa-italic"></i></button>
+                                        <button type="button" class="toolbar-btn" onclick="formatDocSin('underline')"><i class="fa-solid fa-underline"></i></button>
+                                    </div>
+                                    <div class="toolbar-group relative">
+                                        <!-- Color de Texto -->
+                                        <button type="button" class="toolbar-btn" id="colorBtnSin" title="Color de fuente">
+                                            <i class="fa-solid fa-font"></i>
+                                            <div id="currentColorIndicatorSin" class="color-indicator-bar" style="background: #000"></div>
+                                        </button>
+                                        <!-- Color de Fondo -->
+                                        <button type="button" class="toolbar-btn" id="bgColorBtnSin" title="Resaltado de texto">
+                                            <i class="fa-solid fa-highlighter"></i>
+                                            <div id="currentBgColorIndicatorSin" class="color-indicator-bar" style="background: transparent; border: 1px solid #ddd"></div>
+                                        </button>
+                                        <!-- Paleta Única Dinámica -->
+                                        <div id="colorPaletteSin" class="color-palette-container hidden flex-col gap-2"></div>
+                                    </div>
+                                    <div class="toolbar-group">
+                                        <button type="button" class="toolbar-btn" onclick="formatDocSin('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" class="toolbar-btn" onclick="formatDocSin('removeFormat')"><i class="fa-solid fa-eraser"></i></button>
+                                    </div>
                                 </div>
-                                <div class="mt-2 text-slate-900 text-slate-900 text-slate-900 text-slate-900">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block text-slate-400">✏️ Otros correos (separados por ;)</label>
-                                    <input type="text" id="correosOtros" class="standard-input text-slate-900 text-slate-900" placeholder="ejemplo@correo.com; otro@correo.com">
-                                </div>
-                            </div>
-
-                            <div id="emailPreviewSection" class="p-5 bg-red-50/50 border border-red-100 rounded-2xl space-y-3 hidden text-slate-900">
-                                <label class="text-[9px] font-black text-red-800 uppercase tracking-widest block text-red-800">📋 Destinatarios confirmados:</label>
-                                <div id="emailListDisplay" class="flex flex-wrap gap-2 text-slate-900"></div>
+                                <div id="descripcion" contenteditable="true" class="editor-content custom-scrollbar overflow-y-auto" placeholder="Relate detalladamente los hechos ocurridos..."></div>
                             </div>
                         </div>
 
-                        <!-- ACCIONES FINALES -->
-                        <div class="space-y-4 pt-6 text-slate-900">
-                            <button type="submit" id="btnSubmit" class="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-red-950 transition-all flex items-center justify-center gap-3 text-white text-white">
-                                <i class="fa-solid fa-paper-plane text-white"></i>
-                                Finalizar y Registrar Siniestro
-                            </button>
-                            
-                            <div class="flex justify-center items-center opacity-30 hover:opacity-100 transition-opacity">
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" id="testMode" class="w-3 h-3 accent-slate-400 rounded-sm">
-                                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600 text-slate-400">Habilitar modo de prueba</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                <span class="text-[11px] font-bold text-slate-600 uppercase">🚑 Lesionados en sitio</span>
+                                <input type="checkbox" name="personasAfectadas[]" value="Lesionados" class="w-5 h-5 accent-red-800">
+                            </label>
+                            <label class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                <span class="text-[11px] font-bold text-slate-600 uppercase">⚖️ Personas Detenidas</span>
+                                <input type="checkbox" name="personasAfectadas[]" value="Detenidos" class="w-5 h-5 accent-red-800">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- PASO 4: RESPONSABLES -->
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 4</span>
+                            <div class="h-px bg-slate-100 flex-1"></div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Personal Responsable</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">👤 Nombre de quien reporta</label>
+                                <input type="text" id="reporta" class="standard-input" placeholder="Nombre completo" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">🧑‍💼 Realiza el reporte (CCO)</label>
+                                <select id="realiza" class="standard-input" required>
+                                    <option value="">Seleccione Operador</option>
+                                </select>
+                                <input type="text" id="realizaOtro" class="standard-input mt-2 hidden" placeholder="Nombre completo del operador">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PASO 5: NOTIFICACIONES -->
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">Paso 5</span>
+                            <div class="h-px bg-slate-100 flex-1"></div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Canales de Notificación</h3>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">📨 Notificar adicionalmente a:</label>
+                            <div class="grid grid-cols-1 gap-2" id="extraEmailsList">
+                                <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="w-4 h-4 accent-red-800" name="correosExtra" value="jesuseduardo.gutierrez@armur.com;juan.paniagua@armur.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Seguridad Operativa (Armur / Gutierrez / Paniagua)</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="w-4 h-4 accent-red-800" name="correosExtra" value="emmanuel.zapata@oxxogas.com;andreac.rodriguez@oxxogas.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Oxxo Gas (Zapata / Rodriguez)</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="w-4 h-4 accent-red-800" name="correosExtra" value="treycy.arreguin@oxxo.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">Treycy Arreguin</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+                                    <input type="checkbox" class="w-4 h-4 accent-red-800" name="correosExtra" value="josea.palacios@armur.com">
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic">José Antonio Palacios</span>
                                 </label>
                             </div>
+                            <div class="mt-2">
+                                <label class="text-[9px] font-black text-slate-400 uppercase mb-1 block">✏️ Otros correos (separados por ;)</label>
+                                <input type="text" id="correosOtros" class="standard-input" placeholder="ejemplo@correo.com; otro@correo.com">
+                            </div>
                         </div>
 
+                        <!-- VISTA PREVIA DE CORREOS -->
+                        <div id="emailPreviewSection" class="p-5 bg-red-50/50 border border-red-100 rounded-2xl space-y-3 hidden">
+                            <label class="text-[9px] font-black text-red-800 uppercase tracking-widest block">📋 Destinatarios confirmados para este reporte:</label>
+                            <div id="emailListDisplay" class="flex flex-wrap gap-2"></div>
+                        </div>
                     </div>
 
-                    <!-- PANTALLA DE ÉXITO -->
-                    <div id="successUI" class="hidden py-16 text-center space-y-6">
-                        <div class="w-24 h-24 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-sm border border-green-100">
-                            <i class="fa-solid fa-check text-green-600"></i>
+                    <!-- ACCIONES FINALES -->
+                    <div class="pt-6 space-y-4">
+                        <button type="submit" id="btnSubmit" class="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-red-900 transition-all flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            Finalizar y Registrar Siniestro
+                        </button>
+                        <div class="flex justify-center items-center opacity-30 hover:opacity-100 transition-opacity">
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" id="testMode" class="w-3 h-3 accent-slate-400">
+                                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600">Habilitar modo de prueba (Envío a remitente)</span>
+                            </label>
                         </div>
-                        <div>
-                            <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tighter text-slate-900">¡Registro Exitoso!</h3>
-                            <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2 text-slate-500">El siniestro ha sido archivado y las notificaciones han sido enviadas.</p>
-                        </div>
-                        <button type="button" id="btnNewReport" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all text-white text-white">Crear Nuevo Registro</button>
                     </div>
 
+                </div>
+
+                <!-- EXITO UI -->
+                <div id="successUI" class="hidden py-20 text-center space-y-6">
+                    <div class="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl border border-emerald-100 shadow-sm">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">¡Registro Exitoso!</h3>
+                        <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2">El siniestro ha sido enviado y archivado correctamente en la bitácora central.</p>
+                    </div>
+                    <button type="button" id="btnNewReport" class="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Crear Nuevo Reporte</button>
                 </div>
             </form>
         </main>
 
-        <footer class="mt-12 text-center pb-10">
+        <footer class="text-center pb-10">
             <p class="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">CIC — Protección Patrimonial</p>
         </footer>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
-           apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
+            apiKey: "AIzaSyD0OIcOy_tO1sIDZ2tXgi-LsrTQlGH-8T4",
             authDomain: "cic5-pp.firebaseapp.com",
             projectId: "cic5-pp",
             storageBucket: "cic5-pp.firebasestorage.app",
@@ -501,192 +363,52 @@
             appId: "1:577576116946:web:a1e2bcb2393f464ebe030b",
             measurementId: "G-G02GSE321T"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-pp';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const appId = 'cic5-pp';
 
         const URL_RECUPERAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/097a63200e254f4db1c47d052f2613ef/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4GE6KXcJvL1j7ih9cl-ubC93RoycRieLuJuz2DdbFU4";
         const URL_ENVIAR = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/28a6ecf6c40e4d14aa520a51c8430065/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4DbF_Lj5HOOWUNIaV_lSLMZH1j5etCF1n18CTLRDkxs";
 
-        const editor = document.getElementById('descripcion');
-        const searchInput = document.getElementById('subtipoSearch');
-        const searchResults = document.getElementById('search-results');
-        const tipoDisplay = document.getElementById('TipoSiniestroDisplay');
-        const subtipoDisplay = document.getElementById('SubtipoDisplay');
-        const tipoHidden = document.getElementById('TipoSiniestro');
-        const subtipoHidden = document.getElementById('Subtipo');
-        const realizaSelect = document.getElementById('realiza');
-        const realizaOtroInput = document.getElementById('realizaOtro');
+        // --- SISTEMA DE PERSISTENCIA LOCAL ---
+        const CACHE_KEY_MATRIZ = 'CIC5_RegSin_Matriz';
+        const CACHE_KEY_OPERADORES = 'CIC5_RegSin_Operadores';
 
         let dataArray = [];
+        let filteredResults = [];
+        let focusedResultIndex = -1;
         let currentUser = null;
+        let activeColorCommand = 'foreColor';
 
-        // --- BUSCADOR DE SUBTIPOS ---
-        searchInput.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase().trim();
-            if (val.length < 1) { searchResults.classList.add('hidden'); return; }
-            const filtered = dataArray.filter(item => item.Subtipo.toLowerCase().includes(val) || item.Tipo.toLowerCase().includes(val));
-            if (filtered.length > 0) {
-                searchResults.innerHTML = filtered.map(item => `
-                    <div class="result-item" onclick="selectIncident('${item.Tipo.replace(/'/g, "\\'")}', '${item.Subtipo.replace(/'/g, "\\'")}')">
-                        <p class="text-[8px] font-black text-red-800 uppercase">${item.Tipo}</p>
-                        <p class="text-sm font-bold text-slate-800 uppercase">${item.Subtipo}</p>
-                    </div>
-                `).join('');
-                searchResults.classList.remove('hidden');
-            } else {
-                searchResults.innerHTML = '<div class="p-4 text-[10px] font-bold text-slate-400 uppercase text-center text-slate-400">Sin coincidencias</div>';
-                searchResults.classList.remove('hidden');
-            }
-        });
-
-        window.selectIncident = (tipo, subtipo) => {
-            tipoHidden.value = tipo; subtipoHidden.value = subtipo;
-            tipoDisplay.value = tipo; subtipoDisplay.value = subtipo;
-            searchInput.value = subtipo;
-            searchResults.classList.add('hidden');
-            updateEmailPreview();
-        };
-
-        // --- EDITOR TEXTO ENRIQUECIDO & PALETA PROFESIONAL ---
-        const colorPalette = document.getElementById('colorPalette');
-        const colorBtn = document.getElementById('colorBtn');
-        const indicator = document.getElementById('currentColorIndicator');
+        const editor = document.getElementById('descripcion');
+        const colorPalette = document.getElementById('colorPaletteSin');
+        const colorBtn = document.getElementById('colorBtnSin');
+        const bgColorBtn = document.getElementById('bgColorBtnSin');
+        const indicator = document.getElementById('currentColorIndicatorSin');
+        const bgIndicator = document.getElementById('currentBgColorIndicatorSin');
         
+        const tipoSelect = document.getElementById('TipoSiniestroSelect');
+        const subtipoSelect = document.getElementById('SubtipoSelect');
+        const plazaSelect = document.getElementById('Plaza');
+        const plazaOtroInput = document.getElementById('PlazaOtro');
+        const realizaSelect = document.getElementById('realiza');
+        const tipoHidden = document.getElementById('TipoSiniestro');
+        const subtipoHidden = document.getElementById('Subtipo');
+        const searchInput = document.getElementById('subtipoSearch');
+        const searchResultsDiv = document.getElementById('search-results');
+
         const colorGroups = [
-            { label: 'Escala de Grises', colors: ['#000000', '#434343', '#666666', '#999999', '#B7B7B7', '#CCCCCC', '#D9D9D9', '#FFFFFF'] },
-            { label: 'Colores CIC / Temas', colors: ['#720000', '#C00000', '#FF0000', '#FF9900', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF'] },
-            { label: 'Tonos Suaves', colors: ['#E6B8AF', '#F4CCCC', '#FCE5CD', '#FFF2CC', '#D9EAD3', '#D0E0E3', '#C9DAF8', '#CFE2F3'] },
-            { label: 'Tonos Oscuros', colors: ['#5B0F00', '#85200C', '#A61C00', '#B45F06', '#BF9000', '#38761D', '#134F5C', '#0B5394'] },
-            { label: 'Adicionales', colors: ['#4C1130', '#741B47', '#A64D79', '#C27BA0', '#D5A6BD', '#EAD1DC', '#6AA84F', '#45818E'] }
+            { label: 'Neutrales', colors: ['#000000', '#2d3748', '#4a5568', '#718096', '#a0aec0', '#cbd5e0', '#e2e8f0', '#FFFFFF'] },
+            { label: 'Marca CIC', colors: ['#720000', '#920000', '#B20000', '#C00000', '#D00000', '#FF0000', '#FF4D4D', '#FF9999'] },
+            { label: 'Prioridad / Alerta', colors: ['#c53030', '#e53e3e', '#f56565', '#ed8936', '#f6ad55', '#ecc94b', '#f6e05e', '#faf089'] },
+            { label: 'Estatus / Éxito', colors: ['#22543d', '#2f855a', '#38a169', '#48bb78', '#68d391', '#9ae6b4', '#c6f6d5', '#f0fff4'] },
+            { label: 'Información / Marcas', colors: ['#2a4365', '#2b6cb0', '#3182ce', '#4299e1', '#63b3ed', '#90cdf4', '#bee3f8', '#ebf8ff'] },
+            { label: 'Resaltado Brillante', colors: ['#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff9900', '#ff0000', '#ffffff', '#000000'] }
         ];
 
-        function buildColorPalette() {
-            colorPalette.innerHTML = '';
-            colorGroups.forEach(group => {
-                const label = document.createElement('div');
-                label.className = 'color-label';
-                label.innerText = group.label;
-                colorPalette.appendChild(label);
-
-                const row = document.createElement('div');
-                row.className = 'color-row';
-
-                group.colors.forEach(color => {
-                    const swatch = document.createElement('div');
-                    swatch.className = 'color-swatch';
-                    swatch.style.backgroundColor = color;
-                    swatch.title = color;
-                    
-                    swatch.onmousedown = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        formatDoc('foreColor', color);
-                        indicator.style.background = color;
-                        colorPalette.classList.add('hidden');
-                        colorPalette.classList.remove('flex');
-                    };
-                    row.appendChild(swatch);
-                });
-                colorPalette.appendChild(row);
-            });
-        }
-
-        buildColorPalette();
-
-        function updateToolbarState() {
-            document.querySelectorAll('.toolbar-btn[data-command]').forEach(btn => {
-                const cmd = btn.getAttribute('data-command');
-                try {
-                    if (document.queryCommandState(cmd)) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                } catch (e) {}
-            });
-        }
-
-        editor.addEventListener('keyup', updateToolbarState);
-        editor.addEventListener('mouseup', updateToolbarState);
-        document.addEventListener('selectionchange', updateToolbarState);
-
-        // Toggle del menú de colores con gestión de clases Tailwind para display
-        colorBtn.onmousedown = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const isHidden = colorPalette.classList.contains('hidden');
-            if (isHidden) {
-                colorPalette.classList.remove('hidden');
-                colorPalette.classList.add('flex');
-            } else {
-                colorPalette.classList.add('hidden');
-                colorPalette.classList.remove('flex');
-            }
-        };
-
-        window.formatDoc = (cmd, value = null) => {
-            editor.focus();
-            document.execCommand(cmd, false, value);
-            updateToolbarState();
-        };
-
-        document.querySelectorAll('.toolbar-btn[data-command]').forEach(btn => {
-            btn.onmousedown = (e) => {
-                e.preventDefault();
-                formatDoc(btn.getAttribute('data-command'), btn.getAttribute('data-value'));
-            };
-        });
-
-        editor.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
-        });
-
-        // Cierre al hacer clic fuera del menú
-        document.addEventListener('mousedown', (e) => {
-            if (!colorBtn.contains(e.target) && !colorPalette.contains(e.target)) {
-                colorPalette.classList.add('hidden');
-                colorPalette.classList.remove('flex');
-            }
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
-            }
-        });
-
-        // --- USUARIOS CCO ---
-        realizaSelect.addEventListener('change', function() {
-            realizaOtroInput.classList.toggle('hidden', this.value !== 'Otro');
-            realizaOtroInput.required = (this.value === 'Otro');
-        });
-
-        // --- CARGA DE DATOS ---
-        async function fetchInitialData() {
-            try {
-                const resTipos = await fetch(URL_RECUPERAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ Mode: "Tipos" }) });
-                const dataTipos = await resTipos.json();
-                if (dataTipos && dataTipos.Matriz) dataArray = dataTipos.Matriz;
-
-                const resUsers = await fetch(URL_RECUPERAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ Mode: "ElementosPP" }) });
-                const dataUsers = await resUsers.json();
-                if (dataUsers && dataUsers.Usuarios) {
-                    dataUsers.Usuarios.filter(u => u.Area === "Centro de Control").forEach(u => {
-                        const opt = document.createElement("option");
-                        opt.value = u.Nombre; opt.textContent = u.Nombre;
-                        realizaSelect.appendChild(opt);
-                    });
-                    const optOtro = document.createElement("option");
-                    optOtro.value = "Otro"; optOtro.textContent = "Otro (Especificar)";
-                    realizaSelect.appendChild(optOtro);
-                }
-                document.getElementById('loadingOverlay').classList.add('opacity-0');
-                setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
-            } catch (e) { console.error(e); }
-        }
-
-        const cleanEmail = (email) => email.trim().replace(/^mailto:/i, "");
+        window.formatDocSin = (cmd, val = null) => { editor.focus(); document.execCommand(cmd, false, val); };
+        const cleanEmail = (e) => e.trim().replace(/^mailto:/i, "").toLowerCase();
 
         const updateEmailPreview = () => {
             const isTest = document.getElementById('testMode').checked;
@@ -694,89 +416,252 @@
             if (isTest) {
                 todos = ["proteccion.instalaciones@armur.com"];
             } else {
-                const match = dataArray.find(item => item.Tipo === tipoHidden.value && item.Subtipo === subtipoHidden.value);
+                const tipo = tipoHidden.value;
+                const subtipo = subtipoHidden.value;
+                const match = dataArray.find(item => item.Tipo === tipo && item.Subtipo === subtipo);
                 let base = match && match["Listado de correos"] ? match["Listado de correos"].split(";").map(cleanEmail) : [];
                 let extras = Array.from(document.querySelectorAll("input[name='correosExtra']:checked")).flatMap(cb => cb.value.split(";")).map(cleanEmail);
                 let manual = document.getElementById("correosOtros").value.split(";").map(cleanEmail).filter(c => c);
-                todos = [...new Set([...base, ...extras, ...manual])].filter(c => c);
+                todos = [...new Set([...base, ...extras, ...manual])].filter(c => c && c.includes('@'));
             }
             const section = document.getElementById('emailPreviewSection');
             const display = document.getElementById('emailListDisplay');
             if (todos.length > 0) {
                 section.classList.remove('hidden');
-                display.innerHTML = todos.map(e => `<span class="px-2 py-1 bg-white border border-red-100 text-red-900 text-[9px] font-bold rounded-lg uppercase shadow-sm text-red-900 text-red-900">${e}</span>`).join('');
-            } else {
-                section.classList.add('hidden');
+                display.innerHTML = todos.map(e => `<span class="px-2 py-1 bg-white border border-red-100 text-red-900 text-[9px] font-bold rounded-lg uppercase shadow-sm">${e}</span>`).join('');
+            } else { section.classList.add('hidden'); }
+            return todos.join("; ");
+        };
+
+        // --- INICIALIZACIÓN CON CACHÉ ---
+        async function initModule() {
+            // 1. Cargar desde caché inmediatamente
+            const cachedMatriz = localStorage.getItem(CACHE_KEY_MATRIZ);
+            const cachedOperadores = localStorage.getItem(CACHE_KEY_OPERADORES);
+
+            if (cachedMatriz) {
+                dataArray = JSON.parse(cachedMatriz);
+                populateTipoSelect();
+                document.getElementById('loadingOverlaySin').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('loadingOverlaySin').style.display = 'none', 500);
             }
+
+            if (cachedOperadores) {
+                updateOperadoresUI(JSON.parse(cachedOperadores));
+            }
+
+            // 2. Actualizar en segundo plano
+            fetchBackgroundData();
+        }
+
+        async function fetchBackgroundData() {
+            try {
+                // Actualizar Matriz
+                const resTipos = await fetch(URL_RECUPERAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ Mode: "Tipos" }) });
+                const d = await resTipos.json();
+                if (d?.Matriz) {
+                    dataArray = d.Matriz;
+                    localStorage.setItem(CACHE_KEY_MATRIZ, JSON.stringify(dataArray));
+                    populateTipoSelect();
+                    
+                    // Si no había caché, quitar el overlay ahora
+                    if (document.getElementById('loadingOverlaySin').style.display !== 'none') {
+                        document.getElementById('loadingOverlaySin').classList.add('opacity-0');
+                        setTimeout(() => document.getElementById('loadingOverlaySin').style.display = 'none', 500);
+                    }
+                }
+
+                // Actualizar Operadores
+                const resUsers = await fetch(URL_RECUPERAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ Mode: "ElementosPP" }) });
+                const du = await resUsers.json();
+                if (du?.Usuarios) {
+                    const operadores = du.Usuarios.filter(u => u.Area === "Centro de Control");
+                    localStorage.setItem(CACHE_KEY_OPERADORES, JSON.stringify(operadores));
+                    updateOperadoresUI(operadores);
+                }
+            } catch (e) { console.error("Error en actualización de fondo:", e); }
+        }
+
+        function updateOperadoresUI(operadores) {
+            const currentVal = realizaSelect.value;
+            realizaSelect.innerHTML = '<option value="">Seleccione Operador</option>';
+            operadores.forEach(u => {
+                const opt = document.createElement("option");
+                opt.value = u.Nombre; opt.textContent = u.Nombre; 
+                realizaSelect.appendChild(opt);
+            });
+            const optO = document.createElement("option"); optO.value = "Otro"; optO.textContent = "Otro (Especificar)"; 
+            realizaSelect.appendChild(optO);
+            if (currentVal) realizaSelect.value = currentVal;
+        }
+
+        function populateTipoSelect() {
+            const currentTipo = tipoSelect.value;
+            const tipos = [...new Set(dataArray.map(i => i.Tipo))].sort();
+            tipoSelect.innerHTML = '<option value="">Seleccione Tipo</option>';
+            tipos.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                tipoSelect.appendChild(opt);
+            });
+            if (currentTipo) {
+                tipoSelect.value = currentTipo;
+                populateSubtipoSelect(currentTipo);
+            }
+        }
+
+        function populateSubtipoSelect(tipo) {
+            const currentSub = subtipoSelect.value;
+            const subtipos = dataArray.filter(i => i.Tipo === tipo).map(i => i.Subtipo).sort();
+            subtipoSelect.innerHTML = '<option value="">Seleccione Subtipo</option>';
+            subtipos.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s; opt.textContent = s;
+                subtipoSelect.appendChild(opt);
+            });
+            if (currentSub && subtipos.includes(currentSub)) subtipoSelect.value = currentSub;
+        }
+
+        // --- EVENTOS ---
+        tipoSelect.addEventListener('change', (e) => {
+            const tipo = e.target.value;
+            tipoHidden.value = tipo;
+            subtipoHidden.value = "";
+            subtipoSelect.value = "";
+            searchInput.value = "";
+            populateSubtipoSelect(tipo);
+            updateEmailPreview();
+        });
+
+        subtipoSelect.addEventListener('change', (e) => {
+            const subtipo = e.target.value;
+            subtipoHidden.value = subtipo;
+            searchInput.value = subtipo;
+            updateEmailPreview();
+        });
+
+        plazaSelect.addEventListener('change', function() {
+            const otro = plazaOtroInput;
+            otro.classList.toggle('hidden', this.value !== 'Otras');
+            otro.required = (this.value === 'Otras');
+        });
+
+        function buildColorPalette() {
+            colorPalette.innerHTML = '';
+            colorGroups.forEach(g => {
+                const l = document.createElement('div'); l.className = 'text-[7px] font-black uppercase text-slate-400 mt-2 mb-1'; l.innerText = g.label;
+                colorPalette.appendChild(l);
+                const r = document.createElement('div'); r.className = 'color-row';
+                g.colors.forEach(c => {
+                    const s = document.createElement('div'); s.className = 'color-swatch'; s.style.backgroundColor = c;
+                    s.onmousedown = (e) => { 
+                        e.preventDefault(); 
+                        formatDocSin(activeColorCommand, c); 
+                        if (activeColorCommand === 'foreColor') indicator.style.background = c;
+                        else bgIndicator.style.background = c;
+                        colorPalette.classList.add('hidden'); 
+                    };
+                    r.appendChild(s);
+                });
+                colorPalette.appendChild(r);
+            });
+        }
+        buildColorPalette();
+
+        colorBtn.onmousedown = (e) => { e.preventDefault(); activeColorCommand = 'foreColor'; colorPalette.classList.toggle('hidden'); colorPalette.classList.toggle('flex'); };
+        bgColorBtn.onmousedown = (e) => { e.preventDefault(); activeColorCommand = 'hiliteColor'; colorPalette.classList.toggle('hidden'); colorPalette.classList.toggle('flex'); };
+
+        searchInput.addEventListener('input', (e) => {
+            const v = e.target.value.toLowerCase().trim();
+            focusedResultIndex = -1;
+            if (v.length < 1) { searchResultsDiv.classList.add('hidden'); filteredResults = []; return; }
+            filteredResults = dataArray.filter(i => i.Subtipo.toLowerCase().includes(v) || i.Tipo.toLowerCase().includes(v));
+            if (filteredResults.length > 0) { renderSearchResults(); searchResultsDiv.classList.remove('hidden'); } 
+            else { searchResultsDiv.innerHTML = '<div class="p-4 text-[10px] font-bold text-slate-400 uppercase text-center">Sin coincidencias</div>'; searchResultsDiv.classList.remove('hidden'); }
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (searchResultsDiv.classList.contains('hidden') || filteredResults.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); focusedResultIndex = Math.min(focusedResultIndex + 1, filteredResults.length - 1); renderSearchResults(); scrollToFocusedItem(); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); focusedResultIndex = Math.max(focusedResultIndex - 1, 0); renderSearchResults(); scrollToFocusedItem(); } 
+            else if (e.key === 'Enter') { if (focusedResultIndex > -1) { e.preventDefault(); const item = filteredResults[focusedResultIndex]; window.selectSinIncident(item.Tipo, item.Subtipo); } } 
+            else if (e.key === 'Escape') { searchResultsDiv.classList.add('hidden'); }
+        });
+
+        function renderSearchResults() {
+            searchResultsDiv.innerHTML = filteredResults.map((item, index) => `
+                <div class="result-item ${index === focusedResultIndex ? 'focused' : ''}" onclick="selectSinIncident('${item.Tipo.replace(/'/g, "\\'")}', '${item.Subtipo.replace(/'/g, "\\'")}')">
+                    <p class="text-[8px] font-black text-red-800 uppercase">${item.Tipo}</p>
+                    <p class="text-sm font-bold text-slate-800 uppercase">${item.Subtipo}</p>
+                </div>`).join('');
+        }
+
+        function scrollToFocusedItem() {
+            const focusedItem = searchResultsDiv.querySelector('.result-item.focused');
+            if (focusedItem) focusedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        window.selectSinIncident = (t, s) => {
+            tipoHidden.value = t; subtipoHidden.value = s; tipoSelect.value = t;
+            populateSubtipoSelect(t); subtipoSelect.value = s; searchInput.value = s;
+            searchResultsDiv.classList.add('hidden'); updateEmailPreview();
         };
 
         document.getElementById('testMode').addEventListener('change', updateEmailPreview);
         document.getElementById('correosOtros').addEventListener('input', updateEmailPreview);
         document.querySelectorAll("input[name='correosExtra']").forEach(cb => cb.addEventListener('change', updateEmailPreview));
 
-        // --- SUBMIT ---
-        document.getElementById('formSiniestros').addEventListener('submit', async (e) => {
+        document.getElementById('formSiniestros').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             const isTest = document.getElementById('testMode').checked;
-            
             if (!editor.textContent.trim()) { editor.focus(); return; }
-            if (!tipoHidden.value) { searchInput.focus(); return; }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-white"></i> Procesando...';
-
-            const realizaVal = realizaSelect.value === 'Otro' ? realizaOtroInput.value : realizaSelect.value;
-            const match = dataArray.find(item => item.Tipo === tipoHidden.value && item.Subtipo === subtipoHidden.value);
-            let b = match && match["Listado de correos"] ? match["Listado de correos"].split(";").map(cleanEmail) : [];
-            let ex = Array.from(document.querySelectorAll("input[name='correosExtra']:checked")).flatMap(cb => cb.value.split(";")).map(cleanEmail);
-            let m = document.getElementById("correosOtros").value.split(";").map(cleanEmail).filter(c => c);
-            const reales = [...new Set([...b, ...ex, ...m])].join("; ");
-
-            let contentHTML = editor.innerHTML;
-            let contentText = editor.innerText;
-            let finalEmails = isTest ? "proteccion.instalaciones@armur.com" : reales;
-
-            if (isTest) {
-                const tag = `<div style="background:#fff4f4; border:1px solid #ffcccc; padding:15px; border-radius:10px; margin-bottom:20px; color:#c00;"><strong>MODO DE PRUEBA</strong><br><small>Originalmente enviado a: ${reales}</small></div><hr>`;
-                contentHTML = tag + contentHTML;
-                contentText = `MODO DE PRUEBA. Destinatarios reales: ${reales}\n\n` + contentText;
-            }
-
-            const formData = {
+            if (!tipoHidden.value || !subtipoHidden.value) { searchInput.focus(); return; }
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Procesando...';
+            const destinatarios = updateEmailPreview();
+            const realizaVal = realizaSelect.value === 'Otro' ? document.getElementById('realizaOtro').value : realizaSelect.value;
+            const plazaVal = plazaSelect.value === 'Otras' ? plazaOtroInput.value : plazaSelect.value;
+            const payload = {
                 negocioSeleccionado: document.getElementById("Negocio").value,
-                plazaSeleccionada: document.getElementById("Plaza").value,
+                plazaSeleccionada: plazaVal,
                 edificioSeleccionado: document.getElementById("Edificio").value,
                 tipoSiniestroSeleccionado: tipoHidden.value,
                 subtipoSeleccionado: subtipoHidden.value, 
-                descripcionIncidente: contentHTML,
-                descripcionTextoPlano: contentText,
+                descripcionIncidente: editor.innerHTML,
+                descripcionTextoPlano: editor.innerText,
                 personasAfectadas: Array.from(document.querySelectorAll("input[name='personasAfectadas[]']")).map(cb => ({ [cb.value]: cb.checked ? "Sí" : "No" })),
                 nombreReporta: document.getElementById("reporta").value,
                 nombreRealiza: realizaVal,
-                listadoCorreos: finalEmails,
+                listadoCorreos: destinatarios,
                 timestamp: new Date().toISOString(),
                 uid: currentUser?.uid || 'anonymous',
                 testMode: isTest
             };
-
             try {
-                if (!isTest) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'siniestros'), formData);
-                await fetch(URL_ENVIAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
+                if (!isTest) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'siniestros'), payload);
+                await fetch(URL_ENVIAR, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
                 document.getElementById("formUI").style.display = "none";
                 document.getElementById("successUI").classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (err) {
-                console.error(err);
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane text-white text-white"></i> Reintentar';
-            }
+                document.getElementById('reg-sin-container').scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
+        };
+
+        setInterval(() => { 
+            const clock = document.getElementById('clockSin');
+            if(clock) clock.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); 
+        }, 1000);
+
+        onAuthStateChanged(auth, (u) => { 
+            if (u) { currentUser = u; initModule(); } 
+            else signInAnonymously(auth); 
         });
 
-        setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }, 1000);
-        onAuthStateChanged(auth, (user) => { if (user) { currentUser = user; fetchInitialData(); } else { signInAnonymously(auth); } });
         document.getElementById('btnNewReport').addEventListener('click', () => location.reload());
+        document.getElementById('realiza').addEventListener('change', function() {
+            const otro = document.getElementById('realizaOtro');
+            otro.classList.toggle('hidden', this.value !== 'Otro');
+            otro.required = (this.value === 'Otro');
+        });
         document.execCommand('defaultParagraphSeparator', false, 'p');
     </script>
-</body>
-</html>
+</div>
