@@ -1,4 +1,4 @@
-<!-- Shell principal de Registros de Asistencia - Envío de Correo con Formato -->
+<!-- Shell principal de Registros de Asistencia - Restauración de Funcionalidad Completa -->
 <div class="flex flex-col h-full w-full bg-slate-50/50 animate-in fade-in duration-500 relative text-slate-900 overflow-hidden">
     
     <style>
@@ -11,7 +11,6 @@
         /* Asegurar que el contenedor interno sea un flex-container para sus hijos */
         #regas-component-container { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Ajuste para el Ribbon sticky si el flex fallara en algún navegador */
         #shell-header-main { position: relative; z-index: 120; flex-shrink: 0; }
         #module-ribbon { position: relative; z-index: 110; flex-shrink: 0; }
 
@@ -130,7 +129,7 @@
                         <button onclick="window.changeDay?.(1)" class="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 hover:text-white hover:bg-red-800 transition-all"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
 
-                    <!-- Selector de Turnos (Navegación Interna de Vista Día) -->
+                    <!-- Selector de Turnos / Pestañas de Vista Día -->
                     <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 shadow-inner gap-1">
                         <button onclick="window.switchActiveTab?.('I')" id="shell-tab-I" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all bg-white text-slate-900">Inicio</button>
                         <button onclick="window.switchActiveTab?.('M')" id="shell-tab-M" class="shell-tab-v-btn px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white">Matutino</button>
@@ -168,7 +167,7 @@
                     </div>
                     <div class="flex flex-col">
                         <label class="text-[7px] font-black text-white/40 uppercase mb-1 ml-1 tracking-widest">Turno</label>
-                        <select id="report-shift" onchange="window.syncAndLoad?.()" class="bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-1.5 text-[10px] font-bold outline-none focus:border-red-800 transition-all cursor-pointer shadow-inner">
+                        <select id="report-shift" onchange="window.syncAndLoad?.()" class="bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-1.5 text-[10px] font-bold outline-none cursor-pointer shadow-inner">
                             <option value="M">Matutino</option>
                             <option value="V">Vespertino</option>
                             <option value="N">Nocturno</option>
@@ -177,9 +176,10 @@
                     <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700 mt-4 shadow-inner">
                         <button id="tab-whatsapp" onclick="window.switchReportTab?.('whatsapp')" class="px-4 py-1.5 rounded-lg text-[8px] font-black uppercase bg-white text-slate-900 shadow-md">WhatsApp</button>
                         <button id="tab-daily" onclick="window.switchReportTab?.('daily')" class="px-4 py-1.5 rounded-lg text-[8px] font-black uppercase text-white/40 hover:text-white transition-colors">Diario</button>
+                        <button id="tab-excel" onclick="window.switchReportTab?.('excel')" class="px-4 py-1.5 rounded-lg text-[8px] font-black uppercase text-white/40 hover:text-white transition-colors">Excel</button>
                     </div>
                 </div>
-                <div id="ribbon-report-extras" class="hidden flex items-center gap-2 mt-4">
+                <div id="ribbon-report-extras" class="flex items-center gap-2 mt-4">
                     <button onclick="toggleEmailConfig(true)" class="p-2.5 bg-slate-800 border border-slate-700 text-white/40 hover:text-white rounded-xl transition-all shadow-inner"><i class="fa-solid fa-cog"></i></button>
                     <button id="shell-btn-send" onclick="window.sendEmailFromShell()" class="bg-red-800 text-white px-5 py-2.5 rounded-xl text-[8px] font-black uppercase hover:bg-red-700 shadow-lg transition-all active:scale-95 flex items-center gap-2">
                         <i class="fa-solid fa-paper-plane"></i> <span>Enviar Correo</span>
@@ -236,13 +236,8 @@
         const ribbon = document.getElementById('ribbon-content');
         const path = `Apps/Componentes/RegAs_PP/${file}`;
         
-        // Inyectar ribbon primero
         ribbon.innerHTML = ribbonConfigs[file] || '<p class="text-white/20 text-[9px] uppercase font-black px-10">Módulo sin controles</p>';
-        
-        // Actualizar estados visuales de las pestañas principales
-        document.querySelectorAll('.regas-tab-btn').forEach(b => { 
-            b.classList.remove('active'); 
-        });
+        document.querySelectorAll('.regas-tab-btn').forEach(b => { b.classList.remove('active'); });
         if (btn) btn.classList.add('active');
 
         try {
@@ -250,6 +245,7 @@
             if (response.ok) {
                 const html = await response.text();
                 container.innerHTML = "";
+                // Usar fragmento contextual para asegurar que los <script> se ejecuten
                 const fragment = document.createRange().createContextualFragment(html);
                 container.appendChild(fragment);
                 
@@ -261,12 +257,13 @@
                 const shiftInp = document.getElementById('report-shift');
                 if (shiftInp) shiftInp.value = getAutoShift();
 
+                // Dar un breve tiempo para que los scripts del módulo se registren en window
                 setTimeout(() => { 
                     if (window.syncAndLoad) window.syncAndLoad(); 
                     else if (window.loadDailyView) window.loadDailyView(); 
                 }, 150);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error cargando sub-módulo:", e); }
     }
 
     window.sendEmailFromShell = async () => {
@@ -285,6 +282,7 @@
         `;
 
         const btn = document.getElementById('shell-btn-send');
+        if(!btn) return;
         const btnText = btn.querySelector('span');
         btn.disabled = true; btnText.innerText = "Enviando...";
 
@@ -307,16 +305,11 @@
         }
     };
 
-    // Inicialización automática del Shell
     (function initRegAsShell() {
-        // Forzar 'VistaDia.html' si no hay nada guardado, para cumplir con el requerimiento de carga por defecto
-        const defaultModule = 'VistaDia.html';
-        const lastFile = localStorage.getItem('lastRegAsSubModule') || defaultModule;
-        
-        // Pequeña pausa para asegurar que el DOM del Shell esté listo antes de inyectar el primer módulo
+        const lastFile = localStorage.getItem('lastRegAsSubModule') || 'VistaDia.html';
         setTimeout(() => {
-            const targetBtn = document.getElementById(`tab-btn-${lastFile}`) || document.getElementById(`tab-btn-${defaultModule}`);
-            loadRegAsModule(lastFile, targetBtn);
+            const btn = document.getElementById(`tab-btn-${lastFile}`) || document.querySelector('.regas-tab-btn');
+            loadRegAsModule(lastFile, btn);
         }, 50);
     })();
 </script>

@@ -47,12 +47,10 @@
             #right-panel { right: 0; }
         }
 
-        /* Estados de Sincronización */
-        .sync-state-pending { color: #f59e0b; }
-        .sync-state-success { color: #10b981; }
-        .sync-state-error { color: #ef4444; }
-        
-        #sync-details-modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+        /* Clase para ocultar módulos cargados en segundo plano */
+        .module-container.hidden-module {
+            display: none !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
@@ -145,12 +143,13 @@
     <!-- ÁREA DE CONTENIDO -->
     <main id="app-main" class="hidden flex flex-1 overflow-hidden relative">
         <aside id="left-panel" class="hidden md:flex mobile-panel flex-col w-72 min-w-[18rem] bg-slate-50 border-r border-slate-200 h-full overflow-hidden transition-all duration-300">
-            <!-- Navegación aislada en iframe para evitar injerencia de lógica -->
+            <!-- Navegación aislada en iframe -->
             <iframe src="Nav.html" frameborder="0" class="w-full h-full"></iframe>
         </aside>
 
+        <!-- SECCIÓN DE VISTA PRINCIPAL: Se habilita el scroll por defecto para formularios -->
         <section id="main-view" class="flex-1 bg-white overflow-y-auto custom-scrollbar h-full z-10">
-            <div id="central-content" class="w-full min-h-full"></div>
+            <div id="central-content" class="w-full relative min-h-full"></div>
         </section>
 
         <aside id="right-panel" class="hidden mobile-panel flex-col md:w-[30%] min-w-[300px] bg-white border-l border-slate-200 shadow-2xl md:shadow-none h-full overflow-hidden transition-all duration-300">
@@ -174,7 +173,7 @@
         <div class="text-[9px] text-slate-500 font-bold uppercase">v5.6.0</div>
     </footer>
 
-    <!-- MODAL DE DETALLES DE SINCRONIZACIÓN -->
+    <!-- MODAL DE SINCRONIZACIÓN -->
     <div id="sync-details-modal" class="invisible opacity-0 fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl space-y-6 animate-in zoom-in duration-200">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -193,14 +192,10 @@
             </div>
 
             <div class="space-y-4">
-                <div class="grid grid-cols-3 gap-2" id="sync-collection-status">
-                    <!-- Dinámico: Estado por colección -->
-                </div>
-
+                <div class="grid grid-cols-3 gap-2" id="sync-collection-status"></div>
                 <div class="space-y-3">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Cambios Recientes</p>
                     <div id="sync-logs-container" class="max-h-60 overflow-y-auto custom-scrollbar space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <!-- Dinámico: Logs de cambios -->
                         <div class="py-10 text-center opacity-30 text-[9px] font-black uppercase">Sin cambios registrados</div>
                     </div>
                 </div>
@@ -234,198 +229,156 @@
         const db = getFirestore(app);
         const appId = 'cic5-pp';
 
-        // --- SISTEMA DE GESTIÓN DE CACHÉ LOCAL ---
+        // --- GESTIÓN DE CACHÉ ---
         const DB_LOCAL = {
             users: [],
             stations: [],
             notices: [],
             lastSync: null,
             syncLogs: [],
-            status: {
-                users: 'none',
-                stations: 'none',
-                notices: 'none'
-            }
+            status: { users: 'none', stations: 'none', notices: 'none' }
         };
 
         const CacheManager = {
             STORAGE_KEY: 'CIC5_LOCAL_DB',
-
             init: function() {
                 const stored = localStorage.getItem(this.STORAGE_KEY);
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    Object.assign(DB_LOCAL, parsed);
-                    return true;
-                }
+                if (stored) { Object.assign(DB_LOCAL, JSON.parse(stored)); return true; }
                 return false;
             },
-
             save: function() {
                 localStorage.setItem(this.STORAGE_KEY, JSON.stringify(DB_LOCAL));
                 DB_LOCAL.lastSync = new Date().toISOString();
                 this.updateGlobalIndicator();
                 this.renderSyncModalContent();
             },
-
             destroy: function() {
                 localStorage.removeItem(this.STORAGE_KEY);
                 localStorage.removeItem('lastLoadedModule');
             },
-
             log: function(msg, type = 'info') {
                 const timestamp = new Date().toLocaleTimeString();
                 DB_LOCAL.syncLogs.unshift({ timestamp, msg, type });
                 if (DB_LOCAL.syncLogs.length > 30) DB_LOCAL.syncLogs.pop();
             },
-
             updateGlobalIndicator: function() {
                 const indicator = document.getElementById('sync-status-indicator');
                 const textEl = document.getElementById('sync-status-text');
                 if (!indicator || !textEl) return;
-
                 const states = Object.values(DB_LOCAL.status);
                 if (states.some(s => s === 'error')) {
-                    indicator.className = "w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)]";
-                    textEl.innerText = "No se pudo actualizar";
-                    textEl.className = "text-[7px] md:text-[8px] font-black text-red-600 uppercase tracking-widest";
+                    indicator.className = "w-2 h-2 rounded-full bg-red-600";
+                    textEl.innerText = "Error de sincronización";
                 } else if (states.some(s => s === 'pending')) {
-                    indicator.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]";
-                    textEl.innerText = "En proceso de actualización";
-                    textEl.className = "text-[7px] md:text-[8px] font-black text-amber-500 uppercase tracking-widest";
+                    indicator.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+                    textEl.innerText = "Actualizando...";
                 } else {
-                    indicator.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    indicator.className = "w-2 h-2 rounded-full bg-emerald-500";
                     textEl.innerText = "Base Actualizada";
-                    textEl.className = "text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-widest";
                 }
             },
-
             renderSyncModalContent: function() {
                 const logsCont = document.getElementById('sync-logs-container');
                 const statusCont = document.getElementById('sync-collection-status');
                 if (!logsCont || !statusCont) return;
-
-                statusCont.innerHTML = Object.entries(DB_LOCAL.status).map(([name, state]) => {
-                    const colors = {
-                        success: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-                        pending: 'text-amber-600 bg-amber-50 border-amber-100',
-                        error: 'text-red-600 bg-red-50 border-red-100',
-                        none: 'text-slate-400 bg-slate-50 border-slate-100'
-                    };
-                    const icons = {
-                        success: 'fa-check-circle',
-                        pending: 'fa-circle-notch fa-spin',
-                        error: 'fa-exclamation-circle',
-                        none: 'fa-clock'
-                    };
-                    return `
-                        <div class="p-3 border rounded-xl text-center ${colors[state] || colors.none}">
-                            <i class="fa-solid ${icons[state] || icons.none} text-[10px] mb-1"></i>
-                            <p class="text-[7px] font-black uppercase tracking-tighter">${name}</p>
-                        </div>
-                    `;
-                }).join('');
-
-                logsCont.innerHTML = DB_LOCAL.syncLogs.length > 0 ? DB_LOCAL.syncLogs.map(l => `
-                    <div class="flex gap-3 text-[9px] border-b border-slate-100/50 pb-2 mb-2 last:border-0">
-                        <span class="text-slate-400 font-bold shrink-0">${l.timestamp}</span>
-                        <p class="font-medium ${l.type === 'update' ? 'text-emerald-700' : 'text-slate-600'}">${l.msg}</p>
-                    </div>
-                `).join('') : `<div class="py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest">Sin actividad</div>`;
+                statusCont.innerHTML = Object.entries(DB_LOCAL.status).map(([name, state]) => `
+                    <div class="p-3 border rounded-xl text-center ${state === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50'}">
+                        <p class="text-[7px] font-black uppercase">${name}</p>
+                    </div>`).join('');
+                logsCont.innerHTML = DB_LOCAL.syncLogs.map(l => `<div class="text-[9px] pb-2 border-b border-slate-50"><b>${l.timestamp}</b>: ${l.msg}</div>`).join('');
             }
         };
 
         // --- SINCRONIZACIÓN ---
         async function syncDatabase(forceFull = false) {
-            if (forceFull) {
-                CacheManager.log("Iniciando sincronización forzada total...", "info");
-                toggleSyncModal(false);
-            }
-            
-            const collectionsToSync = ['users', 'stations', 'notices'];
-            collectionsToSync.forEach(c => DB_LOCAL.status[c] = 'pending');
+            const cols = ['users', 'stations', 'notices'];
+            cols.forEach(c => DB_LOCAL.status[c] = 'pending');
             CacheManager.updateGlobalIndicator();
-
-            const syncPromises = collectionsToSync.map(async (colName) => {
+            const promises = cols.map(async (colName) => {
                 try {
                     if (DB_LOCAL[colName].length > 0 && !forceFull) {
-                        CacheManager.log(`Caché verificada para ${colName}.`, 'info');
                         DB_LOCAL.status[colName] = 'success';
                         listenForUpdates(colName);
                         return;
                     }
-
                     const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', colName));
                     DB_LOCAL[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     DB_LOCAL.status[colName] = 'success';
-                    CacheManager.log(`${colName}: Descarga completa (${snap.size} registros).`, 'update');
                     listenForUpdates(colName);
-                } catch (e) {
-                    DB_LOCAL.status[colName] = 'error';
-                    CacheManager.log(`${colName}: Fallo en sincronización.`, 'error');
-                }
+                } catch (e) { DB_LOCAL.status[colName] = 'error'; }
             });
-
-            await Promise.all(syncPromises);
+            await Promise.all(promises);
             CacheManager.save();
         }
 
         function listenForUpdates(colName) {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', colName), (snap) => {
-                let hasChanges = false;
                 snap.docChanges().forEach(change => {
-                    hasChanges = true;
                     const data = { id: change.doc.id, ...change.doc.data() };
-                    
                     if (change.type === "added" || change.type === "modified") {
                         const idx = DB_LOCAL[colName].findIndex(i => i.id === data.id);
-                        if (idx > -1) {
-                            DB_LOCAL[colName][idx] = data;
-                            CacheManager.log(`${colName}: Registro editado (${data.id}).`, 'update');
-                        } else {
-                            DB_LOCAL[colName].push(data);
-                            CacheManager.log(`${colName}: Nuevo registro detectado.`, 'update');
-                        }
+                        if (idx > -1) DB_LOCAL[colName][idx] = data; else DB_LOCAL[colName].push(data);
                     }
-                    if (change.type === "removed") {
-                        DB_LOCAL[colName] = DB_LOCAL[colName].filter(i => i.id !== data.id);
-                        CacheManager.log(`${colName}: Registro eliminado (${data.id}).`, 'info');
-                    }
+                    if (change.type === "removed") DB_LOCAL[colName] = DB_LOCAL[colName].filter(i => i.id !== data.id);
                 });
-                
-                if (hasChanges) {
-                    CacheManager.save();
-                    if (colName === 'users') updateHeaderUI();
-                    if (colName === 'notices' && document.getElementById('notices-container-home')) loadNoticesFromLocal();
-                }
+                CacheManager.save();
+                if (colName === 'users') updateHeaderUI();
+                if (colName === 'notices' && document.getElementById('notices-container-home')) loadNoticesFromLocal();
             });
         }
 
-        window.toggleSyncModal = (show) => {
-            const modal = document.getElementById('sync-details-modal');
-            if (show) {
-                modal.classList.remove('invisible', 'opacity-0');
-                CacheManager.renderSyncModalContent();
-                if (window.lucide) lucide.createIcons();
+        // --- SISTEMA DE NAVEGACIÓN "KEEP-ALIVE" ---
+        const loadedModules = new Map();
+
+        window.loadContent = async (file) => {
+            localStorage.setItem('lastLoadedModule', file);
+            const container = document.getElementById('central-content');
+            
+            // Ocultar todos los módulos cargados anteriormente
+            loadedModules.forEach(div => div.classList.add('hidden-module'));
+
+            if (loadedModules.has(file)) {
+                // Si ya existe, lo mostramos
+                loadedModules.get(file).classList.remove('hidden-module');
+                // Disparar evento de re-visualización
+                window.dispatchEvent(new CustomEvent('moduleShow', { detail: { file } }));
             } else {
-                modal.classList.add('invisible', 'opacity-0');
+                // Si no existe, lo cargamos
+                try {
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        const html = await response.text();
+                        const moduleDiv = document.createElement('div');
+                        moduleDiv.id = `module-${file.replace(/\//g, '-').replace('.', '-')}`;
+                        moduleDiv.className = "module-container w-full min-h-full";
+                        
+                        moduleDiv.appendChild(document.createRange().createContextualFragment(html));
+                        container.appendChild(moduleDiv);
+                        loadedModules.set(file, moduleDiv);
+                        
+                        if (window.lucide) lucide.createIcons();
+                        if (file === 'home.html') loadNoticesFromLocal();
+                    }
+                } catch (e) { console.error("Error cargando módulo:", e); }
             }
         };
 
-        // --- NAVEGACIÓN SPA ---
+        window.toggleSyncModal = (show) => {
+            const modal = document.getElementById('sync-details-modal');
+            if (show) { modal.classList.remove('invisible', 'opacity-0'); CacheManager.renderSyncModalContent(); }
+            else { modal.classList.add('invisible', 'opacity-0'); }
+        };
+
         function updateHeaderUI() {
             const email = auth.currentUser?.email;
             const profile = DB_LOCAL.users?.find(u => u.email === email);
             if (profile) {
-                document.getElementById('user-display-name').innerText = profile.name || email.split('@')[0];
-                const adminBtn = document.getElementById('admin-nav-btn');
-                adminBtn.classList.toggle('hidden', profile.role !== 'Administrador');
-                const img = document.getElementById('header-avatar-img');
-                const icon = document.getElementById('header-avatar-icon');
+                document.getElementById('user-display-name').innerText = profile.name || email;
+                document.getElementById('admin-nav-btn').classList.toggle('hidden', profile.role !== 'Administrador');
                 if (profile.photo) {
-                    img.src = profile.photo;
-                    img.classList.remove('hidden');
-                    icon.classList.add('hidden');
+                    const img = document.getElementById('header-avatar-img');
+                    img.src = profile.photo; img.classList.remove('hidden');
+                    document.getElementById('header-avatar-icon').classList.add('hidden');
                 }
             }
         }
@@ -433,30 +386,12 @@
         function loadNoticesFromLocal() {
             const container = document.getElementById('notices-container-home');
             if (!container || !DB_LOCAL.notices) return;
-            const sorted = [...DB_LOCAL.notices].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            container.innerHTML = sorted.map(n => `
-                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 relative shadow-sm transition-all hover:shadow-md">
-                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-2">${n.author || 'Sistema CIC'}</p>
-                    <h4 class="text-[11px] font-black text-slate-900 uppercase leading-snug mb-2">${n.title}</h4>
-                    <p class="text-[10px] font-medium text-slate-500 leading-relaxed">${n.message}</p>
-                </div>
-            `).join('');
+            container.innerHTML = DB_LOCAL.notices.map(n => `
+                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-4">
+                    <h4 class="text-[11px] font-black uppercase text-slate-900 mb-2">${n.title}</h4>
+                    <p class="text-[10px] text-slate-500">${n.message}</p>
+                </div>`).join('');
         }
-
-        window.loadContent = async (file) => {
-            localStorage.setItem('lastLoadedModule', file);
-            const container = document.getElementById('central-content');
-            try {
-                const response = await fetch(file);
-                if (response.ok) {
-                    const html = await response.text();
-                    container.innerHTML = "";
-                    container.appendChild(document.createRange().createContextualFragment(html));
-                    if (window.lucide) lucide.createIcons();
-                    if (file === 'home.html') loadNoticesFromLocal();
-                }
-            } catch (e) { console.error("Error cargando contenido:", e); }
-        };
 
         window.toggleLeftPanel = (show) => {
             const lp = document.getElementById('left-panel');
@@ -474,28 +409,21 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user && !user.isAnonymous) {
-                document.getElementById('app-header').classList.remove('hidden');
-                document.getElementById('app-main').classList.remove('hidden');
-                document.getElementById('app-footer').classList.remove('hidden');
+                ['app-header', 'app-main', 'app-footer'].forEach(id => document.getElementById(id).classList.remove('hidden'));
                 document.getElementById('login-screen').style.display = 'none';
-                
                 const hasLocal = CacheManager.init();
                 await syncDatabase(!hasLocal);
                 updateHeaderUI();
                 loadContent(localStorage.getItem('lastLoadedModule') || 'home.html');
             } else {
-                document.getElementById('app-header').classList.add('hidden');
-                document.getElementById('app-main').classList.add('hidden');
-                document.getElementById('app-footer').classList.add('hidden');
+                ['app-header', 'app-main', 'app-footer'].forEach(id => document.getElementById(id).classList.add('hidden'));
                 document.getElementById('login-screen').style.display = 'flex';
                 if (!user) signInAnonymously(auth);
             }
         });
 
         document.getElementById('logout-nav-btn').onclick = async () => { 
-            CacheManager.destroy();
-            await signOut(auth); 
-            location.reload(); 
+            CacheManager.destroy(); await signOut(auth); location.reload(); 
         };
 
         const loginForm = document.getElementById('login-form');
