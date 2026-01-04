@@ -1,15 +1,20 @@
-<!-- Vista Operativa Diaria Optimizada - Sin controles internos (Navegación vía Shell) -->
-<div id="vista-dia-content" class="w-full px-2 space-y-4 animate-in fade-in duration-700 pb-10 pt-4 h-full flex flex-col overflow-hidden text-slate-900">
+<!-- Vista Operativa Diaria Optimizada - Con Lógica de Dobletes y Reasignación -->
+<div id="vista-dia-content" class="w-full px-2 space-y-4 animate-in fade-in duration-700 pb-10 pt-4 h-full flex flex-col overflow-hidden text-slate-900 relative">
     
+    <!-- BOTÓN FLOTANTE: ASIGNAR PERSONAL (Abre Perfiles.html) -->
+    <button onclick="window.openPersonalPanel()" class="fixed bottom-6 right-6 z-[100] w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
+        <i class="fa-solid fa-user-plus text-xl"></i>
+        <span class="absolute right-full mr-4 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Asignar Personal</span>
+    </button>
+
     <!-- BLOQUE PRINCIPAL DE OPERACIÓN -->
     <section id="duty-section" class="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 transition-all duration-300">
         
-        <!-- El Shell ahora controla las pestañas. Aquí solo reside el contenedor dinámico -->
         <div class="flex-1 overflow-hidden relative flex flex-col">
             
             <!-- Pestaña Inicio Inteligente -->
             <div id="col-I" class="hidden flex-col flex-1 overflow-y-auto custom-scrollbar p-6 gap-8 bg-slate-50/20">
-                <!-- Sección: Salidas Pendientes -->
+                <!-- Secciones dinámicas de entrada/salida -->
                 <div>
                     <div class="flex items-center justify-between mb-4 px-2">
                         <div class="flex items-center gap-3">
@@ -22,12 +27,9 @@
                             </div>
                         </div>
                     </div>
-                    <div id="container-pending-exit" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Dinámico -->
-                    </div>
+                    <div id="container-pending-exit" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
                 </div>
 
-                <!-- Sección: Próximos a Ingresar -->
                 <div>
                     <div class="flex items-center justify-between mb-4 px-2 pt-6 border-t border-slate-100">
                         <div class="flex items-center gap-3">
@@ -40,9 +42,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="container-incoming" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Dinámico -->
-                    </div>
+                    <div id="container-incoming" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
                 </div>
             </div>
 
@@ -107,9 +107,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="container-ABS" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/30">
-                    <!-- Inyectado dinámicamente -->
-                </div>
+                <div id="container-ABS" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'ABS')" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/30"></div>
             </div>
 
         </div>
@@ -164,7 +162,6 @@
     let activeShiftTab = 'I';
     
     const defaultAbsenceReasons = ['Descanso', 'Permiso', 'Vacaciones', 'Falta', 'Incapacidad', 'Suspensión'];
-    
     const getDateInput = () => document.getElementById('view-date-input') || document.getElementById('global-report-date');
 
     function calculateDuration(start, end) {
@@ -208,7 +205,6 @@
             dateInput.value = now.toLocaleDateString('en-CA');
         }
         window.loadDailyView = () => renderAll();
-        // Carga inicial
         switchActiveTab(activeShiftTab);
     }
 
@@ -234,7 +230,6 @@
         }));
     }
 
-    // Funciones globales para Drag & Drop
     window.allowDrop = (ev) => ev.preventDefault();
     window.handleDragStartInternal = (ev, email) => {
         ev.dataTransfer.setData("text/elementEmail", email);
@@ -243,13 +238,16 @@
 
     window.handleDrop = async (ev, shift, absenceReason = null) => {
         ev.preventDefault();
-        const email = ev.dataTransfer.getData("text/elementEmail");
+        const email = ev.dataTransfer.getData("text/elementEmail") || ev.dataTransfer.getData("text/plain");
         const dateInput = getDateInput();
         if(!email || !dateInput) return;
         const user = allUsers.find(u => u.email === email);
         if(!user) return;
+        
+        // Determinar estación destino
         const stationEl = ev.target.closest('.station-container');
         const stationName = shift === 'ABS' ? 'General' : (stationEl ? stationEl.dataset.stationName : 'General');
+        
         await performAssignmentUpdate(email, user.name, dateInput.value, shift, stationName, absenceReason);
     };
 
@@ -275,95 +273,35 @@
         if (snap.exists()) {
             const data = snap.data();
             let shifts = data.shifts || [];
-            if (shifts.length === 0 && data.shift) {
-                shifts.push({
-                    shift: data.shift, station: data.station, type: data.type,
-                    reason: data.reason, assignedEntry: data.assignedEntry,
-                    assignedExit: data.assignedExit, shiftDuration: data.shiftDuration,
-                    isConfirmed: data.isConfirmed, realEntry: data.realEntry, realExit: data.realExit
-                });
+            
+            // LÓGICA DE ACTUALIZACIÓN / DOBLETE
+            if (isAbs) {
+                // "si tiene una asignacion previa y se arrastra a ausentismo se borra la asignacion previa"
+                shifts = [newShiftObj]; 
+            } else {
+                // "Si tiene ausentismo y se le arrastra a un turno se borra el ausentismo"
+                // "si tiene turno y se le asigna el mismo turno en otra caseta se modifica la caseta" (filtramos turno actual)
+                // "si se le asigna en otro turno se asigna como doblete" (el filtro de shift permite conservar otros turnos)
+                shifts = shifts.filter(s => s.type !== 'ausentismo' && s.shift !== shift);
+                shifts.push(newShiftObj);
             }
-            shifts = shifts.filter(s => isAbs ? s.type !== 'ausentismo' : s.shift !== shift);
-            shifts.push(newShiftObj);
-            await updateDoc(docRef, { shifts, updatedAt: serverTimestamp(), type: shifts[0].type, reason: shifts.find(s => s.type === 'ausentismo')?.reason || null });
+            
+            await setDoc(docRef, { email, name, date, shifts, updatedAt: serverTimestamp(), type: shifts[0].type, reason: shifts.find(s => s.type === 'ausentismo')?.reason || null });
         } else {
             await setDoc(docRef, { email, name, date, shifts: [newShiftObj], type: newShiftObj.type, reason: newShiftObj.reason || null, updatedAt: serverTimestamp() });
         }
     }
 
-    /**
-     * Renderizado de Inicio Inteligente con cálculo dinámico
-     */
-    function renderInicioTab() {
-        const now = new Date();
-        const hour = now.getHours();
-        const dateToday = now.toISOString().split('T')[0];
-        const yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
-        const dateYesterday = yesterday.toISOString().split('T')[0];
-
-        let exitShift = null; let entryShift = null;
-        let exitDate = dateToday; let entryDate = dateToday;
-        let exitLabel = ""; let entryLabel = "";
-
-        if (hour >= 0 && hour < 8) {
-            exitShift = 'N'; exitDate = dateYesterday; entryShift = 'M';
-            exitLabel = `Nocturno (${dateYesterday})`; entryLabel = `Matutino (Hoy)`;
-        } else if (hour >= 8 && hour < 16) {
-            exitShift = 'M'; entryShift = 'V';
-            exitLabel = "Matutino (Saliente)"; entryLabel = "Vespertino (Entrante)";
-        } else if (hour >= 16 && hour < 22) {
-            exitShift = 'V'; entryShift = 'N';
-            exitLabel = "Vespertino (Saliente)"; entryLabel = "Nocturno (Entrante)";
-        } else { 
-            exitShift = 'N'; entryShift = null;
-            exitLabel = "Nocturno (Saliente)"; entryLabel = "Sin ingresos próximos";
-        }
-
-        const lE = document.getElementById('label-date-exit');
-        const lI = document.getElementById('label-current-shift');
-        if (lE) lE.innerText = exitLabel;
-        if (lI) lI.innerText = entryLabel;
-
-        const pendingExits = [];
-        rawAssignments.filter(a => a.date === exitDate).forEach(doc => {
-            const shifts = doc.shifts?.length ? doc.shifts : [doc];
-            shifts.forEach((s, idx) => {
-                if (s.shift === exitShift && s.realEntry && !s.realExit) {
-                    pendingExits.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: !!doc.shifts, shiftIndex: idx });
-                }
-            });
-        });
-
-        const incomingUsers = [];
-        if (entryShift) {
-            rawAssignments.filter(a => a.date === entryDate).forEach(doc => {
-                const shifts = doc.shifts?.length ? doc.shifts : [doc];
-                shifts.forEach((s, idx) => {
-                    if (s.shift === entryShift && !s.realEntry && s.type !== 'ausentismo') {
-                        incomingUsers.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: !!doc.shifts, shiftIndex: idx });
-                    }
-                });
-            });
-        }
-
-        const exitCont = document.getElementById('container-pending-exit');
-        const inCont = document.getElementById('container-incoming');
-        if(exitCont) exitCont.innerHTML = pendingExits.length > 0 ? pendingExits.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin salidas pendientes</div>`;
-        if(inCont) inCont.innerHTML = incomingUsers.length > 0 ? incomingUsers.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin ingresos pendientes</div>`;
-    }
-
+    // --- RENDERIZADO Y OTROS MÉTODOS ---
     function renderAll() {
         const dateInput = getDateInput();
         if(!dateInput?.value) return;
         const targetDate = dateInput.value;
-        
         const currentDayAssignments = rawAssignments.filter(a => a.date === targetDate);
         const flattenedElements = [];
         currentDayAssignments.forEach(doc => {
             if (doc.shifts?.length) {
                 doc.shifts.forEach((s, idx) => flattenedElements.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, isFromShifts: true, shiftIndex: idx }));
-            } else if (doc.shift || doc.type === 'ausentismo') {
-                flattenedElements.push({ ...doc, isFromShifts: false });
             }
         });
 
@@ -382,8 +320,6 @@
                 const elements = flattenedElements.filter(el => el.shift === shift && el.station === st.name && el.type !== 'ausentismo');
                 if (!isClosed || showClosedStations) listContainer.appendChild(createStationSection(st, shift, elements, isClosed));
             });
-            const otherElements = flattenedElements.filter(el => el.shift === shift && el.type !== 'ausentismo' && !sortedStations.some(st => st.name === el.station));
-            if (otherElements.length > 0) listContainer.appendChild(createStationSection({ name: 'Sin Caseta', id: 'others' }, shift, otherElements, false));
         });
 
         const absContainer = document.getElementById('container-ABS');
@@ -393,17 +329,65 @@
             const presentReasons = [...new Set([...defaultAbsenceReasons, ...presentAbsences.map(el => el.reason).filter(Boolean)])];
             presentReasons.forEach(reason => {
                 const elements = presentAbsences.filter(el => (el.reason || 'Falta').toLowerCase() === reason.toLowerCase());
-                if (defaultAbsenceReasons.includes(reason) || elements.length > 0) absContainer.appendChild(createAbsenceSection(reason, elements));
+                if (elements.length > 0 || defaultAbsenceReasons.includes(reason)) absContainer.appendChild(createAbsenceSection(reason, elements));
             });
         }
     }
 
-    // --- FUNCIONES DE SOPORTE UI ---
-    window.toggleGroupExpansion = (groupId) => {
-        if (expandedGroups.has(groupId)) expandedGroups.delete(groupId);
-        else expandedGroups.add(groupId);
-        renderAll();
-    };
+    function renderInicioTab() {
+        const now = new Date();
+        const hour = now.getHours();
+        const dateToday = now.toISOString().split('T')[0];
+        const yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
+        const dateYesterday = yesterday.toISOString().split('T')[0];
+
+        let exitShift = null, entryShift = null, exitDate = dateToday, entryDate = dateToday, exitLabel = "", entryLabel = "";
+
+        if (hour >= 0 && hour < 8) {
+            exitShift = 'N'; exitDate = dateYesterday; entryShift = 'M';
+            exitLabel = `Personal en Turno (Nocturno)`; entryLabel = `Matutino (Próximo)`;
+        } else if (hour >= 8 && hour < 16) {
+            exitShift = 'M'; entryShift = 'V';
+            exitLabel = "Personal en Turno (Matutino)"; entryLabel = "Vespertino (Próximo)";
+        } else if (hour >= 16 && hour < 22) {
+            exitShift = 'V'; entryShift = 'N';
+            exitLabel = "Personal en Turno (Vespertino)"; entryLabel = "Nocturno (Próximo)";
+        } else { 
+            exitShift = 'N'; entryShift = null;
+            exitLabel = "Personal en Turno (Nocturno)"; entryLabel = "Sin ingresos próximos";
+        }
+
+        const lE = document.getElementById('label-date-exit');
+        const lI = document.getElementById('label-current-shift');
+        if (lE) lE.innerText = exitLabel;
+        if (lI) lI.innerText = entryLabel;
+
+        const pendingExits = [], incomingUsers = [];
+        
+        // MODIFICACIÓN: Buscamos en todas las asignaciones del día y del día anterior (por nocturnos)
+        // a cualquier elemento que tenga entrada pero NO tenga salida.
+        rawAssignments.filter(a => a.date === dateToday || a.date === dateYesterday).forEach(doc => {
+            (doc.shifts || []).forEach((s, idx) => {
+                // Condición: tiene entrada real pero no salida real
+                if (s.realEntry && !s.realExit && s.type !== 'ausentismo') {
+                    pendingExits.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx });
+                }
+            });
+        });
+
+        if (entryShift) {
+            rawAssignments.filter(a => a.date === entryDate).forEach(doc => {
+                (doc.shifts || []).forEach((s, idx) => {
+                    if (s.shift === entryShift && !s.realEntry && s.type !== 'ausentismo') incomingUsers.push({ ...s, email: doc.email, name: doc.name, docId: doc.docId, shiftIndex: idx });
+                });
+            });
+        }
+
+        const exitCont = document.getElementById('container-pending-exit');
+        const inCont = document.getElementById('container-incoming');
+        if(exitCont) exitCont.innerHTML = pendingExits.length > 0 ? pendingExits.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin personal en servicio</div>`;
+        if(inCont) inCont.innerHTML = incomingUsers.length > 0 ? incomingUsers.map(el => renderElementRow(el)).join('') : `<div class="col-span-full py-10 text-center opacity-30 text-[9px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[2rem]">Sin ingresos pendientes</div>`;
+    }
 
     function createAbsenceSection(reason, elements) {
         const section = document.createElement('div');
@@ -442,8 +426,7 @@
         const duration = el.shiftDuration || (el.assignedEntry && el.assignedExit ? calculateDuration(entry, exit) : 8);
         const timeInfo = isAbsence ? '' : `<p class="text-[10px] font-black uppercase tracking-tighter text-slate-400">${entry} a ${exit} · ${duration}H</p>`;
         
-        let actionBtn = !isAbsence ? (!el.realEntry ? `<button onclick="event.stopPropagation(); window.quickRegisterEntry('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-90"><i class="fa-solid fa-right-to-bracket text-sm"></i></button>` : (!el.realExit ? `<button onclick="event.stopPropagation(); window.quickRegisterExit('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-red-800 text-white rounded-2xl shadow-xl shadow-red-800/20 active:scale-90"><i class="fa-solid fa-right-from-bracket text-sm"></i></button>` : `<div class="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-400 rounded-2xl"><i class="fa-solid fa-check text-sm"></i></div>`)) : "";
-        let configCard = !isConfirmed && !isAbsence && !el.assignedEntry ? `<div class="mt-4 p-4 bg-red-50 border border-red-100 rounded-[1.5rem] space-y-3 animate-in slide-in-from-top-1" onclick="event.stopPropagation()"><div class="grid grid-cols-2 gap-3"><input type="time" value="${entry}" onchange="window.updateTimeConfig('${el.docId}', 'assignedEntry', this.value, ${duration}, ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-full text-[13px] font-bold bg-white border border-red-200 rounded-xl p-3 outline-none"><input type="number" value="${duration}" onchange="window.updateTimeConfig('${el.docId}', 'shiftDuration', this.value, null, ${el.isFromShifts || false}, ${el.shiftIndex || 0}, '${entry}')" class="w-full text-[13px] font-bold bg-white border border-red-200 rounded-xl p-3 outline-none"></div><button onclick="window.confirmAssignment('${el.docId}', ${el.isFromShifts || false}, ${el.shiftIndex || 0})" class="w-full py-3 bg-slate-900 text-white text-[11px] font-black uppercase rounded-2xl hover:bg-emerald-600 transition-all active:scale-95">Confirmar Jornada</button></div>` : "";
+        let actionBtn = !isAbsence ? (!el.realEntry ? `<button onclick="event.stopPropagation(); window.quickRegisterEntry('${el.docId}', ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-emerald-500 text-white rounded-2xl shadow-xl active:scale-90"><i class="fa-solid fa-right-to-bracket text-sm"></i></button>` : (!el.realExit ? `<button onclick="event.stopPropagation(); window.quickRegisterExit('${el.docId}', ${el.shiftIndex || 0})" class="w-11 h-11 flex items-center justify-center bg-red-800 text-white rounded-2xl shadow-xl active:scale-90"><i class="fa-solid fa-right-from-bracket text-sm"></i></button>` : `<div class="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-400 rounded-2xl"><i class="fa-solid fa-check text-sm"></i></div>`)) : "";
         
         return `<div draggable="true" ondragstart="window.handleDragStartInternal(event, '${el.email}')" oncontextmenu="window.handleElementRightClick(event, '${el.email}', '${u.name}')" class="p-4 bg-white rounded-[1.8rem] border border-slate-100 hover:border-red-200 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md" onclick="window.viewElementDetail('${el.email}')">
             <div class="flex items-center justify-between">
@@ -461,65 +444,31 @@
                     <button onclick="event.stopPropagation(); window.deleteAssignment('${el.docId}')" class="p-2.5 text-slate-200 hover:text-red-800 transition-colors"><i class="fa-solid fa-circle-xmark text-lg"></i></button>
                 </div>
             </div>
-            ${configCard}
         </div>`;
     }
 
     // --- ACCIONES DE FIREBASE ---
-    window.quickRegisterEntry = async (id, isFromShifts, shiftIndex) => {
+    window.quickRegisterEntry = async (id, idx) => {
         const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        if (isFromShifts) {
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                const data = snap.data(); data.shifts[shiftIndex].realEntry = t;
-                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-            }
-        } else await updateDoc(docRef, { realEntry: t, updatedAt: serverTimestamp() });
-    };
-
-    window.quickRegisterExit = async (id, isFromShifts, shiftIndex) => {
-        const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        if (isFromShifts) {
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                const data = snap.data(); data.shifts[shiftIndex].realExit = t;
-                await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
-            }
-        } else await updateDoc(docRef, { realExit: t, updatedAt: serverTimestamp() });
-    };
-
-    window.updateTimeConfig = async (id, field, value, dur, isS, idx, entry) => {
-        const dR = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        if (isS) {
-            const snap = await getDoc(dR);
-            if (snap.exists()) {
-                const data = snap.data(); const s = data.shifts[idx];
-                if (field === 'assignedEntry') { s.assignedEntry = value; s.assignedExit = calculateExitTime(value, dur); }
-                else if (field === 'shiftDuration') { s.shiftDuration = parseFloat(value); s.assignedExit = calculateExitTime(entry, value); }
-                await updateDoc(dR, { shifts: data.shifts, updatedAt: serverTimestamp() });
-            }
-        } else {
-            const uO = { updatedAt: serverTimestamp() };
-            if (field === 'assignedEntry') { uO.assignedEntry = value; uO.assignedExit = calculateExitTime(value, dur); }
-            else if (field === 'shiftDuration') { uO.shiftDuration = parseFloat(value); uO.assignedExit = calculateExitTime(entry, value); }
-            await updateDoc(dR, uO);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            const data = snap.data(); data.shifts[idx].realEntry = t;
+            await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
         }
     };
 
-    window.confirmAssignment = async (id, isS, idx) => {
-        const dR = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
-        if (isS) {
-            const snap = await getDoc(dR);
-            if (snap.exists()) {
-                const d = snap.data(); d.shifts[idx].isConfirmed = true;
-                await updateDoc(dR, { shifts: d.shifts, updatedAt: serverTimestamp() });
-            }
-        } else await updateDoc(dR, { isConfirmed: true, updatedAt: serverTimestamp() });
+    window.quickRegisterExit = async (id, idx) => {
+        const t = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            const data = snap.data(); data.shifts[idx].realExit = t;
+            await updateDoc(docRef, { shifts: data.shifts, updatedAt: serverTimestamp() });
+        }
     };
 
-    window.deleteAssignment = async (id) => { if (confirm("¿Eliminar asignación?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id)); };
+    window.deleteAssignment = async (id) => { if (confirm("¿Eliminar asignación completa del día?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id)); };
 
     window.toggleStationStatus = async (stationId, shift, currentStatus) => {
         const dInp = getDateInput(); if(!dInp) return;
@@ -529,35 +478,27 @@
 
     window.toggleClosedStations = () => { showClosedStations = !showClosedStations; renderAll(); };
 
-    // --- FUNCIÓN DE NAVEGACIÓN (CONTROLADA POR SHELL) ---
-    window.switchActiveTab = (shift) => {
-        activeShiftTab = shift;
-        ['I', 'M','V','N','ABS'].forEach(s => {
-            const col = document.getElementById(`col-${s}`);
-            if(!col) return;
-            if (s === shift) {
-                col.classList.remove('hidden'); col.classList.add('flex');
-            } else {
-                col.classList.add('hidden'); col.classList.remove('flex');
-            }
-        });
-        
-        // Sincronizar UI del Shell si la función existe
-        if (typeof window.updateShellTabUI === 'function') {
-            window.updateShellTabUI(shift);
-        }
-
-        renderAll();
-    };
+    window.openPersonalPanel = () => { if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Perfiles.html', 'Asignar Fuerza'); };
 
     window.viewElementDetail = (email) => {
         const dInp = getDateInput();
         window.selectedUserEmail = email;
         window.selectedOperationDate = dInp ? dInp.value : '';
-        if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html');
+        if(typeof window.loadRightContent === 'function') window.loadRightContent('Apps/Componentes/RegAs_PP/Detalle.html', 'Detalle de Jornada');
     };
 
-    // --- MENÚ CONTEXTUAL ---
+    window.switchActiveTab = (shift) => {
+        activeShiftTab = shift;
+        ['I', 'M','V','N','ABS'].forEach(s => {
+            const col = document.getElementById(`col-${s}`);
+            if(!col) return;
+            if (s === shift) { col.classList.remove('hidden'); col.classList.add('flex'); } 
+            else { col.classList.add('hidden'); col.classList.remove('flex'); }
+        });
+        if (typeof window.updateShellTabUI === 'function') window.updateShellTabUI(shift);
+        renderAll();
+    };
+
     window.handleElementRightClick = (e, email, name) => {
         e.preventDefault(); e.stopPropagation();
         selectedElementForMenu = { email, name };
@@ -565,7 +506,7 @@
         const sub = document.getElementById('custom-submenu');
         document.getElementById('menu-user-name').innerText = name;
         sub.classList.add('hidden');
-        let top = e.clientY; let left = e.clientX;
+        let top = e.clientY, left = e.clientX;
         if (top + 300 > window.innerHeight) top = window.innerHeight - 310;
         if (left + 500 > window.innerWidth) left = window.innerWidth - 510;
         menu.style.top = `${top}px`; menu.style.left = `${left}px`;
@@ -590,12 +531,10 @@
 
     window.openSubMenu = (e, id, type, title) => {
         e.stopPropagation();
-        const sub = document.getElementById('custom-submenu');
-        const menu = document.getElementById('custom-context-menu');
-        const list = document.getElementById('submenu-list');
+        const sub = document.getElementById('custom-submenu'), menu = document.getElementById('custom-context-menu'), list = document.getElementById('submenu-list');
         document.getElementById('submenu-title').innerText = title;
         const menuRect = menu.getBoundingClientRect();
-        let subLeft = menuRect.right + 10; let subTop = menuRect.top;
+        let subLeft = menuRect.right + 10, subTop = menuRect.top;
         if (subLeft + 200 > window.innerWidth) subLeft = menuRect.left - 210;
         if (subTop + 300 > window.innerHeight) subTop = window.innerHeight - 310;
         sub.style.left = `${subLeft}px`; sub.style.top = `${subTop}px`;
@@ -608,8 +547,7 @@
     };
 
     window.directContextAssign = async (stationName, shift) => {
-        const { email, name } = selectedElementForMenu;
-        const dateInput = getDateInput();
+        const { email, name } = selectedElementForMenu, dateInput = getDateInput();
         if(!email || !dateInput) return;
         await performAssignmentUpdate(email, name, dateInput.value, shift, stationName);
         document.getElementById('custom-context-menu').classList.add('hidden');
@@ -617,8 +555,7 @@
     };
 
     window.directContextAbsence = async (reason) => {
-        const { email, name } = selectedElementForMenu;
-        const dateInput = getDateInput();
+        const { email, name } = selectedElementForMenu, dateInput = getDateInput();
         if(!email || !dateInput) return;
         await performAssignmentUpdate(email, name, dateInput.value, 'ABS', 'General', reason);
         document.getElementById('custom-context-menu').classList.add('hidden');
@@ -631,8 +568,5 @@
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .shift-column { height: 100%; }
-    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.2; cursor: pointer; }
     [draggable="true"] { -webkit-user-drag: element; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

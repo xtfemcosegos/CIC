@@ -1,16 +1,15 @@
-<!-- Módulo de Planeación Operativa - Sincronizado con Shell y Ribbon -->
+<!-- Módulo de Planeación Operativa - Sincronizado con Shell y Gestión de Conflictos -->
 <div id="planeacion-container" class="flex flex-col h-full bg-white select-none text-slate-900 font-sans">
     
     <div id="scroll-wrapper" class="flex-1 overflow-auto custom-scrollbar relative bg-slate-50/30">
-        <!-- Tabla con layout fijo para alineación perfecta con el Ribbon del Shell -->
+        <!-- Tabla con layout fijo para alineación con el Ribbon -->
         <table id="planning-table" class="w-fit border-separate border-spacing-0 bg-white table-fixed">
             <colgroup id="table-columns-defs">
-                <!-- Columna de Nombres (320px) - Coincide con el espaciador del Ribbon en RegAs_PP.html -->
                 <col style="width: 320px;">
-                <!-- Columnas de fechas (85px c/u) inyectadas dinámicamente -->
+                <!-- Columnas de fechas inyectadas dinámicamente -->
             </colgroup>
             <tbody id="planning-body" class="divide-y divide-slate-100">
-                <!-- Las filas se inyectan dinámicamente -->
+                <!-- Filas dinámicas -->
             </tbody>
         </table>
         
@@ -30,7 +29,6 @@
     </div>
     
     <div class="p-1.5 space-y-1">
-        <!-- Opción para llamar a Patrones.html -->
         <button onclick="window.openPatternManager()" class="w-full text-left px-4 py-3 bg-red-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-red-700 shadow-lg shadow-red-900/10 mb-2">
             <div class="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center"><i class="fa-solid fa-gears text-xs"></i></div>
             Gestionar Patrones
@@ -59,6 +57,31 @@
             <div class="w-6 h-6 bg-red-100 rounded-md flex items-center justify-center"><i class="fa-solid fa-eraser text-xs"></i></div>
             Limpiar Celda
         </button>
+    </div>
+</div>
+
+<!-- Modal de Conflicto de Turno -->
+<div id="conflict-modal" class="fixed inset-0 z-[400] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in duration-200 space-y-6">
+        <div class="text-center space-y-2">
+            <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+            </div>
+            <h4 class="text-sm font-black uppercase text-slate-900">Conflicto de Turno</h4>
+            <p class="text-[10px] font-medium text-slate-500 leading-relaxed">Este elemento ya tiene un turno asignado para esta fecha. ¿Cómo desea proceder?</p>
+        </div>
+        
+        <div class="grid grid-cols-1 gap-3">
+            <button id="btn-conflict-add" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg">
+                Registrar como Doblete
+            </button>
+            <button id="btn-conflict-replace" class="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95">
+                Sustituir Turno Previo
+            </button>
+            <button onclick="closeConflictModal()" class="w-full py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-600 transition-colors">
+                Cancelar
+            </button>
+        </div>
     </div>
 </div>
 
@@ -108,26 +131,12 @@
         setupRibbonSync();
     }
 
-    // Puente de compatibilidad con index.html para cargar el panel derecho
+    // Puente de compatibilidad con index.html
     window.internalLoadRight = async (file) => {
-        if (typeof window.loadRightContent === 'function') {
+        if (typeof window.parent.loadRightContent === 'function') {
+            window.parent.loadRightContent(file);
+        } else if (typeof window.loadRightContent === 'function') {
             window.loadRightContent(file);
-        } else {
-            const rightContainer = document.getElementById('right-panel-content');
-            if (!rightContainer) return;
-            
-            if (typeof window.toggleRightPanel === 'function') {
-                window.toggleRightPanel(true);
-            }
-            
-            try {
-                const response = await fetch(file);
-                if (response.ok) {
-                    const html = await response.text();
-                    rightContainer.innerHTML = "";
-                    rightContainer.appendChild(document.createRange().createContextualFragment(html));
-                }
-            } catch (e) { console.error("Error cargando panel derecho:", e); }
         }
     };
 
@@ -145,11 +154,12 @@
         for(let i = startOffset; i < (count + startOffset); i++) {
             const d = new Date(base);
             d.setDate(base.getDate() + i);
-            dates.push(formatLocalDate(d));
+            dates.push(d.toISOString().split('T')[0]);
         }
         updateColgroup();
-        renderRibbonHeaders();
         renderPlanning();
+        // Disparar evento para que el Shell actualice su Ribbon si es necesario
+        window.dispatchEvent(new CustomEvent('datesExtended', { detail: { dates } }));
     }
 
     function updateColgroup() {
@@ -163,28 +173,9 @@
         });
     }
 
-    function formatLocalDate(d) {
-        return d.toISOString().split('T')[0];
-    }
-
-    function renderRibbonHeaders() {
-        const ribbonRow = document.getElementById('ribbon-date-row');
-        if (!ribbonRow) return;
-        ribbonRow.innerHTML = '';
-        dates.forEach(dateStr => {
-            const d = new Date(dateStr + 'T00:00:00');
-            const dayName = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
-            const dayNum = d.getDate();
-            const cell = document.createElement('div');
-            cell.className = "flex flex-col items-center justify-center w-[85px] min-w-[85px] h-full border-r border-slate-800 transition-colors hover:bg-slate-800/50 cursor-default";
-            cell.innerHTML = `<p class="text-[8px] font-black text-slate-500 mb-0.5 tracking-widest">${dayName}</p><p class="text-xs font-black text-white">${dayNum}</p>`;
-            ribbonRow.appendChild(cell);
-        });
-    }
-
     function setupRibbonSync() {
         const wrapper = document.getElementById('scroll-wrapper');
-        const ribbonHeader = document.getElementById('ribbon-sync-header');
+        const ribbonHeader = window.parent.document.getElementById('ribbon-sync-header');
         if (!wrapper || !ribbonHeader) return;
         wrapper.addEventListener('scroll', () => { ribbonHeader.scrollLeft = wrapper.scrollLeft; });
     }
@@ -302,7 +293,6 @@
 
     function renderShiftIndicator(assign) {
         let indicators = [];
-        // Priorizar ausentismo en el indicador principal
         let mainReason = assign.reason || (assign.shifts?.find(s => s.type === 'ausentismo')?.reason);
         if (mainReason) indicators.push({ val: mainReason, type: 'abs' });
         
@@ -311,6 +301,7 @@
         } else if (assign.shift && assign.type !== 'ausentismo') {
             indicators.push({ val: assign.shift, type: 'shift' });
         }
+
         return `<div class="flex flex-col items-center justify-center gap-1.5 py-3">${indicators.map(ind => {
             if (ind.type === 'abs') {
                 const config = absenceReasons.find(r => r.label === ind.val) || { color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' };
@@ -321,7 +312,7 @@
         }).join('')}</div>`;
     }
 
-    // --- NAVEGACIÓN Y ACCIONES ---
+    // --- ACCIONES DE PLANEACIÓN ---
 
     window.openPatternManager = () => {
         const { email, name, date, role } = activeCell;
@@ -347,32 +338,31 @@
         const menu = document.getElementById('planning-context-menu');
         document.getElementById('menu-target-name').innerText = name;
         document.getElementById('menu-target-date').innerText = date;
-        let top = e.clientY; let left = e.clientX;
+        let top = e.clientY, left = e.clientX;
         if (top + 500 > window.innerHeight) top = window.innerHeight - 510;
         if (left + 240 > window.innerWidth) left = window.innerWidth - 250;
         menu.style.top = `${top}px`; menu.style.left = `${left}px`;
         menu.classList.remove('hidden');
-        const closeMenu = () => { menu.classList.add('hidden'); document.removeEventListener('click', closeMenu); };
+        const closeMenu = (ev) => { if(!menu.contains(ev.target)) { menu.classList.add('hidden'); document.removeEventListener('click', closeMenu); } };
         setTimeout(() => document.addEventListener('click', closeMenu), 20);
     }
 
-    window.applyPlanning = async (type, value) => {
+    window.applyPlanning = async (type, value, forceMode = null) => {
         const { email, date, name, role } = activeCell;
         if (!email || !date) return;
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assignments', `${date}_${email}`);
+        
         try {
             const stationName = userConfigs[email]?.defaultStation || "General";
             let newShift = null;
+
             if (type === 'shift') {
                 const isCC = stationName.toLowerCase().includes('centro de control');
                 const duration = role?.toLowerCase().includes('encargado') ? 12 : 8;
                 let entry = value === 'M' ? (isCC ? '06:00' : '07:00') : value === 'V' ? (isCC ? '14:00' : '13:00') : (isCC ? '22:00' : '21:00');
                 const [h, m] = entry.split(':').map(Number);
-                let totalMinutes = h * 60 + m + (duration * 60);
-                let finalH = Math.floor((totalMinutes / 60) % 24);
-                let finalM = Math.floor(totalMinutes % 60);
-                let exit = `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`;
-                
+                let tm = h * 60 + m + (duration * 60);
+                let exit = `${String(Math.floor((tm/60)%24)).padStart(2,'0')}:${String(Math.floor(tm%60)).padStart(2,'0')}`;
                 newShift = { shift: value, station: stationName, type: 'asignacion', assignedEntry: entry, assignedExit: exit, shiftDuration: duration, isConfirmed: false };
             } else {
                 newShift = { type: 'ausentismo', reason: value, shift: 'M', station: 'General', isConfirmed: true };
@@ -380,26 +370,45 @@
 
             const snap = await getDoc(docRef);
             let shifts = snap.exists() ? (snap.data().shifts || []) : [];
-            
+
             if (type === 'absence') {
-                shifts = [newShift]; // Reemplazar todo por la ausencia
+                // "si se pone un ausentismo se borra el turno"
+                shifts = [newShift]; 
             } else {
-                // Al asignar un turno, filtramos cualquier ausencia previa para que no coexistan
-                shifts = shifts.filter(s => s.type !== 'ausentismo' && s.shift !== value);
-                shifts.push(newShift);
+                // Al asignar un turno: "si hay ausentismo y se pone turno, se borra el ausentismo"
+                shifts = shifts.filter(s => s.type !== 'ausentismo');
+
+                if (shifts.length > 0 && !forceMode) {
+                    // Preguntar si es adicional o sustitutorio
+                    showConflictModal(type, value);
+                    return;
+                }
+
+                if (forceMode === 'replace') {
+                    shifts = [newShift];
+                } else {
+                    // Adicional o primera asignación: evitamos duplicar exactamente el mismo turno si ya existe
+                    if (!shifts.some(s => s.shift === value)) {
+                        shifts.push(newShift);
+                    }
+                }
             }
 
-            // Metadatos de nivel raíz para asegurar limpieza en la base de datos y evitar persistencia de 'reason' antiguo
-            const updates = {
-                email, name, date, shifts,
-                updatedAt: serverTimestamp(),
-                type: shifts[0]?.type || 'asignacion',
-                reason: shifts.find(s => s.type === 'ausentismo')?.reason || null
-            };
-
+            const updates = { email, name, date, shifts, updatedAt: serverTimestamp(), type: shifts[0]?.type || 'asignacion', reason: shifts.find(s => s.type === 'ausentismo')?.reason || null };
             await setDoc(docRef, updates, { merge: true });
+            closeConflictModal();
         } catch (e) { console.error("Error en planeación:", e); }
     };
+
+    // --- MODAL DE CONFLICTO ---
+    function showConflictModal(type, value) {
+        const modal = document.getElementById('conflict-modal');
+        modal.classList.remove('hidden');
+        document.getElementById('btn-conflict-add').onclick = () => window.applyPlanning(type, value, 'add');
+        document.getElementById('btn-conflict-replace').onclick = () => window.applyPlanning(type, value, 'replace');
+    }
+
+    window.closeConflictModal = () => { document.getElementById('conflict-modal').classList.add('hidden'); };
 
     window.clearPlanning = async () => {
         const { email, date } = activeCell;
