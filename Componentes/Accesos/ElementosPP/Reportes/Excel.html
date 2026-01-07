@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Histórico Excel - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Librería para Exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-outline: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1e293b;
+            padding: 24px;
+        }
+
+        /* --- Estilos Material Design 3 --- */
+        .card-material {
+            background: white;
+            border-radius: 28px;
+            border: 1px solid var(--md-outline);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            max-height: 60vh;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        thead { position: sticky; top: 0; z-index: 10; }
+        th { 
+            background: #f8fafc; 
+            padding: 14px 20px; 
+            text-align: left; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: #64748b; 
+            border-bottom: 1px solid #f1f5f9;
+        }
+        td { 
+            padding: 12px 20px; 
+            font-size: 11px; 
+            border-bottom: 1px solid #f1f5f9; 
+            color: #334155; 
+        }
+        tr:hover td { background-color: #f8fafc; }
+
+        .filter-input {
+            background: white;
+            border: 1.5px solid var(--md-outline);
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .filter-input:focus { border-color: var(--md-primary); box-shadow: 0 0 0 3px rgba(69, 10, 10, 0.05); }
+
+        .btn-action {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--md-primary); color: white; }
+        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(69, 10, 10, 0.2); }
+        .btn-action:active { transform: scale(0.98); }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-full mx-auto space-y-6">
+        
+        <!-- Encabezado Principal -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+                <h1 class="text-2xl font-black text-red-900 uppercase tracking-tight">Consolidado Histórico</h1>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Análisis Global de Registros</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="openImport()" class="btn-action btn-primary shadow-lg shadow-red-900/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Importar / Exportar
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Filtros -->
+        <div class="flex flex-wrap items-center gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex flex-col">
+                <label class="text-[9px] font-black text-slate-400 uppercase ml-1 mb-1">Año</label>
+                <select id="filter-year" onchange="applyFilters()" class="filter-input w-24"></select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-black text-slate-400 uppercase ml-1 mb-1">Mes</label>
+                <select id="filter-month" onchange="applyFilters()" class="filter-input w-32">
+                    <option value="all">TODOS</option>
+                    <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+                    <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+                    <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+                    <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-black text-slate-400 uppercase ml-1 mb-1">Día Específico</label>
+                <input type="date" id="filter-day" onchange="applyFilters()" class="filter-input">
+            </div>
+            <div class="flex-grow"></div>
+            <div id="data-status-chip" class="hidden items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="text-[9px] font-black text-emerald-700 uppercase">Caché Local Activa</span>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card-material">
+            <div id="loading-overlay" class="flex flex-col items-center justify-center py-32 gap-4">
+                <div class="w-10 h-10 border-4 border-red-900 border-t-transparent rounded-full animate-spin"></div>
+                <span id="loading-msg" class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sincronizando registros globales...</span>
+            </div>
+
+            <div id="table-view" class="hidden">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>ID</th>
+                                <th>Elemento</th>
+                                <th>Turno</th>
+                                <th>Caseta</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Estatus</th>
+                                <th>Comentario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-body"></tbody>
+                    </table>
+                </div>
+                <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center">
+                    <span id="record-count" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">0 Registros totales</span>
+                    <div class="flex gap-4">
+                        <button onclick="exportVisibleToExcel()" class="text-[10px] font-black text-emerald-700 uppercase hover:underline">Exportar Vista Actual</button>
+                        <button onclick="refreshDataFromServer()" class="text-[10px] font-black text-red-900 uppercase hover:underline">Actualizar Base de Datos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let rawData = [];
+        let userDataCache = {};
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                initYearSelector();
+                await handleDataLoad();
+            } else signInAnonymously(auth);
+        });
+
+        function initYearSelector() {
+            const selector = document.getElementById('filter-year');
+            const currentYear = new Date().getFullYear();
+            selector.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                const year = currentYear - i;
+                const opt = document.createElement('option');
+                opt.value = year; opt.innerText = year;
+                selector.appendChild(opt);
+            }
+        }
+
+        async function handleDataLoad() {
+            const localData = localStorage.getItem('regas_historical_data');
+            
+            if (localData) {
+                console.log("Cargando desde almacenamiento local...");
+                rawData = JSON.parse(localData);
+                document.getElementById('data-status-chip').classList.remove('hidden');
+                document.getElementById('data-status-chip').classList.add('flex');
+                applyFilters();
+            } else {
+                await fetchInitialData();
+            }
+        }
+
+        async function fetchInitialData() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            document.getElementById('table-view').classList.add('hidden');
+            document.getElementById('data-status-chip').classList.add('hidden');
+
+            try {
+                const uSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+                uSnap.forEach(d => userDataCache[d.id] = d.data());
+
+                const regAsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs'));
+                const dateIds = [];
+                regAsSnap.forEach(d => dateIds.push(d.id));
+
+                rawData = [];
+                const shiftTypes = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+
+                for (const dateId of dateIds) {
+                    const day = dateId.substring(0, 2);
+                    const month = dateId.substring(2, 4);
+                    const year = dateId.substring(4, 8);
+                    const isoDate = `${year}-${month}-${day}`;
+
+                    document.getElementById('loading-msg').innerText = `Procesando: ${isoDate}`;
+
+                    for (const shift of shiftTypes) {
+                        const shiftSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, shift));
+                        shiftSnap.forEach(docSnap => {
+                            const data = docSnap.data();
+                            const user = userDataCache[docSnap.id] || { nombre: 'Desconocido', id_empleado: '---' };
+                            
+                            rawData.push({
+                                fecha: isoDate,
+                                year: parseInt(year),
+                                month: parseInt(month) - 1,
+                                id_empleado: user.id_empleado || '---',
+                                nombre: user.nombre,
+                                turno: data.Ausentismo ? 'AUSENCIA' : (data.turno || shift).toUpperCase(),
+                                caseta: data.Caseta || (data.Ausentismo ? 'N/A' : 'Sin asignar'),
+                                entrada: data.entrada_real || (data.Ausentismo ? data.motivo : '--:--'),
+                                salida: data.salida_real || '--:--',
+                                status: getStatusText(data),
+                                comentario: data.comentario || ''
+                            });
+                        });
+                    }
+                }
+
+                // Guardar en local storage para futuros usos
+                localStorage.setItem('regas_historical_data', JSON.stringify(rawData));
+                applyFilters();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading-msg').innerText = "Error al sincronizar datos.";
+            }
+        }
+
+        function getStatusText(data) {
+            if (data.Ausentismo) return "AUSENTE";
+            let parts = [];
+            if (data.retardo) parts.push("RETARDO");
+            if (data.es_festivo) parts.push("FESTIVO");
+            if (data.es_extra) parts.push("EXTRA");
+            if (data.es_recuperacion) parts.push("RECUP.");
+            return parts.length > 0 ? parts.join(" | ") : "NORMAL";
+        }
+
+        window.applyFilters = () => {
+            const year = parseInt(document.getElementById('filter-year').value);
+            const month = document.getElementById('filter-month').value;
+            const day = document.getElementById('filter-day').value;
+
+            let filtered = rawData.filter(item => item.year === year);
+
+            if (month !== 'all') {
+                filtered = filtered.filter(item => item.month === parseInt(month));
+            }
+
+            if (day) {
+                filtered = filtered.filter(item => item.fecha === day);
+            }
+
+            renderTable(filtered);
+        };
+
+        function renderTable(list) {
+            const body = document.getElementById('data-body');
+            body.innerHTML = '';
+            
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('table-view').classList.remove('hidden');
+            document.getElementById('record-count').innerText = `${list.length} Registros mostrados`;
+
+            list.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.nombre.localeCompare(b.nombre));
+
+            list.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-bold whitespace-nowrap">${item.fecha}</td>
+                    <td class="font-mono text-slate-400">${item.id_empleado}</td>
+                    <td class="font-bold uppercase tracking-tight">${item.nombre}</td>
+                    <td><span class="badge ${item.turno === 'AUSENCIA' ? 'bg-red-50 text-red-900' : 'bg-slate-100'}">${item.turno}</span></td>
+                    <td class="text-[10px] font-bold text-slate-400 uppercase">${item.caseta}</td>
+                    <td class="font-black text-slate-600">${item.entrada}</td>
+                    <td class="font-black text-slate-600">${item.salida}</td>
+                    <td><span class="text-[9px] font-black ${item.status.includes('RETARDO') ? 'text-red-600' : 'text-slate-400'}">${item.status}</span></td>
+                    <td class="italic text-slate-400 max-w-xs truncate">${item.comentario}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        window.refreshDataFromServer = async () => {
+            if (confirm("Se borrará la copia local y se descargarán todos los datos desde el servidor. ¿Desea continuar?")) {
+                localStorage.removeItem('regas_historical_data');
+                await fetchInitialData();
+            }
+        };
+
+        window.exportVisibleToExcel = () => {
+            const table = document.querySelector('table');
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Historico" });
+            const fileName = `Reporte_Historico_RegAs_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        };
+
+        window.openImport = () => {
+            if (window.parent) {
+                window.parent.postMessage({ type: 'openImportDialog' }, '*');
+            }
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RegAs - Elementos PP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+    <!-- Librería para procesamiento de Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #ffffff;
+            --md-background: #fdf8f8;
+            --md-outline: #e5e7eb;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-background);
+            color: #1f1a1a;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        .header-card {
+            background-color: var(--md-primary);
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 4px 12px rgba(69, 10, 10, 0.1);
+        }
+
+        .ribbon {
+            background-color: white;
+            border-radius: 0 0 24px 24px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 24px rgba(69, 10, 10, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .view-tab {
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .view-tab.active {
+            border-bottom-color: white;
+            opacity: 1;
+        }
+
+        .toggle-btn {
+            transition: all 0.2s ease;
+            border: 1px solid #f3f4f6;
+        }
+
+        .toggle-btn.active {
+            background-color: var(--md-primary);
+            color: white;
+            border-color: var(--md-primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Estilos para iframes apilados */
+        .module-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none; 
+            border-radius: 12px 12px 0 0;
+            background: white;
+        }
+        .module-frame.active {
+            display: block; 
+        }
+
+        .ribbon-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .ribbon-action-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .ribbon-action-btn svg { width: 14px; height: 14px; }
+
+        .date-nav-btn {
+            padding: 4px;
+            border-radius: 8px;
+            color: #94a3b8;
+            transition: all 0.2s;
+        }
+        .date-nav-btn:hover { background: #f1f5f9; color: var(--md-primary); }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px); z-index: 1000; display: none;
+            align-items: center; justify-content: center;
+        }
+
+        .modal-container {
+            background: white; width: 90%; max-width: 600px; height: 80vh;
+            border-radius: 28px; overflow: hidden; display: flex;
+            flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalScale {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        ::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- Diálogo de Importación -->
+    <div id="import-dialog" class="modal-overlay">
+        <div class="modal-container">
+            <div class="p-5 flex items-center justify-between border-b border-gray-100">
+                <h3 class="text-xs font-black uppercase text-red-900 tracking-widest">Importación de Planeación</h3>
+                <button onclick="closeImportDialog()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <iframe id="import-frame" class="flex-grow w-full border-none" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <div class="px-6 pt-6 z-20 flex-shrink-0">
+        <div class="max-w-7xl mx-auto">
+            
+            <header class="header-card text-white p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h1 class="text-2xl font-black tracking-tight uppercase leading-none">RegAs</h1>
+                                <div class="flex gap-4 ml-4">
+                                    <button onclick="changeMainView('dia')" id="tab-dia" class="view-tab active text-[10px] font-bold uppercase opacity-60 hover:opacity-100 pb-1">Vista Día</button>
+                                    <button onclick="changeMainView('planeacion')" id="tab-planeacion" class="view-tab text-[10px] font-bold uppercase opacity-60 hover:opacity-100 pb-1">Planeación</button>
+                                    <button onclick="changeMainView('reportes')" id="tab-reportes" class="view-tab text-[10px] font-bold uppercase opacity-60 hover:opacity-100 pb-1">Reportes</button>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-red-200/70 font-bold uppercase tracking-widest mt-1">Gestión operativa y control de asistencias</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <nav id="shell-ribbon" class="ribbon px-6 py-3">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    
+                    <div id="tools-dia" class="flex items-center gap-4 w-full sm:w-auto">
+                        <div class="flex flex-col">
+                            <label class="text-[9px] font-black text-gray-400 uppercase mb-1">Fecha de Consulta</label>
+                            <div class="flex items-center gap-1">
+                                <button onclick="navigateDate(-1)" class="date-nav-btn" title="Ayer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                </button>
+                                <input type="date" id="date-selector" onchange="handleDateChange()" class="text-xs font-bold text-gray-700 outline-none border-b border-gray-200 focus:border-red-800 pb-1 bg-transparent">
+                                <button onclick="navigateDate(1)" class="date-nav-btn" title="Mañana">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="h-8 w-px bg-gray-100 mx-2"></div>
+                        <button onclick="refreshData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400" title="Refrescar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </button>
+                    </div>
+
+                    <div id="tools-planeacion" class="hidden flex items-center gap-2 flex-grow sm:justify-start">
+                        <button class="ribbon-action-btn text-emerald-600" onclick="exportToExcel()">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span>Exportar XLSX</span>
+                        </button>
+                        <button class="ribbon-action-btn text-blue-600" onclick="openImportDialog()">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span>Importar XLSX</span>
+                        </button>
+                    </div>
+
+                    <div id="report-selector-container" class="hidden flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                        <button onclick="changeReportView('Whatsapp')" id="report-Whatsapp" class="toggle-btn active px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Whatsapp</button>
+                        <button onclick="changeReportView('Diario')" id="report-Diario" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Diario</button>
+                        <button onclick="changeReportView('Excel')" id="report-Excel" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Excel</button>
+                    </div>
+
+                    <div id="shift-selector-container" class="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                        <button onclick="changeShift('Proximos')" id="shift-Proximos" class="toggle-btn active px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Próximos</button>
+                        <button onclick="changeShift('Matutino')" id="shift-Matutino" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Matutino</button>
+                        <button onclick="changeShift('Vespertino')" id="shift-Vespertino" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Vespertino</button>
+                        <button onclick="changeShift('Nocturno')" id="shift-Nocturno" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight">Nocturno</button>
+                        <button onclick="changeShift('Ausentismos')" id="shift-Ausentismos" class="toggle-btn px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tight text-red-600">Ausentismos</button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <main class="flex-grow flex flex-col relative mt-4 px-6 overflow-hidden">
+        <div id="sub-main-area" class="max-w-7xl mx-auto w-full flex-grow flex flex-col min-h-0 relative shadow-sm rounded-t-xl overflow-hidden">
+            <!-- Iframes dinámicos aquí -->
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let currentMainView = 'dia';
+        let currentShift = 'Proximos';
+        let currentReportView = 'Whatsapp';
+
+        const loadedSubModules = new Map(); // URL -> Iframe Element
+        const subMainArea = document.getElementById('sub-main-area');
+
+        window.initDate = () => {
+            const savedDate = localStorage.getItem('regas_lastSelectedDate');
+            if (savedDate) {
+                document.getElementById('date-selector').value = savedDate;
+                return;
+            }
+
+            const now = new Date();
+            const hour = now.getHours();
+            let targetDate = new Date(now);
+            if (hour >= 0 && hour < 5) targetDate.setDate(now.getDate() - 1);
+
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getDate()).padStart(2, '0');
+            
+            const dateStr = `${year}-${month}-${day}`;
+            document.getElementById('date-selector').value = dateStr;
+            localStorage.setItem('regas_lastSelectedDate', dateStr);
+        };
+
+        window.handleDateChange = () => {
+            const selectedDate = document.getElementById('date-selector').value;
+            localStorage.setItem('regas_lastSelectedDate', selectedDate);
+            
+            // Si cambia la fecha, invalidamos (borramos) las vistas que dependen del día 
+            // para forzar su recarga con los nuevos datos al volver a ellas.
+            loadedSubModules.forEach((iframe, url) => {
+                if (url.includes('VistaDia/')) {
+                    iframe.remove();
+                    loadedSubModules.delete(url);
+                }
+            });
+
+            loadViewContent();
+        };
+
+        window.navigateDate = (offset) => {
+            const selector = document.getElementById('date-selector');
+            const currentVal = selector.value;
+            const d = new Date(currentVal + "T00:00:00");
+            d.setDate(d.getDate() + offset);
+            
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            
+            const newVal = `${y}-${m}-${day}`;
+            selector.value = newVal;
+            window.handleDateChange();
+        };
+
+        window.changeMainView = (view) => {
+            currentMainView = view;
+            localStorage.setItem('regas_lastMainView', view);
+            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+            const activeTab = document.getElementById(`tab-${view}`);
+            if (activeTab) activeTab.classList.add('active');
+
+            const toolsDia = document.getElementById('tools-dia');
+            const toolsPlan = document.getElementById('tools-planeacion');
+            const shiftContainer = document.getElementById('shift-selector-container');
+            const reportContainer = document.getElementById('report-selector-container');
+            
+            if (view === 'dia') {
+                toolsDia.style.display = 'flex';
+                toolsPlan.style.display = 'none';
+                shiftContainer.style.display = 'flex';
+                reportContainer.style.display = 'none';
+                loadViewContent();
+            } else if (view === 'planeacion') {
+                toolsDia.style.display = 'none';
+                toolsPlan.style.display = 'flex';
+                shiftContainer.style.display = 'none';
+                reportContainer.style.display = 'none';
+                loadExternalSubPage(`/Componentes/Accesos/ElementosPP/Planeación/Tabla.html`);
+            } else if (view === 'reportes') {
+                toolsDia.style.display = 'none';
+                toolsPlan.style.display = 'none';
+                shiftContainer.style.display = 'none';
+                reportContainer.style.display = 'flex';
+                const lastReport = localStorage.getItem('regas_lastReportView') || 'Whatsapp';
+                changeReportView(lastReport);
+            }
+        };
+
+        window.changeShift = (shift) => {
+            currentShift = shift;
+            localStorage.setItem('regas_lastShift', shift);
+            document.querySelectorAll('#shift-selector-container .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            const btn = document.getElementById(`shift-${shift}`);
+            if (btn) btn.classList.add('active');
+            loadViewContent();
+        };
+
+        window.changeReportView = (report) => {
+            currentReportView = report;
+            localStorage.setItem('regas_lastReportView', report);
+            document.querySelectorAll('#report-selector-container .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            const btn = document.getElementById(`report-${report}`);
+            if (btn) btn.classList.add('active');
+            loadExternalSubPage(`/Componentes/Accesos/ElementosPP/Reportes/${report}.html`);
+        }
+
+        function loadViewContent() {
+            if (currentMainView === 'dia') {
+                loadExternalSubPage(`/Componentes/Accesos/ElementosPP/VistaDia/${currentShift}.html?date=${document.getElementById('date-selector').value}`);
+            }
+        }
+
+        function loadExternalSubPage(url) {
+            if (!url) return;
+
+            // Ocultar todos los sub-módulos cargados
+            loadedSubModules.forEach(iframe => iframe.classList.remove('active'));
+
+            if (loadedSubModules.has(url)) {
+                // Si el iframe ya existe, mostrarlo
+                loadedSubModules.get(url).classList.add('active');
+            } else {
+                // Si no, crear uno nuevo
+                const newIframe = document.createElement('iframe');
+                newIframe.src = url;
+                newIframe.className = 'module-frame active';
+                subMainArea.appendChild(newIframe);
+                loadedSubModules.set(url, newIframe);
+            }
+        }
+
+        window.refreshData = () => {
+            // Refrescar forzado del módulo activo solamente
+            const currentUrl = currentMainView === 'dia' 
+                ? `/Componentes/Accesos/ElementosPP/VistaDia/${currentShift}.html?date=${document.getElementById('date-selector').value}`
+                : currentMainView === 'planeacion' 
+                    ? `/Componentes/Accesos/ElementosPP/Planeación/Tabla.html`
+                    : `/Componentes/Accesos/ElementosPP/Reportes/${currentReportView}.html`;
+
+            if (loadedSubModules.has(currentUrl)) {
+                loadedSubModules.get(currentUrl).contentWindow.location.reload();
+            } else {
+                loadViewContent();
+            }
+        };
+
+        window.openImportDialog = () => {
+            const dialog = document.getElementById('import-dialog');
+            const frame = document.getElementById('import-frame');
+            frame.src = "/Componentes/Accesos/ElementosPP/Planeación/Importa.html";
+            dialog.style.display = 'flex';
+        };
+
+        window.closeImportDialog = () => {
+            const dialog = document.getElementById('import-dialog');
+            const frame = document.getElementById('import-frame');
+            dialog.style.display = 'none';
+            frame.src = "about:blank";
+            // Si estamos en planeación, recargamos la tabla para ver cambios
+            if (currentMainView === 'planeacion') refreshData();
+        };
+
+        window.exportToExcel = async () => {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            const dataToExport = [];
+            const today = document.getElementById('date-selector').value;
+
+            usersSnap.forEach(uDoc => {
+                const u = uDoc.data();
+                const puesto = (u.puesto || "").toLowerCase();
+                if (["administrador", "operador cco", "encargado", "guardia"].includes(puesto)) {
+                    dataToExport.push({
+                        "Fecha": today, "ID": uDoc.id, "Nombre": u.nombre,
+                        "Turno1": "", "Caseta1": "", "Entrada1": "", "Salida1": "", "Comentario1": "", "Festivo1": "No", "Textra1": "No", "Recuperación1": "No", "Retardo1": "No",
+                        "Turno2": "", "Caseta2": "", "Entrada2": "", "Salida2": "", "Comentario2": "", "Festivo2": "No", "Textra2": "No", "Recuperación2": "No", "Retardo2": "No",
+                        "Ausentismo": "No", "Motivo": ""
+                    });
+                }
+            });
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "RegAs");
+            XLSX.writeFile(wb, `Planeacion_PP_${today}.xlsx`);
+        };
+
+        window.addEventListener('message', (event) => {
+            if (event.data === 'closeImportDialog') window.closeImportDialog();
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.initDate();
+                const savedView = localStorage.getItem('regas_lastMainView') || 'dia';
+                window.changeMainView(savedView);
+                if (savedView === 'dia') {
+                    window.changeShift(localStorage.getItem('regas_lastShift') || 'Proximos');
+                }
+            } else signInAnonymously(auth);
+        });
+
+    </script>
+</body>
+</html>

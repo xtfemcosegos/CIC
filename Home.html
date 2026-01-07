@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(229, 231, 235, 0.5); }
+        .modal-overlay { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); transition: all 0.3s ease; }
+        .modal-content { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        #notices-container::-webkit-scrollbar { width: 4px; }
+        #notices-container::-webkit-scrollbar-thumb { background: #450a0a; border-radius: 10px; }
+        .delete-btn { opacity: 0; transition: opacity 0.2s ease; }
+        .aviso-item:hover .delete-btn { opacity: 1; }
+        #message-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: none; }
+    </style>
+</head>
+<body class="p-6">
+
+    <div id="message-box" class="bg-black text-white px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest shadow-2xl"></div>
+
+    <header class="flex items-center justify-between bg-[#450a0a] p-4 rounded-xl shadow-lg mb-6 border border-red-900">
+        <div class="w-12 h-12 flex items-center justify-center bg-white/10 rounded-lg">
+            <img src="Multimedia/Logo.png" alt="Logo" class="max-h-full max-w-full object-contain" onerror="this.src='https://via.placeholder.com/48?text=Logo'">
+        </div>
+        <div class="text-center">
+            <h1 class="text-3xl font-extrabold tracking-tighter text-white leading-none">CIC</h1>
+            <p class="text-[10px] uppercase tracking-widest text-red-200 font-bold mt-1">Centro de información y comunicación</p>
+        </div>
+        <div class="w-12 h-12 flex items-center justify-center overflow-hidden rounded-lg bg-white/10">
+            <img src="Multimedia/Cam.gif" alt="Cámara" class="max-h-full max-w-full object-cover">
+        </div>
+    </header>
+
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] flex flex-col">
+        <div class="bg-gray-50 p-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-bold text-gray-700 flex items-center gap-2 uppercase text-xs tracking-wider">
+                <span id="live-indicator" class="w-2 h-2 bg-gray-300 rounded-full"></span>
+                Panel de Avisos Vigentes
+            </h2>
+            <button id="open-modal" class="bg-[#450a0a] hover:bg-red-800 text-white text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-tighter">
+                + Nuevo Aviso
+            </button>
+        </div>
+        
+        <div id="notices-container" class="divide-y divide-gray-100 flex-grow overflow-y-auto max-h-[500px]">
+            <div id="empty-state" class="p-20 text-center">
+                <p id="loading-text" class="text-sm text-gray-400 font-medium italic">Sincronizando con el sistema central...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal -->
+    <div id="notice-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay opacity-0 pointer-events-none">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden m-4 modal-content transform scale-95">
+            <div class="bg-[#450a0a] p-5 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm uppercase tracking-widest">Nuevo Registro</h3>
+                <button id="close-modal" class="text-white/60 hover:text-white">✕</button>
+            </div>
+            <form id="notice-form" class="p-6 space-y-4">
+                <input type="text" id="notice-author" required class="w-full border p-2.5 text-sm rounded-lg" placeholder="Anunciante">
+                <input type="text" id="notice-title" required class="w-full border p-2.5 text-sm rounded-lg" placeholder="Título">
+                <textarea id="notice-content" required rows="3" class="w-full border p-2.5 text-sm rounded-lg" placeholder="Mensaje..."></textarea>
+                <input type="date" id="notice-expiry" required class="w-full border p-2.5 text-sm rounded-lg">
+                <button type="submit" id="submit-btn" class="w-full bg-[#450a0a] text-white font-bold py-3.5 rounded-xl uppercase text-xs tracking-widest">Publicar</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, setDoc, onSnapshot, serverTimestamp, doc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Credenciales actualizadas cic6-pp-web
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279",
+            measurementId: "G-ZMC7H7710Z"
+        };
+
+        function consoleLog(msg) {
+            window.parent.postMessage({ type: 'log', text: `HOME: ${msg}` }, '*');
+        }
+
+        const APP_ID = "cic.pp"; 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const container = document.getElementById('notices-container');
+        const liveIndicator = document.getElementById('live-indicator');
+        const loadingText = document.getElementById('loading-text');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                consoleLog(`Usuario autenticado: ${user.uid}`);
+                liveIndicator.classList.replace('bg-gray-300', 'bg-green-500');
+                startNoticesListener();
+            } else {
+                consoleLog("Esperando autenticación del sistema principal...");
+                liveIndicator.classList.replace('bg-green-500', 'bg-gray-300');
+            }
+        });
+
+        function startNoticesListener() {
+            try {
+                const path = ['artifacts', APP_ID, 'public', 'data', 'Avisos'];
+                consoleLog(`Conectando a ruta: ${path.join('/')}`);
+                
+                const colRef = collection(db, ...path);
+                
+                onSnapshot(colRef, (snap) => {
+                    consoleLog(`Sincronización exitosa: ${snap.size} avisos.`);
+                    renderNotices(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                }, (err) => {
+                    consoleLog(`FALLO FIRESTORE: ${err.code} - ${err.message}`);
+                    loadingText.innerText = "Error de permisos en Firestore.";
+                });
+            } catch (e) {
+                consoleLog(`ERROR CRÍTICO JS: ${e.message}`);
+            }
+        }
+
+        function renderNotices(notices) {
+            container.querySelectorAll('.aviso-item').forEach(e => e.remove());
+            if (notices.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+            document.getElementById('empty-state').style.display = 'none';
+            notices.forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'aviso-item p-5 relative group border-l-4 border-transparent hover:border-red-800 hover:bg-gray-50';
+                div.innerHTML = `
+                    <div class="flex justify-between mb-1">
+                        <span class="text-[9px] font-black text-red-800 uppercase">${n.Anunciante || 'SISTEMA'}</span>
+                        <span class="text-[8px] font-bold text-gray-400">EXPIRA: ${n.Vigencia || 'N/A'}</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-800">${n.Titulo}</h4>
+                    <p class="text-xs text-gray-600">${n.Mensaje}</p>
+                    <button class="delete-btn absolute top-5 right-5 text-gray-300 hover:text-red-700">✕</button>
+                `;
+                div.querySelector('.delete-btn').onclick = async () => {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'Avisos', n.id));
+                    consoleLog(`Aviso eliminado: ${n.id}`);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('notice-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            try {
+                const titleValue = document.getElementById('notice-title').value;
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Formatear ID: titulo-fecha (limpiando espacios y caracteres especiales)
+                const customId = `${titleValue.trim().replace(/\s+/g, '-').toLowerCase()}-${today}`;
+
+                const data = {
+                    Anunciante: document.getElementById('notice-author').value,
+                    Titulo: titleValue,
+                    Mensaje: document.getElementById('notice-content').value,
+                    Vigencia: document.getElementById('notice-expiry').value,
+                    timestamp: serverTimestamp()
+                };
+
+                // Usamos setDoc con el ID personalizado en lugar de addDoc
+                const docRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'Avisos', customId);
+                await setDoc(docRef, data);
+
+                consoleLog(`Nuevo aviso publicado con ID: ${customId}`);
+                e.target.reset();
+                document.getElementById('notice-modal').classList.add('opacity-0', 'pointer-events-none');
+            } catch (err) {
+                consoleLog(`ERROR AL PUBLICAR: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById('open-modal').onclick = () => document.getElementById('notice-modal').classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('close-modal').onclick = () => document.getElementById('notice-modal').classList.add('opacity-0', 'pointer-events-none');
+    </script>
+</body>
+</html>

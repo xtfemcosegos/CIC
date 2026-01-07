@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC6 - Gestión de Usuarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #ffffff;
+            --md-background: #fdf8f8;
+            --md-outline: #e5e7eb;
+            --md-error: #dc2626;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-background);
+            color: #1f1a1a;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card-material {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--md-outline);
+        }
+
+        .btn-md {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-md:active { transform: scale(0.95); }
+
+        .modal-overlay {
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 4px rgba(69, 10, 10, 0.1);
+        }
+
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        /* Estilo para fila interactiva */
+        .user-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .user-row:hover {
+            background-color: rgba(69, 10, 10, 0.04);
+        }
+
+        /* Botón de eliminar demarcado */
+        .btn-delete-zone {
+            border-left: 1px solid #f3f4f6;
+            transition: all 0.2s;
+        }
+        .btn-delete-zone:hover {
+            background-color: #fef2f2;
+        }
+
+        /* Estilo para el selector de casetas */
+        .booth-select {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 8px;
+            color: #475569;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            max-width: 140px;
+        }
+        .booth-select:focus { border-color: var(--md-primary); background: white; }
+    </style>
+</head>
+<body class="p-6 pt-0">
+
+    <!-- Encabezado Principal (Fijo al hacer scroll) -->
+    <header class="max-w-7xl mx-auto sticky top-0 z-20 bg-[#fdf8f8] pt-6 pb-4 flex flex-col gap-4">
+        <div class="flex items-center justify-between bg-[#450a0a] text-white p-4 rounded-3xl shadow-lg border border-red-900">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight uppercase leading-none">Control de Personal</h1>
+                    <p class="text-[9px] text-red-200/70 font-bold uppercase tracking-widest">Administración CIC-6</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Botón Exportar -->
+                <button onclick="exportToJSON()" class="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all btn-md border border-white/10" title="Descargar base de datos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span class="text-[10px] font-black uppercase tracking-tighter text-white">Exportar JSON</span>
+                </button>
+                <!-- Botón Importar -->
+                <button onclick="openImportModal()" class="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all btn-md border border-white/10" title="Carga masiva de datos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span class="text-[10px] font-black uppercase tracking-tighter text-white">Importar JSON</span>
+                </button>
+                <div class="h-6 w-px bg-white/10 mx-1"></div>
+                <!-- Botón Nuevo -->
+                <button onclick="openAddUserModal()" class="bg-white text-red-950 px-5 py-2.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-red-50 transition-all shadow-lg btn-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Nuevo
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Búsqueda -->
+        <div class="max-w-7xl w-full mx-auto relative group">
+            <input type="text" id="user-search" oninput="filterUsers()" placeholder="Buscar por nombre o ID de empleado..." 
+                class="search-input w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium outline-none transition-all placeholder:text-gray-400 shadow-sm">
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#450a0a] transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto mt-2 pb-10">
+        <!-- Tabla de Usuarios (Compacta e Interactiva) -->
+        <div class="card-material overflow-hidden bg-white">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Identidad</th>
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Enlace</th>
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cargo</th>
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Caseta</th>
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estatus</th>
+                            <th class="py-3 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center w-24">Borrar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body" class="divide-y divide-gray-50">
+                        <tr>
+                            <td colspan="6" class="py-20 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="w-6 h-6 border-3 border-red-900 border-t-transparent rounded-full animate-spin"></div>
+                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Sincronizando...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="search-feedback" class="mt-4 px-2 hidden">
+            <span class="text-[10px] font-bold text-gray-400 uppercase italic">Mostrando resultados filtrados...</span>
+        </div>
+    </main>
+
+    <!-- Modales -->
+    <div id="add-user-modal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
+        <div class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden m-4 animate-in fade-in zoom-in duration-200">
+            <div class="bg-red-950 p-5 text-white flex justify-between items-center">
+                <h3 class="font-bold text-xs uppercase tracking-widest">Nuevo Registro</h3>
+                <button onclick="closeAddUserModal()" class="text-white hover:opacity-70 transition-opacity">✕</button>
+            </div>
+            <form id="add-user-form" class="p-6 space-y-5">
+                <div class="flex flex-col items-center mb-2">
+                    <div id="photo-preview" class="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:border-red-900 transition-all" onclick="document.getElementById('new-user-photo').click()">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase text-center p-2">Foto</span>
+                    </div>
+                    <input type="file" id="new-user-photo" class="hidden" accept="image/*" onchange="previewImage(this)">
+                </div>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <label class="text-[9px] font-black text-red-900 uppercase absolute -top-1.5 left-3 bg-white px-1 z-10">ID Empleado</label>
+                        <input type="number" id="new-user-id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium">
+                    </div>
+                    <div class="relative">
+                        <label class="text-[9px] font-black text-red-900 uppercase absolute -top-1.5 left-3 bg-white px-1 z-10">Nombre Completo</label>
+                        <input type="text" id="new-user-name" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium">
+                    </div>
+                </div>
+                <button type="submit" id="btn-submit" class="w-full bg-[#450a0a] text-white py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest btn-md shadow-lg">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="import-modal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
+        <div class="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden m-4 animate-in fade-in zoom-in duration-200">
+            <div class="bg-red-950 p-6 text-white flex justify-between items-center">
+                <h3 class="font-bold text-xs uppercase tracking-widest">Importación Masiva</h3>
+                <button onclick="closeImportModal()" class="text-white">✕</button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-2">Archivo JSON de Datos</label>
+                        <input type="file" id="import-json" accept=".json" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-red-50 file:text-red-900 hover:file:bg-red-100 cursor-pointer border rounded-xl p-1.5 border-gray-100">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-2">Galería de Fotos (Opcional)</label>
+                        <input type="file" id="import-photos" multiple accept="image/jpeg" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-red-50 file:text-red-900 hover:file:bg-red-100 cursor-pointer border rounded-xl p-1.5 border-gray-100">
+                    </div>
+                </div>
+                <button onclick="processImport()" class="w-full bg-red-950 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest btn-md shadow-lg">Iniciar Procesamiento</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-[32px] flex flex-col items-center gap-4 shadow-2xl">
+            <div class="w-10 h-10 border-4 border-red-900 border-t-transparent rounded-full animate-spin"></div>
+            <span id="loading-msg" class="text-[10px] font-black text-gray-700 uppercase tracking-widest">Procesando...</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const adminApp = initializeApp(firebaseConfig, "AdminApp");
+        const adminAuth = getAuth(adminApp);
+
+        const tableBody = document.getElementById('users-table-body');
+        const searchInput = document.getElementById('user-search');
+        const feedback = document.getElementById('search-feedback');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        let currentPhotoB64 = "";
+        let currentUsersData = [];
+
+        const casetasDisponibles = [
+            "SIN ASIGNAR",
+            "Centro de control", 
+            "Encargado", 
+            "Edison", 
+            "Recepción Edison", 
+            "Impulso", 
+            "Michelena", 
+            "Simón Bolívar", 
+            "Carranza", 
+            "Universidad", 
+            "Rondinero"
+        ];
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) listenToUsers();
+            else signInAnonymously(auth);
+        });
+
+        function listenToUsers() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'), (snap) => {
+                currentUsersData = [];
+                snap.forEach(d => {
+                    const u = d.data();
+                    u.uid = d.id;
+                    currentUsersData.push(u);
+                });
+                renderTable(currentUsersData);
+            });
+        }
+
+        window.filterUsers = () => {
+            const term = searchInput.value.toLowerCase().trim();
+            if (!term) {
+                feedback.classList.add('hidden');
+                renderTable(currentUsersData);
+                return;
+            }
+            feedback.classList.remove('hidden');
+            const filtered = currentUsersData.filter(u => 
+                (u.nombre && u.nombre.toLowerCase().includes(term)) || 
+                (u.id_empleado && u.id_empleado.toString().includes(term))
+            );
+            renderTable(filtered);
+        };
+
+        function renderTable(users) {
+            tableBody.innerHTML = '';
+            if (users.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-[10px] font-bold text-gray-400 uppercase">No se encontraron registros</td></tr>`;
+                return;
+            }
+            users.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+            users.forEach(u => renderRow(u.uid, u));
+        }
+
+        function renderRow(id, u) {
+            const avatar = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=fdf8f8&color=450a0a&bold=true`;
+            const tr = document.createElement('tr');
+            tr.className = "user-row group";
+            tr.onclick = () => openProfile(id);
+
+            const currentBooth = u.acceso_predeterminado || "SIN ASIGNAR";
+
+            tr.innerHTML = `
+                <td class="py-2.5 px-6">
+                    <div class="flex items-center gap-3">
+                        <img src="${avatar}" class="w-9 h-9 rounded-xl object-cover border border-gray-100">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-gray-900 uppercase tracking-tight">${u.nombre || '---'}</span>
+                            <span class="text-[8px] font-mono text-gray-400">ID: ${u.id_empleado || '---'}</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-2.5 px-6">
+                    <span class="text-[10px] text-gray-500 font-medium lowercase">${u.correo_principal || '---'}</span>
+                </td>
+                <td class="py-2.5 px-6">
+                    <span class="text-[9px] font-black text-red-950/40 uppercase tracking-tighter">${u.puesto || 'MIEMBRO'}</span>
+                </td>
+                <td class="py-2.5 px-6" onclick="event.stopPropagation()">
+                    <select class="booth-select" onchange="updateDefaultBooth('${id}', this.value)">
+                        ${casetasDisponibles.map(c => `
+                            <option value="${c}" ${currentBooth === c ? 'selected' : ''}>${c}</option>
+                        `).join('')}
+                    </select>
+                </td>
+                <td class="py-2.5 px-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full ${u.status === 'Baja' ? 'bg-red-500' : 'bg-green-500'}"></div>
+                        <span class="text-[8px] font-black uppercase ${u.status === 'Baja' ? 'text-red-600' : 'text-green-600'}">${u.status || 'Activo'}</span>
+                    </div>
+                </td>
+                <td class="py-2.5 px-6 text-center btn-delete-zone" onclick="event.stopPropagation(); confirmDeleteUser('${id}', '${u.correo_principal}', '${u.nombre}')">
+                    <button class="p-1.5 text-red-400 hover:text-red-700 hover:bg-red-100 rounded-lg transition-all mx-auto block">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        }
+
+        window.updateDefaultBooth = async (uid, newBooth) => {
+            try {
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid);
+                await updateDoc(userRef, { acceso_predeterminado: newBooth });
+                console.log(`Actualizado: ${newBooth}`);
+            } catch (err) {
+                console.error("Error actualizando caseta:", err);
+            }
+        };
+
+        window.exportToJSON = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentUsersData, null, 4));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `usuarios_cic6_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dl);
+            dl.click();
+            dl.remove();
+        };
+
+        window.openImportModal = () => document.getElementById('import-modal').classList.remove('hidden');
+        window.closeImportModal = () => document.getElementById('import-modal').classList.add('hidden');
+
+        window.processImport = async () => {
+            const jsonFile = document.getElementById('import-json').files[0];
+            const photoFiles = document.getElementById('import-photos').files;
+            if (!jsonFile) return;
+
+            loadingOverlay.classList.remove('hidden');
+            try {
+                const photoMap = new Map();
+                for (let file of photoFiles) {
+                    const id = file.name.split('.')[0];
+                    const b64 = await fileToBase64(file);
+                    photoMap.set(id, b64);
+                }
+
+                const users = JSON.parse(await jsonFile.text());
+                for (let user of users) {
+                    const id = user.id || user.id_empleado;
+                    if (!id) continue;
+                    const nombre = user.nombre || "Usuario Importado";
+                    const email = `${id}@cic.com`;
+                    
+                    document.getElementById('loading-msg').innerText = `Importando: ${id}`;
+                    
+                    try {
+                        const cred = await createUserWithEmailAndPassword(adminAuth, email, "Comercio01");
+                        const b64 = photoMap.get(id.toString()) || user.foto || "";
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', cred.user.uid), {
+                            ...user,
+                            id_empleado: id,
+                            nombre: nombre,
+                            foto: b64,
+                            correo_principal: email,
+                            status: user.status || 'Activo',
+                            lastUpdate: new Date().toISOString()
+                        });
+                        await signOut(adminAuth);
+                    } catch (e) { console.warn("Error en registro Auth individual", e); }
+                }
+                closeImportModal();
+            } catch (err) { alert("Fallo en importación"); }
+            finally { loadingOverlay.classList.add('hidden'); }
+        };
+
+        const fileToBase64 = (file) => new Promise((res) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.readAsDataURL(file);
+        });
+
+        window.openAddUserModal = () => document.getElementById('add-user-modal').classList.remove('hidden');
+        window.closeAddUserModal = () => document.getElementById('add-user-modal').classList.add('hidden');
+
+        window.previewImage = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentPhotoB64 = e.target.result;
+                document.getElementById('photo-preview').innerHTML = `<img src="${currentPhotoB64}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById('add-user-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('new-user-id').value;
+            const name = document.getElementById('new-user-name').value;
+            loadingOverlay.classList.remove('hidden');
+            try {
+                const cred = await createUserWithEmailAndPassword(adminAuth, `${id}@cic.com`, "Comercio01");
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', cred.user.uid), {
+                    id_empleado: id, nombre: name, foto: currentPhotoB64,
+                    correo_principal: `${id}@cic.com`, status: 'Activo', puesto: 'NUEVO INGRESO',
+                    createdAt: serverTimestamp()
+                });
+                await signOut(adminAuth);
+                closeAddUserModal();
+            } catch (err) { alert(err.message); }
+            finally { loadingOverlay.classList.add('hidden'); }
+        };
+
+        window.confirmDeleteUser = async (uid, email, name) => {
+            if (!confirm(`¿Borrar permanentemente a ${name}?`)) return;
+            loadingOverlay.classList.remove('hidden');
+            try {
+                try {
+                    const u = await signInWithEmailAndPassword(adminAuth, email, "Comercio01");
+                    await deleteUser(u.user);
+                } catch(e){}
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
+            } finally { loadingOverlay.classList.add('hidden'); }
+        };
+
+        window.openProfile = (uid) => {
+            if (window.parent && typeof window.parent.navigateRight === 'function') {
+                window.parent.navigateRight(`Apps/Perfil.html?uid=${uid}`);
+            } else {
+                window.location.href = `Perfil.html?uid=${uid}`;
+            }
+        };
+    </script>
+</body>
+</html>

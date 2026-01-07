@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabla de Planeación - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-outline: #64748b; 
+            --highlight-bg: rgba(69, 10, 10, 0.12);
+            --cell-width: 116px; 
+            --row-height: 48px;
+            --header-height: 60px;
+            --group-height: 32px;
+        }
+
+        /* Reset global para consistencia absoluta */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: white;
+        }
+
+        .planning-wrapper {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 100vh;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Columna de Nombres */
+        .names-column {
+            background: white;
+            border-right: 2px solid var(--md-outline);
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .names-header-container {
+            flex-shrink: 0;
+            height: var(--header-height);
+        }
+
+        #names-list {
+            flex-grow: 1;
+            overflow-y: hidden; 
+            height: 100%;
+        }
+
+        /* Cuadrícula de Datos */
+        .data-grid-viewport {
+            overflow-x: auto;
+            overflow-y: auto;
+            background: #fafafa;
+            height: 100%;
+            overscroll-behavior: none;
+            position: relative;
+            scroll-behavior: smooth;
+        }
+
+        .cell {
+            height: var(--row-height);
+            display: flex;
+            align-items: center;
+            border-right: 1px solid var(--md-outline);
+            border-bottom: 1px solid var(--md-outline);
+            padding: 0;
+            font-size: 11px;
+            justify-content: center;
+            transition: background-color 0.1s;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .cell.drag-over {
+            background-color: rgba(69, 10, 10, 0.1) !important;
+            outline: 2px dashed var(--md-primary);
+            outline-offset: -4px;
+        }
+
+        .header-cell {
+            height: var(--header-height);
+            min-height: var(--header-height);
+            max-height: var(--header-height);
+            background: #000000;
+            font-weight: 700;
+            text-transform: lowercase;
+            color: #ffffff;
+            border-right: 1px solid #334155;
+            border-bottom: 2px solid var(--md-outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .shift-badge {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 16px; 
+            border-radius: 0;
+            text-transform: uppercase;
+            cursor: grab;
+            position: relative;
+        }
+
+        /* --- Estilos de Turnos y Ausentismos --- */
+        .badge-matutino { background: #fef9c3; color: #854d0e; }
+        .badge-vespertino { background: #dbeafe; color: #1e40af; }
+        .badge-nocturno { background: #1e3a8a; color: #ffffff; }
+        .badge-multiple { background: #e2e8f0; color: #475569; }
+        .badge-descanso { background: #f1f5f9; color: #64748b; }
+        .badge-permiso { background: #ffedd5; color: #9a3412; }
+        .badge-vacaciones { background: #dcfce7; color: #166534; }
+        .badge-suspension { background: #ffedd5; border: 2px solid #ef4444; color: #7c2d12; }
+        .badge-incapacidad { background: #f5f3ff; color: #5b21b6; border: 1px dashed #c4b5fd; }
+        .badge-falta { background: #991b1b; color: #facc15; }
+        .badge-ausentismo { background: #fee2e2; color: #991b1b; }
+
+        /* Estados de Celda */
+        .border-delayed { border: 3px solid #ef4444 !important; }
+        
+        .tags-container {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .tag-rec { background: #166534; color: white; font-size: 7px; padding: 1px 3px; border-radius: 3px; font-weight: 900; }
+        .tag-tex { background: #d946ef; color: white; font-size: 7px; padding: 1px 3px; border-radius: 3px; font-weight: 900; }
+
+        .add-icon {
+            font-size: 20px;
+            color: #cbd5e1;
+            font-weight: 300;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .cell:hover .add-icon {
+            color: var(--md-primary);
+            transform: scale(1.2);
+        }
+
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            cursor: pointer;
+            border: 2px solid var(--md-primary);
+            color: var(--md-primary);
+            transition: all 0.2s;
+        }
+        .nav-arrow:hover { background: var(--md-primary); color: white; transform: translateY(-50%) scale(1.1); }
+        .arrow-left { left: 255px; }
+        .arrow-right { right: 25px; }
+
+        /* Diálogo Material 3 */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            z-index: 2000; display: none; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; border-radius: 28px; width: 90%; max-width: 360px;
+            padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .btn-modal {
+            width: 100%; padding: 12px; border-radius: 14px; font-size: 12px; font-weight: 800;
+            text-transform: uppercase; transition: all 0.2s;
+        }
+
+        #context-menu {
+            position: fixed; z-index: 1000; background: white; border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 8px; display: none; min-width: 180px; border: 1px solid #e5e7eb;
+        }
+        .menu-item {
+            padding: 10px 14px; font-size: 11px; font-weight: 600; color: #450a0a;
+            cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;
+            transition: background 0.2s; position: relative;
+        }
+        .menu-item:hover { background: #fdf8f8; }
+        .submenu {
+            position: absolute; left: 95%; top: 0; background: white; border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 8px; display: none;
+            min-width: 180px; border: 1px solid #e5e7eb; z-index: 1001;
+        }
+        .menu-item.has-submenu:hover > .submenu { display: block; }
+
+        .group-header {
+            background: linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%);
+            font-weight: 800; font-size: 10px; color: #1e293b; text-transform: uppercase;
+            letter-spacing: 0.1em; height: var(--group-height); display: flex; align-items: center;
+            padding: 0 16px; border-bottom: 1px solid var(--md-outline); border-right: 1px solid var(--md-outline);
+            flex-shrink: 0;
+        }
+
+        .cell-name {
+            cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; justify-content: center;
+            padding: 0 16px; height: var(--row-height); border-bottom: 1px solid var(--md-outline);
+            background: white; flex-shrink: 0;
+        }
+
+        .row-container { display: flex; height: var(--row-height); flex-shrink: 0; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #64748b; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Modal para movimiento/copia interno -->
+    <div id="drag-modal" class="modal-overlay">
+        <div class="modal-content space-y-4">
+            <div class="text-center">
+                <h3 class="text-sm font-black uppercase text-slate-800 tracking-tight">Gestión de Turno</h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">¿Qué desea hacer con esta asignación?</p>
+            </div>
+            <div class="space-y-2">
+                <button onclick="executeDragAction('move')" class="btn-modal bg-red-900 text-white shadow-lg">Mover Turno</button>
+                <button onclick="executeDragAction('copy')" class="btn-modal bg-slate-100 text-slate-700">Copiar Turno</button>
+                <button onclick="closeDragModal()" class="btn-modal text-slate-400 border border-slate-100">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="nav-arrow arrow-left" onclick="scrollGrid('left')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <button class="nav-arrow arrow-right" onclick="scrollGrid('right')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+
+    <div id="context-menu">
+        <div class="menu-item has-submenu">
+            <span>Matutino</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="submenu" id="submenu-matutino"></div>
+        </div>
+        <div class="menu-item has-submenu">
+            <span>Vespertino</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="submenu" id="submenu-vespertino"></div>
+        </div>
+        <div class="menu-item has-submenu">
+            <span>Nocturno</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="submenu" id="submenu-nocturno"></div>
+        </div>
+        <div class="h-px bg-gray-100 my-1"></div>
+        <div class="menu-item" onclick="openPatrones()">Asignar Patrón</div>
+        <div class="h-px bg-gray-100 my-1"></div>
+        <div class="menu-item has-submenu">
+            <span>Ausentismos</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="submenu">
+                <div class="menu-item" onclick="quickAssignAusentismo('Descanso')">Descanso</div>
+                <div class="menu-item" onclick="quickAssignAusentismo('Permiso')">Permiso</div>
+                <div class="menu-item" onclick="quickAssignAusentismo('Vacaciones')">Vacaciones</div>
+                <div class="menu-item" onclick="quickAssignAusentismo('Suspensión')">Suspensión</div>
+                <div class="menu-item" onclick="quickAssignAusentismo('Incapacidad')">Incapacidad</div>
+                <div class="menu-item" onclick="quickAssignAusentismo('Falta')">Falta</div>
+            </div>
+        </div>
+        <div class="h-px bg-gray-100 my-1"></div>
+        <div class="menu-item text-red-600" onclick="quickDeleteAssignment()">Eliminar Asignación</div>
+    </div>
+
+    <div class="planning-wrapper">
+        <div class="names-column">
+            <div class="names-header-container">
+                <div class="header-cell px-4" style="border-right: none; justify-content: flex-start; text-transform: uppercase; font-size: 10px; width: 100%;">Elemento / Puesto</div>
+            </div>
+            <div id="names-list"></div>
+        </div>
+        <div class="data-grid-viewport" id="grid-viewport">
+            <div id="grid-header" class="flex sticky top-0 z-20"></div>
+            <div id="grid-body"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let baseDate = new Date();
+        const validRoles = ["administrador", "operador cco", "encargado", "guardia"];
+        const CELL_WIDTH = 116; 
+
+        const casetasOrden = [
+            "Centro de control", "Encargado", "Edison", "Recepción Edison", 
+            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero", "SIN ASIGNAR"
+        ];
+
+        const namesList = document.getElementById('names-list');
+        const gridViewport = document.getElementById('grid-viewport');
+        const gridHeader = document.getElementById('grid-header');
+        const gridBody = document.getElementById('grid-body');
+
+        let globalAssignments = {}; 
+        let activeListeners = new Map();
+        let currentElements = [];
+        let userDataCache = {};
+        let currentContext = { uid: null, date: null, dateId: null, element: null };
+        let dragData = { sourceUid: null, sourceDate: null, sourceDateId: null, shiftType: null, targetUid: null, targetDate: null, targetDateId: null };
+
+        gridViewport.addEventListener('scroll', () => namesList.scrollTop = gridViewport.scrollTop);
+        namesList.addEventListener('wheel', (e) => gridViewport.scrollTop += e.deltaY, { passive: true });
+
+        window.scrollGrid = (dir) => {
+            const amount = CELL_WIDTH * 5;
+            gridViewport.scrollLeft += (dir === 'left' ? -amount : amount);
+        };
+
+        const normalize = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '');
+        function formatDateLocal(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        function getDateIdLocal(date) {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}${m}${y}`;
+        }
+
+        document.addEventListener('click', () => document.getElementById('context-menu').style.display = 'none');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { initMenuCasetas(); loadData(); }
+            else signInAnonymously(auth);
+        });
+
+        function initMenuCasetas() {
+            ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
+                const sub = document.getElementById(`submenu-${shift}`);
+                sub.innerHTML = '';
+                casetasOrden.forEach(caseta => {
+                    if (caseta === "SIN ASIGNAR") return;
+                    const item = document.createElement('div');
+                    item.className = 'menu-item';
+                    item.innerText = caseta;
+                    item.onclick = (e) => { e.stopPropagation(); quickAssignShift(shift, caseta); document.getElementById('context-menu').style.display = 'none'; };
+                    sub.appendChild(item);
+                });
+            });
+        }
+
+        function loadData() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'), (snap) => {
+                const elements = [];
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    userDataCache[doc.id] = u;
+                    const status = (u.status || "").toLowerCase();
+                    if (status !== 'baja' && validRoles.includes((u.puesto || "").toLowerCase())) {
+                        elements.push({ uid: doc.id, ...u });
+                    }
+                });
+                currentElements = elements;
+                const grouped = elements.reduce((acc, el) => {
+                    const group = el.acceso_predeterminado || "SIN ASIGNAR";
+                    if (!acc[group]) acc[group] = [];
+                    acc[group].push(el);
+                    return acc;
+                }, {});
+                fetchWindowAssignments(elements, grouped);
+            });
+        }
+
+        async function fetchWindowAssignments(elements, grouped) {
+            activeListeners.forEach(u => u());
+            activeListeners.clear();
+            globalAssignments = {};
+            renderDataStructure(grouped);
+            const shiftTypes = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(baseDate);
+                d.setDate(baseDate.getDate() + i);
+                const isoDate = formatDateLocal(d);
+                const dateId = getDateIdLocal(d);
+                shiftTypes.forEach(turnoId => {
+                    const shiftColRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, turnoId);
+                    const unsub = onSnapshot(shiftColRef, (snap) => {
+                        snap.forEach(docSnap => {
+                            const userUid = docSnap.id;
+                            if (!globalAssignments[userUid]) globalAssignments[userUid] = {};
+                            if (!globalAssignments[userUid][isoDate]) globalAssignments[userUid][isoDate] = {};
+                            
+                            globalAssignments[userUid][isoDate][turnoId] = docSnap.data();
+                            updateCellUI(userUid, i, globalAssignments[userUid][isoDate], isoDate);
+                        });
+                        snap.docChanges().forEach(change => {
+                            if (change.type === "removed") {
+                                const uid = change.doc.id;
+                                if (globalAssignments[uid] && globalAssignments[uid][isoDate]) {
+                                    delete globalAssignments[uid][isoDate][turnoId];
+                                    updateCellUI(uid, i, globalAssignments[uid][isoDate], isoDate);
+                                }
+                            }
+                        });
+                    });
+                    activeListeners.set(`${dateId}_${turnoId}`, unsub);
+                });
+            }
+        }
+
+        function renderDataStructure(groupedData) {
+            namesList.innerHTML = ''; gridBody.innerHTML = ''; renderGridHeaders();
+            const sortedGroups = casetasOrden.filter(key => groupedData[key]);
+            Object.keys(groupedData).forEach(key => { if (!sortedGroups.includes(key)) sortedGroups.push(key); });
+            sortedGroups.forEach(groupName => {
+                const elementsInGroup = groupedData[groupName];
+                const ghName = document.createElement('div'); ghName.className = 'group-header'; ghName.innerText = groupName; namesList.appendChild(ghName);
+                const ghGrid = document.createElement('div'); ghGrid.className = 'group-header'; ghGrid.style.width = `${30 * CELL_WIDTH}px`; gridBody.appendChild(ghGrid);
+                elementsInGroup.forEach(el => {
+                    const nameDiv = document.createElement('div'); nameDiv.className = 'cell-name';
+                    nameDiv.onclick = () => openProfile(el.uid);
+                    nameDiv.innerHTML = `<span class="text-xs font-bold text-gray-700 truncate">${el.nombre}</span><span class="text-[8px] uppercase text-gray-400 font-bold leading-none">${el.puesto}</span>`;
+                    namesList.appendChild(nameDiv);
+                    const rowDiv = document.createElement('div'); rowDiv.className = 'row-container'; rowDiv.id = `row-${el.uid}`;
+                    for (let i = 0; i < 30; i++) {
+                        const cell = document.createElement('div'); cell.className = `cell col-idx-${i}`; cell.style.width = `${CELL_WIDTH}px`; cell.id = `cell-${el.uid}-${i}`;
+                        const d = new Date(baseDate); d.setDate(baseDate.getDate() + i); const isoDate = formatDateLocal(d); const dateId = getDateIdLocal(d);
+                        
+                        cell.onclick = () => openShiftDetail(el.uid, isoDate);
+                        cell.oncontextmenu = (e) => { e.preventDefault(); currentContext = { uid: el.uid, date: isoDate, dateId: dateId, element: el }; showContextMenu(e.clientX, e.clientY); };
+                        
+                        // Handlers de Drop
+                        cell.ondragover = (e) => { e.preventDefault(); cell.classList.add('drag-over'); };
+                        cell.ondragleave = () => cell.classList.remove('drag-over');
+                        cell.ondrop = (e) => handleDrop(e, el.uid, isoDate, dateId);
+
+                        cell.onmouseenter = () => highlightIntersection(i, true);
+                        cell.onmouseleave = () => highlightIntersection(i, false);
+                        cell.innerHTML = '<span class="add-icon">+</span>'; rowDiv.appendChild(cell);
+                    }
+                    gridBody.appendChild(rowDiv);
+                });
+            });
+        }
+
+        function updateCellUI(uid, colIdx, dayData, isoDate) {
+            const cell = document.getElementById(`cell-${uid}-${colIdx}`);
+            if (!cell) return;
+            
+            // dayData es un objeto { turnoId: data }
+            const entries = dayData ? Object.entries(dayData) : [];
+
+            if (entries.length > 0) {
+                let initials = [];
+                let classType = "badge-multiple";
+                let hasRetardo = false;
+                let hasRecuperacion = false;
+                let hasExtra = false;
+
+                // Ordenar para mostrar M/V/N en orden lógico
+                const order = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+                entries.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+
+                entries.forEach(([type, data]) => {
+                    if (type === 'ausentismo') {
+                        const motive = data.motivo || "Ausencia";
+                        initials.push(motive.charAt(0).toUpperCase());
+                        if (entries.length === 1) classType = `badge-${normalize(motive)}`;
+                    } else {
+                        initials.push(type.charAt(0).toUpperCase());
+                        if (entries.length === 1) classType = `badge-${type}`;
+                    }
+                    
+                    if (data.retardo) hasRetardo = true;
+                    if (data.es_recuperacion) hasRecuperacion = true;
+                    if (data.es_extra) hasExtra = true;
+                });
+
+                const displayText = initials.join('/');
+                
+                let tagsHtml = '';
+                if (hasRecuperacion) tagsHtml += `<span class="tag-rec">REC</span>`;
+                if (hasExtra) tagsHtml += `<span class="tag-tex">TEx</span>`;
+
+                cell.innerHTML = `
+                    <div class="shift-badge ${classType} ${hasRetardo ? 'border-delayed' : ''}" draggable="true">
+                        ${displayText}
+                        <div class="tags-container">${tagsHtml}</div>
+                    </div>`;
+                
+                const badge = cell.querySelector('.shift-badge');
+                // Al arrastrar, usamos el primer turno de la lista como referencia
+                badge.ondragstart = (e) => handleDragStart(e, uid, isoDate, entries[0][0]);
+            } else {
+                cell.innerHTML = `<span class="add-icon">+</span>`;
+            }
+        }
+
+        // --- LÓGICA DE DRAG & DROP ---
+        function handleDragStart(e, uid, date, type) {
+            const data = {
+                sourceUid: uid,
+                sourceDate: date,
+                sourceDateId: getDateIdLocal(new Date(date + "T00:00:00")),
+                shiftType: type,
+                internal: true
+            };
+            e.dataTransfer.setData('text/plain', JSON.stringify(data));
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        async function handleDrop(e, targetUid, targetDate, targetDateId) {
+            e.preventDefault();
+            const cell = e.currentTarget;
+            cell.classList.remove('drag-over');
+            
+            const rawData = e.dataTransfer.getData('text/plain');
+            let parsedData = null;
+            try { parsedData = JSON.parse(rawData); } catch(err) { return; }
+
+            if (parsedData.external && parsedData.immediate) {
+                await executeImmediateToolAssignment(parsedData, targetUid, targetDateId);
+                return;
+            }
+
+            if (parsedData.internal) {
+                if (parsedData.sourceUid === targetUid && parsedData.sourceDate === targetDate) return;
+                dragData = { ...parsedData, targetUid, targetDate, targetDateId };
+                document.getElementById('drag-modal').style.display = 'flex';
+            }
+        }
+
+        async function executeImmediateToolAssignment(toolData, targetUid, targetDateId) {
+            const { type, motive } = toolData;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId), {}, { merge: true });
+
+                const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+                // Nota: Solo limpiamos si es ausentismo, si es turno permitimos doble turno (según tu requerimiento M/V)
+                if (type === 'ausentismo') {
+                    for (const s of shifts) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, s, targetUid));
+                }
+
+                if (type === 'ausentismo') {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, 'ausentismo', targetUid), {
+                        Ausentismo: true, motivo: motive || 'Descanso'
+                    });
+                } else {
+                    const uData = userDataCache[targetUid] || {};
+                    const caseta = uData.acceso_predeterminado || "Centro de control";
+                    let time = (type === 'matutino') ? (caseta === 'Centro de control' ? "06:00" : "07:00") : 
+                               (type === 'vespertino') ? (caseta === 'Centro de control' ? "14:00" : "13:00") : "21:00";
+                    if(type === 'nocturno' && caseta === 'Centro de control') time = "22:00";
+
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, type, targetUid), {
+                        Caseta: caseta, turno: type, entrada_planificada: time,
+                        es_recuperacion: false, es_festivo: false, es_extra: false,
+                        entrada_real: null, salida_real: null, retardo: false
+                    });
+                }
+            } catch (err) { console.error("Error asignación inmediata:", err); }
+        }
+
+        window.closeDragModal = () => document.getElementById('drag-modal').style.display = 'none';
+
+        window.executeDragAction = async (action) => {
+            const { sourceUid, sourceDateId, shiftType, targetUid, targetDateId } = dragData;
+            closeDragModal();
+
+            try {
+                const sourceRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', sourceDateId, shiftType, sourceUid);
+                const snap = await getDoc(sourceRef);
+                if (!snap.exists()) return;
+                const originalData = snap.data();
+
+                // Si es un movimiento masivo o específico, permitimos la coexistencia o limpiamos según necesites.
+                // Aquí mantenemos la limpieza de destino para "Mover" o "Copiar" interno para no generar basura.
+                if (action === 'move') {
+                     // En mover, si el destino ya tiene ese tipo de turno, lo sobreescribe.
+                }
+
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId), {}, { merge: true });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, shiftType, targetUid), originalData);
+
+                if (action === 'move') await deleteDoc(sourceRef);
+            } catch (err) { console.error("Error en drag action:", err); }
+        };
+
+        function showContextMenu(x, y) {
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block'; const w = window.innerWidth; const h = window.innerHeight;
+            if (x + 200 > w) x = w - 200; if (y + 300 > h) y = h - 300;
+            menu.style.left = `${x}px`; menu.style.top = `${y}px`;
+        }
+
+        window.openPatrones = () => {
+            if (!currentContext.uid) return;
+            window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Patrones.html?uid=${currentContext.uid}&date=${currentContext.date}` }, '*');
+        };
+
+        window.quickAssignShift = async (turno, caseta) => {
+            if (!currentContext.uid) return; const { uid, dateId } = currentContext;
+            let time = (turno === 'matutino') ? (caseta === 'Centro de control' ? "06:00" : "07:00") : (turno === 'vespertino') ? (caseta === 'Centro de control' ? "14:00" : "13:00") : "21:00";
+            if(turno === 'nocturno' && caseta === 'Centro de control') time = "22:00";
+            
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, turno, uid), { Caseta: caseta, turno, entrada_planificada: time, es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false });
+        };
+
+        window.quickAssignAusentismo = async (motivo) => {
+            if (!currentContext.uid) return; const { uid, dateId } = currentContext;
+            ['matutino', 'vespertino', 'nocturno'].forEach(async t => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid)));
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid), { Ausentismo: true, motivo });
+        };
+
+        window.quickDeleteAssignment = async () => {
+            if (!currentContext.uid) return; const { uid, dateId, date } = currentContext;
+            const current = globalAssignments[uid] ? globalAssignments[uid][date] : null;
+            if (current) {
+                // Borramos todos los turnos del día si se elige borrar asignación
+                for (const tId in current) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, tId, uid));
+                }
+            }
+        };
+
+        function renderGridHeaders() {
+            gridHeader.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                const cell = document.createElement('div'); cell.id = `head-col-${i}`; cell.className = 'header-cell flex-shrink-0'; cell.style.width = `${CELL_WIDTH}px`;
+                const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' }); const dayNum = String(d.getDate()).padStart(2, '0'); const monthName = d.toLocaleDateString('es-ES', { month: 'short' });
+                cell.innerHTML = `<div class="flex flex-col items-center leading-tight"><span class="text-lg font-bold">${dayName} ${dayNum}</span><span class="text-[10px] uppercase font-normal opacity-80">${monthName.replace('.', '')}</span></div>`;
+                gridHeader.appendChild(cell);
+            }
+        }
+
+        function highlightIntersection(index, active) {
+            document.querySelectorAll(`.col-idx-${index}`).forEach(c => c.classList.toggle('highlight-bg', active));
+            const head = document.getElementById(`head-col-${index}`); if (head) head.classList.toggle('header-highlight', active);
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'scroll_sync') {
+                baseDate = new Date(event.data.date);
+                renderGrid();
+            }
+        });
+
+        function openProfile(uid) { window.parent.postMessage({ type: 'navigateRight', url: `Apps/Perfil.html?uid=${uid}` }, '*'); }
+        function openShiftDetail(uid, date) { window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*'); }
+        function renderGrid() { renderGridHeaders(); loadData(); }
+    </script>
+</body>
+</html>

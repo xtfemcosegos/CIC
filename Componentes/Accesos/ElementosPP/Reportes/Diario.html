@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Diario - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Librería para captura de pantalla -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --md-primary: #450a0a; /* Rojo Sangre */
+            --md-surface: #fdf8f8;
+            --md-outline: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1e293b;
+            padding: 24px;
+        }
+
+        /* --- Report Container con Ancho Mínimo --- */
+        #report-content {
+            background: white;
+            border-radius: 24px;
+            min-width: 850px; /* Asegura ancho para legibilidad en captura */
+        }
+
+        /* --- Header Rojo Sangre Gradiente --- */
+        .report-header {
+            background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+            color: white;
+            padding: 36px;
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 10px 25px rgba(69, 10, 10, 0.15);
+        }
+
+        /* --- Sub-encabezado Negro --- */
+        .shift-divider {
+            background: #000000;
+            color: white;
+            padding: 12px 24px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shift-date-label {
+            font-size: 10px;
+            opacity: 0.7;
+            font-weight: 600;
+        }
+
+        /* --- Tablas --- */
+        .table-container {
+            background: white;
+            border: 1px solid var(--md-outline);
+            border-radius: 0 0 24px 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            margin-bottom: 24px;
+        }
+
+        table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        th { 
+            background: #f8fafc; 
+            padding: 14px 20px; 
+            text-align: left; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: #64748b; 
+            border-bottom: 1px solid #f1f5f9;
+        }
+        td { 
+            padding: 16px 20px; 
+            font-size: 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            color: #334155; 
+            vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+
+        /* --- Badges de Estado Optimizados para Captura y Centrado --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+            line-height: 1;
+            margin: 4px 8px 4px 0;
+            text-align: center;
+            min-width: 90px; /* Ancho base para evitar desbordes */
+        }
+        .bg-in-turn { background: #dcfce7; color: #166534; }
+        .bg-finished { background: #f1f5f9; color: #64748b; }
+        .bg-late { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .bg-special { background: #f5f3ff; color: #5b21b6; }
+
+        /* --- Colores de Ausentismo --- */
+        .abs-vacaciones { background: #dcfce7; color: #166534; }
+        .abs-permiso { background: #ffedd5; color: #9a3412; }
+        .abs-suspension { background: #fee2e2; color: #991b1b; border: 1.5px solid #fca5a5; }
+        .abs-incapacidades { background: #f5f3ff; color: #5b21b6; }
+        .abs-falta { background: #991b1b; color: #facc15; }
+
+        .btn-detail {
+            background: #f1f5f9;
+            color: #64748b;
+            padding: 8px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .btn-detail:hover { background: #e2e8f0; color: #450a0a; }
+
+        /* Controles de Interfaz */
+        .mode-selector {
+            display: flex;
+            background: white;
+            border: 1px solid var(--md-outline);
+            border-radius: 14px;
+            padding: 4px;
+            gap: 4px;
+            width: fit-content;
+        }
+        .mode-btn {
+            padding: 8px 16px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .mode-btn.active { background: #450a0a; color: white; }
+
+        .btn-email {
+            background: #1e293b;
+            color: white;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-email:hover { background: #000; transform: translateY(-1px); }
+
+        /* Modales */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            z-index: 2000; display: none; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; border-radius: 28px; width: 90%; max-width: 450px;
+            padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .input-email {
+            width: 100%; background: #f8fafc; border: 2px solid transparent; border-radius: 16px;
+            padding: 12px 16px; font-size: 13px; font-weight: 600; outline: none; transition: all 0.2s;
+        }
+        .input-email:focus { border-color: #450a0a; background: white; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Modal de Envío de Correo -->
+    <div id="email-modal" class="modal-overlay">
+        <div class="modal-content space-y-6">
+            <div class="text-center">
+                <h3 class="text-lg font-black uppercase text-slate-800 tracking-tight">Enviar Reporte por Correo</h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Se enviará una captura del reporte actual</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="setEmailPreset('prueba')" class="flex-1 py-2 px-3 bg-slate-100 rounded-xl text-[9px] font-black uppercase text-slate-600 hover:bg-slate-200 transition-colors">Prueba</button>
+                <button onclick="setEmailPreset('default')" class="flex-1 py-2 px-3 bg-red-50 rounded-xl text-[9px] font-black uppercase text-red-900 hover:bg-red-100 transition-colors">Predeterminados</button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Para (To):</label>
+                    <input type="text" id="email-to" class="input-email" placeholder="correo@ejemplo.com;otro@ejemplo.com">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">CC:</label>
+                    <input type="text" id="email-cc" class="input-email" placeholder="Copia a...">
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeEmailModal()" class="flex-1 py-4 text-[10px] font-black uppercase text-slate-400">Cancelar</button>
+                <button id="btn-confirm-send" onclick="prepareAndSend()" class="flex-[2] bg-red-900 text-white rounded-2xl py-4 text-[10px] font-black uppercase shadow-lg shadow-red-900/20 active:scale-95 transition-all">Enviar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Controles de Reporte -->
+        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+            <div class="space-y-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Configuración del Reporte</label>
+                <div class="mode-selector">
+                    <button id="btn-diurno" onclick="setMode('diurno')" class="mode-btn active">Diurno (M/V/N)</button>
+                    <button id="btn-nocturno" onclick="setMode('nocturno')" class="mode-btn">Nocturno (N-1/M)</button>
+                </div>
+            </div>
+            <div class="flex items-end gap-3">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Base</label>
+                    <input type="date" id="report-date" onchange="loadData()" class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-red-900">
+                </div>
+                <button onclick="openEmailModal()" class="btn-email">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    Enviar Correo
+                </button>
+            </div>
+        </div>
+
+        <!-- El overflow-x-auto permite ver el reporte ancho en pantallas pequeñas sin romper el diseño -->
+        <div class="overflow-x-auto rounded-[24px]">
+            <div id="report-content" class="bg-white">
+                <!-- Header con Gradiente -->
+                <header class="report-header">
+                    <h1 class="text-3xl font-black uppercase tracking-tight leading-none">Reporte de Asistencia</h1>
+                    <p id="formatted-date" class="text-red-100/70 text-xs font-bold uppercase tracking-widest mt-2">---</p>
+                </header>
+
+                <div id="tables-container">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-state" class="hidden flex flex-col items-center justify-center py-20 gap-4 opacity-50">
+            <div class="w-8 h-8 border-3 border-red-900 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-[9px] font-black uppercase tracking-[0.2em]">Consolidando Reporte...</span>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const POWER_AUTOMATE_API = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/507bea91c30c4743b4749a474f92ad3f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PzEbbL5wNoHu-b78wQtE7JP0H-RKDb3btp2iHGbM6vU";
+
+        let currentMode = 'diurno';
+        let userDataCache = {};
+        let activeUnsubscribes = [];
+
+        const dateInput = document.getElementById('report-date');
+        const now = new Date();
+        dateInput.value = now.toISOString().split('T')[0];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await fetchUsers();
+                loadData();
+            } else signInAnonymously(auth);
+        });
+
+        async function fetchUsers() {
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            snap.forEach(d => userDataCache[d.id] = d.data());
+        }
+
+        window.setMode = (mode) => {
+            currentMode = mode;
+            document.getElementById('btn-diurno').classList.toggle('active', mode === 'diurno');
+            document.getElementById('btn-nocturno').classList.toggle('active', mode === 'nocturno');
+            loadData();
+        };
+
+        function getDateId(isoDate) { return isoDate.split('-').reverse().join(''); }
+        function formatHeaderDate(isoDate) {
+            const d = new Date(isoDate + "T00:00:00");
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+        }
+
+        function loadData() {
+            activeUnsubscribes.forEach(u => u());
+            activeUnsubscribes = [];
+
+            const rawDate = dateInput.value;
+            const dateD = rawDate;
+            const dateDMinus1 = new Date(new Date(rawDate + "T00:00:00").setDate(new Date(rawDate + "T00:00:00").getDate() - 1)).toISOString().split('T')[0];
+            
+            const dObj = new Date(rawDate + "T00:00:00");
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('formatted-date').innerText = dObj.toLocaleDateString('es-ES', options);
+
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('tables-container').innerHTML = '';
+
+            let sections = [];
+            if (currentMode === 'diurno') {
+                sections = [
+                    { id: 'matutino', label: 'Turno Matutino', date: dateD },
+                    { id: 'vespertino', label: 'Turno Vespertino', date: dateD },
+                    { id: 'nocturno', label: 'Turno Nocturno', date: dateD },
+                    { id: 'ausentismo', label: 'Ausentismos', date: dateD }
+                ];
+            } else {
+                sections = [
+                    { id: 'nocturno', label: 'Turno Nocturno', date: dateDMinus1 },
+                    { id: 'matutino', label: 'Turno Matutino', date: dateD },
+                    { id: 'ausentismo', label: 'Ausentismos', date: dateDMinus1 },
+                    { id: 'ausentismo', label: 'Ausentismos', date: dateD }
+                ];
+            }
+
+            const dataStore = sections.map(s => ({ ...s, list: [] }));
+            let loadedCount = 0;
+
+            sections.forEach((sec, index) => {
+                const dateId = getDateId(sec.date);
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, sec.id);
+                
+                const unsub = onSnapshot(colRef, (snap) => {
+                    dataStore[index].list = [];
+                    snap.forEach(docSnap => {
+                        const user = userDataCache[docSnap.id] || { nombre: 'Desconocido', id_empleado: '---' };
+                        dataStore[index].list.push({
+                            uid: docSnap.id,
+                            id_empleado: user.id_empleado || '---',
+                            nombre: user.nombre,
+                            ...docSnap.data()
+                        });
+                    });
+                    
+                    loadedCount++;
+                    if (loadedCount >= sections.length) renderReport(dataStore);
+                });
+                activeUnsubscribes.push(unsub);
+            });
+        }
+
+        function renderReport(dataStore) {
+            const container = document.getElementById('tables-container');
+            container.innerHTML = '';
+            document.getElementById('loading-state').classList.add('hidden');
+
+            dataStore.forEach(sec => {
+                let list = sec.list;
+                if (sec.id === 'ausentismo') {
+                    list = list.filter(item => (item.motivo || "").toLowerCase() !== 'descanso');
+                }
+                if (list.length === 0) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <div class="shift-divider">
+                        <span>${sec.label}</span>
+                        <span class="shift-date-label">${formatHeaderDate(sec.date)}</span>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="w-24">ID</th>
+                                    <th>Nombre</th>
+                                    <th>Estado</th>
+                                    ${sec.id === 'ausentismo' ? '<th>Motivo</th>' : '<th>Entrada</th><th>Salida</th>'}
+                                    <th>Comentario</th>
+                                    <th class="w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${list.sort((a,b) => a.nombre.localeCompare(b.nombre)).map(item => renderRow(item, sec.id, sec.date)).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        function renderRow(item, type, date) {
+            let statusHtml = '';
+            if (type === 'ausentismo') {
+                statusHtml = '<span class="badge bg-finished">Ausente</span>';
+            } else {
+                if (item.salida_real) statusHtml += '<span class="badge bg-finished">Terminado</span>';
+                else if (item.entrada_real) statusHtml += '<span class="badge bg-in-turn">En Turno</span>';
+                else statusHtml += '<span class="badge bg-finished opacity-50">Programado</span>';
+                if (item.retardo) statusHtml += '<span class="badge bg-late">Retardo</span>';
+                if (item.es_recuperacion) statusHtml += '<span class="badge bg-special">Recup.</span>';
+                if (item.es_festivo) statusHtml += '<span class="badge bg-special">Festivo</span>';
+                if (item.es_extra) statusHtml += '<span class="badge bg-special">T. Extra</span>';
+            }
+
+            let timingHtml = '';
+            if (type === 'ausentismo') {
+                const motiveClass = `abs-${item.motivo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '')}`;
+                timingHtml = `<td colspan="2"><span class="badge ${motiveClass}">${item.motivo.toUpperCase()}</span></td>`;
+            } else {
+                timingHtml = `<td class="font-bold text-slate-400">${item.entrada_real || '--:--'}</td><td class="font-bold text-slate-400">${item.salida_real || '--:--'}</td>`;
+            }
+
+            return `
+                <tr>
+                    <td class="font-mono text-[10px] text-slate-400">${item.id_empleado}</td>
+                    <td class="font-bold uppercase tracking-tight">${item.nombre}</td>
+                    <td><div class="flex flex-wrap gap-1">${statusHtml}</div></td>
+                    ${timingHtml}
+                    <td class="italic text-slate-400 text-[10px]">${item.comentario || ''}</td>
+                    <td class="text-right"><button onclick="openDetail('${item.uid}', '${date}')" class="btn-detail"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></button></td>
+                </tr>`;
+        }
+
+        window.openDetail = (uid, date) => {
+            window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*');
+        };
+
+        // --- GESTIÓN DE CORREO ---
+        window.openEmailModal = () => document.getElementById('email-modal').style.display = 'flex';
+        window.closeEmailModal = () => document.getElementById('email-modal').style.display = 'none';
+
+        window.setEmailPreset = (mode) => {
+            if (mode === 'prueba') {
+                document.getElementById('email-to').value = "proteccion.instalaciones@armur.com";
+                document.getElementById('email-cc').value = "";
+            } else {
+                document.getElementById('email-to').value = "juan.paniagua@armur.com;jesuseduardo.gutierrez@armur.com";
+                document.getElementById('email-cc').value = "josedavid.montano@armur.com;roberto.rodriguez@armur.com";
+            }
+        };
+
+        window.prepareAndSend = async () => {
+            const to = document.getElementById('email-to').value.trim();
+            const cc = document.getElementById('email-cc').value.trim();
+            const btn = document.getElementById('btn-confirm-send');
+
+            if (!to) {
+                alert("Por favor, especifique al menos un destinatario.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "PROCESANDO IMAGEN...";
+
+            try {
+                // Capturar el contenido como imagen
+                const captureArea = document.getElementById('report-content');
+                
+                // Ocultar botones de detalle temporalmente para la foto
+                const detailBtns = captureArea.querySelectorAll('.btn-detail');
+                detailBtns.forEach(b => b.style.visibility = 'hidden');
+
+                const canvas = await html2canvas(captureArea, {
+                    scale: 2, // Mejor calidad
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    windowWidth: 1000 // Forza un ancho de ventana mayor para que el renderizado sea consistente
+                });
+
+                detailBtns.forEach(b => b.style.visibility = 'visible');
+
+                const base64Image = canvas.toDataURL('image/png').split(',')[1];
+                
+                // Generar el código HTML envolvente para Power Automate V2
+                const emailHtmlBody = `
+                    <div style="font-family: Arial, sans-serif; background-color: #fdf8f8; padding: 20px; text-align: center;">
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 900px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                            <tr>
+                                <td align="center" style="padding: 0;">
+                                    <img src="data:image/png;base64,${base64Image}" style="width: 100%; max-width: 100%; height: auto; display: block;" alt="Reporte de Asistencia" />
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="text-align: center; padding-top: 20px;">
+                            <p style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin: 0;">
+                                Reporte generado automáticamente por RegAs CIC-6
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                btn.innerText = "ENVIANDO CORREO...";
+                
+                await sendToPowerAutomate({ to, cc, body: emailHtmlBody });
+                
+                btn.innerText = "¡ENVIADO!";
+                setTimeout(() => {
+                    closeEmailModal();
+                    btn.disabled = false;
+                    btn.innerText = "Enviar Reporte";
+                }, 2000);
+
+            } catch (err) {
+                console.error("Fallo en envío:", err);
+                alert("Error al enviar el reporte. Intente de nuevo.");
+                btn.disabled = false;
+                btn.innerText = "Enviar Reporte";
+            }
+        };
+
+        async function sendToPowerAutomate(payload) {
+            let retries = 5;
+            let delay = 1000;
+
+            while (retries > 0) {
+                try {
+                    const response = await fetch(POWER_AUTOMATE_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) return true;
+                    throw new Error("HTTP Status " + response.status);
+                } catch (err) {
+                    retries--;
+                    if (retries === 0) throw err;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

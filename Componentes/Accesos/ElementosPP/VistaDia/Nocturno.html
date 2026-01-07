@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turno Nocturno - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-outline: #e5e7eb;
+            --md-green: #10b981;
+            --neon-green: #34d399;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1f1a1a;
+            margin: 0;
+            padding: 12px;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Grid de Casetas Material Design --- */
+        .caseta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
+        .caseta-card {
+            background: white;
+            border-radius: 18px;
+            border: 1px solid var(--md-outline);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            min-height: 100px;
+        }
+
+        .caseta-card.drag-over {
+            background: #f0fdf4;
+            border: 2px dashed var(--md-green);
+            transform: scale(1.01);
+        }
+
+        .caseta-header {
+            background: #000000;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .caseta-title {
+            color: var(--neon-green);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .btn-header-action {
+            color: var(--neon-green);
+            opacity: 0.7;
+            transition: all 0.2s;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-header-action:hover:not(:disabled) {
+            opacity: 1;
+            background: rgba(52, 211, 153, 0.1);
+        }
+        .btn-header-action:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .element-list {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        /* --- Cards de Elementos --- */
+        .element-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .element-item:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .element-item:active { cursor: grabbing; }
+
+        .element-item.is-late {
+            border-left: 3px solid #ef4444;
+        }
+
+        .avatar-mini {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* --- Botones de Acción Rápida --- */
+        .btn-quick {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            border: 1.5px solid transparent;
+        }
+
+        .btn-entry {
+            background: #ecfdf5;
+            color: #065f46;
+            border-color: #10b981;
+        }
+        .btn-entry:hover { background: #10b981; color: white; }
+
+        .btn-exit {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+        .btn-exit:hover { background: #64748b; color: white; }
+
+        .tag-container {
+            position: absolute;
+            top: -4px;
+            right: 6px;
+            display: flex;
+            gap: 2px;
+        }
+        .tag-rec { background: #166534; color: white; font-size: 5.5px; padding: 0.5px 3px; border-radius: 2px; font-weight: 900; }
+        .tag-tex { background: #d946ef; color: white; font-size: 5.5px; padding: 0.5px 3px; border-radius: 2px; font-weight: 900; }
+
+        /* Seccion Casetas Ocultas */
+        .hidden-section {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--md-outline);
+        }
+        .hidden-caseta-item {
+            background: #f1f5f9;
+            color: #94a3b8;
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-show {
+            color: #64748b;
+            transition: color 0.2s;
+        }
+        .btn-show:hover { color: var(--md-primary); }
+
+        #loading-state {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-state" class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4">
+        <div class="w-8 h-8 border-3 border-red-100 border-t-red-900 rounded-full animate-spin"></div>
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Nocturno</span>
+    </div>
+
+    <!-- Contenedor Principal de Casetas -->
+    <div class="caseta-grid" id="caseta-container"></div>
+
+    <!-- Sección de Casetas Ocultas -->
+    <div id="hidden-section" class="hidden-section hidden">
+        <h4 class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Casetas Ocultas (Sin Personal)</h4>
+        <div id="hidden-casetas-list" class="flex flex-wrap gap-2"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const casetasOrden = [
+            "Centro de control", "Encargado", "Edison", "Recepción Edison", 
+            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"
+        ];
+
+        let currentAssignments = [];
+        let userDataCache = {};
+        // Almacenamiento local específico para nocturno
+        let hiddenCasetas = new Set(JSON.parse(localStorage.getItem('regas_hiddenCasetas_noct') || '[]'));
+
+        function getOperationalDate() {
+            const now = new Date();
+            const hour = now.getHours();
+            let d = new Date(now);
+            // El día operativo cambia a las 5 AM
+            if (hour >= 0 && hour < 5) d.setDate(now.getDate() - 1);
+            return d;
+        }
+
+        function getTargetDateId() {
+            const params = new URLSearchParams(window.location.search);
+            const urlDate = params.get('date');
+            let d = urlDate ? new Date(urlDate + "T00:00:00") : getOperationalDate();
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) init();
+            else signInAnonymously(auth);
+        });
+
+        async function init() {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            usersSnap.forEach(d => userDataCache[d.id] = d.data());
+            loadData();
+        }
+
+        function loadData() {
+            const dateId = getTargetDateId();
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno');
+            
+            onSnapshot(colRef, (snap) => {
+                currentAssignments = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
+                    currentAssignments.push({ uid: docSnap.id, nombre: user.nombre, foto: user.foto, ...data });
+                });
+                renderDashboard();
+                document.getElementById('loading-state').classList.add('hidden');
+            });
+        }
+
+        window.toggleCasetaVisibility = (name) => {
+            if (hiddenCasetas.has(name)) {
+                hiddenCasetas.delete(name);
+            } else {
+                const assigned = currentAssignments.filter(a => a.Caseta === name);
+                if (assigned.length === 0) hiddenCaset.add(name);
+            }
+            localStorage.setItem('regas_hiddenCasetas_noct', JSON.stringify([...hiddenCasetas]));
+            renderDashboard();
+        };
+
+        function renderDashboard() {
+            const container = document.getElementById('caseta-container');
+            const hiddenList = document.getElementById('hidden-casetas-list');
+            const hiddenSection = document.getElementById('hidden-section');
+            
+            container.innerHTML = '';
+            hiddenList.innerHTML = '';
+            let hasHidden = false;
+
+            casetasOrden.forEach(casetaName => {
+                const assigned = currentAssignments.filter(a => a.Caseta === casetaName);
+                
+                if (hiddenCasetas.has(casetaName) && assigned.length === 0) {
+                    hasHidden = true;
+                    const hItem = document.createElement('div');
+                    hItem.className = "hidden-caseta-item animate-in fade-in slide-in-from-bottom-1";
+                    hItem.innerHTML = `
+                        <span>${casetaName}</span>
+                        <button onclick="toggleCasetaVisibility('${casetaName}')" class="btn-show" title="Mostrar caseta">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    `;
+                    hiddenList.appendChild(hItem);
+                    return;
+                }
+
+                const card = document.createElement('div');
+                card.className = "caseta-card animate-in fade-in zoom-in-95 duration-300";
+                const isHideable = assigned.length === 0;
+
+                card.innerHTML = `
+                    <div class="caseta-header">
+                        <div class="flex items-center gap-2">
+                            <span class="caseta-title">${casetaName}</span>
+                            <button onclick="toggleCasetaVisibility('${casetaName}')" 
+                                    class="btn-header-action" 
+                                    title="${isHideable ? 'Ocultar caseta vacía' : 'No se puede ocultar con personal'}"
+                                    ${!isHideable ? 'disabled' : ''}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                            </button>
+                        </div>
+                        <button onclick="openPerfiles('${casetaName}')" class="btn-header-action" title="Asignar personal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                    <div class="element-list" id="list-${normalizeId(casetaName)}"></div>
+                `;
+
+                card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
+                card.ondragleave = () => card.classList.remove('drag-over');
+                card.ondrop = (e) => handleDrop(e, casetaName);
+
+                container.appendChild(card);
+                
+                const list = card.querySelector('.element-list');
+                if (assigned.length === 0) {
+                    list.innerHTML = `<p class="text-[7px] text-center py-5 text-slate-300 font-bold uppercase tracking-widest">Disponible</p>`;
+                } else {
+                    assigned.forEach(el => list.appendChild(createElementRow(el)));
+                }
+            });
+
+            hiddenSection.classList.toggle('hidden', !hasHidden);
+        }
+
+        function createElementRow(el) {
+            const div = document.createElement('div');
+            div.className = `element-item ${el.retardo ? 'is-late' : ''}`;
+            div.draggable = true;
+            
+            div.ondragstart = (e) => {
+                e.dataTransfer.setData("text/plain", JSON.stringify({ uid: el.uid, fromCaseta: el.Caseta, type: 'nocturno', internal: true }));
+                div.style.opacity = '0.5';
+            };
+            div.ondragend = () => div.style.opacity = '1';
+
+            const params = new URLSearchParams(window.location.search);
+            let dateStr = params.get('date') || formatDate(getOperationalDate());
+            
+            div.onclick = (e) => {
+                if (e.target.closest('button')) return;
+                window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${el.uid}&date=${dateStr}` }, '*');
+            };
+
+            let statusDot = el.entrada_real ? 'bg-emerald-500' : 'bg-slate-300';
+            if (el.retardo) statusDot = 'bg-red-500';
+
+            let actionBtn = '';
+            if (!el.entrada_real) {
+                actionBtn = `<button onclick="quickAttendance('${el.uid}', 'entrada')" class="btn-quick btn-entry">Entrada</button>`;
+            } else if (!el.salida_real) {
+                actionBtn = `<button onclick="quickAttendance('${el.uid}', 'salida')" class="btn-quick btn-exit">Salida</button>`;
+            }
+
+            div.innerHTML = `
+                <div class="tag-container">${el.es_recuperacion ? '<span class="tag-rec">REC</span>' : ''}${el.es_extra ? '<span class="tag-tex">TEx</span>' : ''}</div>
+                <img src="${el.foto || 'https://ui-avatars.com/api/?background=450a0a&color=fff&name=' + el.nombre}" class="avatar-mini">
+                <div class="flex-grow min-w-0">
+                    <p class="text-[9px] font-bold text-slate-700 truncate leading-tight">${el.nombre}</p>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <div class="status-dot ${statusDot}"></div>
+                        <p class="text-[6.5px] font-black uppercase text-slate-400">${el.entrada_planificada} • ${el.entrada_real || '---'}</p>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    ${actionBtn}
+                </div>
+            `;
+            return div;
+        }
+
+        window.openPerfiles = (casetaName) => {
+            window.parent.postMessage({ 
+                type: 'navigateRight', 
+                url: `Componentes/Accesos/ElementosPP/Planeación/Perfiles.html?highlight=${encodeURIComponent(casetaName)}` 
+            }, '*');
+        };
+
+        async function handleDrop(e, targetCaseta) {
+            e.preventDefault();
+            const card = e.currentTarget;
+            card.classList.remove('drag-over');
+            
+            try {
+                const raw = e.dataTransfer.getData("text/plain");
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                
+                if (data.internal) {
+                    if (data.fromCaseta === targetCaseta) return;
+                    const dateId = getTargetDateId();
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', data.uid), { Caseta: targetCaseta });
+                } else {
+                    await executeExternalAssign(data, targetCaseta);
+                }
+            } catch (err) { console.error("Error en drop:", err); }
+        }
+
+        async function executeExternalAssign(toolData, caseta) {
+            const { uid } = toolData;
+            const dateId = getTargetDateId();
+            
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid));
+            
+            // Horario nocturno: 22:00 para CCO, 21:00 para el resto
+            let time = (caseta === 'Centro de control' ? "22:00" : "21:00");
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', uid), {
+                Caseta: caseta, turno: 'nocturno', entrada_planificada: time,
+                es_recuperacion: false, es_festivo: false, es_extra: false,
+                entrada_real: null, salida_real: null, retardo: false
+            });
+        }
+
+        window.quickAttendance = async (uid, type) => {
+            const dateId = getTargetDateId();
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', uid);
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            if (type === 'entrada') {
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                const [pH, pM] = (data.entrada_planificada || "21:00").split(':').map(Number);
+                const plan = new Date(); plan.setHours(pH, pM, 0);
+                const isLate = new Date() > plan;
+                await updateDoc(docRef, { entrada_real: nowTime, retardo: isLate });
+            } else {
+                await updateDoc(docRef, { salida_real: nowTime });
+            }
+        };
+
+        function normalizeId(s) { return s.toLowerCase().replace(/\s+/g, '-'); }
+        function formatDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+    </script>
+</body>
+</html>

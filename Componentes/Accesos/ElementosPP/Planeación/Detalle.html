@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Asignación - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-outline: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1f1a1a;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- Animaciones --- */
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        /* --- Header --- */
+        .hero-header {
+            background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+            height: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            backdrop-filter: blur(2px);
+        }
+
+        .profile-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            object-fit: cover;
+        }
+
+        /* --- Tabs --- */
+        .tab-nav {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid var(--md-outline);
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .tab-btn {
+            padding: 14px 20px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--md-primary);
+            border-bottom-color: var(--md-primary);
+        }
+
+        /* --- Cards --- */
+        .card-material {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid var(--md-outline);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 24px;
+            border-left: 2px solid var(--md-outline);
+            margin-left: 8px;
+            padding-bottom: 16px;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -7px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--md-primary);
+        }
+
+        /* Campos Editables en Timeline */
+        .inline-edit {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid transparent;
+            padding: 2px 0;
+            font-weight: 700;
+            color: #475569;
+            outline: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .inline-edit:focus {
+            border-bottom-color: var(--md-primary);
+            color: var(--md-primary);
+            background: rgba(69, 10, 10, 0.02);
+        }
+        .inline-select {
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .chip-check {
+            display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px;
+            background: white; border: 1.5px solid var(--md-outline); cursor: pointer;
+            font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b;
+        }
+        .chip-check:has(input:checked) { border-color: var(--md-primary); background: var(--md-primary); color: white; }
+
+        /* --- Herramientas de Asignación --- */
+        .drag-block {
+            width: 100%;
+            padding: 10px 4px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 800;
+            font-size: 9px;
+            text-transform: uppercase;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+            border: 1px solid rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .drag-block:active { cursor: grabbing; transform: scale(0.95); }
+        .drag-block:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .block-m { background: #fef9c3; color: #854d0e; }
+        .block-v { background: #dbeafe; color: #1e40af; }
+        .block-n { background: #1e3a8a; color: white; }
+        .block-aus { background: #f1f5f9; color: #475569; }
+
+        .icon-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            background: rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
+
+        .btn-main {
+            background: var(--md-primary); color: white; border-radius: 20px;
+            padding: 16px; font-weight: 800; text-transform: uppercase;
+            font-size: 11px; transition: all 0.3s;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div id="loading-state" class="fixed inset-0 bg-white z-[1000] flex flex-col items-center justify-center gap-6">
+        <div class="w-10 h-10 border-4 border-red-100 border-t-red-900 rounded-full animate-spin"></div>
+    </div>
+
+    <header class="hero-header">
+        <div class="hero-overlay">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <img id="user-photo" src="https://ui-avatars.com/api/?background=450a0a&color=fff" class="profile-photo">
+                    <div>
+                        <h1 id="user-name" class="text-white text-lg font-extrabold uppercase tracking-tight leading-none">---</h1>
+                        <p id="info-puesto" class="text-red-200/80 text-[8px] font-bold uppercase tracking-widest mt-1">Protección Patrimonial</p>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/20 text-right">
+                    <label class="text-[8px] font-black text-white/50 uppercase block mb-1">Fecha</label>
+                    <input type="date" id="date-navigator" class="bg-transparent text-white text-[11px] font-black outline-none cursor-pointer [color-scheme:dark]">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tab-nav">
+        <button onclick="switchTab('detalle')" id="btn-tab-detalle" class="tab-btn active">Detalle</button>
+        <button onclick="switchTab('asignar')" id="btn-tab-asignar" class="tab-btn">Asignar</button>
+    </nav>
+
+    <main class="p-5">
+        <div id="view-detalle" class="space-y-4">
+            <div id="shifts-container" class="space-y-4"></div>
+            <div id="empty-state" class="hidden py-20 text-center space-y-4">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin jornadas registradas</p>
+            </div>
+        </div>
+
+        <div id="view-asignar" class="hidden space-y-6 animate-slide-up">
+            <div class="text-center">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Arrastra a la tabla para asignar de inmediato</p>
+            </div>
+            <section class="space-y-3">
+                <h4 class="text-[10px] font-black text-red-900 uppercase tracking-widest ml-2">Turnos</h4>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="drag-block block-m" draggable="true" ondragstart="handleToolDrag(event, 'matutino')">
+                        <div class="icon-box">M</div>
+                        <span>Mat.</span>
+                    </div>
+                    <div class="drag-block block-v" draggable="true" ondragstart="handleToolDrag(event, 'vespertino')">
+                        <div class="icon-box">V</div>
+                        <span>Vesp.</span>
+                    </div>
+                    <div class="drag-block block-n" draggable="true" ondragstart="handleToolDrag(event, 'nocturno')">
+                        <div class="icon-box">N</div>
+                        <span>Noct.</span>
+                    </div>
+                </div>
+            </section>
+            <section class="space-y-3">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Ausentismos</h4>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Descanso')">
+                        <div class="icon-box">D</div>
+                        <span>Desc.</span>
+                    </div>
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Vacaciones')">
+                        <div class="icon-box">V</div>
+                        <span>Vac.</span>
+                    </div>
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Permiso')">
+                        <div class="icon-box">P</div>
+                        <span>Perm.</span>
+                    </div>
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Suspension')">
+                        <div class="icon-box">S</div>
+                        <span>Susp.</span>
+                    </div>
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Incapacidades')">
+                        <div class="icon-box">I</div>
+                        <span>Incap.</span>
+                    </div>
+                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Falta')">
+                        <div class="icon-box">F</div>
+                        <span>Falta</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const params = new URLSearchParams(window.location.search);
+        const uid = params.get('uid');
+        const rawDateParam = params.get('date'); 
+
+        const formatDocId = (d) => d.split('-').reverse().join(''); 
+        const docDateId = formatDocId(rawDateParam);
+
+        const casetasDisponibles = [
+            "Centro de control", "Encargado", "Edison", "Recepción Edison", 
+            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"
+        ];
+
+        const dateNavigator = document.getElementById('date-navigator');
+        dateNavigator.value = rawDateParam;
+        dateNavigator.onchange = (e) => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('date', e.target.value);
+            window.location.href = url.toString();
+        };
+
+        let userBaseData = null;
+        let shiftMap = {}; 
+        let currentShifts = [];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) await init();
+            else signInAnonymously(auth);
+        });
+
+        async function init() {
+            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
+            if (userSnap.exists()) {
+                userBaseData = userSnap.data();
+                document.getElementById('user-name').innerText = userBaseData.nombre;
+                document.getElementById('info-puesto').innerText = userBaseData.puesto || "MIEMBRO";
+                if (userBaseData.foto) document.getElementById('user-photo').src = userBaseData.foto;
+            }
+
+            const turnos = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            turnos.forEach(tId => {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, tId, uid);
+                onSnapshot(docRef, (snap) => {
+                    if (snap.exists()) shiftMap[tId] = { id: tId, ...snap.data() };
+                    else delete shiftMap[tId];
+                    currentShifts = Object.values(shiftMap);
+                    renderShifts();
+                    document.getElementById('loading-state').classList.add('hidden');
+                });
+            });
+        }
+
+        window.switchTab = (tab) => {
+            document.getElementById('view-detalle').classList.toggle('hidden', tab !== 'detalle');
+            document.getElementById('view-asignar').classList.toggle('hidden', tab !== 'asignar');
+            document.getElementById('btn-tab-detalle').classList.toggle('active', tab === 'detalle');
+            document.getElementById('btn-tab-asignar').classList.toggle('active', tab === 'asignar');
+        };
+
+        window.handleToolDrag = (e, type, motive = null) => {
+            const data = { external: true, immediate: true, uid: uid, type: type, motive: motive, name: userBaseData?.nombre || 'Elemento' };
+            e.dataTransfer.setData('text/plain', JSON.stringify(data));
+            e.dataTransfer.effectAllowed = 'copy';
+        };
+
+        function renderShifts() {
+            const container = document.getElementById('shifts-container');
+            const empty = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (currentShifts.length === 0) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                currentShifts.forEach(shift => container.appendChild(createShiftCard(shift)));
+            }
+        }
+
+        function createShiftCard(data) {
+            const div = document.createElement('div');
+            div.className = "card-material animate-slide-up";
+            const isAusentismo = data.Ausentismo;
+            const headerColor = isAusentismo ? 'text-blue-600' : 'text-red-900';
+            
+            const enterBlur = `onkeydown="if(event.key==='Enter') this.blur()"`;
+
+            let timelineHtml = '';
+            if (isAusentismo) {
+                timelineHtml = `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <p class="text-[9px] font-black uppercase ${headerColor}">Motivo de Ausencia</p>
+                        <select onblur="updateShiftField('${data.id}', 'motivo', this.value)" ${enterBlur} class="inline-edit inline-select text-[10px] w-full">
+                            ${['Descanso', 'Vacaciones', 'Permiso', 'Suspencion', 'Incapacidades', 'Falta'].map(m => `<option value="${m}" ${data.motivo === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}
+                        </select>
+                    </div>`;
+            } else {
+                timelineHtml = `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <p class="text-[9px] font-black uppercase ${headerColor}">Programado</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select onblur="updateShiftField('${data.id}', 'Caseta', this.value)" ${enterBlur} class="inline-edit inline-select text-[10px]">
+                                ${casetasDisponibles.map(c => `<option value="${c}" ${data.Caseta === c ? 'selected' : ''}>${c.toUpperCase()}</option>`).join('')}
+                            </select>
+                            <input type="time" value="${data.entrada_planificada}" onblur="updateShiftField('${data.id}', 'entrada_planificada', this.value)" ${enterBlur} class="inline-edit text-[10px]">
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="border-color: #10b981"></div>
+                        <p class="text-[9px] font-black uppercase text-emerald-600">Entrada Real</p>
+                        <input type="time" value="${data.entrada_real || ''}" onblur="updateShiftField('${data.id}', 'entrada_real', this.value)" ${enterBlur} class="inline-edit text-[10px] w-full" placeholder="--:--">
+                    </div>
+                    <div class="timeline-item" style="padding-bottom: 0;">
+                        <div class="timeline-dot" style="border-color: #94a3b8"></div>
+                        <p class="text-[9px] font-black uppercase text-slate-400">Salida Real</p>
+                        <input type="time" value="${data.salida_real || ''}" onblur="updateShiftField('${data.id}', 'salida_real', this.value)" ${enterBlur} class="inline-edit text-[10px] w-full" placeholder="--:--">
+                    </div>`;
+            }
+
+            const extraChecks = !isAusentismo ? `
+                <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-50">
+                    <label class="chip-check"><input type="checkbox" ${data.retardo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'retardo', this.checked)" class="hidden"><span class="${data.retardo ? 'text-white' : ''}">Retardo</span></label>
+                    <label class="chip-check"><input type="checkbox" ${data.es_recuperacion ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_recuperacion', this.checked)" class="hidden"><span>Recup.</span></label>
+                    <label class="chip-check"><input type="checkbox" ${data.es_festivo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_festivo', this.checked)" class="hidden"><span>Festivo</span></label>
+                    <label class="chip-check"><input type="checkbox" ${data.es_extra ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_extra', this.checked)" class="hidden"><span>Extra</span></label>
+                </div>
+                <div class="mt-3 pt-3 border-t border-slate-100">
+                    <p class="text-[9px] font-black uppercase text-slate-400 mb-1">Comentario</p>
+                    <input type="text" value="${data.comentario || ''}" 
+                           onblur="updateShiftField('${data.id}', 'comentario', this.value)" 
+                           ${enterBlur} 
+                           class="inline-edit text-[10px] w-full" 
+                           placeholder="Agregar observación o nota...">
+                </div>` : '';
+
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-black uppercase tracking-wider ${headerColor}">${isAusentismo ? 'AUSENTISMO' : (data.turno || '').toUpperCase()}</span>
+                    <button onclick="deleteShift('${data.id}')" class="p-2 text-slate-300 hover:text-red-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+                <div class="space-y-0">${timelineHtml}</div>
+                ${extraChecks}
+                <div id="actions-${data.id}" class="mt-4"></div>
+            `;
+            
+            if (!isAusentismo) renderQuickAction(data, div.querySelector(`#actions-${data.id}`));
+            return div;
+        }
+
+        function renderQuickAction(data, zone) {
+            if (data.entrada_real && data.salida_real) return;
+            const btn = document.createElement('button');
+            if (!data.entrada_real) {
+                btn.className = "btn-main w-full bg-emerald-600 py-3";
+                btn.innerText = "Registrar Entrada Ahora";
+                btn.onclick = () => registerNow(data.id, 'entrada');
+                zone.appendChild(btn);
+            } else if (!data.salida_real) {
+                btn.className = "btn-main w-full bg-slate-800 py-3";
+                btn.innerText = "Registrar Salida Ahora";
+                btn.onclick = () => registerNow(data.id, 'salida');
+                zone.appendChild(btn);
+            }
+        }
+
+        async function registerNow(shiftId, type) {
+            const time = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            await updateShiftField(shiftId, type === 'entrada' ? 'entrada_real' : 'salida_real', time);
+        }
+
+        window.updateShiftField = async (shiftId, field, value) => {
+            const current = shiftMap[shiftId];
+            if (!current) return;
+            if (current[field] === value) return;
+
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, shiftId, uid);
+            const updateObj = { [field]: value };
+
+            if (field === 'entrada_planificada' || field === 'entrada_real') {
+                const plan = field === 'entrada_planificada' ? value : current.entrada_planificada;
+                const real = field === 'entrada_real' ? value : current.entrada_real;
+                
+                if (plan && real) {
+                    const [pH, pM] = plan.split(':').map(Number);
+                    const [rH, rM] = real.split(':').map(Number);
+                    updateObj.retardo = (rH > pH || (rH === pH && rM > pM));
+                }
+            }
+
+            try {
+                await updateDoc(docRef, updateObj);
+                console.log(`Campo actualizado: ${field}`);
+            } catch (err) {
+                console.error("Error guardando campo:", err);
+            }
+        };
+
+        window.deleteShift = async (id) => {
+            if (confirm("¿Eliminar esta jornada?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, id, uid));
+            }
+        };
+
+    </script>
+</body>
+</html>

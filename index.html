@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC6 - Sistema de Control de Acceso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #ffffff;
+            --md-background: #fdf8f8;
+            --md-on-surface: #1f1a1a;
+            --md-outline: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-background);
+            color: var(--md-on-surface);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- MATERIAL ELEVATION & SURFACES --- */
+        .header-surface {
+            background-color: var(--md-primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 50;
+        }
+
+        .side-panel {
+            background-color: var(--md-surface);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-right: 1px solid var(--md-outline);
+            z-index: 40;
+            position: relative;
+            height: 100%; /* Asegura que el panel use todo el alto */
+        }
+
+        .side-panel-right {
+            border-left: 1px solid var(--md-outline);
+            border-right: none;
+        }
+
+        .main-content {
+            background-color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        /* Estilo para iframes apilados */
+        .module-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none; 
+        }
+        .module-frame.active {
+            display: block; 
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* --- LOGIN MATERIAL --- */
+        #login-overlay {
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .md-button {
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .md-button:active { transform: scale(0.98); }
+
+        /* Botón de cierre flotante para el panel derecho */
+        .floating-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 60;
+            background: rgba(69, 10, 10, 0.9);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .floating-close:hover {
+            background: #450a0a;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 flex items-center justify-center hidden">
+        <div class="login-card p-8 flex flex-col items-center">
+            <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
+                <img src="Multimedia/Logo.png" class="w-12 h-12 object-contain" alt="Logo">
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 uppercase tracking-tight">Acceso al Núcleo</h2>
+            <p class="text-sm text-gray-500 mb-8 uppercase tracking-widest font-bold">Portal CIC-6</p>
+            
+            <div class="w-full space-y-6">
+                <input type="email" id="email-input" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium" placeholder="Usuario">
+                <input type="password" id="pass-input" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium" placeholder="Contraseña">
+                <p id="login-error" class="text-red-600 text-[10px] font-bold uppercase text-center hidden"></p>
+                <button onclick="handleLogin()" id="btn-login" class="w-full bg-[#450a0a] text-white py-4 rounded-2xl font-bold uppercase tracking-widest md-button shadow-lg shadow-red-900/20">
+                    Autenticar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header-surface h-16 flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleLeftPanel()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="flex items-center gap-3">
+                <img src="Multimedia/Logo.png" class="w-8 h-8 object-contain" alt="Logo">
+                <span class="font-bold tracking-tight text-lg hidden sm:block uppercase">Protección Patrimonial</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-2xl transition-all cursor-pointer" onclick="handleLogout()">
+            <div class="w-9 h-9 rounded-full bg-white/10 border border-white/20 p-0.5 overflow-hidden">
+                <img id="avatar-display" src="Multimedia/Avatar.jpg" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff'">
+            </div>
+            <div class="hidden md:flex flex-col items-start leading-tight">
+                <span id="user-name-display" class="text-[12px] font-bold text-white uppercase tracking-tight">Usuario</span>
+                <span id="user-role-display" class="text-[9px] text-red-200/80 font-bold uppercase">Operador</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex flex-1 overflow-hidden relative">
+        <aside id="leftPanel" class="side-panel w-72 shrink-0">
+            <iframe id="navFrame" src="Nav.html"></iframe>
+        </aside>
+
+        <section id="mainArea" class="main-content flex-1 overflow-hidden">
+            <!-- Capas de módulos cargadas aquí -->
+        </section>
+
+        <aside id="rightPanel" class="side-panel side-panel-right w-[450px] shrink-0 hidden">
+            <div class="floating-close" onclick="closeRightPanel()" title="Cerrar detalle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
+            <iframe id="rightFrame" src="about:blank"></iframe>
+        </aside>
+    </main>
+
+    <!-- Footer -->
+    <footer class="h-8 bg-black text-[#39FF14] flex items-center px-4 justify-between shrink-0 text-[10px] font-mono z-50">
+        <div class="flex items-center gap-4">
+            <span class="animate-pulse">●</span>
+            <span>SISTEMA CIC-6 CONECTADO</span>
+            <span id="footer-log" class="hidden sm:inline opacity-80 uppercase tracking-tighter ml-4">Iniciando componentes...</span>
+        </div>
+        <div id="clock" class="font-bold tracking-widest">00:00:00</div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const UI = {
+            overlay: document.getElementById('login-overlay'),
+            leftPanel: document.getElementById('leftPanel'),
+            rightPanel: document.getElementById('rightPanel'),
+            navFrame: document.getElementById('navFrame'),
+            mainArea: document.getElementById('mainArea'),
+            rightFrame: document.getElementById('rightFrame'),
+            userName: document.getElementById('user-name-display'),
+            userRole: document.getElementById('user-role-display'),
+            avatarImg: document.getElementById('avatar-display'),
+            footerLog: document.getElementById('footer-log'),
+            clock: document.getElementById('clock')
+        };
+
+        const loadedModules = new Map();
+
+        window.navigateMain = (url) => {
+            if (!url) return;
+            loadedModules.forEach(iframe => iframe.classList.remove('active'));
+
+            if (loadedModules.has(url)) {
+                loadedModules.get(url).classList.add('active');
+            } else {
+                const newIframe = document.createElement('iframe');
+                newIframe.src = url;
+                newIframe.className = 'module-frame active';
+                UI.mainArea.appendChild(newIframe);
+                loadedModules.set(url, newIframe);
+            }
+            saveState(url);
+            log(`Módulo: ${url.split('/').pop()}`);
+        };
+
+        const STORAGE_KEYS = {
+            LEFT_OPEN: 'cic6_left_open',
+            RIGHT_OPEN: 'cic6_right_open',
+            URL_MAIN: 'cic6_url_main'
+        };
+
+        function saveState(currentUrl) {
+            localStorage.setItem(STORAGE_KEYS.LEFT_OPEN, !UI.leftPanel.classList.contains('hidden'));
+            localStorage.setItem(STORAGE_KEYS.RIGHT_OPEN, !UI.rightPanel.classList.contains('hidden'));
+            if (currentUrl) localStorage.setItem(STORAGE_KEYS.URL_MAIN, currentUrl);
+        }
+
+        function restoreState() {
+            const leftOpen = localStorage.getItem(STORAGE_KEYS.LEFT_OPEN) !== 'false';
+            const rightOpen = localStorage.getItem(STORAGE_KEYS.RIGHT_OPEN) === 'true';
+            const urlMain = localStorage.getItem(STORAGE_KEYS.URL_MAIN) || 'Home.html';
+
+            if (!leftOpen) UI.leftPanel.classList.add('hidden');
+            if (rightOpen) UI.rightPanel.classList.remove('hidden');
+            window.navigateMain(urlMain);
+        }
+
+        window.navigateRight = (url) => {
+            if (!url) return;
+            UI.rightFrame.src = url;
+            UI.rightPanel.classList.remove('hidden');
+            saveState();
+        };
+
+        window.toggleLeftPanel = () => { UI.leftPanel.classList.toggle('hidden'); saveState(); };
+        window.closeRightPanel = () => { UI.rightPanel.classList.add('hidden'); saveState(); };
+
+        function log(msg) { UI.footerLog.innerText = msg; }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                UI.overlay.classList.add('hidden');
+                restoreState();
+            } else {
+                UI.overlay.classList.remove('hidden');
+            }
+        });
+
+        window.handleLogin = async () => {
+            const email = document.getElementById('email-input').value;
+            const pass = document.getElementById('pass-input').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert("Acceso denegado"); }
+        };
+
+        window.handleLogout = async () => {
+            if(confirm("¿Cerrar sesión?")) { await signOut(auth); window.location.reload(); }
+        };
+
+        setInterval(() => UI.clock.innerText = new Date().toLocaleTimeString('es-MX', { hour12: false }), 1000);
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'navigate') window.navigateMain(event.data.url);
+            if (event.data.type === 'navigateRight') window.navigateRight(event.data.url);
+        });
+
+    </script>
+</body>
+</html>

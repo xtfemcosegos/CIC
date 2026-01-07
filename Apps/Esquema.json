@@ -1,0 +1,87 @@
+{
+  "titulo": "Esquema de Datos y Controles de Interfaz - CIC6 (v1.1.0)",
+  "version": "1.1.0",
+  "notas_implementacion": {
+    "google_api_usage": "Se utiliza google.maps.places.Autocomplete para agilizar la entrada de datos. El sistema captura la 'formatted_address' de la API. En el caso del domicilio, se utiliza adicionalmente google.maps.Geocoder para centrar el marcador en el mapa visual.",
+    "campos_calculados": "Los campos 'val-edad' y 'val-antiguedad' son de solo lectura en la interfaz. Se calculan dinámicamente en milisegundos comparando la fecha actual con las fechas de nacimiento e ingreso respectivamente.",
+    "formato_fechas": "Se utiliza el estándar ISO (YYYY-MM-DD) para persistencia, compatible con los controles input:date nativos."
+  },
+  "secciones": [
+    {
+      "nombre": "Identidad",
+      "campos": [
+        { "id": "nombre", "tipo": "String", "control": "input:text" },
+        { "id": "id_empleado", "tipo": "Number", "control": "input:number" },
+        { "id": "status", "tipo": "String", "control": "select", "opciones": ["Activo", "Baja"] },
+        { "id": "foto", "tipo": "Base64 String", "control": "file/camera" },
+        { "id": "uid", "tipo": "String", "control": "read-only" }
+      ]
+    },
+    {
+      "nombre": "Laboral",
+      "campos": [
+        { "id": "puesto", "tipo": "String", "control": "select" },
+        { "id": "compania", "tipo": "String", "control": "input:text" },
+        { "id": "acceso_predeterminado", "tipo": "String", "control": "input:text" },
+        { "id": "fecha_ingreso", "tipo": "String (Date)", "control": "input:date" },
+        { "id": "antiguedad", "tipo": "String", "control": "calculado/read-only", "logica": "Basada en fecha_ingreso" }
+      ]
+    },
+    {
+      "nombre": "Personal",
+      "campos": [
+        { "id": "fecha_nacimiento", "tipo": "String (Date)", "control": "input:date" },
+        { "id": "sexo", "tipo": "String", "control": "select" },
+        { "id": "estado_civil", "tipo": "String", "control": "select" },
+        { "id": "escolaridad", "tipo": "String", "control": "input:text" },
+        { "id": "edad", "tipo": "String", "control": "calculado/read-only", "logica": "Basada en fecha_nacimiento" }
+      ]
+    },
+    {
+      "nombre": "Ubicación",
+      "campos": [
+        { 
+          "id": "nacimiento_lugar", 
+          "tipo": "String", 
+          "control": "google_autocomplete", 
+          "config_api": { "types": ["(regions)"], "fields": ["formatted_address", "name"] } 
+        },
+        { 
+          "id": "domicilio", 
+          "tipo": "String", 
+          "control": "google_autocomplete", 
+          "config_api": { "types": ["address"], "fields": ["formatted_address", "geometry"] },
+          "visual": "Mini mapa integrado"
+        }
+      ]
+    },
+    {
+      "nombre": "Legal y Salud",
+      "campos": [
+        { "id": "curp", "tipo": "String", "control": "input:text" },
+        { "id": "rfc", "tipo": "String", "control": "input:text" },
+        { "id": "nss", "tipo": "String", "control": "input:text" },
+        { "id": "tipo_sangre", "tipo": "String", "control": "select" },
+        { "id": "alergias", "tipo": "String", "control": "textarea" },
+        { "id": "talla_camisa", "tipo": "String", "control": "input:text" },
+        { "id": "talla_calzado", "tipo": "Number", "control": "input:number" }
+      ]
+    },
+    {
+      "nombre": "Contacto",
+      "campos": [
+        { "id": "celular", "tipo": "String (Tel)", "control": "input:tel" },
+        { "id": "correo_principal", "tipo": "String (Email)", "control": "input:email" }
+      ]
+    },
+    {
+      "nombre": "Estructuras Dinámicas",
+      "campos": [
+        { "id": "hijos", "tipo": "Array<Object>", "subcampos": ["nombre", "fecha_nacimiento"] },
+        { "id": "emergencias", "tipo": "Array<Object>", "subcampos": ["nombre", "parentesco", "telefono"] },
+        { "id": "cursos", "tipo": "Array<Object>", "subcampos": ["nombre", "fecha", "certificado"] },
+        { "id": "lastUpdate", "tipo": "ISO String", "control": "auto_save_system" }
+      ]
+    }
+  ]
+}

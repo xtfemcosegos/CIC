@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignador de Patrones - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-outline: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1f1a1a;
+            overflow-x: hidden;
+        }
+
+        .card-material {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid var(--md-outline);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .btn-main {
+            background: var(--md-primary);
+            color: white;
+            border-radius: 16px;
+            padding: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 11px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(69, 10, 10, 0.2); }
+        .btn-main:disabled { background: #94a3b8; transform: none; box-shadow: none; }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: var(--md-primary);
+            border: 1.5px solid var(--md-outline);
+            border-radius: 14px;
+            padding: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background: #f1f5f9; border-color: var(--md-primary); }
+
+        .input-standard {
+            width: 100%;
+            background: #f8fafc;
+            border: 2px solid transparent;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-standard:focus { border-color: var(--md-primary); background: white; }
+
+        .shift-block {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .m-block { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .v-block { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+        .n-block { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+        .d-block { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .pattern-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 54px;
+            padding: 4px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 16px;
+        }
+
+        .dragging { opacity: 0.5; }
+
+        /* Loader */
+        .loader {
+            width: 24px; height: 24px; border: 3px solid #FFF; border-bottom-color: transparent;
+            border-radius: 50%; display: inline-block; box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-5">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <h2 class="text-xs font-black text-red-900 uppercase tracking-[0.2em] mb-2">Generador de Patrones</h2>
+        <div class="flex items-center gap-4 bg-white p-3 rounded-2xl border border-red-50">
+            <img id="user-photo" src="https://ui-avatars.com/api/?background=450a0a&color=fff" class="w-12 h-12 rounded-xl object-cover">
+            <div>
+                <h3 id="user-name" class="text-[13px] font-black text-slate-800 uppercase leading-none">Cargando...</h3>
+                <p id="user-puesto" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Identificando elemento</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestañas de Modo -->
+    <div class="flex gap-2 mb-4">
+        <button onclick="setMode('pattern')" id="tab-pattern" class="flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl border-2 border-red-900 bg-red-900 text-white transition-all">Patrones de Turno</button>
+        <button onclick="setMode('absence')" id="tab-absence" class="flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl border-2 border-slate-200 text-slate-400 transition-all">Ausentismos</button>
+    </div>
+
+    <!-- Módulo 1: Patrones de Turno -->
+    <div id="module-pattern" class="space-y-4">
+        <!-- Plantillas Globales -->
+        <div class="card-material bg-slate-50 border-dashed">
+            <label class="text-[10px] font-black text-slate-500 uppercase mb-3 block">Plantillas Guardadas</label>
+            <div class="flex gap-2">
+                <select id="template-selector" class="input-standard flex-grow text-xs" onchange="loadTemplateFromSelect(this.value)">
+                    <option value="">Seleccionar plantilla...</option>
+                </select>
+                <button onclick="deleteSelectedTemplate()" class="p-3 text-red-400 hover:text-red-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="card-material">
+            <label class="text-[10px] font-black text-slate-400 uppercase mb-3 block">1. Construye el Patrón (m, v, n, d)</label>
+            <div class="flex gap-3 mb-4">
+                <div class="shift-block m-block" draggable="true" ondragstart="handleDragStart(event, 'm')">M</div>
+                <div class="shift-block v-block" draggable="true" ondragstart="handleDragStart(event, 'v')">V</div>
+                <div class="shift-block n-block" draggable="true" ondragstart="handleDragStart(event, 'n')">N</div>
+                <div class="shift-block d-block" draggable="true" ondragstart="handleDragStart(event, 'd')">D</div>
+            </div>
+            
+            <div class="pattern-preview" id="pattern-builder" ondragover="allowDrop(event)" ondrop="handleDrop(event)">
+                <div class="w-full flex items-center justify-center text-[10px] font-bold text-slate-300 uppercase italic">Arrastra turnos aquí o escribe abajo</div>
+            </div>
+
+            <div class="mt-4 flex flex-col gap-3">
+                <input type="text" id="pattern-input" class="input-standard text-center tracking-[0.5em] uppercase font-mono" placeholder="EJ: MMVVNNDD" oninput="parseStringPattern(this.value)">
+                
+                <div class="flex gap-2">
+                    <input type="text" id="new-template-name" class="input-standard flex-grow" placeholder="Nombre para guardar plantilla...">
+                    <button onclick="saveCurrentAsTemplate()" class="btn-secondary whitespace-nowrap">Guardar Plantilla</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-material">
+            <label class="text-[10px] font-black text-slate-400 uppercase mb-3 block">2. Duración y Repetición</label>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="col-span-2">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Comenzar el día:</label>
+                    <input type="date" id="start-date" class="input-standard">
+                </div>
+                <button onclick="setDuration('1w')" class="py-3 px-1 border-2 border-slate-100 rounded-xl text-[9px] font-black uppercase hover:border-red-900 transition-colors">1 Semana</button>
+                <button onclick="setDuration('1m')" class="py-3 px-1 border-2 border-slate-100 rounded-xl text-[9px] font-black uppercase hover:border-red-900 transition-colors">1 Mes</button>
+                <div class="col-span-2">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">O hasta la fecha:</label>
+                    <input type="date" id="end-date" class="input-standard">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Módulo 2: Ausentismos -->
+    <div id="module-absence" class="hidden space-y-4">
+        <div class="card-material">
+            <label class="text-[10px] font-black text-slate-400 uppercase mb-3 block">Configurar Ausencia Prolongada</label>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Motivo:</label>
+                    <select id="absence-type" class="input-standard">
+                        <option value="Vacaciones">Vacaciones</option>
+                        <option value="Permiso">Permiso</option>
+                        <option value="Suspencion">Suspensión</option>
+                        <option value="Incapacidades">Incapacidad</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Desde:</label>
+                        <input type="date" id="abs-start-date" class="input-standard">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Días totales:</label>
+                        <input type="number" id="abs-days" class="input-standard" min="1" value="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón de Acción -->
+    <div class="mt-6 sticky bottom-0 bg-white pt-2">
+        <button id="btn-apply" onclick="applyPattern()" class="btn-main">
+            <span id="btn-text">Aplicar Programación</span>
+            <span id="btn-loader" class="loader hidden"></span>
+        </button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const params = new URLSearchParams(window.location.search);
+        const uid = params.get('uid');
+        const initialDateParam = params.get('date');
+
+        let activeMode = 'pattern';
+        let currentPattern = []; 
+        let allTemplates = {};
+        let userBaseData = null;
+
+        // --- INICIALIZACIÓN ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await loadUser();
+                listenToTemplates();
+            } else signInAnonymously(auth);
+        });
+
+        async function loadUser() {
+            if (!uid) return;
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
+            if (snap.exists()) {
+                userBaseData = snap.data();
+                document.getElementById('user-name').innerText = userBaseData.nombre;
+                document.getElementById('user-puesto').innerText = userBaseData.puesto || "MIEMBRO";
+                if (userBaseData.foto) document.getElementById('user-photo').src = userBaseData.foto;
+            }
+            
+            const today = initialDateParam || new Date().toISOString().split('T')[0];
+            document.getElementById('start-date').value = today;
+            document.getElementById('abs-start-date').value = today;
+        }
+
+        // --- GESTIÓN DE PLANTILLAS ---
+        function listenToTemplates() {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones');
+            onSnapshot(colRef, (snap) => {
+                const selector = document.getElementById('template-selector');
+                selector.innerHTML = '<option value="">Seleccionar plantilla...</option>';
+                allTemplates = {};
+                
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    allTemplates[docSnap.id] = data.patron;
+                    const opt = document.createElement('option');
+                    opt.value = docSnap.id;
+                    opt.innerText = docSnap.id;
+                    selector.appendChild(opt);
+                });
+            }, (err) => console.error("Error cargando plantillas:", err));
+        }
+
+        window.saveCurrentAsTemplate = async () => {
+            const name = document.getElementById('new-template-name').value.trim();
+            if (!name || currentPattern.length === 0) {
+                alert("Ingrese un nombre y construya un patrón primero.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', name);
+                await setDoc(docRef, {
+                    patron: currentPattern,
+                    createdAt: new Date().toISOString()
+                });
+                document.getElementById('new-template-name').value = "";
+            } catch (err) {
+                alert("Error al guardar plantilla: " + err.message);
+            }
+        };
+
+        window.loadTemplateFromSelect = (name) => {
+            if (!name || !allTemplates[name]) return;
+            currentPattern = [...allTemplates[name]];
+            renderPatternBuilder();
+        };
+
+        window.deleteSelectedTemplate = async () => {
+            const name = document.getElementById('template-selector').value;
+            if (!name) return;
+            if (confirm(`¿Eliminar permanentemente la plantilla "${name}"?`)) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', name));
+            }
+        };
+
+        // --- LÓGICA DE INTERFAZ ---
+        window.setMode = (mode) => {
+            activeMode = mode;
+            const tabP = document.getElementById('tab-pattern');
+            const tabA = document.getElementById('tab-absence');
+            const modP = document.getElementById('module-pattern');
+            const modA = document.getElementById('module-absence');
+
+            if (mode === 'pattern') {
+                tabP.classList.add('bg-red-900', 'text-white', 'border-red-900');
+                tabP.classList.remove('text-slate-400', 'border-slate-200');
+                tabA.classList.remove('bg-red-900', 'text-white', 'border-red-900');
+                tabA.classList.add('text-slate-400', 'border-slate-200');
+                modP.classList.remove('hidden');
+                modA.classList.add('hidden');
+            } else {
+                tabA.classList.add('bg-red-900', 'text-white', 'border-red-900');
+                tabA.classList.remove('text-slate-400', 'border-slate-200');
+                tabP.classList.remove('bg-red-900', 'text-white', 'border-red-900');
+                tabP.classList.add('text-slate-400', 'border-slate-200');
+                modA.classList.remove('hidden');
+                modP.classList.add('hidden');
+            }
+        };
+
+        window.setDuration = (dur) => {
+            const startStr = document.getElementById('start-date').value;
+            if (!startStr) return;
+            const date = new Date(startStr + "T00:00:00");
+            if (dur === '1w') date.setDate(date.getDate() + 7);
+            else if (dur === '1m') date.setMonth(date.getMonth() + 1);
+            document.getElementById('end-date').value = date.toISOString().split('T')[0];
+        };
+
+        // --- DRAG & DROP & PARSER ---
+        window.handleDragStart = (e, type) => {
+            e.dataTransfer.setData('text/plain', type);
+        };
+
+        window.allowDrop = (e) => e.preventDefault();
+
+        window.handleDrop = (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('text/plain');
+            currentPattern.push(type);
+            renderPatternBuilder();
+        };
+
+        function renderPatternBuilder() {
+            const builder = document.getElementById('pattern-builder');
+            builder.innerHTML = '';
+            if (currentPattern.length === 0) {
+                builder.innerHTML = `<div class="w-full flex items-center justify-center text-[10px] font-bold text-slate-300 uppercase italic">Arrastra turnos aquí o escribe abajo</div>`;
+                return;
+            }
+
+            currentPattern.forEach((type, idx) => {
+                const div = document.createElement('div');
+                div.className = `shift-block ${type}-block shadow-sm relative group`;
+                div.innerText = type.toUpperCase();
+                div.onclick = () => { currentPattern.splice(idx, 1); renderPatternBuilder(); };
+                
+                const deleteIndicator = document.createElement('div');
+                deleteIndicator.className = "absolute -top-1 -right-1 bg-white border border-slate-200 rounded-full w-4 h-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100";
+                deleteIndicator.innerText = "×";
+                div.appendChild(deleteIndicator);
+                
+                builder.appendChild(div);
+            });
+            
+            document.getElementById('pattern-input').value = currentPattern.join('').toUpperCase();
+        }
+
+        window.parseStringPattern = (val) => {
+            const clean = val.toLowerCase().replace(/[^mvnd]/g, '');
+            currentPattern = clean.split('');
+            renderPatternBuilder();
+        };
+
+        // --- LÓGICA DE FIREBASE (NUEVAS RUTAS) ---
+        window.applyPattern = async () => {
+            if (!uid) return;
+            
+            const btn = document.getElementById('btn-apply');
+            const txt = document.getElementById('btn-text');
+            const ldr = document.getElementById('btn-loader');
+            
+            btn.disabled = true;
+            txt.classList.add('hidden');
+            ldr.classList.remove('hidden');
+
+            try {
+                if (activeMode === 'pattern') {
+                    await processShiftPattern();
+                } else {
+                    await processAbsencePattern();
+                }
+                
+                txt.innerText = "¡PROGRAMADO CON ÉXITO!";
+                txt.classList.remove('hidden');
+                ldr.classList.add('hidden');
+                setTimeout(() => {
+                    if (window.parent && typeof window.parent.closeRightPanel === 'function') {
+                        window.parent.closeRightPanel();
+                    }
+                }, 1000);
+            } catch (err) {
+                console.error(err);
+                alert("Error al aplicar el patrón: " + err.message);
+                btn.disabled = false;
+                txt.classList.remove('hidden');
+                ldr.classList.add('hidden');
+            }
+        };
+
+        async function processShiftPattern() {
+            const startStr = document.getElementById('start-date').value;
+            const endStr = document.getElementById('end-date').value;
+            if (!startStr || !endStr || currentPattern.length === 0) throw new Error("Datos incompletos");
+
+            const start = new Date(startStr + "T00:00:00");
+            const end = new Date(endStr + "T00:00:00");
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            for (let i = 0; i <= diffDays; i++) {
+                const currentDay = new Date(start);
+                currentDay.setDate(start.getDate() + i);
+                const dateId = currentDay.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+                const type = currentPattern[i % currentPattern.length];
+                await saveDayEntry(dateId, type);
+            }
+        }
+
+        async function processAbsencePattern() {
+            const startStr = document.getElementById('abs-start-date').value;
+            const totalDays = parseInt(document.getElementById('abs-days').value);
+            const motive = document.getElementById('absence-type').value;
+
+            if (!startStr || isNaN(totalDays)) throw new Error("Datos de ausencia inválidos");
+
+            const start = new Date(startStr + "T00:00:00");
+            for (let i = 0; i < totalDays; i++) {
+                const currentDay = new Date(start);
+                currentDay.setDate(start.getDate() + i);
+                const dateId = currentDay.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+                await saveDayEntry(dateId, 'ausentismo', motive);
+            }
+        }
+
+        async function saveDayEntry(dateId, type, motive = null) {
+            // Asegurar documento de fecha
+            const docRefDay = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId);
+            await setDoc(docRefDay, {}, { merge: true });
+
+            // 1. Limpieza de cualquier registro previo en esa fecha (NUEVA ESTRUCTURA)
+            const possibleShifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            for (const s of possibleShifts) {
+                const shiftDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, s, uid);
+                await deleteDoc(shiftDocRef);
+            }
+
+            // 2. Insertar nueva entrada
+            const casetaDefault = userBaseData?.acceso_predeterminado || "Centro de control";
+
+            if (type === 'ausentismo' || type === 'd') {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid), {
+                    Ausentismo: true,
+                    motivo: motive || 'Descanso'
+                });
+            } else {
+                const shiftNames = { m: 'matutino', v: 'vespertino', n: 'nocturno' };
+                const shiftId = shiftNames[type] || type;
+                
+                // Definir hora automática según turno y caseta
+                let time = (shiftId === 'matutino') ? (casetaDefault === 'Centro de control' ? "06:00" : "07:00") : 
+                           (shiftId === 'vespertino') ? (casetaDefault === 'Centro de control' ? "14:00" : "13:00") : "21:00";
+                if(shiftId === 'nocturno' && casetaDefault === 'Centro de control') time = "22:00";
+
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, shiftId, uid), {
+                    Caseta: casetaDefault,
+                    turno: shiftId,
+                    entrada_planificada: time,
+                    es_recuperacion: false,
+                    es_festivo: false,
+                    es_extra: false,
+                    entrada_real: null,
+                    salida_real: null,
+                    retardo: false
+                });
+            }
+        }
+    </script>
+</body>
+</html>

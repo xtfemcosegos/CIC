@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Próximos y En Turno - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-outline: #e5e7eb;
+            --md-green: #10b981;
+            --neon-green: #34d399;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: #1f1a1a;
+            margin: 0;
+            padding: 12px;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Grid de Casetas Material Design --- */
+        .caseta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .caseta-card {
+            background: white;
+            border-radius: 18px;
+            border: 1px solid var(--md-outline);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            min-height: 120px;
+        }
+
+        .caseta-header {
+            background: #000000;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .caseta-title {
+            color: var(--neon-green);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .shift-indicator {
+            color: var(--neon-green);
+            opacity: 0.5;
+            font-size: 7px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .element-list {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        /* --- Secciones Internas --- */
+        .section-label {
+            font-size: 7px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.1em;
+            margin: 4px 0 2px 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-label::after { content: ''; flex-grow: 1; height: 1px; background: #f1f5f9; }
+
+        /* --- Cards de Elementos --- */
+        .element-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .element-item:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .element-item.is-late { border-left: 3px solid #ef4444; }
+
+        .avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* --- Botones --- */
+        .btn-quick {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            border: 1.5px solid transparent;
+        }
+        .btn-entry { background: #ecfdf5; color: #065f46; border-color: #10b981; }
+        .btn-entry:hover { background: #10b981; color: white; }
+        
+        .btn-exit { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+        .btn-exit:hover { background: #ef4444; color: white; }
+
+        #loading-state {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-state" class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4">
+        <div class="w-8 h-8 border-3 border-red-100 border-t-red-900 rounded-full animate-spin"></div>
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Estado Vivo</span>
+    </div>
+
+    <div class="caseta-grid" id="caseta-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const casetasOrden = [
+            "Centro de control", "Encargado", "Edison", "Recepción Edison", 
+            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"
+        ];
+
+        let userDataCache = {};
+        let activeElements = []; 
+        let upcomingElements = []; 
+        let upcomingShiftId = 'matutino';
+
+        // Helper para ID de fecha (DDMMYYYY)
+        function formatDateToId(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        // Lógica de Día Operativo (Para los que ya están trabajando)
+        function getOperationalDateId() {
+            const now = new Date();
+            const hour = now.getHours();
+            let d = new Date(now);
+            if (hour >= 0 && hour < 5) d.setDate(now.getDate() - 1);
+            return formatDateToId(d);
+        }
+
+        // Lógica de Día Calendario (Para los que van a entrar hoy)
+        function getCalendarDateId() {
+            return formatDateToId(new Date());
+        }
+
+        function determineUpcomingShift() {
+            const hour = new Date().getHours();
+            if (hour >= 0 && hour < 8) return 'matutino';
+            if (hour >= 8 && hour < 16) return 'vespertino';
+            return 'nocturno';
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) init();
+            else signInAnonymously(auth);
+        });
+
+        async function init() {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            usersSnap.forEach(d => userDataCache[d.id] = d.data());
+            
+            upcomingShiftId = determineUpcomingShift();
+            startListeners();
+        }
+
+        function startListeners() {
+            const activeDateId = getOperationalDateId();
+            const calendarDateId = getCalendarDateId();
+            const shifts = ['matutino', 'vespertino', 'nocturno'];
+            let snapshotsCount = 0;
+
+            // Escuchar turnos de la fecha operativa para "En Turno"
+            shifts.forEach(shiftId => {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', activeDateId, shiftId);
+                onSnapshot(colRef, (snap) => {
+                    activeElements = activeElements.filter(e => e.shiftId !== shiftId || e.dateId !== activeDateId);
+                    
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (data.entrada_real && !data.salida_real) {
+                            const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
+                            activeElements.push({ 
+                                uid: docSnap.id, 
+                                nombre: user.nombre, 
+                                foto: user.foto, 
+                                shiftId, 
+                                dateId: activeDateId, 
+                                ...data 
+                            });
+                        }
+                    });
+                    checkAllSnapshots();
+                });
+            });
+
+            // Escuchar turno próximo del calendario actual para "Próximos Ingresos"
+            const upcomingColRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', calendarDateId, upcomingShiftId);
+            onSnapshot(upcomingColRef, (snap) => {
+                upcomingElements = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!data.entrada_real && !data.salida_real) {
+                        const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
+                        upcomingElements.push({ 
+                            uid: docSnap.id, 
+                            nombre: user.nombre, 
+                            foto: user.foto, 
+                            shiftId: upcomingShiftId, 
+                            dateId: calendarDateId, 
+                            ...data 
+                        });
+                    }
+                });
+                checkAllSnapshots();
+            });
+
+            function checkAllSnapshots() {
+                snapshotsCount++;
+                if (snapshotsCount >= 4) { // 3 de active + 1 de upcoming
+                    renderDashboard();
+                    document.getElementById('loading-state').classList.add('hidden');
+                }
+            }
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('caseta-container');
+            container.innerHTML = '';
+
+            casetasOrden.forEach(casetaName => {
+                const activeInBooth = activeElements.filter(e => e.Caseta === casetaName);
+                const upcomingInBooth = upcomingElements.filter(e => e.Caseta === casetaName);
+
+                if (activeInBooth.length === 0 && upcomingInBooth.length === 0) return;
+
+                const card = document.createElement('div');
+                card.className = "caseta-card animate-in fade-in zoom-in-95 duration-300";
+                
+                card.innerHTML = `
+                    <div class="caseta-header">
+                        <span class="caseta-title">${casetaName}</span>
+                        <span class="shift-indicator">PRÓXIMO: ${upcomingShiftId.substring(0,3)}</span>
+                    </div>
+                    <div class="element-list">
+                        ${activeInBooth.length > 0 ? `
+                            <div class="section-label">En Turno</div>
+                            ${activeInBooth.map(e => renderElementRow(e, 'exit')).join('')}
+                        ` : ''}
+                        ${upcomingInBooth.length > 0 ? `
+                            <div class="section-label">Próximos Ingresos</div>
+                            ${upcomingInBooth.map(e => renderElementRow(e, 'entry')).join('')}
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (container.innerHTML === '') {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center opacity-30">
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em]">Sin movimientos inmediatos registrados</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderElementRow(el, type) {
+            const isLate = el.retardo ? 'is-late' : '';
+            const photo = el.foto || `https://ui-avatars.com/api/?background=450a0a&color=fff&name=${encodeURIComponent(el.nombre)}`;
+            const actionBtn = type === 'entry' 
+                ? `<button onclick="quickAttendance('${el.uid}', 'entrada', '${el.shiftId}', '${el.dateId}')" class="btn-quick btn-entry">Entrada</button>`
+                : `<button onclick="quickAttendance('${el.uid}', 'salida', '${el.shiftId}', '${el.dateId}')" class="btn-quick btn-exit">Salida</button>`;
+
+            return `
+                <div class="element-item ${isLate}" onclick="openDetail('${el.uid}', '${el.dateId}')">
+                    <img src="${photo}" class="avatar-mini">
+                    <div class="flex-grow min-w-0">
+                        <p class="text-[9px] font-bold text-slate-700 truncate leading-tight">${el.nombre}</p>
+                        <p class="text-[7px] font-black uppercase text-slate-400 mt-0.5">${el.entrada_planificada} • ${el.shiftId.substring(0,3)}</p>
+                    </div>
+                    <div onclick="event.stopPropagation()">${actionBtn}</div>
+                </div>
+            `;
+        }
+
+        window.quickAttendance = async (uid, type, shiftId, dateId) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, shiftId, uid);
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            if (type === 'entrada') {
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                const [pH, pM] = (data.entrada_planificada || "07:00").split(':').map(Number);
+                const plan = new Date(); plan.setHours(pH, pM, 0);
+                const isLate = new Date() > plan;
+                await updateDoc(docRef, { entrada_real: nowTime, retardo: isLate });
+            } else {
+                await updateDoc(docRef, { salida_real: nowTime });
+            }
+        };
+
+        window.openDetail = (uid, dateId) => {
+            // Re-convertir dateId DDMMYYYY a ISO YYYY-MM-DD para el componente detalle
+            const day = dateId.substring(0, 2);
+            const month = dateId.substring(2, 4);
+            const year = dateId.substring(4, 8);
+            const isoDate = `${year}-${month}-${day}`;
+            window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${isoDate}` }, '*');
+        };
+
+    </script>
+</body>
+</html>
