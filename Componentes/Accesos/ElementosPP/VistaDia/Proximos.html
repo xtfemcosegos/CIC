@@ -189,20 +189,6 @@
             return `${day}${month}${year}`;
         }
 
-        // Lógica de Día Operativo (Para los que ya están trabajando)
-        function getOperationalDateId() {
-            const now = new Date();
-            const hour = now.getHours();
-            let d = new Date(now);
-            if (hour >= 0 && hour < 5) d.setDate(now.getDate() - 1);
-            return formatDateToId(d);
-        }
-
-        // Lógica de Día Calendario (Para los que van a entrar hoy)
-        function getCalendarDateId() {
-            return formatDateToId(new Date());
-        }
-
         function determineUpcomingShift() {
             const hour = new Date().getHours();
             if (hour >= 0 && hour < 8) return 'matutino';
@@ -224,41 +210,56 @@
         }
 
         function startListeners() {
-            const activeDateId = getOperationalDateId();
-            const calendarDateId = getCalendarDateId();
+            const today = new Date();
+            const yesterday = new Date(new Date().setDate(today.getDate() - 1));
+            
+            const datesToCheck = [formatDateToId(yesterday), formatDateToId(today)];
             const shifts = ['matutino', 'vespertino', 'nocturno'];
-            let snapshotsCount = 0;
+            
+            let initialLoadCount = 0;
+            const totalActiveListeners = datesToCheck.length * shifts.length;
 
-            // Escuchar turnos de la fecha operativa para "En Turno"
-            shifts.forEach(shiftId => {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', activeDateId, shiftId);
-                onSnapshot(colRef, (snap) => {
-                    activeElements = activeElements.filter(e => e.shiftId !== shiftId || e.dateId !== activeDateId);
-                    
-                    snap.forEach(docSnap => {
-                        const data = docSnap.data();
-                        if (data.entrada_real && !data.salida_real) {
-                            const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
-                            activeElements.push({ 
-                                uid: docSnap.id, 
-                                nombre: user.nombre, 
-                                foto: user.foto, 
-                                shiftId, 
-                                dateId: activeDateId, 
-                                ...data 
-                            });
+            // 1. Escuchar todos los turnos de ayer y hoy para "En Turno"
+            datesToCheck.forEach(dateId => {
+                shifts.forEach(shiftId => {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, shiftId);
+                    onSnapshot(colRef, (snap) => {
+                        // Limpiar elementos previos de esta combinación para evitar duplicidad en la actualización
+                        activeElements = activeElements.filter(e => !(e.shiftId === shiftId && e.dateId === dateId));
+                        
+                        snap.forEach(docSnap => {
+                            const data = docSnap.data();
+                            // Requisito: Entrada Real registrada pero SIN Salida Real
+                            if (data.entrada_real && !data.salida_real) {
+                                const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
+                                activeElements.push({ 
+                                    uid: docSnap.id, 
+                                    nombre: user.nombre, 
+                                    foto: user.foto, 
+                                    shiftId, 
+                                    dateId: dateId, 
+                                    ...data 
+                                });
+                            }
+                        });
+                        
+                        initialLoadCount++;
+                        renderDashboard();
+                        if (initialLoadCount >= totalActiveListeners) {
+                            document.getElementById('loading-state').classList.add('hidden');
                         }
                     });
-                    checkAllSnapshots();
                 });
             });
 
-            // Escuchar turno próximo del calendario actual para "Próximos Ingresos"
+            // 2. Escuchar turno próximo del calendario actual para "Próximos Ingresos"
+            const calendarDateId = formatDateToId(new Date());
             const upcomingColRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', calendarDateId, upcomingShiftId);
             onSnapshot(upcomingColRef, (snap) => {
                 upcomingElements = [];
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
+                    // Solo si no ha marcado entrada ni salida
                     if (!data.entrada_real && !data.salida_real) {
                         const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
                         upcomingElements.push({ 
@@ -271,20 +272,13 @@
                         });
                     }
                 });
-                checkAllSnapshots();
+                renderDashboard();
             });
-
-            function checkAllSnapshots() {
-                snapshotsCount++;
-                if (snapshotsCount >= 4) { // 3 de active + 1 de upcoming
-                    renderDashboard();
-                    document.getElementById('loading-state').classList.add('hidden');
-                }
-            }
         }
 
         function renderDashboard() {
             const container = document.getElementById('caseta-container');
+            if (!container) return;
             container.innerHTML = '';
 
             casetasOrden.forEach(casetaName => {
@@ -331,12 +325,18 @@
                 ? `<button onclick="quickAttendance('${el.uid}', 'entrada', '${el.shiftId}', '${el.dateId}')" class="btn-quick btn-entry">Entrada</button>`
                 : `<button onclick="quickAttendance('${el.uid}', 'salida', '${el.shiftId}', '${el.dateId}')" class="btn-quick btn-exit">Salida</button>`;
 
+            // Formatear fecha para navegación (DDMMYYYY -> YYYY-MM-DD)
+            const day = el.dateId.substring(0, 2);
+            const month = el.dateId.substring(2, 4);
+            const year = el.dateId.substring(4, 8);
+            const isoDate = `${year}-${month}-${day}`;
+
             return `
-                <div class="element-item ${isLate}" onclick="openDetail('${el.uid}', '${el.dateId}')">
+                <div class="element-item ${isLate}" onclick="openDetail('${el.uid}', '${isoDate}')">
                     <img src="${photo}" class="avatar-mini">
                     <div class="flex-grow min-w-0">
                         <p class="text-[9px] font-bold text-slate-700 truncate leading-tight">${el.nombre}</p>
-                        <p class="text-[7px] font-black uppercase text-slate-400 mt-0.5">${el.entrada_planificada} • ${el.shiftId.substring(0,3)}</p>
+                        <p class="text-[7px] font-black uppercase text-slate-400 mt-0.5">${el.entrada_planificada} • ${el.shiftId.substring(0,3)} • ${day}/${month}</p>
                     </div>
                     <div onclick="event.stopPropagation()">${actionBtn}</div>
                 </div>
@@ -359,12 +359,7 @@
             }
         };
 
-        window.openDetail = (uid, dateId) => {
-            // Re-convertir dateId DDMMYYYY a ISO YYYY-MM-DD para el componente detalle
-            const day = dateId.substring(0, 2);
-            const month = dateId.substring(2, 4);
-            const year = dateId.substring(4, 8);
-            const isoDate = `${year}-${month}-${day}`;
+        window.openDetail = (uid, isoDate) => {
             window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${isoDate}` }, '*');
         };
 
