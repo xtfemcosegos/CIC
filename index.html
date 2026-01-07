@@ -29,7 +29,7 @@
             background-color: var(--md-primary);
             color: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 50;
+            z-index: 100;
         }
 
         .side-panel {
@@ -38,7 +38,7 @@
             border-right: 1px solid var(--md-outline);
             z-index: 40;
             position: relative;
-            height: 100%; /* Asegura que el panel use todo el alto */
+            height: 100%;
         }
 
         .side-panel-right {
@@ -72,11 +72,59 @@
             border: none;
         }
 
+        /* --- PERFIL DROPDOWN --- */
+        .profile-container {
+            position: relative;
+        }
+
+        .profile-card-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 280px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border: 1px solid var(--md-outline);
+            margin-top: 12px;
+            padding: 24px;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #1e293b;
+        }
+
+        .profile-container:hover .profile-card-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-view-profile { background: #f1f5f9; color: var(--md-primary); }
+        .btn-view-profile:hover { background: #e2e8f0; }
+        .btn-logout { background: #fef2f2; color: #dc2626; margin-top: 8px; }
+        .btn-logout:hover { background: #fee2e2; }
+
         /* --- LOGIN MATERIAL --- */
         #login-overlay {
             background-color: rgba(0,0,0,0.5);
             backdrop-filter: blur(8px);
-            z-index: 100;
+            z-index: 1000;
         }
 
         .login-card {
@@ -93,7 +141,6 @@
         }
         .md-button:active { transform: scale(0.98); }
 
-        /* Botón de cierre flotante para el panel derecho */
         .floating-close {
             position: absolute;
             top: 12px;
@@ -111,18 +158,15 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .floating-close:hover {
-            background: #450a0a;
-            transform: scale(1.1);
-        }
+        .floating-close:hover { background: #450a0a; transform: scale(1.1); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- Login Overlay -->
+    <!-- Pantalla de Login -->
     <div id="login-overlay" class="fixed inset-0 flex items-center justify-center hidden">
         <div class="login-card p-8 flex flex-col items-center">
-            <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
+            <div class="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6">
                 <img src="Multimedia/Logo.png" class="w-12 h-12 object-contain" alt="Logo">
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2 uppercase tracking-tight">Acceso al Núcleo</h2>
@@ -151,18 +195,43 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-2xl transition-all cursor-pointer" onclick="handleLogout()">
-            <div class="w-9 h-9 rounded-full bg-white/10 border border-white/20 p-0.5 overflow-hidden">
-                <img id="avatar-display" src="Multimedia/Avatar.jpg" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff'">
+        <!-- PERFIL DE USUARIO DINÁMICO -->
+        <div class="profile-container py-2">
+            <div class="flex items-center gap-3 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-2xl transition-all cursor-default">
+                <div class="w-9 h-9 rounded-full bg-white/10 border border-white/20 p-0.5 overflow-hidden">
+                    <img id="avatar-display" src="" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&name=?'">
+                </div>
+                <div class="hidden md:flex flex-col items-start leading-tight">
+                    <span id="user-name-display" class="text-[12px] font-bold text-white uppercase tracking-tight">Cargando...</span>
+                    <span id="user-role-display" class="text-[9px] text-red-200/80 font-bold uppercase tracking-widest">Identificando...</span>
+                </div>
             </div>
-            <div class="hidden md:flex flex-col items-start leading-tight">
-                <span id="user-name-display" class="text-[12px] font-bold text-white uppercase tracking-tight">Usuario</span>
-                <span id="user-role-display" class="text-[9px] text-red-200/80 font-bold uppercase">Operador</span>
+
+            <!-- TARJETA DESPLEGABLE -->
+            <div class="profile-card-dropdown">
+                <div class="flex flex-col items-center text-center mb-6">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden mb-3 border-2 border-red-50 shadow-sm">
+                        <img id="dropdown-avatar" src="" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&name=?'">
+                    </div>
+                    <h3 id="dropdown-name" class="text-sm font-black uppercase text-slate-800 tracking-tight leading-tight">---</h3>
+                    <p id="dropdown-role" class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">---</p>
+                </div>
+                
+                <div class="space-y-1">
+                    <button onclick="openMyProfile()" class="dropdown-btn btn-view-profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Ver Perfil
+                    </button>
+                    <button onclick="handleLogout()" class="dropdown-btn btn-logout">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Cerrar Sesión
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Área Principal -->
     <main class="flex flex-1 overflow-hidden relative">
         <aside id="leftPanel" class="side-panel w-72 shrink-0">
             <iframe id="navFrame" src="Nav.html"></iframe>
@@ -185,7 +254,7 @@
         <div class="flex items-center gap-4">
             <span class="animate-pulse">●</span>
             <span>SISTEMA CIC-6 CONECTADO</span>
-            <span id="footer-log" class="hidden sm:inline opacity-80 uppercase tracking-tighter ml-4">Iniciando componentes...</span>
+            <span id="footer-log" class="hidden sm:inline opacity-80 uppercase tracking-tighter ml-4">Consola de operaciones activa...</span>
         </div>
         <div id="clock" class="font-bold tracking-widest">00:00:00</div>
     </footer>
@@ -219,11 +288,15 @@
             userName: document.getElementById('user-name-display'),
             userRole: document.getElementById('user-role-display'),
             avatarImg: document.getElementById('avatar-display'),
+            dropAvatar: document.getElementById('dropdown-avatar'),
+            dropName: document.getElementById('dropdown-name'),
+            dropRole: document.getElementById('dropdown-role'),
             footerLog: document.getElementById('footer-log'),
             clock: document.getElementById('clock')
         };
 
         const loadedModules = new Map();
+        let currentUid = null;
 
         window.navigateMain = (url) => {
             if (!url) return;
@@ -239,9 +312,21 @@
                 loadedModules.set(url, newIframe);
             }
             saveState(url);
-            log(`Módulo: ${url.split('/').pop()}`);
+            log(`Navegación: ${url.split('/').pop()}`);
         };
 
+        window.navigateRight = (url) => {
+            if (!url) return;
+            UI.rightFrame.src = url;
+            UI.rightPanel.classList.remove('hidden');
+            saveState();
+        };
+
+        window.openMyProfile = () => {
+            if (currentUid) window.navigateRight(`Apps/Perfil.html?uid=${currentUid}`);
+        };
+
+        // --- PERSISTENCIA LOCAL ---
         const STORAGE_KEYS = {
             LEFT_OPEN: 'cic6_left_open',
             RIGHT_OPEN: 'cic6_right_open',
@@ -264,21 +349,47 @@
             window.navigateMain(urlMain);
         }
 
-        window.navigateRight = (url) => {
-            if (!url) return;
-            UI.rightFrame.src = url;
-            UI.rightPanel.classList.remove('hidden');
-            saveState();
-        };
-
         window.toggleLeftPanel = () => { UI.leftPanel.classList.toggle('hidden'); saveState(); };
         window.closeRightPanel = () => { UI.rightPanel.classList.add('hidden'); saveState(); };
 
         function log(msg) { UI.footerLog.innerText = msg; }
 
+        // --- CARGAR PERFIL DE USUARIO Y VALIDAR ACCESO ---
+        async function fetchUserProfile(uid) {
+            try {
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid);
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const name = d.nombre || "Usuario CIC6";
+                    const role = (d.puesto || "Operador").toLowerCase().trim();
+                    
+                    // --- RESTRICCIÓN DE ACCESO ---
+                    const allowedRoles = ["administrador", "operador cco", "encargado"];
+                    if (!allowedRoles.includes(role)) {
+                        console.warn("Acceso denegado al núcleo. Redirigiendo a Herramientas/Reloj.html");
+                        window.location.href = 'Herramientas/Reloj.html';
+                        return;
+                    }
+
+                    const photo = d.foto || `https://ui-avatars.com/api/?background=450a0a&color=fff&name=${encodeURIComponent(name)}`;
+                    
+                    UI.userName.innerText = name;
+                    UI.userRole.innerText = d.puesto || "Operador";
+                    UI.avatarImg.src = photo;
+                    
+                    UI.dropName.innerText = name;
+                    UI.dropRole.innerText = d.puesto || "Operador";
+                    UI.dropAvatar.src = photo;
+                }
+            } catch (e) { console.error("Error cargando perfil:", e); }
+        }
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                currentUid = user.uid;
                 UI.overlay.classList.add('hidden');
+                fetchUserProfile(user.uid);
                 restoreState();
             } else {
                 UI.overlay.classList.remove('hidden');
@@ -288,11 +399,15 @@
         window.handleLogin = async () => {
             const email = document.getElementById('email-input').value;
             const pass = document.getElementById('pass-input').value;
-            try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert("Acceso denegado"); }
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert("Credenciales inválidas"); }
         };
 
         window.handleLogout = async () => {
-            if(confirm("¿Cerrar sesión?")) { await signOut(auth); window.location.reload(); }
+            if(confirm("¿Cerrar sesión del sistema?")) { 
+                await signOut(auth); 
+                localStorage.clear();
+                window.location.reload(); 
+            }
         };
 
         setInterval(() => UI.clock.innerText = new Date().toLocaleTimeString('es-MX', { hour12: false }), 1000);
