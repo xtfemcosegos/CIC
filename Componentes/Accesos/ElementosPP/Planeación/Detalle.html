@@ -22,38 +22,23 @@
             scroll-behavior: smooth;
         }
 
-        /* --- Animaciones --- */
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-
-        /* --- Header --- */
+        /* --- Estética de Header --- */
         .hero-header {
             background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
             height: 140px;
             position: relative;
-            overflow: hidden;
-        }
-
-        .hero-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 20px;
-            backdrop-filter: blur(2px);
         }
 
         .profile-photo {
-            width: 60px;
-            height: 60px;
-            border-radius: 18px;
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
             border: 2px solid rgba(255,255,255,0.3);
             object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
+        .profile-photo:hover { transform: scale(1.05); }
 
         /* --- Tabs --- */
         .tab-nav {
@@ -75,20 +60,36 @@
             border-bottom: 3px solid transparent;
             transition: all 0.2s;
         }
-        .tab-btn.active {
-            color: var(--md-primary);
-            border-bottom-color: var(--md-primary);
-        }
+        .tab-btn.active { color: var(--md-primary); border-bottom-color: var(--md-primary); }
 
-        /* --- Cards --- */
+        /* --- Cards con Acordeón --- */
         .card-material {
             background: white;
             border-radius: 24px;
             border: 1px solid var(--md-outline);
-            padding: 20px;
+            padding: 0;
             margin-bottom: 16px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
+
+        .card-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            background: #fff;
+        }
+        .card-header:hover { background: #fdf2f2; }
+
+        .card-body {
+            padding: 0 20px 20px 20px;
+            display: none; /* Colapsado por defecto */
+        }
+        .card-body.expanded { display: block; }
 
         .timeline-item {
             position: relative;
@@ -108,12 +109,11 @@
             border: 2px solid var(--md-primary);
         }
 
-        /* Campos Editables */
+        /* Edición In-line */
         .inline-edit {
             background: transparent;
             border: none;
-            border-bottom: 1px solid transparent;
-            padding: 2px 0;
+            border-bottom: 1.5px solid transparent;
             font-weight: 700;
             color: #475569;
             outline: none;
@@ -125,41 +125,66 @@
             color: var(--md-primary);
             background: rgba(69, 10, 10, 0.02);
         }
-        .inline-select { appearance: none; -webkit-appearance: none; }
 
         .chip-check {
-            display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px;
+            display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 12px;
             background: white; border: 1.5px solid var(--md-outline); cursor: pointer;
             font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b;
         }
         .chip-check:has(input:checked) { border-color: var(--md-primary); background: var(--md-primary); color: white; }
 
-        /* Evidencia Estilos */
+        .btn-attendance {
+            padding: 10px;
+            border-radius: 14px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-in { background: #ecfdf5; color: #065f46; border: 1.5px solid #10b981; }
+        .btn-out { background: #fef2f2; color: #991b1b; border: 1.5px solid #ef4444; }
+        .btn-attendance:hover { transform: translateY(-2px); filter: brightness(0.95); }
+
         .evidence-img {
             width: 100%;
-            height: 140px;
+            height: 160px;
             object-fit: cover;
-            border-radius: 16px;
+            border-radius: 18px;
             border: 1px solid #e2e8f0;
             cursor: zoom-in;
-            transition: transform 0.2s;
+            transition: all 0.2s;
         }
-        .evidence-img:hover { transform: scale(1.02); }
 
-        .location-chip {
+        .location-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 10px 14px;
+            border-radius: 16px;
+            padding: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .btn-main {
-            background: var(--md-primary); color: white; border-radius: 20px;
-            padding: 16px; font-weight: 800; text-transform: uppercase;
-            font-size: 11px; transition: all 0.3s;
+        /* Indicador de Activo */
+        .pulse-active {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
         /* Modal visor */
@@ -168,76 +193,118 @@
             display: none; align-items: center; justify-content: center; padding: 20px;
         }
 
+        /* Botones de acción rápida en lista */
+        .quick-add-bar {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background: white;
+            border-top: 1px solid var(--md-outline);
+            position: sticky;
+            bottom: 0;
+            z-index: 40;
+        }
+        .btn-quick-create {
+            flex: 1;
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #64748b;
+            background: #f8fafc;
+            border: 1px solid var(--md-outline);
+            transition: all 0.2s;
+        }
+        .btn-quick-create:hover { background: #f1f5f9; color: var(--md-primary); border-color: var(--md-primary); }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="pb-24">
+<body class="flex flex-col min-h-screen">
 
-    <!-- Cargando -->
+    <!-- Pantalla de Carga -->
     <div id="loading-state" class="fixed inset-0 bg-white z-[1000] flex flex-col items-center justify-center gap-6">
         <div class="w-10 h-10 border-4 border-red-100 border-t-red-900 rounded-full animate-spin"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Consultando Base de Datos...</p>
     </div>
 
     <!-- Visor de Fotos -->
     <div id="image-viewer" class="viewer-overlay" onclick="this.style.display='none'">
-        <img id="viewer-img" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl">
+        <img id="viewer-img" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl animate-in zoom-in duration-200">
     </div>
 
-    <header class="hero-header">
-        <div class="hero-overlay">
+    <!-- Header con info de usuario -->
+    <header class="hero-header flex-shrink-0">
+        <div class="absolute inset-0 flex flex-col justify-end p-6">
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <img id="user-photo" src="https://ui-avatars.com/api/?background=450a0a&color=fff" class="profile-photo">
+                    <img id="user-photo" src="" class="profile-photo shadow-lg" onclick="openProfile()" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&name=?'">
                     <div>
                         <h1 id="user-name" class="text-white text-lg font-extrabold uppercase tracking-tight leading-none">---</h1>
-                        <p id="info-puesto" class="text-red-200/80 text-[8px] font-bold uppercase tracking-widest mt-1">Protección Patrimonial</p>
+                        <p id="info-puesto" class="text-red-200/80 text-[8px] font-bold uppercase tracking-widest mt-1.5">CCO Operaciones</p>
                     </div>
                 </div>
-                <div class="bg-white/10 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/20 text-right">
-                    <label class="text-[8px] font-black text-white/50 uppercase block mb-1">Fecha</label>
+                <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 text-right">
+                    <label class="text-[8px] font-black text-white/50 uppercase block mb-1">Fecha de Consulta</label>
                     <input type="date" id="date-navigator" class="bg-transparent text-white text-[11px] font-black outline-none cursor-pointer [color-scheme:dark]">
                 </div>
             </div>
         </div>
     </header>
 
-    <nav class="tab-nav">
-        <button onclick="switchTab('detalle')" id="btn-tab-detalle" class="tab-btn active">Detalle</button>
-        <button onclick="switchTab('asignar')" id="btn-tab-asignar" class="tab-btn">Asignar</button>
+    <nav class="tab-nav flex-shrink-0">
+        <button onclick="switchTab('detalle')" id="btn-tab-detalle" class="tab-btn active">Resumen Operativo</button>
+        <button onclick="switchTab('asignar')" id="btn-tab-asignar" class="tab-btn">Herramientas</button>
     </nav>
 
-    <main class="p-5">
+    <main class="flex-grow p-5 pb-24">
+        <!-- VISTA: DETALLE DE TURNOS -->
         <div id="view-detalle" class="space-y-4">
             <div id="shifts-container" class="space-y-4"></div>
-            <div id="empty-state" class="hidden py-20 text-center space-y-4">
+            
+            <div id="empty-state" class="hidden py-24 text-center space-y-4">
                 <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                    <i class="fa-solid fa-calendar-xmark text-2xl"></i>
+                    <i class="fa-solid fa-calendar-day text-2xl"></i>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin jornadas registradas</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No hay jornadas asignadas para este elemento hoy</p>
             </div>
         </div>
 
-        <div id="view-asignar" class="hidden space-y-6 animate-slide-up">
-            <div class="text-center">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Herramientas de Asignación Rápida</p>
-            </div>
-            <!-- ... bloques de asignación m,v,n,aus ... -->
-            <section class="space-y-3">
-                <h4 class="text-[10px] font-black text-red-900 uppercase tracking-widest ml-2">Turnos</h4>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="drag-block bg-[#fef9c3] text-[#854d0e] p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'matutino')">MATUTINO</div>
-                    <div class="drag-block bg-[#dbeafe] text-[#1e40af] p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'vespertino')">VESPERTINO</div>
-                    <div class="drag-block bg-[#1e3a8a] text-white p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'nocturno')">NOCTURNO</div>
+        <!-- VISTA: HERRAMIENTAS DE ASIGNACIÓN -->
+        <div id="view-asignar" class="hidden space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+            <section class="space-y-4">
+                <h4 class="text-[10px] font-black text-red-900 uppercase tracking-widest ml-2">Plantillas de Turno</h4>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-[#fef9c3] text-[#854d0e] p-4 rounded-2xl text-[10px] font-black text-center shadow-sm cursor-grab active:scale-95 transition-transform" draggable="true" ondragstart="handleToolDrag(event, 'matutino')">MATUTINO</div>
+                    <div class="bg-[#dbeafe] text-[#1e40af] p-4 rounded-2xl text-[10px] font-black text-center shadow-sm cursor-grab active:scale-95 transition-transform" draggable="true" ondragstart="handleToolDrag(event, 'vespertino')">VESPERTINO</div>
+                    <div class="bg-[#1e3a8a] text-white p-4 rounded-2xl text-[10px] font-black text-center shadow-sm cursor-grab active:scale-95 transition-transform" draggable="true" ondragstart="handleToolDrag(event, 'nocturno')">NOCTURNO</div>
+                </div>
+            </section>
+
+            <section class="space-y-4 pt-6 border-t border-slate-100">
+                <h4 class="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-2">Ausentismos</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-100 text-slate-500 p-4 rounded-2xl text-[10px] font-black text-center shadow-sm cursor-grab" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Descanso')">DESCANSO</div>
+                    <div class="bg-emerald-100 text-emerald-700 p-4 rounded-2xl text-[10px] font-black text-center shadow-sm cursor-grab" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Vacaciones')">VACACIONES</div>
                 </div>
             </section>
         </div>
     </main>
 
+    <!-- Barra de creación rápida inferior -->
+    <div id="quick-bar" class="quick-add-bar">
+        <button onclick="quickCreate('matutino')" class="btn-quick-create">M</button>
+        <button onclick="quickCreate('vespertino')" class="btn-quick-create">V</button>
+        <button onclick="quickCreate('nocturno')" class="btn-quick-create">N</button>
+        <button onclick="quickCreate('ausentismo')" class="btn-quick-create text-red-400">Aus</button>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
@@ -256,13 +323,13 @@
         const params = new URLSearchParams(window.location.search);
         const uid = params.get('uid');
         const rawDateParam = params.get('date'); 
-        const docDateId = rawDateParam.split('-').reverse().join('');
+        const docDateId = rawDateParam ? rawDateParam.split('-').reverse().join('') : null;
 
         const casetasDisponibles = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
 
-        const dateNavigator = document.getElementById('date-navigator');
-        dateNavigator.value = rawDateParam;
-        dateNavigator.onchange = (e) => {
+        if (rawDateParam) document.getElementById('date-navigator').value = rawDateParam;
+
+        document.getElementById('date-navigator').onchange = (e) => {
             const url = new URL(window.location.href);
             url.searchParams.set('date', e.target.value);
             window.location.href = url.toString();
@@ -277,11 +344,13 @@
         });
 
         async function init() {
+            if (!uid || !docDateId) return;
+
             const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
             if (userSnap.exists()) {
                 userBaseData = userSnap.data();
                 document.getElementById('user-name').innerText = userBaseData.nombre;
-                document.getElementById('info-puesto').innerText = userBaseData.puesto || "OPERADOR";
+                document.getElementById('info-puesto').innerText = userBaseData.puesto || "ELEMENTO";
                 if (userBaseData.foto) document.getElementById('user-photo').src = userBaseData.foto;
             }
 
@@ -302,89 +371,104 @@
             document.getElementById('view-asignar').classList.toggle('hidden', tab !== 'asignar');
             document.getElementById('btn-tab-detalle').classList.toggle('active', tab === 'detalle');
             document.getElementById('btn-tab-asignar').classList.toggle('active', tab === 'asignar');
+            document.getElementById('quick-bar').classList.toggle('hidden', tab !== 'detalle');
         };
+
+        function getSuggestedShiftByTime() {
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 14) return 'matutino';
+            if (hour >= 14 && hour < 22) return 'vespertino';
+            return 'nocturno';
+        }
 
         function renderShifts() {
             const container = document.getElementById('shifts-container');
             const empty = document.getElementById('empty-state');
             container.innerHTML = '';
+            
             const shifts = Object.values(shiftMap);
+            const order = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            
+            shifts.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 
             if (shifts.length === 0) {
                 empty.classList.remove('hidden');
             } else {
                 empty.classList.add('hidden');
-                shifts.forEach(shift => container.appendChild(createShiftCard(shift)));
+                
+                let activeShiftId = null;
+                const activeShift = shifts.find(s => s.entrada_real && !s.salida_real);
+                
+                if (activeShift) {
+                    activeShiftId = activeShift.id;
+                } else {
+                    const suggested = getSuggestedShiftByTime();
+                    const hasSuggested = shifts.find(s => s.id === suggested);
+                    activeShiftId = hasSuggested ? suggested : shifts[0].id;
+                }
+
+                shifts.forEach(shift => {
+                    const card = createShiftCard(shift, shift.id === activeShiftId);
+                    container.appendChild(card);
+                });
             }
         }
 
-        function createShiftCard(data) {
+        function createShiftCard(data, isExpanded) {
             const div = document.createElement('div');
-            div.className = "card-material animate-slide-up";
+            div.className = "card-material animate-in fade-in slide-in-from-bottom-2 duration-300";
             const isAus = data.Ausentismo;
+            const isActive = data.entrada_real && !data.salida_real;
             
-            const enterBlur = `onkeydown="if(event.key==='Enter') this.blur()"`;
-
             let timelineHtml = isAus ? `
                 <div class="timeline-item">
                     <div class="timeline-dot" style="border-color: #3b82f6"></div>
                     <p class="text-[9px] font-black uppercase text-blue-600">Motivo</p>
-                    <select onblur="updateShiftField('${data.id}', 'motivo', this.value)" class="inline-edit inline-select text-[10px] w-full">
-                        ${['Descanso', 'Vacaciones', 'Permiso', 'Suspencion', 'Incapacidades', 'Falta'].map(m => `<option value="${m}" ${data.motivo === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}
+                    <select onchange="updateShiftField('${data.id}', 'motivo', this.value)" class="inline-edit text-xs w-full mt-1">
+                        ${['Descanso', 'Vacaciones', 'Permiso', 'Suspension', 'Incapacidades', 'Falta'].map(m => `<option value="${m}" ${data.motivo === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}
                     </select>
                 </div>` : `
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
-                    <p class="text-[9px] font-black uppercase text-red-900">Programado</p>
-                    <div class="flex gap-2">
-                        <select onblur="updateShiftField('${data.id}', 'Caseta', this.value)" class="inline-edit inline-select text-[10px]">
+                    <p class="text-[9px] font-black uppercase text-red-900">Programación</p>
+                    <div class="flex items-center gap-3 mt-1">
+                        <select onchange="updateShiftField('${data.id}', 'Caseta', this.value)" class="inline-edit text-xs">
                             ${casetasDisponibles.map(c => `<option value="${c}" ${data.Caseta === c ? 'selected' : ''}>${c.toUpperCase()}</option>`).join('')}
                         </select>
-                        <input type="time" value="${data.entrada_planificada}" onblur="updateShiftField('${data.id}', 'entrada_planificada', this.value)" class="inline-edit text-[10px]">
+                        <input type="time" value="${data.entrada_planificada || ''}" onblur="updateShiftField('${data.id}', 'entrada_planificada', this.value)" class="inline-edit text-xs">
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot" style="border-color: #10b981"></div>
                     <p class="text-[9px] font-black uppercase text-emerald-600">Entrada Real</p>
-                    <input type="time" value="${data.entrada_real || ''}" onblur="updateShiftField('${data.id}', 'entrada_real', this.value)" class="inline-edit text-[10px] w-full" placeholder="--:--">
+                    <input type="time" value="${data.entrada_real || ''}" onblur="updateShiftField('${data.id}', 'entrada_real', this.value)" class="inline-edit text-xs w-full mt-1" placeholder="--:--">
                 </div>
                 <div class="timeline-item" style="padding-bottom: 0;">
                     <div class="timeline-dot" style="border-color: #94a3b8"></div>
                     <p class="text-[9px] font-black uppercase text-slate-400">Salida Real</p>
-                    <input type="time" value="${data.salida_real || ''}" onblur="updateShiftField('${data.id}', 'salida_real', this.value)" class="inline-edit text-[10px] w-full" placeholder="--:--">
+                    <input type="time" value="${data.salida_real || ''}" onblur="updateShiftField('${data.id}', 'salida_real', this.value)" class="inline-edit text-xs w-full mt-1" placeholder="--:--">
                 </div>`;
 
-            // SECCIÓN DE EVIDENCIA BIOMÉTRICA Y GPS
+            let actionBtnHtml = '';
+            if (!isAus) {
+                if (!data.entrada_real) {
+                    actionBtnHtml = `<button onclick="quickAttendance('${data.id}', 'entrada')" class="btn-attendance btn-in mt-4"><i class="fa-solid fa-right-to-bracket"></i> Registrar Entrada</button>`;
+                } else if (!data.salida_real) {
+                    actionBtnHtml = `<button onclick="quickAttendance('${data.id}', 'salida')" class="btn-attendance btn-out mt-4"><i class="fa-solid fa-right-from-bracket"></i> Registrar Salida</button>`;
+                }
+            }
+
             let evidenceHtml = '';
             if (data.foto_evidencia || data.ubicacion_checador) {
                 evidenceHtml = `
-                    <div class="mt-5 pt-4 border-t border-slate-50 space-y-4">
-                        ${data.foto_evidencia ? `
-                            <div>
-                                <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Evidencia de Asistencia</label>
-                                <img src="${data.foto_evidencia}" class="evidence-img" onclick="showFullImage(this.src)">
-                            </div>
-                        ` : ''}
-                        ${data.ubicacion_checador ? `
-                            <div class="location-chip">
-                                <div class="flex items-center gap-2">
-                                    <i class="fa-solid fa-location-dot text-red-900 text-[10px]"></i>
-                                    <div class="flex flex-col">
-                                        <span class="text-[8px] font-black text-slate-400 uppercase">Ubicación Capturada</span>
-                                        <span class="text-[9px] font-bold text-slate-600">${data.ubicacion_checador}</span>
-                                    </div>
-                                </div>
-                                <a href="https://www.google.com/maps?q=${data.ubicacion_checador}" target="_blank" class="p-2 bg-white rounded-lg text-blue-600 border border-blue-50 shadow-sm hover:bg-blue-50 transition-colors">
-                                    <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                                </a>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
+                    <div class="mt-6 pt-5 border-t border-slate-50 space-y-4">
+                        ${data.foto_evidencia ? `<div><label class="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Evidencia Fotográfica</label><img src="${data.foto_evidencia}" class="evidence-img shadow-sm" onclick="showFullImage(this.src)"></div>` : ''}
+                        ${data.ubicacion_checador ? `<div class="location-box"><div class="flex items-center gap-3"><i class="fa-solid fa-location-dot text-red-900"></i><div class="flex flex-col"><span class="text-[8px] font-black text-slate-400 uppercase">GPS Registro</span><span class="text-[9px] font-bold text-slate-600">${data.ubicacion_checador}</span></div></div><a href="https://www.google.com/maps?q=${data.ubicacion_checador}" target="_blank" class="p-2 bg-white rounded-lg text-blue-600 border border-blue-50 shadow-sm"><i class="fa-solid fa-map-location-dot text-[10px]"></i></a></div>` : ''}
+                    </div>`;
             }
 
-            const extraChecks = !isAus ? `
-                <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-50">
+            const flags = !isAus ? `
+                <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-slate-50">
                     <label class="chip-check"><input type="checkbox" ${data.retardo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'retardo', this.checked)" class="hidden"><span>Retardo</span></label>
                     <label class="chip-check"><input type="checkbox" ${data.es_recuperacion ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_recuperacion', this.checked)" class="hidden"><span>Recup.</span></label>
                     <label class="chip-check"><input type="checkbox" ${data.es_festivo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_festivo', this.checked)" class="hidden"><span>Festivo</span></label>
@@ -392,20 +476,109 @@
                 </div>` : '';
 
             div.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-[10px] font-black uppercase tracking-wider ${isAus?'text-blue-600':'text-red-900'}">${isAus?'AUSENTISMO':(data.turno||'').toUpperCase()}</span>
-                    <button onclick="deleteShift('${data.id}')" class="p-2 text-slate-200 hover:text-red-600 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                <div class="card-header" onclick="toggleAccordion(this)">
+                    <div class="flex items-center gap-3">
+                        ${isActive ? '<div class="pulse-active"></div>' : ''}
+                        <span class="text-[10px] font-black uppercase tracking-widest ${isAus?'text-blue-600':'text-red-900'}">${isAus?'AUSENTISMO':(data.turno||'').toUpperCase()}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="event.stopPropagation(); deleteShift('${data.id}')" class="text-slate-200 hover:text-red-600 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <i class="fa-solid fa-chevron-down text-slate-300 text-[10px] transform transition-transform ${isExpanded?'rotate-180':''}"></i>
+                    </div>
                 </div>
-                <div class="space-y-0">${timelineHtml}</div>
-                ${extraChecks}
-                <div class="mt-3 pt-3 border-t border-slate-50">
-                    <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Observaciones</p>
-                    <input type="text" value="${data.comentario || ''}" onblur="updateShiftField('${data.id}', 'comentario', this.value)" class="inline-edit text-[10px] w-full" placeholder="Escribir nota...">
+                <div class="card-body ${isExpanded ? 'expanded' : ''}">
+                    <div class="space-y-0">${timelineHtml}</div>
+                    ${flags}
+                    ${actionBtnHtml}
+                    <div class="mt-4 pt-4 border-t border-slate-50">
+                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Observaciones</p>
+                        <input type="text" value="${data.comentario || ''}" onblur="updateShiftField('${data.id}', 'comentario', this.value)" class="inline-edit text-xs w-full" placeholder="Escribir nota...">
+                    </div>
+                    ${evidenceHtml}
                 </div>
-                ${evidenceHtml}
             `;
             return div;
         }
+
+        window.toggleAccordion = (header) => {
+            const body = header.nextElementSibling;
+            const icon = header.querySelector('.fa-chevron-down');
+            const isCurrentlyExpanded = body.classList.contains('expanded');
+
+            // --- ACORDEÓN EXCLUSIVO ---
+            // Si vamos a abrir uno nuevo, cerramos todos los demás primero
+            if (!isCurrentlyExpanded) {
+                document.querySelectorAll('.card-body').forEach(otherBody => {
+                    if (otherBody !== body) {
+                        otherBody.classList.remove('expanded');
+                        const otherIcon = otherBody.previousElementSibling.querySelector('.fa-chevron-down');
+                        if (otherIcon) otherIcon.classList.remove('rotate-180');
+                    }
+                });
+            }
+
+            // Alternar el estado del actual
+            const newState = body.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180', newState);
+        };
+
+        window.quickAttendance = async (shiftId, type) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, shiftId, uid);
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            if (type === 'entrada') {
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                const [pH, pM] = (data.entrada_planificada || "07:00").split(':').map(Number);
+                const isLate = new Date() > new Date().setHours(pH, pM, 0);
+                await updateDoc(docRef, { entrada_real: nowTime, retardo: isLate });
+            } else {
+                await updateDoc(docRef, { salida_real: nowTime });
+            }
+        };
+
+        window.quickCreate = async (type) => {
+            const casetaDefault = userBaseData?.acceso_predeterminado || "Centro de control";
+            const dateRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId);
+            await setDoc(dateRef, {}, { merge: true });
+
+            if (type === 'ausentismo') {
+                const shifts = ['matutino', 'vespertino', 'nocturno'];
+                for (const s of shifts) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, s, uid));
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, 'ausentismo', uid), { Ausentismo: true, motivo: 'Descanso' });
+            } else {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, 'ausentismo', uid));
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, type, uid);
+                const existingSnap = await getDoc(docRef);
+                
+                let time = (type === 'matutino') ? (casetaDefault === 'Centro de control' ? "06:00" : "07:00") : 
+                           (type === 'vespertino') ? (casetaDefault === 'Centro de control' ? "14:00" : "13:00") : "21:00";
+                if(type === 'nocturno' && casetaDefault === 'Centro de control') time = "22:00";
+
+                let payload = {};
+                if (existingSnap.exists()) {
+                    const existing = existingSnap.data();
+                    payload = {
+                        Caseta: existing.Caseta || casetaDefault,
+                        turno: type,
+                        entrada_planificada: existing.entrada_planificada || time
+                    };
+                } else {
+                    payload = {
+                        Caseta: casetaDefault, 
+                        turno: type, 
+                        entrada_planificada: time,
+                        es_recuperacion: false, 
+                        es_festivo: false, 
+                        es_extra: false,
+                        entrada_real: null, 
+                        salida_real: null, 
+                        retardo: false
+                    };
+                }
+                await setDoc(docRef, payload, { merge: true });
+            }
+        };
 
         window.showFullImage = (src) => {
             const viewer = document.getElementById('image-viewer');
@@ -416,17 +589,22 @@
 
         window.updateShiftField = async (shiftId, field, value) => {
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, shiftId, uid);
-            await updateDoc(docRef, { [field]: value });
+            try { await setDoc(docRef, { [field]: value }, { merge: true }); } catch (e) { console.error(e); }
         };
 
         window.deleteShift = async (id) => {
-            if (confirm("¿Eliminar registro?")) {
+            if (confirm("¿Eliminar este registro?")) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, id, uid));
             }
         };
 
-        window.handleToolDrag = (e, type) => {
-            e.dataTransfer.setData('text/plain', JSON.stringify({ external: true, immediate: true, uid, type }));
+        window.handleToolDrag = (e, type, motive = null) => {
+            const dragPayload = { external: true, immediate: true, uid, type, motive };
+            e.dataTransfer.setData('text/plain', JSON.stringify(dragPayload));
+        };
+
+        window.openProfile = () => {
+            window.top.postMessage({ type: 'navigateRight', url: `Apps/Perfil.html?uid=${uid}` }, '*');
         };
 
     </script>
