@@ -117,9 +117,7 @@
 
         .element-item:active { cursor: grabbing; }
 
-        .element-item.is-late {
-            border-left: 3px solid #ef4444;
-        }
+        .element-item.is-late { border-left: 3px solid #ef4444; }
 
         .avatar-mini {
             width: 28px;
@@ -148,18 +146,10 @@
             border: 1.5px solid transparent;
         }
 
-        .btn-entry {
-            background: #ecfdf5;
-            color: #065f46;
-            border-color: #10b981;
-        }
+        .btn-entry { background: #ecfdf5; color: #065f46; border-color: #10b981; }
         .btn-entry:hover { background: #10b981; color: white; }
 
-        .btn-exit {
-            background: #f8fafc;
-            color: #475569;
-            border-color: #cbd5e1;
-        }
+        .btn-exit { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
         .btn-exit:hover { background: #64748b; color: white; }
 
         .tag-container {
@@ -172,7 +162,6 @@
         .tag-rec { background: #166534; color: white; font-size: 5.5px; padding: 0.5px 3px; border-radius: 2px; font-weight: 900; }
         .tag-tex { background: #d946ef; color: white; font-size: 5.5px; padding: 0.5px 3px; border-radius: 2px; font-weight: 900; }
 
-        /* Seccion Casetas Ocultas */
         .hidden-section {
             margin-top: 32px;
             padding-top: 20px;
@@ -192,10 +181,7 @@
             letter-spacing: 0.05em;
             border: 1px solid #e2e8f0;
         }
-        .btn-show {
-            color: #64748b;
-            transition: color 0.2s;
-        }
+        .btn-show { color: #64748b; transition: color 0.2s; }
         .btn-show:hover { color: var(--md-primary); }
 
         #loading-state {
@@ -214,12 +200,10 @@
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Vespertino</span>
     </div>
 
-    <!-- Contenedor Principal de Casetas -->
     <div class="caseta-grid" id="caseta-container"></div>
 
-    <!-- Sección de Casetas Ocultas -->
     <div id="hidden-section" class="hidden-section hidden">
-        <h4 class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Casetas Ocultas (Sin Personal)</h4>
+        <h4 class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Casetas Ocultas</h4>
         <div id="hidden-casetas-list" class="flex flex-wrap gap-2"></div>
     </div>
 
@@ -318,17 +302,11 @@
 
             casetasOrden.forEach(casetaName => {
                 const assigned = currentAssignments.filter(a => a.Caseta === casetaName);
-                
                 if (hiddenCasetas.has(casetaName) && assigned.length === 0) {
                     hasHidden = true;
                     const hItem = document.createElement('div');
                     hItem.className = "hidden-caseta-item animate-in fade-in slide-in-from-bottom-1";
-                    hItem.innerHTML = `
-                        <span>${casetaName}</span>
-                        <button onclick="toggleCasetaVisibility('${casetaName}')" class="btn-show" title="Mostrar caseta">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </button>
-                    `;
+                    hItem.innerHTML = `<span>${casetaName}</span><button onclick="toggleCasetaVisibility('${casetaName}')" class="btn-show"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
                     hiddenList.appendChild(hItem);
                     return;
                 }
@@ -341,10 +319,7 @@
                     <div class="caseta-header">
                         <div class="flex items-center gap-2">
                             <span class="caseta-title">${casetaName}</span>
-                            <button onclick="toggleCasetaVisibility('${casetaName}')" 
-                                    class="btn-header-action" 
-                                    title="${isHideable ? 'Ocultar caseta vacía' : 'No se puede ocultar con personal'}"
-                                    ${!isHideable ? 'disabled' : ''}>
+                            <button onclick="toggleCasetaVisibility('${casetaName}')" class="btn-header-action" ${!isHideable ? 'disabled' : ''}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                             </button>
                         </div>
@@ -358,7 +333,6 @@
                 card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
                 card.ondragleave = () => card.classList.remove('drag-over');
                 card.ondrop = (e) => handleDrop(e, casetaName);
-
                 container.appendChild(card);
                 
                 const list = card.querySelector('.element-list');
@@ -368,7 +342,6 @@
                     assigned.forEach(el => list.appendChild(createElementRow(el)));
                 }
             });
-
             hiddenSection.classList.toggle('hidden', !hasHidden);
         }
 
@@ -376,11 +349,7 @@
             const div = document.createElement('div');
             div.className = `element-item ${el.retardo ? 'is-late' : ''}`;
             div.draggable = true;
-            
-            div.ondragstart = (e) => {
-                e.dataTransfer.setData("text/plain", JSON.stringify({ uid: el.uid, fromCaseta: el.Caseta, type: 'vespertino', internal: true }));
-                div.style.opacity = '0.5';
-            };
+            div.ondragstart = (e) => { e.dataTransfer.setData("text/plain", JSON.stringify({ uid: el.uid, fromCaseta: el.Caseta, type: 'vespertino', internal: true })); div.style.opacity = '0.5'; };
             div.ondragend = () => div.style.opacity = '1';
 
             const params = new URLSearchParams(window.location.search);
@@ -388,18 +357,16 @@
             
             div.onclick = (e) => {
                 if (e.target.closest('button')) return;
-                window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${el.uid}&date=${dateStr}` }, '*');
+                // CAMBIO CLAVE: Uso de window.top para navegar saltando todas las capas de iframes
+                window.top.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${el.uid}&date=${dateStr}` }, '*');
             };
 
             let statusDot = el.entrada_real ? 'bg-emerald-500' : 'bg-slate-300';
             if (el.retardo) statusDot = 'bg-red-500';
 
             let actionBtn = '';
-            if (!el.entrada_real) {
-                actionBtn = `<button onclick="quickAttendance('${el.uid}', 'entrada')" class="btn-quick btn-entry">Entrada</button>`;
-            } else if (!el.salida_real) {
-                actionBtn = `<button onclick="quickAttendance('${el.uid}', 'salida')" class="btn-quick btn-exit">Salida</button>`;
-            }
+            if (!el.entrada_real) actionBtn = `<button onclick="quickAttendance('${el.uid}', 'entrada')" class="btn-quick btn-entry">Entrada</button>`;
+            else if (!el.salida_real) actionBtn = `<button onclick="quickAttendance('${el.uid}', 'salida')" class="btn-quick btn-exit">Salida</button>`;
 
             div.innerHTML = `
                 <div class="tag-container">${el.es_recuperacion ? '<span class="tag-rec">REC</span>' : ''}${el.es_extra ? '<span class="tag-tex">TEx</span>' : ''}</div>
@@ -411,15 +378,14 @@
                         <p class="text-[6.5px] font-black uppercase text-slate-400">${el.entrada_planificada} • ${el.entrada_real || '---'}</p>
                     </div>
                 </div>
-                <div class="flex items-center">
-                    ${actionBtn}
-                </div>
+                <div class="flex items-center">${actionBtn}</div>
             `;
             return div;
         }
 
         window.openPerfiles = (casetaName) => {
-            window.parent.postMessage({ 
+            // CAMBIO CLAVE: Uso de window.top para que el mensaje llegue al index.html original
+            window.top.postMessage({ 
                 type: 'navigateRight', 
                 url: `Componentes/Accesos/ElementosPP/Planeación/Perfiles.html?highlight=${encodeURIComponent(casetaName)}` 
             }, '*');
@@ -427,62 +393,36 @@
 
         async function handleDrop(e, targetCaseta) {
             e.preventDefault();
-            const card = e.currentTarget;
-            card.classList.remove('drag-over');
-            
+            e.currentTarget.classList.remove('drag-over');
             try {
-                const raw = e.dataTransfer.getData("text/plain");
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                
+                const data = JSON.parse(e.dataTransfer.getData("text/plain"));
                 if (data.internal) {
                     if (data.fromCaseta === targetCaseta) return;
-                    const dateId = getTargetDateId();
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'vespertino', data.uid), { Caseta: targetCaseta });
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', getTargetDateId(), 'vespertino', data.uid), { Caseta: targetCaseta });
                 } else {
-                    await executeExternalAssign(data, targetCaseta);
+                    const dateId = getTargetDateId();
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', data.uid));
+                    let time = (targetCaseta === 'Centro de control' ? "14:00" : "13:00");
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'vespertino', data.uid), { Caseta: targetCaseta, turno: 'vespertino', entrada_planificada: time, es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false });
                 }
-            } catch (err) { console.error("Error en drop:", err); }
-        }
-
-        async function executeExternalAssign(toolData, caseta) {
-            const { uid } = toolData;
-            const dateId = getTargetDateId();
-            
-            // Limpiar ausentismos previos
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid));
-            
-            // Horario vespertino: 14:00 para CCO, 13:00 para el resto
-            let time = (caseta === 'Centro de control' ? "14:00" : "13:00");
-
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'vespertino', uid), {
-                Caseta: caseta, turno: 'vespertino', entrada_planificada: time,
-                es_recuperacion: false, es_festivo: false, es_extra: false,
-                entrada_real: null, salida_real: null, retardo: false
-            });
+            } catch (err) { console.error(err); }
         }
 
         window.quickAttendance = async (uid, type) => {
             const dateId = getTargetDateId();
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'vespertino', uid);
             const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-            
             if (type === 'entrada') {
                 const snap = await getDoc(docRef);
-                const data = snap.data();
-                const [pH, pM] = (data.entrada_planificada || "13:00").split(':').map(Number);
-                const plan = new Date(); plan.setHours(pH, pM, 0);
-                const isLate = new Date() > plan;
+                const [pH, pM] = (snap.data().entrada_planificada || "13:00").split(':').map(Number);
+                const isLate = new Date() > new Date().setHours(pH, pM, 0);
                 await updateDoc(docRef, { entrada_real: nowTime, retardo: isLate });
-            } else {
-                await updateDoc(docRef, { salida_real: nowTime });
-            }
+            } else await updateDoc(docRef, { salida_real: nowTime });
         };
 
         function normalizeId(s) { return s.toLowerCase().replace(/\s+/g, '-'); }
         function formatDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-
     </script>
 </body>
 </html>

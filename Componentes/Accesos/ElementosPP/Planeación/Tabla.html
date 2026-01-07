@@ -500,7 +500,6 @@
             const cell = document.getElementById(`cell-${uid}-${colIdx}`);
             if (!cell) return;
             
-            // dayData es un objeto { turnoId: data }
             const entries = dayData ? Object.entries(dayData) : [];
 
             if (entries.length > 0) {
@@ -510,7 +509,6 @@
                 let hasRecuperacion = false;
                 let hasExtra = false;
 
-                // Ordenar para mostrar M/V/N en orden lógico
                 const order = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
                 entries.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
 
@@ -542,7 +540,6 @@
                     </div>`;
                 
                 const badge = cell.querySelector('.shift-badge');
-                // Al arrastrar, usamos el primer turno de la lista como referencia
                 badge.ondragstart = (e) => handleDragStart(e, uid, isoDate, entries[0][0]);
             } else {
                 cell.innerHTML = `<span class="add-icon">+</span>`;
@@ -551,13 +548,7 @@
 
         // --- LÓGICA DE DRAG & DROP ---
         function handleDragStart(e, uid, date, type) {
-            const data = {
-                sourceUid: uid,
-                sourceDate: date,
-                sourceDateId: getDateIdLocal(new Date(date + "T00:00:00")),
-                shiftType: type,
-                internal: true
-            };
+            const data = { sourceUid: uid, sourceDate: date, sourceDateId: getDateIdLocal(new Date(date + "T00:00:00")), shiftType: type, internal: true };
             e.dataTransfer.setData('text/plain', JSON.stringify(data));
             e.dataTransfer.effectAllowed = 'move';
         }
@@ -587,29 +578,19 @@
             const { type, motive } = toolData;
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId), {}, { merge: true });
-
                 const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
-                // Nota: Solo limpiamos si es ausentismo, si es turno permitimos doble turno (según tu requerimiento M/V)
                 if (type === 'ausentismo') {
                     for (const s of shifts) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, s, targetUid));
                 }
-
                 if (type === 'ausentismo') {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, 'ausentismo', targetUid), {
-                        Ausentismo: true, motivo: motive || 'Descanso'
-                    });
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, 'ausentismo', targetUid), { Ausentismo: true, motivo: motive || 'Descanso' });
                 } else {
                     const uData = userDataCache[targetUid] || {};
                     const caseta = uData.acceso_predeterminado || "Centro de control";
                     let time = (type === 'matutino') ? (caseta === 'Centro de control' ? "06:00" : "07:00") : 
                                (type === 'vespertino') ? (caseta === 'Centro de control' ? "14:00" : "13:00") : "21:00";
                     if(type === 'nocturno' && caseta === 'Centro de control') time = "22:00";
-
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, type, targetUid), {
-                        Caseta: caseta, turno: type, entrada_planificada: time,
-                        es_recuperacion: false, es_festivo: false, es_extra: false,
-                        entrada_real: null, salida_real: null, retardo: false
-                    });
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, type, targetUid), { Caseta: caseta, turno: type, entrada_planificada: time, es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false });
                 }
             } catch (err) { console.error("Error asignación inmediata:", err); }
         }
@@ -619,22 +600,13 @@
         window.executeDragAction = async (action) => {
             const { sourceUid, sourceDateId, shiftType, targetUid, targetDateId } = dragData;
             closeDragModal();
-
             try {
                 const sourceRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', sourceDateId, shiftType, sourceUid);
                 const snap = await getDoc(sourceRef);
                 if (!snap.exists()) return;
                 const originalData = snap.data();
-
-                // Si es un movimiento masivo o específico, permitimos la coexistencia o limpiamos según necesites.
-                // Aquí mantenemos la limpieza de destino para "Mover" o "Copiar" interno para no generar basura.
-                if (action === 'move') {
-                     // En mover, si el destino ya tiene ese tipo de turno, lo sobreescribe.
-                }
-
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId), {}, { merge: true });
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', targetDateId, shiftType, targetUid), originalData);
-
                 if (action === 'move') await deleteDoc(sourceRef);
             } catch (err) { console.error("Error en drag action:", err); }
         };
@@ -648,14 +620,14 @@
 
         window.openPatrones = () => {
             if (!currentContext.uid) return;
-            window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Patrones.html?uid=${currentContext.uid}&date=${currentContext.date}` }, '*');
+            // CAMBIO: window.top para llegar al index.html
+            window.top.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Patrones.html?uid=${currentContext.uid}&date=${currentContext.date}` }, '*');
         };
 
         window.quickAssignShift = async (turno, caseta) => {
             if (!currentContext.uid) return; const { uid, dateId } = currentContext;
             let time = (turno === 'matutino') ? (caseta === 'Centro de control' ? "06:00" : "07:00") : (turno === 'vespertino') ? (caseta === 'Centro de control' ? "14:00" : "13:00") : "21:00";
             if(turno === 'nocturno' && caseta === 'Centro de control') time = "22:00";
-            
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, turno, uid), { Caseta: caseta, turno, entrada_planificada: time, es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false });
         };
@@ -671,7 +643,6 @@
             if (!currentContext.uid) return; const { uid, dateId, date } = currentContext;
             const current = globalAssignments[uid] ? globalAssignments[uid][date] : null;
             if (current) {
-                // Borramos todos los turnos del día si se elige borrar asignación
                 for (const tId in current) {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, tId, uid));
                 }
@@ -701,8 +672,9 @@
             }
         });
 
-        function openProfile(uid) { window.parent.postMessage({ type: 'navigateRight', url: `Apps/Perfil.html?uid=${uid}` }, '*'); }
-        function openShiftDetail(uid, date) { window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*'); }
+        // CAMBIOS: window.top para llegar al index.html
+        function openProfile(uid) { window.top.postMessage({ type: 'navigateRight', url: `Apps/Perfil.html?uid=${uid}` }, '*'); }
+        function openShiftDetail(uid, date) { window.top.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*'); }
         function renderGrid() { renderGridHeaders(); loadData(); }
     </script>
 </body>

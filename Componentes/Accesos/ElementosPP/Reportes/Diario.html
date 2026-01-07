@@ -88,7 +88,7 @@
         }
         tr:last-child td { border-bottom: none; }
 
-        /* --- Badges de Estado Optimizados para Captura y Centrado --- */
+        /* --- Badges de Estado --- */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -102,7 +102,7 @@
             line-height: 1;
             margin: 4px 8px 4px 0;
             text-align: center;
-            min-width: 90px; /* Ancho base para evitar desbordes */
+            min-width: 90px;
         }
         .bg-in-turn { background: #dcfce7; color: #166534; }
         .bg-finished { background: #f1f5f9; color: #64748b; }
@@ -235,10 +235,9 @@
             </div>
         </div>
 
-        <!-- El overflow-x-auto permite ver el reporte ancho en pantallas pequeñas sin romper el diseño -->
         <div class="overflow-x-auto rounded-[24px]">
             <div id="report-content" class="bg-white">
-                <!-- Header con Gradiente -->
+                <!-- Header -->
                 <header class="report-header">
                     <h1 class="text-3xl font-black uppercase tracking-tight leading-none">Reporte de Asistencia</h1>
                     <p id="formatted-date" class="text-red-100/70 text-xs font-bold uppercase tracking-widest mt-2">---</p>
@@ -443,7 +442,8 @@
         }
 
         window.openDetail = (uid, date) => {
-            window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*');
+            // Cambio clave: window.top para asegurar navegación en el panel principal saltando capas
+            window.top.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${uid}&date=${date}` }, '*');
         };
 
         // --- GESTIÓN DE CORREO ---
@@ -474,26 +474,21 @@
             btn.innerText = "PROCESANDO IMAGEN...";
 
             try {
-                // Capturar el contenido como imagen
                 const captureArea = document.getElementById('report-content');
-                
-                // Ocultar botones de detalle temporalmente para la foto
                 const detailBtns = captureArea.querySelectorAll('.btn-detail');
                 detailBtns.forEach(b => b.style.visibility = 'hidden');
 
                 const canvas = await html2canvas(captureArea, {
-                    scale: 2, // Mejor calidad
+                    scale: 2,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
-                    windowWidth: 1000 // Forza un ancho de ventana mayor para que el renderizado sea consistente
+                    windowWidth: 1000
                 });
 
                 detailBtns.forEach(b => b.style.visibility = 'visible');
-
                 const base64Image = canvas.toDataURL('image/png').split(',')[1];
                 
-                // Generar el código HTML envolvente para Power Automate V2
                 const emailHtmlBody = `
                     <div style="font-family: Arial, sans-serif; background-color: #fdf8f8; padding: 20px; text-align: center;">
                         <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 900px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
@@ -512,7 +507,6 @@
                 `;
 
                 btn.innerText = "ENVIANDO CORREO...";
-                
                 await sendToPowerAutomate({ to, cc, body: emailHtmlBody });
                 
                 btn.innerText = "¡ENVIADO!";
@@ -533,7 +527,6 @@
         async function sendToPowerAutomate(payload) {
             let retries = 5;
             let delay = 1000;
-
             while (retries > 0) {
                 try {
                     const response = await fetch(POWER_AUTOMATE_API, {
@@ -541,7 +534,6 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-
                     if (response.ok) return true;
                     throw new Error("HTTP Status " + response.status);
                 } catch (err) {
@@ -552,7 +544,6 @@
                 }
             }
         }
-
     </script>
 </body>
 </html>

@@ -303,7 +303,7 @@
                 hiddenCasetas.delete(name);
             } else {
                 const assigned = currentAssignments.filter(a => a.Caseta === name);
-                if (assigned.length === 0) hiddenCaset.add(name);
+                if (assigned.length === 0) hiddenCasetas.add(name);
             }
             localStorage.setItem('regas_hiddenCasetas_noct', JSON.stringify([...hiddenCasetas]));
             renderDashboard();
@@ -390,7 +390,8 @@
             
             div.onclick = (e) => {
                 if (e.target.closest('button')) return;
-                window.parent.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${el.uid}&date=${dateStr}` }, '*');
+                // CAMBIO CLAVE: Uso de window.top para navegar saltando todas las capas de iframes
+                window.top.postMessage({ type: 'navigateRight', url: `Componentes/Accesos/ElementosPP/Planeación/Detalle.html?uid=${el.uid}&date=${dateStr}` }, '*');
             };
 
             let statusDot = el.entrada_real ? 'bg-emerald-500' : 'bg-slate-300';
@@ -421,7 +422,8 @@
         }
 
         window.openPerfiles = (casetaName) => {
-            window.parent.postMessage({ 
+            // CAMBIO CLAVE: Uso de window.top para que el mensaje llegue al index.html original
+            window.top.postMessage({ 
                 type: 'navigateRight', 
                 url: `Componentes/Accesos/ElementosPP/Planeación/Perfiles.html?highlight=${encodeURIComponent(casetaName)}` 
             }, '*');
