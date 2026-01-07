@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle de Asignación - CIC6</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --md-primary: #450a0a;
@@ -107,7 +108,7 @@
             border: 2px solid var(--md-primary);
         }
 
-        /* Campos Editables en Timeline */
+        /* Campos Editables */
         .inline-edit {
             background: transparent;
             border: none;
@@ -124,10 +125,7 @@
             color: var(--md-primary);
             background: rgba(69, 10, 10, 0.02);
         }
-        .inline-select {
-            appearance: none;
-            -webkit-appearance: none;
-        }
+        .inline-select { appearance: none; -webkit-appearance: none; }
 
         .chip-check {
             display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px;
@@ -136,43 +134,26 @@
         }
         .chip-check:has(input:checked) { border-color: var(--md-primary); background: var(--md-primary); color: white; }
 
-        /* --- Herramientas de Asignación --- */
-        .drag-block {
+        /* Evidencia Estilos */
+        .evidence-img {
             width: 100%;
-            padding: 10px 4px;
+            height: 140px;
+            object-fit: cover;
             border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-weight: 800;
-            font-size: 9px;
-            text-transform: uppercase;
-            cursor: grab;
-            transition: all 0.2s;
-            user-select: none;
-            border: 1px solid rgba(0,0,0,0.05);
-            text-align: center;
+            border: 1px solid #e2e8f0;
+            cursor: zoom-in;
+            transition: transform 0.2s;
         }
-        .drag-block:active { cursor: grabbing; transform: scale(0.95); }
-        .drag-block:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
-        .block-m { background: #fef9c3; color: #854d0e; }
-        .block-v { background: #dbeafe; color: #1e40af; }
-        .block-n { background: #1e3a8a; color: white; }
-        .block-aus { background: #f1f5f9; color: #475569; }
+        .evidence-img:hover { transform: scale(1.02); }
 
-        .icon-box {
-            width: 24px;
-            height: 24px;
-            border-radius: 8px;
+        .location-chip {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            background: rgba(255,255,255,0.3);
-            flex-shrink: 0;
+            justify-content: space-between;
         }
 
         .btn-main {
@@ -181,14 +162,26 @@
             font-size: 11px; transition: all 0.3s;
         }
 
+        /* Modal visor */
+        .viewer-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="pb-24">
 
+    <!-- Cargando -->
     <div id="loading-state" class="fixed inset-0 bg-white z-[1000] flex flex-col items-center justify-center gap-6">
         <div class="w-10 h-10 border-4 border-red-100 border-t-red-900 rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Visor de Fotos -->
+    <div id="image-viewer" class="viewer-overlay" onclick="this.style.display='none'">
+        <img id="viewer-img" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl">
     </div>
 
     <header class="hero-header">
@@ -219,7 +212,7 @@
             <div id="shifts-container" class="space-y-4"></div>
             <div id="empty-state" class="hidden py-20 text-center space-y-4">
                 <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <i class="fa-solid fa-calendar-xmark text-2xl"></i>
                 </div>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin jornadas registradas</p>
             </div>
@@ -227,52 +220,15 @@
 
         <div id="view-asignar" class="hidden space-y-6 animate-slide-up">
             <div class="text-center">
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Arrastra a la tabla para asignar de inmediato</p>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Herramientas de Asignación Rápida</p>
             </div>
+            <!-- ... bloques de asignación m,v,n,aus ... -->
             <section class="space-y-3">
                 <h4 class="text-[10px] font-black text-red-900 uppercase tracking-widest ml-2">Turnos</h4>
                 <div class="grid grid-cols-3 gap-2">
-                    <div class="drag-block block-m" draggable="true" ondragstart="handleToolDrag(event, 'matutino')">
-                        <div class="icon-box">M</div>
-                        <span>Mat.</span>
-                    </div>
-                    <div class="drag-block block-v" draggable="true" ondragstart="handleToolDrag(event, 'vespertino')">
-                        <div class="icon-box">V</div>
-                        <span>Vesp.</span>
-                    </div>
-                    <div class="drag-block block-n" draggable="true" ondragstart="handleToolDrag(event, 'nocturno')">
-                        <div class="icon-box">N</div>
-                        <span>Noct.</span>
-                    </div>
-                </div>
-            </section>
-            <section class="space-y-3">
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Ausentismos</h4>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Descanso')">
-                        <div class="icon-box">D</div>
-                        <span>Desc.</span>
-                    </div>
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Vacaciones')">
-                        <div class="icon-box">V</div>
-                        <span>Vac.</span>
-                    </div>
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Permiso')">
-                        <div class="icon-box">P</div>
-                        <span>Perm.</span>
-                    </div>
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Suspension')">
-                        <div class="icon-box">S</div>
-                        <span>Susp.</span>
-                    </div>
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Incapacidades')">
-                        <div class="icon-box">I</div>
-                        <span>Incap.</span>
-                    </div>
-                    <div class="drag-block block-aus" draggable="true" ondragstart="handleToolDrag(event, 'ausentismo', 'Falta')">
-                        <div class="icon-box">F</div>
-                        <span>Falta</span>
-                    </div>
+                    <div class="drag-block bg-[#fef9c3] text-[#854d0e] p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'matutino')">MATUTINO</div>
+                    <div class="drag-block bg-[#dbeafe] text-[#1e40af] p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'vespertino')">VESPERTINO</div>
+                    <div class="drag-block bg-[#1e3a8a] text-white p-3 rounded-xl text-[9px] font-black text-center" draggable="true" ondragstart="handleToolDrag(event, 'nocturno')">NOCTURNO</div>
                 </div>
             </section>
         </div>
@@ -300,14 +256,9 @@
         const params = new URLSearchParams(window.location.search);
         const uid = params.get('uid');
         const rawDateParam = params.get('date'); 
+        const docDateId = rawDateParam.split('-').reverse().join('');
 
-        const formatDocId = (d) => d.split('-').reverse().join(''); 
-        const docDateId = formatDocId(rawDateParam);
-
-        const casetasDisponibles = [
-            "Centro de control", "Encargado", "Edison", "Recepción Edison", 
-            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"
-        ];
+        const casetasDisponibles = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
 
         const dateNavigator = document.getElementById('date-navigator');
         dateNavigator.value = rawDateParam;
@@ -319,7 +270,6 @@
 
         let userBaseData = null;
         let shiftMap = {}; 
-        let currentShifts = [];
 
         onAuthStateChanged(auth, async (user) => {
             if (user) await init();
@@ -331,7 +281,7 @@
             if (userSnap.exists()) {
                 userBaseData = userSnap.data();
                 document.getElementById('user-name').innerText = userBaseData.nombre;
-                document.getElementById('info-puesto').innerText = userBaseData.puesto || "MIEMBRO";
+                document.getElementById('info-puesto').innerText = userBaseData.puesto || "OPERADOR";
                 if (userBaseData.foto) document.getElementById('user-photo').src = userBaseData.foto;
             }
 
@@ -341,7 +291,6 @@
                 onSnapshot(docRef, (snap) => {
                     if (snap.exists()) shiftMap[tId] = { id: tId, ...snap.data() };
                     else delete shiftMap[tId];
-                    currentShifts = Object.values(shiftMap);
                     renderShifts();
                     document.getElementById('loading-state').classList.add('hidden');
                 });
@@ -355,151 +304,129 @@
             document.getElementById('btn-tab-asignar').classList.toggle('active', tab === 'asignar');
         };
 
-        window.handleToolDrag = (e, type, motive = null) => {
-            const data = { external: true, immediate: true, uid: uid, type: type, motive: motive, name: userBaseData?.nombre || 'Elemento' };
-            e.dataTransfer.setData('text/plain', JSON.stringify(data));
-            e.dataTransfer.effectAllowed = 'copy';
-        };
-
         function renderShifts() {
             const container = document.getElementById('shifts-container');
             const empty = document.getElementById('empty-state');
             container.innerHTML = '';
+            const shifts = Object.values(shiftMap);
 
-            if (currentShifts.length === 0) {
+            if (shifts.length === 0) {
                 empty.classList.remove('hidden');
             } else {
                 empty.classList.add('hidden');
-                currentShifts.forEach(shift => container.appendChild(createShiftCard(shift)));
+                shifts.forEach(shift => container.appendChild(createShiftCard(shift)));
             }
         }
 
         function createShiftCard(data) {
             const div = document.createElement('div');
             div.className = "card-material animate-slide-up";
-            const isAusentismo = data.Ausentismo;
-            const headerColor = isAusentismo ? 'text-blue-600' : 'text-red-900';
+            const isAus = data.Ausentismo;
             
             const enterBlur = `onkeydown="if(event.key==='Enter') this.blur()"`;
 
-            let timelineHtml = '';
-            if (isAusentismo) {
-                timelineHtml = `
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <p class="text-[9px] font-black uppercase ${headerColor}">Motivo de Ausencia</p>
-                        <select onblur="updateShiftField('${data.id}', 'motivo', this.value)" ${enterBlur} class="inline-edit inline-select text-[10px] w-full">
-                            ${['Descanso', 'Vacaciones', 'Permiso', 'Suspencion', 'Incapacidades', 'Falta'].map(m => `<option value="${m}" ${data.motivo === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}
+            let timelineHtml = isAus ? `
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="border-color: #3b82f6"></div>
+                    <p class="text-[9px] font-black uppercase text-blue-600">Motivo</p>
+                    <select onblur="updateShiftField('${data.id}', 'motivo', this.value)" class="inline-edit inline-select text-[10px] w-full">
+                        ${['Descanso', 'Vacaciones', 'Permiso', 'Suspencion', 'Incapacidades', 'Falta'].map(m => `<option value="${m}" ${data.motivo === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}
+                    </select>
+                </div>` : `
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <p class="text-[9px] font-black uppercase text-red-900">Programado</p>
+                    <div class="flex gap-2">
+                        <select onblur="updateShiftField('${data.id}', 'Caseta', this.value)" class="inline-edit inline-select text-[10px]">
+                            ${casetasDisponibles.map(c => `<option value="${c}" ${data.Caseta === c ? 'selected' : ''}>${c.toUpperCase()}</option>`).join('')}
                         </select>
-                    </div>`;
-            } else {
-                timelineHtml = `
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <p class="text-[9px] font-black uppercase ${headerColor}">Programado</p>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <select onblur="updateShiftField('${data.id}', 'Caseta', this.value)" ${enterBlur} class="inline-edit inline-select text-[10px]">
-                                ${casetasDisponibles.map(c => `<option value="${c}" ${data.Caseta === c ? 'selected' : ''}>${c.toUpperCase()}</option>`).join('')}
-                            </select>
-                            <input type="time" value="${data.entrada_planificada}" onblur="updateShiftField('${data.id}', 'entrada_planificada', this.value)" ${enterBlur} class="inline-edit text-[10px]">
-                        </div>
+                        <input type="time" value="${data.entrada_planificada}" onblur="updateShiftField('${data.id}', 'entrada_planificada', this.value)" class="inline-edit text-[10px]">
                     </div>
-                    <div class="timeline-item">
-                        <div class="timeline-dot" style="border-color: #10b981"></div>
-                        <p class="text-[9px] font-black uppercase text-emerald-600">Entrada Real</p>
-                        <input type="time" value="${data.entrada_real || ''}" onblur="updateShiftField('${data.id}', 'entrada_real', this.value)" ${enterBlur} class="inline-edit text-[10px] w-full" placeholder="--:--">
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="border-color: #10b981"></div>
+                    <p class="text-[9px] font-black uppercase text-emerald-600">Entrada Real</p>
+                    <input type="time" value="${data.entrada_real || ''}" onblur="updateShiftField('${data.id}', 'entrada_real', this.value)" class="inline-edit text-[10px] w-full" placeholder="--:--">
+                </div>
+                <div class="timeline-item" style="padding-bottom: 0;">
+                    <div class="timeline-dot" style="border-color: #94a3b8"></div>
+                    <p class="text-[9px] font-black uppercase text-slate-400">Salida Real</p>
+                    <input type="time" value="${data.salida_real || ''}" onblur="updateShiftField('${data.id}', 'salida_real', this.value)" class="inline-edit text-[10px] w-full" placeholder="--:--">
+                </div>`;
+
+            // SECCIÓN DE EVIDENCIA BIOMÉTRICA Y GPS
+            let evidenceHtml = '';
+            if (data.foto_evidencia || data.ubicacion_checador) {
+                evidenceHtml = `
+                    <div class="mt-5 pt-4 border-t border-slate-50 space-y-4">
+                        ${data.foto_evidencia ? `
+                            <div>
+                                <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Evidencia de Asistencia</label>
+                                <img src="${data.foto_evidencia}" class="evidence-img" onclick="showFullImage(this.src)">
+                            </div>
+                        ` : ''}
+                        ${data.ubicacion_checador ? `
+                            <div class="location-chip">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-location-dot text-red-900 text-[10px]"></i>
+                                    <div class="flex flex-col">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase">Ubicación Capturada</span>
+                                        <span class="text-[9px] font-bold text-slate-600">${data.ubicacion_checador}</span>
+                                    </div>
+                                </div>
+                                <a href="https://www.google.com/maps?q=${data.ubicacion_checador}" target="_blank" class="p-2 bg-white rounded-lg text-blue-600 border border-blue-50 shadow-sm hover:bg-blue-50 transition-colors">
+                                    <i class="fa-solid fa-map-location-dot text-[10px]"></i>
+                                </a>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="timeline-item" style="padding-bottom: 0;">
-                        <div class="timeline-dot" style="border-color: #94a3b8"></div>
-                        <p class="text-[9px] font-black uppercase text-slate-400">Salida Real</p>
-                        <input type="time" value="${data.salida_real || ''}" onblur="updateShiftField('${data.id}', 'salida_real', this.value)" ${enterBlur} class="inline-edit text-[10px] w-full" placeholder="--:--">
-                    </div>`;
+                `;
             }
 
-            const extraChecks = !isAusentismo ? `
+            const extraChecks = !isAus ? `
                 <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-50">
-                    <label class="chip-check"><input type="checkbox" ${data.retardo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'retardo', this.checked)" class="hidden"><span class="${data.retardo ? 'text-white' : ''}">Retardo</span></label>
+                    <label class="chip-check"><input type="checkbox" ${data.retardo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'retardo', this.checked)" class="hidden"><span>Retardo</span></label>
                     <label class="chip-check"><input type="checkbox" ${data.es_recuperacion ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_recuperacion', this.checked)" class="hidden"><span>Recup.</span></label>
                     <label class="chip-check"><input type="checkbox" ${data.es_festivo ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_festivo', this.checked)" class="hidden"><span>Festivo</span></label>
                     <label class="chip-check"><input type="checkbox" ${data.es_extra ? 'checked' : ''} onchange="updateShiftField('${data.id}', 'es_extra', this.checked)" class="hidden"><span>Extra</span></label>
-                </div>
-                <div class="mt-3 pt-3 border-t border-slate-100">
-                    <p class="text-[9px] font-black uppercase text-slate-400 mb-1">Comentario</p>
-                    <input type="text" value="${data.comentario || ''}" 
-                           onblur="updateShiftField('${data.id}', 'comentario', this.value)" 
-                           ${enterBlur} 
-                           class="inline-edit text-[10px] w-full" 
-                           placeholder="Agregar observación o nota...">
                 </div>` : '';
 
             div.innerHTML = `
                 <div class="flex justify-between items-center mb-4">
-                    <span class="text-[10px] font-black uppercase tracking-wider ${headerColor}">${isAusentismo ? 'AUSENTISMO' : (data.turno || '').toUpperCase()}</span>
-                    <button onclick="deleteShift('${data.id}')" class="p-2 text-slate-300 hover:text-red-600 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
+                    <span class="text-[10px] font-black uppercase tracking-wider ${isAus?'text-blue-600':'text-red-900'}">${isAus?'AUSENTISMO':(data.turno||'').toUpperCase()}</span>
+                    <button onclick="deleteShift('${data.id}')" class="p-2 text-slate-200 hover:text-red-600 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
                 </div>
                 <div class="space-y-0">${timelineHtml}</div>
                 ${extraChecks}
-                <div id="actions-${data.id}" class="mt-4"></div>
+                <div class="mt-3 pt-3 border-t border-slate-50">
+                    <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Observaciones</p>
+                    <input type="text" value="${data.comentario || ''}" onblur="updateShiftField('${data.id}', 'comentario', this.value)" class="inline-edit text-[10px] w-full" placeholder="Escribir nota...">
+                </div>
+                ${evidenceHtml}
             `;
-            
-            if (!isAusentismo) renderQuickAction(data, div.querySelector(`#actions-${data.id}`));
             return div;
         }
 
-        function renderQuickAction(data, zone) {
-            if (data.entrada_real && data.salida_real) return;
-            const btn = document.createElement('button');
-            if (!data.entrada_real) {
-                btn.className = "btn-main w-full bg-emerald-600 py-3";
-                btn.innerText = "Registrar Entrada Ahora";
-                btn.onclick = () => registerNow(data.id, 'entrada');
-                zone.appendChild(btn);
-            } else if (!data.salida_real) {
-                btn.className = "btn-main w-full bg-slate-800 py-3";
-                btn.innerText = "Registrar Salida Ahora";
-                btn.onclick = () => registerNow(data.id, 'salida');
-                zone.appendChild(btn);
-            }
-        }
-
-        async function registerNow(shiftId, type) {
-            const time = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-            await updateShiftField(shiftId, type === 'entrada' ? 'entrada_real' : 'salida_real', time);
-        }
+        window.showFullImage = (src) => {
+            const viewer = document.getElementById('image-viewer');
+            const img = document.getElementById('viewer-img');
+            img.src = src;
+            viewer.style.display = 'flex';
+        };
 
         window.updateShiftField = async (shiftId, field, value) => {
-            const current = shiftMap[shiftId];
-            if (!current) return;
-            if (current[field] === value) return;
-
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, shiftId, uid);
-            const updateObj = { [field]: value };
-
-            if (field === 'entrada_planificada' || field === 'entrada_real') {
-                const plan = field === 'entrada_planificada' ? value : current.entrada_planificada;
-                const real = field === 'entrada_real' ? value : current.entrada_real;
-                
-                if (plan && real) {
-                    const [pH, pM] = plan.split(':').map(Number);
-                    const [rH, rM] = real.split(':').map(Number);
-                    updateObj.retardo = (rH > pH || (rH === pH && rM > pM));
-                }
-            }
-
-            try {
-                await updateDoc(docRef, updateObj);
-                console.log(`Campo actualizado: ${field}`);
-            } catch (err) {
-                console.error("Error guardando campo:", err);
-            }
+            await updateDoc(docRef, { [field]: value });
         };
 
         window.deleteShift = async (id) => {
-            if (confirm("¿Eliminar esta jornada?")) {
+            if (confirm("¿Eliminar registro?")) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docDateId, id, uid));
             }
+        };
+
+        window.handleToolDrag = (e, type) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ external: true, immediate: true, uid, type }));
         };
 
     </script>
