@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #ffffff;
+        }
         body { 
-            background-color: #ffffff; 
+            background-color: var(--md-surface); 
             user-select: none; 
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             overflow-x: hidden;
-            overflow-y: auto; /* Habilitado para asegurar que todo sea accesible */
+            overflow-y: auto;
             height: 100vh;
         }
-        .active-tab { background-color: #450a0a !important; color: white !important; }
+        .active-tab { background-color: var(--md-primary) !important; color: white !important; }
         .active-tab svg { stroke: white !important; }
         .menu-item { transition: all 0.2s ease; cursor: pointer; }
         .menu-item:hover { background-color: #f3f4f6; }
@@ -21,63 +25,63 @@
             background-color: #fef2f2 !important; color: #7f1d1d !important;
             border-left: 3px solid #7f1d1d; padding-left: 1rem !important;
         }
-        .subitem-selected span { background-color: #7f1d1d !important; }
+        
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--md-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Scrollbar Personalizado (Material Style) */
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #450a0a; }
     </style>
 </head>
 <body class="p-4">
 
-    <!-- Botones Principales -->
-    <div class="flex gap-2 mb-2">
-        <button onclick="setView('accesos')" id="btn-accesos" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+    <!-- Pestañas Principales -->
+    <div class="flex gap-2 mb-4">
+        <button onclick="setView('accesos')" id="btn-accesos" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
             <span>Accesos</span>
         </button>
-        <button onclick="setView('marbetes')" id="btn-marbetes" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+        <button onclick="setView('marbetes')" id="btn-marbetes" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
             <span>Marbetes</span>
         </button>
-        <button onclick="setView('siniestros')" id="btn-siniestros" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+        <button onclick="setView('siniestros')" id="btn-siniestros" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             <span>Siniestros</span>
         </button>
     </div>
 
-    <!-- Aplicaciones Ocultas -->
-    <div id="extra-apps" class="hidden grid grid-cols-2 gap-2 mb-2 animate-in slide-in-from-top-1 duration-200">
-        <button onclick="setView('usuarios')" id="btn-usuarios" class="flex items-center justify-center gap-2 py-3 border border-dashed border-gray-200 rounded-md text-[9px] font-bold uppercase text-gray-400 hover:border-red-800 hover:text-red-800 bg-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <div id="extra-apps" class="hidden grid grid-cols-2 gap-2 mb-4">
+        <button onclick="setView('usuarios')" id="btn-usuarios" class="flex items-center justify-center gap-2 py-3 border border-dashed border-gray-200 rounded-xl text-[9px] font-bold uppercase text-gray-400 hover:border-red-800 bg-white">
             <span>Usuarios</span>
         </button>
-        <button onclick="setView('config')" id="btn-config" class="flex items-center justify-center gap-2 py-3 border border-dashed border-gray-200 rounded-md text-[9px] font-bold uppercase text-gray-400 hover:border-red-800 hover:text-red-800 bg-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <button onclick="setView('config')" id="btn-config" class="flex items-center justify-center gap-2 py-3 border border-dashed border-gray-200 rounded-xl text-[9px] font-bold uppercase text-gray-400 hover:border-red-800 bg-white">
             <span>Config</span>
         </button>
     </div>
 
     <div class="mb-6">
-        <button onclick="toggleExtra()" class="w-full flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg text-[10px] font-black uppercase text-gray-400 border border-gray-100 hover:bg-gray-100 transition-colors">
-            <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span>Servicios del Sistema</span>
-            </div>
-            <svg id="arrow-icon" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        <button onclick="toggleExtra()" class="w-full flex justify-between items-center py-2.5 px-4 bg-gray-50 rounded-2xl text-[10px] font-black uppercase text-gray-400 border border-gray-100 hover:bg-gray-100 transition-colors">
+            <span>Servicios del Sistema</span>
+            <svg id="arrow-icon" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
         </button>
     </div>
 
-    <div id="content-area" class="min-h-[220px] border-t border-gray-50 pt-4"></div>
+    <div id="content-area" class="min-h-[220px] border-t border-gray-50 pt-6"></div>
 
     <script>
         let currentView = 'accesos';
         let extraOpen = false;
         let selectedSubItem = localStorage.getItem('cic6_lastSubItem');
 
-        const data = {
+        const menuData = {
             accesos: ['Elementos P. Patrimonial', 'Prestadores de servicios', 'Consultores', 'Visitas'],
             siniestros: ['Historial de Eventos', 'Nuevo Reporte de Incidente'],
             usuarios: ['Panel de administración', 'Permisos de acceso'],
@@ -93,36 +97,128 @@
             if (activeBtn) activeBtn.classList.add('active-tab');
 
             const container = document.getElementById('content-area');
-            const items = data[view] || [];
-            
+
+            if (view === 'marbetes') {
+                renderMarbeteSearch();
+            } else {
+                const items = menuData[view] || [];
+                container.innerHTML = `
+                    <div class="mb-3">
+                        <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Módulos disponibles</h3>
+                        <ul class="space-y-1">
+                            ${items.map(item => `
+                                <li onclick="selectItem('${item}')" class="menu-item group flex items-center p-3 rounded-xl text-xs text-gray-500 font-bold ${selectedSubItem === item ? 'subitem-selected' : ''}">
+                                    <span class="w-2 h-2 bg-gray-200 rounded-full mr-3"></span>
+                                    ${item}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMarbeteSearch() {
+            const container = document.getElementById('content-area');
             container.innerHTML = `
-                <div class="mb-3">
-                    <h3 class="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-4">Módulos disponibles</h3>
-                    <ul class="space-y-1">
-                        ${items.map(item => `
-                            <li onclick="selectItem('${item}')" class="menu-item group flex items-center p-2 rounded-md text-xs text-gray-500 font-semibold ${selectedSubItem === item ? 'subitem-selected' : ''}">
-                                <span class="w-1.5 h-1.5 bg-gray-100 rounded-full mr-3 transition-colors"></span>
-                                ${item}
-                            </li>
-                        `).join('')}
-                    </ul>
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Buscador de Marbetes</h3>
+                    <div class="relative">
+                        <input type="text" id="input-marbete" placeholder="Escriba Folio y Enter..." 
+                            class="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-orange-400 focus:bg-white transition-all font-semibold"
+                            onkeypress="handleMarbeteKeyPress(event)">
+                        <svg class="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <div id="marbete-result" class="space-y-3"></div>
                 </div>
             `;
+            setTimeout(() => document.getElementById('input-marbete')?.focus(), 100);
         }
+
+        async function handleMarbeteKeyPress(e) {
+            if (e.key === 'Enter') {
+                const folio = e.target.value.trim();
+                if (folio) searchMarbete(folio);
+            }
+        }
+
+        async function searchMarbete(folio) {
+            const resultDiv = document.getElementById('marbete-result');
+            resultDiv.innerHTML = `<div class="flex flex-col items-center py-10 gap-3"><div class="spinner"></div><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Buscando...</span></div>`;
+
+            const apiUrl = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a10a90647e7e428abd237f4d02f3b23c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ANwao6PUFtwK2kKTHG7uZFtuLsPl_okG8udYYf4i8ps";
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Folio: folio })
+                });
+
+                if (!response.ok) throw new Error();
+
+                const data = await response.json();
+                const filas = data.Filas || [];
+
+                if (filas.length === 0) {
+                    resultDiv.innerHTML = `<div class="p-5 bg-red-50 text-red-700 text-[10px] font-black rounded-2xl border border-red-100 text-center uppercase tracking-widest">Folio no encontrado</div>`;
+                    return;
+                }
+
+                resultDiv.innerHTML = filas.length > 1 ? `<p class="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2 px-1">Registros duplicados: ${filas.length}</p>` : '';
+
+                filas.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white border border-gray-100 rounded-2xl p-4 shadow-sm cursor-pointer hover:border-orange-200 hover:bg-orange-50/30 transition-all active:scale-[0.97] mb-3";
+                    
+                    // Al hacer clic, pasamos el objeto completo para guardarlo en memoria
+                    card.onclick = () => openMarbeteDetail(item);
+                    
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-black px-2 py-1 rounded-lg bg-gray-100 text-gray-500 uppercase">F: ${item.Folio}</span>
+                            <div class="w-2 h-2 rounded-full ${item.Estatus === 'Entregado' ? 'bg-green-500' : 'bg-orange-500'}"></div>
+                        </div>
+                        <h4 class="text-xs font-black text-gray-800 uppercase leading-tight truncate">${item.Nombre}</h4>
+                        <div class="flex justify-between items-end pt-3 mt-2 border-t border-gray-50">
+                            <div class="text-[10px] font-black text-gray-800 tracking-wider">${item.Placas}</div>
+                            <div class="text-[8px] font-bold text-gray-400 uppercase">${item.Marca}</div>
+                        </div>
+                    `;
+                    resultDiv.appendChild(card);
+                });
+
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="p-5 bg-red-50 text-red-600 text-[10px] font-bold rounded-2xl text-center uppercase">Error de conexión</div>`;
+            }
+        }
+
+        window.openMarbeteDetail = (item) => {
+            if (window.parent) {
+                // GUARDAR DATOS EN MEMORIA ANTES DE NAVEGAR
+                // Usamos sessionStorage para que Detalle.html pueda leerlo directamente
+                sessionStorage.setItem('cic6_selectedMarbete', JSON.stringify(item));
+                
+                // Navegamos pasando solo el Folio e ItemId como referencia URL (por si el usuario refresca)
+                const folio = encodeURIComponent(item.Folio);
+                const itemId = encodeURIComponent(item.ItemInternalId || item.ItemId || '');
+                window.parent.postMessage({ 
+                    type: 'navigate', 
+                    url: `Componentes/Marbetes/Detalle.html?folio=${folio}&itemId=${itemId}` 
+                }, '*');
+            }
+        };
 
         function selectItem(item) {
             selectedSubItem = item;
             localStorage.setItem('cic6_lastSubItem', item);
-            
             let url = null;
             if (item === 'Elementos P. Patrimonial') url = 'Componentes/Accesos/ElementosPP.html';
             else if (item === 'Panel de administración') url = 'Apps/Admin_Users.html';
             else if (item === 'Nuevo Reporte de Incidente') url = 'Componentes/Siniestros/Nuevo.html';
             else if (item === 'Historial de Eventos') url = 'Componentes/Siniestros/Historial.html';
 
-            if (url && window.parent) {
-                window.parent.postMessage({ type: 'navigate', url: url }, '*');
-            }
+            if (url && window.parent) window.parent.postMessage({ type: 'navigate', url: url }, '*');
             setView(currentView);
         }
 

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Marbete - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #450a0a;
+            --md-surface: #fdf8f8;
+            --md-surface-container: #ffffff;
+            --md-on-surface: #1c1b1b;
+            --md-outline: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-surface);
+            color: var(--md-on-surface);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Material Compact Container */
+        .surface-container {
+            background-color: var(--md-surface-container);
+            border-radius: 16px;
+            border: 1px solid var(--md-outline);
+            transition: all 0.2s ease;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .label-md {
+            font-size: 8px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0px;
+        }
+
+        .value-md {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1;
+        }
+
+        .input-compact {
+            width: 100%;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            outline: none;
+        }
+        .input-compact:focus { border-color: var(--md-primary); background: white; }
+
+        .btn-tonal {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 800;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-tonal:active { transform: scale(0.96); }
+
+        .photo-mask {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        /* Edit States */
+        .edit-mode .view-only { display: none !important; }
+        .edit-mode .edit-only { display: block !important; }
+        .edit-only { display: none; }
+
+        .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid #f1f5f9;
+            border-top: 3px solid var(--md-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-2 md:p-4">
+
+    <div id="loader" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
+        <div class="spinner mb-2"></div>
+        <p class="text-[8px] font-black uppercase tracking-widest text-slate-400">Sincronizando...</p>
+    </div>
+
+    <div id="content" class="max-w-4xl mx-auto hidden fade-in">
+        
+        <!-- Header Minimalista -->
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+                <button onclick="window.history.back()" class="p-1.5 hover:bg-slate-100 rounded-full transition-all border border-slate-100 bg-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <div>
+                    <h1 class="text-sm font-black tracking-tight text-slate-900 leading-none">Expediente Marbete</h1>
+                    <p id="sub-title" class="text-[7px] font-bold text-slate-400 uppercase mt-0.5">Gestión CIC-6</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                <button id="btn-edit" onclick="toggleEdit()" class="btn-tonal bg-slate-100 text-slate-600 hover:bg-slate-200 view-only">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Editar</span>
+                </button>
+                <button id="btn-save" onclick="saveChanges()" class="btn-tonal bg-emerald-600 text-white hover:bg-emerald-700 edit-only">
+                    <span>Guardar</span>
+                </button>
+                <button id="btn-cancel" onclick="toggleEdit()" class="btn-tonal bg-slate-100 text-slate-600 edit-only">
+                    <span>X</span>
+                </button>
+                <div id="status-container"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            
+            <!-- Columna Perfil -->
+            <div class="lg:col-span-4 space-y-3">
+                <div class="surface-container p-3 text-center">
+                    <div class="photo-mask mx-auto mb-2">
+                        <img id="user-photo" src="" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&size=128&name=U'">
+                    </div>
+                    
+                    <h2 id="user-name" class="text-xs font-black text-slate-900 uppercase leading-none mb-1">---</h2>
+                    
+                    <div class="view-only mb-2">
+                        <p id="user-puesto" class="text-[8px] font-bold text-slate-400 uppercase truncate">---</p>
+                    </div>
+                    <div class="edit-only mb-2">
+                        <p class="label-md">Puesto</p>
+                        <input type="text" id="edit-puesto" class="input-compact text-center">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div class="bg-slate-50 rounded-lg p-1.5 border border-slate-100">
+                            <p class="label-md">Folio</p>
+                            <p id="info-folio" class="text-[10px] font-black text-[#450a0a]">---</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-1.5 border border-slate-100">
+                            <p class="label-md">Socio</p>
+                            <p id="info-socio" class="text-[10px] font-black text-slate-700">---</p>
+                        </div>
+                    </div>
+                    <!-- Identificador de Fila Oculto Visualmente pero útil para auditoría -->
+                    <p id="meta-iid" class="text-[6px] text-slate-300 mt-2 uppercase tracking-tighter"></p>
+                </div>
+
+                <div class="surface-container p-3 space-y-2">
+                    <h3 class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Contacto</h3>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between gap-2 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                            <div class="flex-1 min-w-0">
+                                <p class="label-md">Móvil</p>
+                                <p id="info-tel" class="text-[10px] font-bold text-slate-700 view-only">---</p>
+                                <input type="text" id="edit-tel" class="input-compact edit-only">
+                            </div>
+                            <a id="whatsapp-btn" href="#" target="_blank" class="hidden p-1 bg-emerald-100 text-emerald-800 rounded-md view-only">
+                                <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.06 3.96l-1.127 4.12 4.214-1.105a7.9 7.9 0 0 0 3.793.967h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                            </a>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                            <div class="flex-1 min-w-0 pr-1">
+                                <p class="label-md">Correo</p>
+                                <p id="info-correo" class="text-[9px] font-bold truncate text-slate-700 lowercase view-only">---</p>
+                                <input type="text" id="edit-correo" class="input-compact edit-only">
+                            </div>
+                            <a id="teams-btn" href="#" target="_blank" class="hidden p-1 bg-indigo-100 text-indigo-800 rounded-md view-only">
+                                <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M11.604 10.456c-.328 0-.64-.04-.93-.12-.29-.08-.54-.2-.75-.36a2.035 2.035 0 0 1-.51-.62c-.13-.26-.194-.582-.194-.966 0-.385.064-.706.194-.963.13-.257.3-.464.51-.62.21-.157.46-.277.75-.36.29-.083.602-.123.93-.123s.642.04.933.123c.29.083.54.203.75.36.21.156.38.363.51.62.13.257.194.578.194.963 0 .384-.064.706-.194.966a2.035 2.035 0 0 1-.51.62c-.21.16-.46.28-.75.36-.291.08-.603.12-.933.12zM7.18 10.87H15.82v5.337l-4.32 1.433-4.32-1.433V10.87zM24 8.526V18.1c0 .825-.675 1.5-1.5 1.5h-4.32V18.1L21 17.1v-8.52l-2.82-.953V5.5l5.82 2.023v1.003zM6.5 1.5c.825 0 1.5.675 1.5 1.5v2.5L2.18 3.523V2.5c0-.825.675-1.5 1.5-1.5h2.82zM4.68 18.1H.36V8.526l5.82-2.023V7.63l-1.5 1.134V18.1zM11.604 22.5c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Datos (8 cols) -->
+            <div class="lg:col-span-8 space-y-3">
+                <div class="surface-container p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="p-1 bg-orange-100 text-orange-800 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        </div>
+                        <h3 class="text-[9px] font-black uppercase text-slate-800">Ficha Vehicular</h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <div class="p-1.5 bg-slate-50/50 rounded-lg">
+                            <p class="label-md">Marca</p>
+                            <p id="v-marca" class="text-[11px] font-bold uppercase truncate">---</p>
+                        </div>
+                        <div class="p-1.5 bg-slate-50/50 rounded-lg">
+                            <p class="label-md">Modelo</p>
+                            <p id="v-modelo" class="text-[11px] font-bold uppercase truncate">---</p>
+                        </div>
+                        <div class="p-1.5 bg-slate-50/50 rounded-lg">
+                            <p class="label-md">Color</p>
+                            <p id="v-color" class="text-[11px] font-bold uppercase truncate">---</p>
+                        </div>
+                        <div class="p-2 bg-slate-900 rounded-xl flex flex-col justify-center items-center border-l-2 border-[#450a0a]">
+                            <p class="text-[7px] font-black text-slate-500 uppercase mb-0">Placas</p>
+                            <p id="v-placas" class="text-[13px] font-black tracking-widest text-white uppercase">---</p>
+                        </div>
+                        <div class="p-1.5 bg-slate-50/50 rounded-lg">
+                            <p class="label-md">Tipo</p>
+                            <p id="v-tipo" class="text-[11px] font-bold uppercase truncate">---</p>
+                        </div>
+                        <div class="p-1.5 bg-slate-50/50 rounded-lg">
+                            <p class="label-md">Motor</p>
+                            <p id="v-motor" class="text-[11px] font-bold uppercase truncate">---</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="surface-container p-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="p-2 bg-slate-50/50 rounded-lg border border-slate-100">
+                            <p class="label-md">Área</p>
+                            <p id="o-area" class="text-[10px] font-bold text-slate-700 uppercase truncate">---</p>
+                        </div>
+                        <div class="p-2 bg-slate-50/50 rounded-lg border border-slate-100">
+                            <p class="label-md">Negocio</p>
+                            <p id="o-negocio" class="text-[10px] font-bold text-slate-700 uppercase truncate">---</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="comment-section" class="surface-container p-3 border-l-[8px] border-amber-500 bg-amber-50/20">
+                    <p class="text-[8px] font-black uppercase text-amber-900 mb-1">Bitácora de Observaciones</p>
+                    <div class="view-only">
+                        <p id="o-comentario" class="text-[10px] leading-tight text-amber-950 font-bold italic">---</p>
+                    </div>
+                    <div class="edit-only">
+                        <textarea id="edit-comentario" class="input-compact h-10 resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a10a90647e7e428abd237f4d02f3b23c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ANwao6PUFtwK2kKTHG7uZFtuLsPl_okG8udYYf4i8ps";
+        const EDIT_FLOW_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ef2d2f799b76471f9d826c4da323c548/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Dm2VAKxKYse9NcZL_qdi6DbOAPEBmdTZKaslmg67mVE";
+        const CURRENT_WINDOWS_USER = "xtfemcosegos"; 
+
+        let currentRecord = null;
+        let isEditMode = false;
+
+        async function fetchDetail() {
+            const preloadedData = sessionStorage.getItem('cic6_selectedMarbete');
+            
+            if (preloadedData) {
+                try {
+                    currentRecord = JSON.parse(preloadedData);
+                    renderData(currentRecord);
+                    return;
+                } catch (e) { console.warn("Error"); }
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const folio = params.get('folio');
+            const itemId = params.get('itemId');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Folio: folio, ItemId: itemId })
+                });
+
+                const data = await response.json();
+                currentRecord = data.Fila || (data.Filas && data.Filas[0]);
+                
+                if (currentRecord) renderData(currentRecord);
+                else showError("No encontrado.");
+            } catch (err) { showError("Error de red."); }
+        }
+
+        function renderData(d) {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+
+            const statusContainer = document.getElementById('status-container');
+            const isEntregado = d.Estatus === 'Entregado';
+            statusContainer.innerHTML = `<span class="status-badge ${isEntregado ? 'bg-green-100 text-green-900' : 'bg-orange-100 text-orange-900'}">${d.Estatus || 'S/E'}</span>`;
+
+            document.getElementById('user-name').innerText = d.Nombre || '---';
+            document.getElementById('user-puesto').innerText = d.Puesto || '---';
+            document.getElementById('info-folio').innerText = d.Folio || '---';
+            document.getElementById('info-socio').innerText = d["No de socio"] || '---';
+            document.getElementById('meta-iid').innerText = d.IIDFila ? `ID: ${d.IIDFila}` : '';
+            
+            const photoEl = document.getElementById('user-photo');
+            if (d.Foto) {
+                photoEl.src = d.Foto.replace(/C:\\Users\\[^\\]+/, `C:\\Users\\${CURRENT_WINDOWS_USER}`);
+            } else {
+                photoEl.src = `https://ui-avatars.com/api/?background=450a0a&color=fff&size=256&bold=true&name=${encodeURIComponent(d.Nombre)}`;
+            }
+
+            document.getElementById('info-tel').innerText = d.Teléfono || '---';
+            document.getElementById('info-correo').innerText = d.Correo || '---';
+
+            const waBtn = document.getElementById('whatsapp-btn');
+            if (d.Teléfono) {
+                waBtn.href = `https://wa.me/${d.Teléfono.replace(/\D/g, '')}`;
+                waBtn.classList.remove('hidden');
+            }
+
+            const teamsBtn = document.getElementById('teams-btn');
+            if (d.Correo) {
+                teamsBtn.href = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(d.Correo)}`;
+                teamsBtn.classList.remove('hidden');
+            }
+
+            document.getElementById('v-marca').innerText = d.Marca || '---';
+            document.getElementById('v-modelo').innerText = d.Modelo || '---';
+            document.getElementById('v-color').innerText = d.Color || '---';
+            document.getElementById('v-placas').innerText = d.Placas || '---';
+            document.getElementById('v-tipo').innerText = d.Tipo || '---';
+            document.getElementById('v-motor').innerText = d["Tipo de motor"] || 'N/A';
+            document.getElementById('o-area').innerText = d.Area || '---';
+            document.getElementById('o-negocio').innerText = d.Negocio || '---';
+            document.getElementById('o-comentario').innerText = d.Comentario || 'Sin observaciones.';
+
+            // Llenar inputs de edición
+            document.getElementById('edit-puesto').value = d.Puesto || '';
+            document.getElementById('edit-tel').value = d.Teléfono || '';
+            document.getElementById('edit-correo').value = d.Correo || '';
+            document.getElementById('edit-comentario').value = d.Comentario || '';
+        }
+
+        function toggleEdit() {
+            isEditMode = !isEditMode;
+            document.getElementById('content').classList.toggle('edit-mode', isEditMode);
+        }
+
+        async function saveChanges() {
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "G..."; btn.disabled = true;
+
+            // Payload Robusto: Usamos IIDFila como identificador principal
+            const updatedData = {
+                ...currentRecord,
+                "Puesto": document.getElementById('edit-puesto').value,
+                "Teléfono": document.getElementById('edit-tel').value,
+                "Correo": document.getElementById('edit-correo').value,
+                "Comentario": document.getElementById('edit-comentario').value,
+                // Aseguramos que el identificador personalizado IIDFila esté presente
+                "IIDFila": currentRecord.IIDFila
+            };
+
+            try {
+                const response = await fetch(EDIT_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (response.ok) {
+                    currentRecord = updatedData;
+                    sessionStorage.setItem('cic6_selectedMarbete', JSON.stringify(updatedData));
+                    renderData(updatedData);
+                    toggleEdit();
+                } else { throw new Error(); }
+            } catch (e) {
+                alert("Error al intentar guardar en el servidor.");
+            } finally {
+                btn.innerText = "Guardar";
+                btn.disabled = false;
+            }
+        }
+
+        function showError(msg) {
+            const loader = document.getElementById('loader');
+            loader.innerHTML = `<div class="text-center p-4"><h2 class="text-xs font-black">Error</h2><p class="text-[9px]">${msg}</p></div>`;
+        }
+
+        window.onload = fetchDetail;
+    </script>
+</body>
+</html>
