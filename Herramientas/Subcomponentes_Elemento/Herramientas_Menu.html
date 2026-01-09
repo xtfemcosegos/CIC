@@ -7,90 +7,104 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 20px; }
-        .tool-card { background: white; border: 1px solid #e5e7eb; border-radius: 28px; padding: 24px; display: flex; align-items: center; gap: 18px; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-        .tool-card.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
-        .tool-card:active { transform: scale(0.97); background: #f8fafc; }
-        .icon-box { width: 52px; height: 52px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 12px; }
         
-        #search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; margin-top: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 50; overflow: hidden; display: none; border: 1px solid #f1f5f9; }
-        .result-item { padding: 12px 20px; font-size: 11px; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f8fafc; }
+        /* Estilos de Tarjetas Compactas */
+        .tool-card { background: white; border: 1px solid #e5e7eb; border-radius: 20px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .tool-card.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+        .tool-card:active { transform: scale(0.98); background: #f8fafc; }
+        
+        .icon-box-sm { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+        
+        /* Buscador Ajustado */
+        #search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; margin-top: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 50; overflow: hidden; display: none; border: 1px solid #f1f5f9; }
+        .result-item { padding: 10px 16px; font-size: 11px; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f8fafc; }
         .result-item:hover, .result-item.selected { background: #fdf8f8; color: #450a0a; border-left: 4px solid #450a0a; }
         
         .animate-fade { animation: fadeIn 0.3s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Botón Conteo - Ajustado para ser más grande */
+        .count-btn { background: rgba(255,255,255,0.08); border-radius: 16px; padding: 14px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
+        .count-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.95); }
     </style>
 </head>
-<body class="space-y-6">
+<body class="space-y-4">
 
-    <!-- BUSCADOR PARA SELECCIONAR ELEMENTO -->
+    <!-- SECCIÓN SUPERIOR: IDENTIDAD Y CONTEO PEGUADOS -->
+    <div class="max-w-xl mx-auto space-y-2">
+        <!-- SUBENCABEZADO: ELEMENTO CONSULTADO -->
+        <div id="consulting-banner" class="bg-white border border-slate-100 rounded-[22px] p-3 flex items-center justify-between shadow-sm animate-fade">
+            <div class="flex items-center gap-3">
+                <div id="sel-avatar" class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
+                    <i class="fa-solid fa-user text-slate-300"></i>
+                </div>
+                <div>
+                    <p class="text-[7px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Elemento:</p>
+                    <h3 id="sel-name" class="text-[11px] font-black uppercase text-slate-800 tracking-tight">Cargando...</h3>
+                </div>
+            </div>
+            <button onclick="resetToSelf()" class="text-[7px] font-black uppercase text-red-900 bg-red-50 px-2 py-1.5 rounded-lg hover:bg-red-100 transition-colors border border-red-100">Mi Perfil</button>
+        </div>
+
+        <!-- CAJÓN DE CONTEO RÁPIDO - Ajustado para ser un poco más grande (p-4) -->
+        <div class="bg-slate-900 rounded-[22px] p-4 shadow-xl flex items-center gap-3">
+            <div class="shrink-0 pl-1 pr-3 border-r border-white/10">
+                <i class="fa-solid fa-plus-minus text-white/30 text-sm"></i>
+            </div>
+            <div class="grid grid-cols-2 gap-3 flex-grow">
+                <button class="count-btn">
+                    <i class="fa-solid fa-person text-red-400 text-sm"></i>
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Personas</span>
+                </button>
+                <button class="count-btn">
+                    <i class="fa-solid fa-car text-blue-400 text-sm"></i>
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Vehículos</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUSCADOR -->
     <div class="relative max-w-xl mx-auto">
-        <div class="flex items-center bg-white rounded-[24px] shadow-sm border border-slate-100 px-4">
-            <i class="fa-solid fa-magnifying-glass text-slate-300 mr-3"></i>
-            <input type="text" id="search-input" autocomplete="off" class="w-full py-4 text-xs font-bold outline-none uppercase tracking-widest placeholder:text-slate-300" placeholder="¿Con quién vamos a trabajar?" oninput="filterUsers(this.value)">
+        <div class="flex items-center bg-white rounded-2xl shadow-sm border border-slate-100 px-4 h-11">
+            <i class="fa-solid fa-magnifying-glass text-slate-300 text-xs mr-3"></i>
+            <input type="text" id="search-input" autocomplete="off" class="w-full text-[11px] font-bold outline-none uppercase tracking-widest placeholder:text-slate-300" placeholder="Cambiar empleado a gestionar..." oninput="filterUsers(this.value)">
         </div>
         <div id="search-results"></div>
     </div>
 
-    <!-- SUBENCABEZADO: ELEMENTO CONSULTADO -->
-    <div id="consulting-banner" class="max-w-xl mx-auto bg-white border border-slate-100 rounded-[28px] p-5 flex items-center justify-between shadow-sm animate-fade">
-        <div class="flex items-center gap-4">
-            <div id="sel-avatar" class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                <i class="fa-solid fa-user text-slate-300"></i>
-            </div>
-            <div>
-                <p class="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Consultando a:</p>
-                <h3 id="sel-name" class="text-sm font-black uppercase text-slate-800 tracking-tight">Cargando...</h3>
-            </div>
-        </div>
-        <button onclick="resetToSelf()" class="text-[8px] font-black uppercase text-red-900 bg-red-50 px-3 py-2 rounded-xl hover:bg-red-100 transition-colors">Ver Mi Perfil</button>
-    </div>
-
-    <div class="max-w-xl mx-auto space-y-4">
+    <!-- LISTADO DE HERRAMIENTAS COMPACTAS -->
+    <div class="max-w-xl mx-auto grid grid-cols-1 gap-2">
         <!-- BOTÓN: ASISTENCIA -->
         <a id="link-checador" href="#" onclick="checkSelection(event, 'Checador.html')" class="tool-card disabled">
-            <div class="icon-box bg-emerald-100 text-emerald-600"><i class="fa-solid fa-id-card-clip"></i></div>
+            <div class="icon-box-sm bg-emerald-100 text-emerald-600"><i class="fa-solid fa-fingerprint"></i></div>
             <div class="text-left flex-grow">
-                <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Asistencia</p>
-                <h3 class="text-sm font-black text-slate-800 uppercase">Checador Biométrico</h3>
+                <p class="text-[7px] font-black text-emerald-600 uppercase tracking-[0.15em] leading-none mb-1">Seguridad</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Checador Biométrico</h3>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
         </a>
 
         <!-- BOTÓN: RECORRIDOS -->
         <a id="link-recorrido" href="#" onclick="checkSelection(event, 'Recorridos.html')" class="tool-card disabled">
-            <div class="icon-box bg-blue-100 text-blue-600"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+            <div class="icon-box-sm bg-blue-100 text-blue-600"><i class="fa-solid fa-person-walking"></i></div>
             <div class="text-left flex-grow">
-                <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest">Supervisión</p>
-                <h3 class="text-sm font-black text-slate-800 uppercase">Iniciar Recorrido</h3>
+                <p class="text-[7px] font-black text-blue-600 uppercase tracking-[0.15em] leading-none mb-1">Supervisión</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Iniciar Recorrido QR</h3>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
         </a>
 
         <!-- BOTÓN: BITÁCORA -->
         <a id="link-bitacora" href="#" onclick="checkSelection(event, 'Bitacora.html')" class="tool-card disabled">
-            <div class="icon-box bg-amber-100 text-amber-600"><i class="fa-solid fa-book"></i></div>
+            <div class="icon-box-sm bg-amber-100 text-amber-600"><i class="fa-solid fa-pen-to-square"></i></div>
             <div class="text-left flex-grow">
-                <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest">Registros</p>
-                <h3 class="text-sm font-black text-slate-800 uppercase">Bitácora Operativa</h3>
+                <p class="text-[7px] font-black text-amber-600 uppercase tracking-[0.15em] leading-none mb-1">Registros</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Bitácora Operativa</h3>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
         </a>
-
-        <!-- CONTEO RÁPIDO -->
-        <div class="bg-slate-900 rounded-[32px] p-6 space-y-4 text-white shadow-xl">
-            <h3 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Cajón de Conteo</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <button class="bg-white/10 p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/15 transition-all">
-                    <i class="fa-solid fa-person text-xl text-red-400"></i>
-                    <span class="text-[9px] font-black uppercase">Personas</span>
-                </button>
-                <button class="bg-white/10 p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/15 transition-all">
-                    <i class="fa-solid fa-car text-xl text-blue-400"></i>
-                    <span class="text-[9px] font-black uppercase">Vehículos</span>
-                </button>
-            </div>
-        </div>
     </div>
 
     <script type="module">
@@ -98,7 +112,14 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", storageBucket: "cic6-pp-web.firebasestorage.app", messagingSenderId: "248659087868", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            storageBucket: "cic6-pp-web.firebasestorage.app", 
+            messagingSenderId: "248659087868", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -129,11 +150,10 @@
                 const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', uid));
                 if (snap.exists()) {
                     const data = snap.data();
-                    document.getElementById('sel-name').innerText = data.nombre || "Sin Nombre";
+                    document.getElementById('sel-name').innerText = data.nombre || "---";
                     if(data.foto) document.getElementById('sel-avatar').innerHTML = `<img src="${data.foto}" class="w-full h-full object-cover">`;
                     else document.getElementById('sel-avatar').innerHTML = `<i class="fa-solid fa-user text-slate-300"></i>`;
                     
-                    // Activar botones
                     document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('disabled'));
                 }
             } catch(e) { console.error(e); }
@@ -152,7 +172,7 @@
             const res = document.getElementById('search-results');
             res.innerHTML = filteredResults.map((u, index) => `
                 <div class="result-item ${index === selectedIndex ? 'selected' : ''}" onclick="selectUser('${u.uid}')">
-                    ${u.nombre} <span class="opacity-30 text-[9px] ml-2">#${u.id_empleado || '---'}</span>
+                    ${u.nombre} <span class="opacity-20 text-[8px] ml-1">#${u.id_empleado || '---'}</span>
                 </div>
             `).join('');
             res.style.display = filteredResults.length ? 'block' : 'none';
@@ -172,7 +192,6 @@
             window.location.href = `${target}?uid=${selectedUid}`;
         };
 
-        // Navegación teclado
         document.getElementById('search-input').addEventListener('keydown', (e) => {
             if (!filteredResults.length) return;
             if (e.key === 'ArrowDown') { e.preventDefault(); selectedIndex = (selectedIndex + 1) % filteredResults.length; renderResults(); }
