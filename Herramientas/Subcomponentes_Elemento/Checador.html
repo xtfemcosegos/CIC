@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 20px; }
+        .card-material { background: white; border: 1px solid #e5e7eb; border-radius: 28px; padding: 32px; text-align: center; position: relative; }
+        .btn-camera { background: #059669; color: white; border-radius: 24px; padding: 20px; font-weight: 800; text-transform: uppercase; font-size: 13px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3); transition: all 0.2s; }
+        .btn-camera:active { transform: scale(0.98); opacity: 0.9; }
+        
+        #camera-layer { position: fixed; inset: 0; background: black; display: none; flex-direction: column; z-index: 100; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .btn-back { display: flex; align-items: center; gap: 8px; color: #94a3b8; transition: all 0.2s; margin-bottom: 20px; width: fit-content; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .btn-back:hover { color: #450a0a; }
+
+        #search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; margin-top: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 50; overflow: hidden; display: none; border: 1px solid #f1f5f9; text-align: left; }
+        .result-item { padding: 12px 20px; font-size: 11px; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f8fafc; transition: all 0.2s; }
+        .result-item:hover, .result-item.selected { background: #fdf8f8; color: #450a0a; border-left: 4px solid #450a0a; }
+
+        .animate-fade { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="max-w-xl mx-auto animate-fade space-y-6">
+        <!-- NAVEGACIÓN Y BÚSQUEDA -->
+        <div class="flex flex-col gap-4">
+            <a id="link-back" href="Herramientas_Menu.html" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> Regresar
+            </a>
+            
+            <div class="relative">
+                <div class="flex items-center bg-white rounded-[24px] shadow-sm border border-slate-100 px-4">
+                    <i class="fa-solid fa-magnifying-glass text-slate-300 mr-3"></i>
+                    <input type="text" id="search-input" autocomplete="off" class="w-full py-4 text-xs font-bold outline-none uppercase tracking-widest placeholder:text-slate-300" placeholder="Buscar empleado para checar entrada..." oninput="filterUsers(this.value)">
+                </div>
+                <div id="search-results"></div>
+            </div>
+        </div>
+
+        <div class="card-material space-y-6">
+            <!-- CONTEXTO DE EMPLEADO -->
+            <div class="bg-red-900/5 py-3 px-6 rounded-full inline-block border border-red-900/10">
+                <span id="target-name" class="text-[9px] font-black uppercase text-red-900 tracking-widest">Cargando Usuario...</span>
+            </div>
+
+            <!-- ESTADO: CARGANDO -->
+            <div id="loading-assign" class="py-10">
+                <i class="fa-solid fa-circle-notch animate-spin text-2xl text-slate-200"></i>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">Buscando asignación...</p>
+            </div>
+
+            <!-- ESTADO: DATOS DE ASIGNACIÓN -->
+            <div id="assign-data" class="hidden space-y-6">
+                <div class="bg-red-50 p-6 rounded-3xl border border-red-100/50">
+                    <p class="text-[9px] font-black text-red-900/50 uppercase tracking-widest mb-1">Turno Detectado</p>
+                    <h2 id="shift-name" class="text-3xl font-black text-red-900 uppercase tracking-tighter">---</h2>
+                    <p id="booth-name" class="text-xs font-bold text-red-900/60 uppercase">---</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Entrada Plan</label>
+                        <span id="time-plan" class="text-sm font-black text-slate-800">--:-- hrs</span>
+                    </div>
+                    <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                        <label class="text-[8px] font-black text-emerald-600 uppercase block mb-1">Entrada Real</label>
+                        <span id="time-real" class="text-sm font-black text-emerald-700">--:--</span>
+                    </div>
+                </div>
+
+                <div id="action-zone">
+                    <button onclick="openCamera()" class="btn-camera shadow-emerald-500/20">
+                        <i class="fa-solid fa-camera"></i> Iniciar Validación
+                    </button>
+                    <p class="text-[8px] font-black text-slate-400 mt-4 uppercase tracking-widest">Se requiere captura facial para el registro</p>
+                </div>
+                
+                <div id="success-msg" class="hidden p-6 bg-emerald-600 text-white rounded-3xl font-black uppercase text-xs animate-fade">
+                    <i class="fa-solid fa-check-circle text-2xl mb-2 block"></i> Asistencia Confirmada
+                </div>
+            </div>
+
+            <!-- ESTADO: SIN ASIGNACIÓN -->
+            <div id="no-assign" class="hidden py-10">
+                <i class="fa-solid fa-calendar-xmark text-3xl text-slate-200 mb-4 block"></i>
+                <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin turnos programados para hoy</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAPA DE CÁMARA -->
+    <div id="camera-layer">
+        <video id="video-stream" autoplay playsinline muted></video>
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-4 px-6">
+            <button onclick="closeCamera()" class="flex-1 bg-white/10 text-white p-5 rounded-2xl font-black uppercase text-[10px] backdrop-blur-md">Cancelar</button>
+            <button onclick="capture()" class="flex-[2] bg-emerald-500 text-white p-5 rounded-2xl font-black uppercase text-[10px] shadow-xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-camera"></i> Capturar y Guardar
+            </button>
+        </div>
+    </div>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+       const firebaseConfig = {
+  apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+  authDomain: "cic6-pp-web.firebaseapp.com",
+  projectId: "cic6-pp-web",
+  storageBucket: "cic6-pp-web.firebasestorage.app",
+  messagingSenderId: "248659087868",
+  appId: "1:248659087868:web:a277ef700d83c7f1d22279",
+  measurementId: "G-ZMC7H7710Z"
+};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUid = urlParams.get('uid'); 
+        let allUsers = [];
+        let filteredResults = [];
+        let selectedIndex = -1;
+        let activeAssignment = null;
+        let stream = null;
+        let opUid = null; 
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                opUid = user.uid;
+                await fetchUsers();
+                if (!targetUid) targetUid = user.uid;
+                await selectEmployee(targetUid);
+            }
+        });
+
+        async function fetchUsers() {
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios'));
+                allUsers = [];
+                snap.forEach(d => allUsers.push({ uid: d.id, ...d.data() }));
+            } catch (e) { console.error("Error al cargar usuarios:", e); }
+        }
+
+        window.filterUsers = (val) => {
+            const res = document.getElementById('search-results');
+            selectedIndex = -1;
+            if(!val.trim()){ 
+                res.style.display = 'none'; 
+                filteredResults = [];
+                return; 
+            }
+            const q = val.toLowerCase();
+            filteredResults = allUsers.filter(u => 
+                u.nombre?.toLowerCase().includes(q) || 
+                String(u.id_empleado).includes(q)
+            ).slice(0, 5);
+            
+            renderResults();
+        };
+
+        function renderResults() {
+            const res = document.getElementById('search-results');
+            res.innerHTML = filteredResults.map((u, index) => `
+                <div class="result-item ${index === selectedIndex ? 'selected' : ''}" onclick="selectEmployee('${u.uid}', '${u.nombre}')">
+                    <i class="fa-solid fa-user mr-2 opacity-20"></i> ${u.nombre}
+                </div>
+            `).join('');
+            res.style.display = filteredResults.length ? 'block' : 'none';
+        }
+
+        // Manejo de teclado para el buscador
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            if (filteredResults.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % filteredResults.length;
+                renderResults();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + filteredResults.length) % filteredResults.length;
+                renderResults();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                    const user = filteredResults[selectedIndex];
+                    selectEmployee(user.uid, user.nombre);
+                }
+            }
+        });
+
+        window.selectEmployee = async (uid, nameHint = null) => {
+            targetUid = uid;
+            document.getElementById('search-input').value = "";
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('link-back').href = `Herramientas_Menu.html?uid=${targetUid}`;
+            filteredResults = [];
+            selectedIndex = -1;
+
+            document.getElementById('assign-data').classList.add('hidden');
+            document.getElementById('no-assign').classList.add('hidden');
+            document.getElementById('loading-assign').classList.remove('hidden');
+
+            try {
+                const snapU = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', uid));
+                if(snapU.exists()) {
+                    document.getElementById('target-name').innerText = `Asistencia de: ${snapU.data().nombre}`;
+                } else if(nameHint) {
+                    document.getElementById('target-name').innerText = `Asistencia de: ${nameHint}`;
+                }
+                
+                await findTodayAssignment(uid);
+            } catch(e) { console.error(e); }
+        };
+
+        async function findTodayAssignment(uid) {
+            const dateId = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+            const shifts = ['matutino', 'vespertino', 'nocturno'];
+            let found = false;
+
+            for(let s of shifts) {
+                try {
+                    const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'RegAs', dateId, s, uid));
+                    if(snap.exists()){
+                        activeAssignment = { shiftId: s, dateId, data: snap.data() };
+                        document.getElementById('shift-name').innerText = s;
+                        document.getElementById('booth-name').innerText = activeAssignment.data.Caseta || "Caseta General";
+                        document.getElementById('time-plan').innerText = `${activeAssignment.data.entrada_planificada || '07:00'} hrs`;
+                        
+                        const tr = document.getElementById('time-real');
+                        const az = document.getElementById('action-zone');
+                        const sm = document.getElementById('success-msg');
+
+                        if(activeAssignment.data.entrada_real) {
+                            tr.innerText = `${activeAssignment.data.entrada_real} hrs`;
+                            az.classList.add('hidden');
+                            sm.classList.remove('hidden');
+                        } else {
+                            tr.innerText = "--:--";
+                            az.classList.remove('hidden');
+                            sm.classList.add('hidden');
+                        }
+                        found = true; break;
+                    }
+                } catch (e) { console.error(e); }
+            }
+            
+            document.getElementById('loading-assign').classList.add('hidden');
+            if (found) document.getElementById('assign-data').classList.remove('hidden');
+            else document.getElementById('no-assign').classList.remove('hidden');
+        }
+
+        window.openCamera = async () => {
+            document.getElementById('camera-layer').style.display = 'flex';
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                document.getElementById('video-stream').srcObject = stream;
+            } catch(e) { alert("Error de cámara"); closeCamera(); }
+        };
+
+        window.closeCamera = () => { 
+            if(stream) stream.getTracks().forEach(t => t.stop()); 
+            document.getElementById('camera-layer').style.display = 'none'; 
+        };
+
+        window.capture = async () => {
+            const video = document.getElementById('video-stream');
+            const canvas = document.getElementById('canvas');
+            canvas.width = 480; canvas.height = 640;
+            canvas.getContext('2d').drawImage(video, 0, 0, 480, 640);
+            const b64 = canvas.toDataURL('image/jpeg', 0.6);
+            closeCamera();
+            await processCheckIn(b64);
+        };
+
+        async function processCheckIn(photo) {
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            let loc = "No disponible";
+            try {
+                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 4000}));
+                loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            } catch(e){}
+
+            try {
+                await updateDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'RegAs', activeAssignment.dateId, activeAssignment.shiftId, targetUid), {
+                    entrada_real: nowTime, 
+                    foto_evidencia: photo, 
+                    ubicacion_checador: loc, 
+                    operador_terminal: opUid, 
+                    timestamp_checada: new Date().toISOString()
+                });
+
+                document.getElementById('time-real').innerText = `${nowTime} hrs`;
+                document.getElementById('action-zone').classList.add('hidden');
+                document.getElementById('success-msg').classList.remove('hidden');
+            } catch(e) { alert("Error al sincronizar."); }
+        }
+    </script>
+</body>
+</html>

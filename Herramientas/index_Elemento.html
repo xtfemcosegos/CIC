@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal CIC6 - Protección Patrimonial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --md-primary: #450a0a; --md-background: #fdf8f8; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--md-background); margin: 0; overflow: hidden; }
+        .tab-btn { flex: 1; padding: 18px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #94a3b8; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .tab-btn.active { color: var(--md-primary); border-bottom-color: var(--md-primary); }
+        iframe { width: 100%; height: calc(100vh - 135px); border: none; background: transparent; }
+        .input-standard { width: 100%; background: #f8fafc; border: 2px solid transparent; border-radius: 16px; padding: 12px 16px; font-size: 14px; font-weight: 600; outline: none; transition: all 0.2s; }
+        .input-standard:focus { border-color: var(--md-primary); background: white; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- LOGIN -->
+    <div id="login-view" class="fixed inset-0 flex items-center justify-center p-6 bg-[#fdf8f8] z-[9999]">
+        <div class="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl border border-slate-100 flex flex-col items-center">
+            <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                <i class="fa-solid fa-building-shield text-2xl text-red-900"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter">Acceso de Terminal</h2>
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-8">CIC-6 PROTECCIÓN PATRIMONIAL</p>
+            <div class="w-full space-y-4">
+                <input type="email" id="login-email" class="input-standard" placeholder="Usuario Institucional">
+                <input type="password" id="login-pass" class="input-standard" placeholder="Contraseña">
+                <button onclick="handleLogin()" id="btn-login" class="w-full bg-[#450a0a] text-white rounded-2xl p-4 font-black uppercase text-xs mt-4">Iniciar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP SHELL -->
+    <div id="app-content" class="hidden flex flex-col h-screen">
+        <header class="bg-[#450a0a] text-white p-6 pb-12">
+            <div class="max-w-xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <img id="op-avatar" src="" class="w-11 h-11 rounded-2xl object-cover border border-white/20 shadow-md">
+                    <div>
+                        <p class="text-[8px] font-black text-red-200/40 uppercase tracking-widest leading-none mb-1">Sesión Iniciada por:</p>
+                        <h1 id="op-name" class="text-xs font-black uppercase tracking-tight leading-none">Cargando...</h1>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                    <i class="fa-solid fa-power-off text-xs text-red-200"></i>
+                </button>
+            </div>
+        </header>
+
+        <nav class="max-w-xl mx-auto w-full -mt-6 px-6 z-10">
+            <div class="bg-white rounded-2xl shadow-xl flex border border-slate-100 overflow-hidden">
+                <button onclick="switchTab('perfil')" id="tab-perfil" class="tab-btn active">Perfiles</button>
+                <button onclick="switchTab('herramientas')" id="tab-herramientas" class="tab-btn">Herramientas</button>
+            </div>
+        </nav>
+
+        <main class="flex-grow max-w-xl mx-auto w-full overflow-hidden">
+            <iframe id="main-frame" src="" allow="camera; geolocation"></iframe>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('app-content').classList.remove('hidden');
+                
+                try {
+                    const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', user.uid));
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        document.getElementById('op-name').innerText = data.nombre || "Usuario";
+                        document.getElementById('op-avatar').src = data.foto || `https://ui-avatars.com/api/?background=450a0a&color=fff&name=${encodeURIComponent(data.nombre || 'U')}`;
+                    }
+                } catch(e) { console.error(e); }
+                
+                switchTab('perfil');
+            } else {
+                document.getElementById('login-view').style.display = 'flex';
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+
+        window.handleLogin = async () => {
+            const btn = document.getElementById('btn-login');
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            if(!email || !pass) return;
+            btn.disabled = true;
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch (e) { alert("Error de acceso"); btn.disabled = false; }
+        };
+
+        window.handleLogout = () => { if(confirm("¿Cerrar sesión de terminal?")) signOut(auth); };
+
+        window.switchTab = (tab) => {
+            const frame = document.getElementById('main-frame');
+            document.getElementById('tab-perfil').classList.toggle('active', tab === 'perfil');
+            document.getElementById('tab-herramientas').classList.toggle('active', tab === 'herramientas');
+            
+            // Rutas actualizadas a la nueva carpeta Subcomponentes_Elemento
+            frame.src = tab === 'perfil' 
+                ? "Subcomponentes_Elemento/Perfil.html" 
+                : "Subcomponentes_Elemento/Herramientas_Menu.html";
+        };
+    </script>
+</body>
+</html>

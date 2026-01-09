@@ -171,7 +171,6 @@
                     const card = document.createElement('div');
                     card.className = "bg-white border border-gray-100 rounded-2xl p-4 shadow-sm cursor-pointer hover:border-orange-200 hover:bg-orange-50/30 transition-all active:scale-[0.97] mb-3";
                     
-                    // Al hacer clic, pasamos el objeto completo para guardarlo en memoria
                     card.onclick = () => openMarbeteDetail(item);
                     
                     card.innerHTML = `
@@ -195,11 +194,7 @@
 
         window.openMarbeteDetail = (item) => {
             if (window.parent) {
-                // GUARDAR DATOS EN MEMORIA ANTES DE NAVEGAR
-                // Usamos sessionStorage para que Detalle.html pueda leerlo directamente
                 sessionStorage.setItem('cic6_selectedMarbete', JSON.stringify(item));
-                
-                // Navegamos pasando solo el Folio e ItemId como referencia URL (por si el usuario refresca)
                 const folio = encodeURIComponent(item.Folio);
                 const itemId = encodeURIComponent(item.ItemInternalId || item.ItemId || '');
                 window.parent.postMessage({ 
@@ -213,12 +208,23 @@
             selectedSubItem = item;
             localStorage.setItem('cic6_lastSubItem', item);
             let url = null;
-            if (item === 'Elementos P. Patrimonial') url = 'Componentes/Accesos/ElementosPP.html';
-            else if (item === 'Panel de administración') url = 'Apps/Admin_Users.html';
-            else if (item === 'Nuevo Reporte de Incidente') url = 'Componentes/Siniestros/Nuevo.html';
-            else if (item === 'Historial de Eventos') url = 'Componentes/Siniestros/Historial.html';
+            
+            // Mapeo de rutas para navegación
+            if (item === 'Elementos P. Patrimonial') {
+                url = 'Componentes/Accesos/ElementosPP.html';
+            } else if (item === 'Prestadores de servicios') {
+                url = 'Componentes/Accesos/Contratistas.html';
+            } else if (item === 'Panel de administración') {
+                url = 'Apps/Admin_Users.html';
+            } else if (item === 'Nuevo Reporte de Incidente') {
+                url = 'Componentes/Siniestros/Nuevo.html';
+            } else if (item === 'Historial de Eventos') {
+                url = 'Componentes/Siniestros/Historial.html';
+            }
 
-            if (url && window.parent) window.parent.postMessage({ type: 'navigate', url: url }, '*');
+            if (url && window.parent) {
+                window.parent.postMessage({ type: 'navigate', url: url }, '*');
+            }
             setView(currentView);
         }
 

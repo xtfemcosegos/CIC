@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Contratistas - Material Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --md-sys-color-primary: #92400e; /* Amarillo oscuro / Amber 800 */
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #fef3c7;
+            --md-sys-color-surface: #fdfcf9;
+            --md-sys-elevation-1: 0px 1px 3px 1px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3);
+            --md-sys-elevation-2: 0px 2px 6px 2px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3);
+        }
+        body { 
+            background-color: var(--md-sys-color-surface); 
+            font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+            color: #1f2937;
+        }
+        .md-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: var(--md-sys-elevation-1);
+            transition: box-shadow 0.3s ease;
+        }
+        .md-card:hover {
+            box-shadow: var(--md-sys-elevation-2);
+        }
+        .md-header-card {
+            background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+            border-radius: 28px;
+            color: white;
+            box-shadow: var(--md-sys-elevation-2);
+        }
+        .active-tab { 
+            color: var(--md-sys-color-primary) !important; 
+            border-bottom: 3px solid var(--md-sys-color-primary);
+        }
+        .md-input {
+            border-radius: 12px;
+            background-color: #f3f4f6;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .md-input:focus {
+            background-color: #e5e7eb;
+            border-bottom-color: var(--md-sys-color-primary);
+            outline: none;
+        }
+        .md-fab {
+            box-shadow: var(--md-sys-elevation-1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .md-fab:active {
+            transform: scale(0.95);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        
+        /* Animaciones suaves */
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <!-- Encabezado Tipo Tarjeta Material -->
+        <div class="md-header-card p-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <div class="p-2 bg-white/20 rounded-2xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h1 class="text-3xl font-black uppercase tracking-tight">Contratistas</h1>
+                </div>
+                <p class="text-amber-100 text-sm font-medium">Gestión de Prestadores de Servicios y Seguridad de Acceso</p>
+            </div>
+            <div class="flex flex-col items-center md:items-end gap-2">
+                <div id="auth-status" class="bg-black/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md">
+                    Sincronizando...
+                </div>
+                <div class="text-[11px] font-bold text-amber-200">Complejo Operativo CIC</div>
+            </div>
+        </div>
+
+        <!-- Navegación -->
+        <div class="md-card p-2 flex justify-around">
+            <button onclick="switchTab('registro')" id="tab-registro" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-gray-400 transition-all active-tab">Accesos</button>
+            <button onclick="switchTab('contratistas')" id="tab-contratistas" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-gray-400 transition-all">Personal</button>
+            <button onclick="switchTab('empresas')" id="tab-empresas" class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-gray-400 transition-all">Empresas</button>
+        </div>
+
+        <!-- SECCIÓN: REGISTRO DE ACCESO -->
+        <div id="view-registro" class="space-y-6 fade-in">
+            <div class="md-card p-8">
+                <h2 class="text-xs font-black text-amber-800 uppercase mb-6 tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                    Control de Movimientos
+                </h2>
+                <div class="relative max-w-lg mx-auto">
+                    <input type="text" id="search-trabajador" placeholder="Buscar trabajador por nombre..." 
+                        class="w-full pl-14 pr-6 py-5 md-input font-bold text-gray-700">
+                    <div class="absolute left-5 top-5 text-amber-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </div>
+                </div>
+                <div id="search-results" class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Resultados -->
+                </div>
+            </div>
+
+            <div class="md-card overflow-hidden">
+                <div class="p-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Registros de hoy</h2>
+                    <span class="text-[10px] font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-lg uppercase" id="fecha-actual"></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] text-gray-400 uppercase border-b border-gray-50 bg-white">
+                                <th class="py-4 px-6">Información del Prestador</th>
+                                <th class="py-4 px-6">Ubicación / Tarea</th>
+                                <th class="py-4 px-6">Horarios</th>
+                                <th class="py-4 px-6 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-accesos-hoy" class="text-sm">
+                            <!-- Filas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: PERSONAL -->
+        <div id="view-contratistas" class="hidden space-y-6 fade-in">
+            <div class="flex justify-end">
+                <button onclick="prepararAltaTrabajador()" class="md-fab bg-amber-800 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black">
+                    + Nuevo Trabajador
+                </button>
+            </div>
+            <div id="grid-trabajadores" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Tarjetas -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN: EMPRESAS -->
+        <div id="view-empresas" class="hidden space-y-6 fade-in">
+            <div class="flex justify-end">
+                <button onclick="prepararAltaEmpresa()" class="md-fab bg-amber-800 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black">
+                    + Registrar Empresa
+                </button>
+            </div>
+            <div id="grid-empresas" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <!-- Tarjetas -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODALES -->
+    
+    <!-- Modal Empresa -->
+    <div id="modal-empresa" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="md-card w-full max-w-md p-10">
+            <h3 id="modal-empresa-titulo" class="text-xl font-black text-amber-900 uppercase mb-8 tracking-tight">Nueva Empresa</h3>
+            <input type="hidden" id="edit-empresa-id">
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Nombre Comercial</label>
+                    <input type="text" id="emp-nombre" class="w-full p-4 md-input font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Giro / Especialidad</label>
+                    <input type="text" id="emp-giro" class="w-full p-4 md-input font-bold">
+                </div>
+                <div class="flex gap-4 mt-10">
+                    <button onclick="closeModal('modal-empresa')" class="flex-1 py-4 text-xs font-black uppercase text-gray-400 hover:text-gray-600">Cancelar</button>
+                    <button onclick="guardarEmpresa()" class="flex-1 py-4 bg-amber-800 text-white rounded-2xl text-xs font-black uppercase shadow-lg shadow-amber-900/20">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Trabajador -->
+    <div id="modal-trabajador" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="md-card w-full max-w-md p-10">
+            <h3 id="modal-trabajador-titulo" class="text-xl font-black text-amber-900 uppercase mb-8 tracking-tight">Alta de Personal</h3>
+            <input type="hidden" id="edit-trabajador-id">
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Nombre Completo</label>
+                    <input type="text" id="tra-nombre" class="w-full p-4 md-input font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Empresa Prestadora</label>
+                    <select id="tra-empresa" class="w-full p-4 md-input font-bold appearance-none">
+                        <!-- Dinámico -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Puesto Operativo</label>
+                    <input type="text" id="tra-puesto" class="w-full p-4 md-input font-bold">
+                </div>
+                <div class="flex gap-4 mt-10">
+                    <button onclick="closeModal('modal-trabajador')" class="flex-1 py-4 text-xs font-black uppercase text-gray-400">Descartar</button>
+                    <button onclick="guardarTrabajador()" class="flex-1 py-4 bg-amber-800 text-white rounded-2xl text-xs font-black uppercase shadow-lg shadow-amber-900/20">Registrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Registro Detallado -->
+    <div id="modal-entrada-detalles" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="md-card w-full max-w-2xl p-10 overflow-y-auto max-h-[90vh]">
+            <div class="border-b border-gray-100 pb-6 mb-8">
+                <h3 id="modal-entrada-titulo" class="text-xl font-black text-amber-900 uppercase tracking-tight">Formulario de Ingreso</h3>
+                <p id="det-trabajador-info" class="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest"></p>
+            </div>
+            
+            <input type="hidden" id="det-trabajador-id">
+            <input type="hidden" id="edit-acceso-id">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-3">Identificación</label>
+                        <div class="space-y-4">
+                            <input type="text" id="ent-gafete" placeholder="Folio de Gafete..." class="w-full p-4 md-input font-bold">
+                            <label class="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl cursor-pointer border border-amber-100">
+                                <input type="checkbox" id="ent-gafete-geshtion" class="w-5 h-5 rounded-lg text-amber-800 focus:ring-amber-500" onchange="toggleGafeteInput(this.checked)">
+                                <span class="text-[10px] font-black text-amber-900 uppercase">Porta Gafete Geshtion</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-3">Seguridad Alarma</label>
+                        <div class="flex gap-3">
+                            <label class="flex-1 flex items-center justify-center gap-2 p-4 md-card cursor-pointer hover:bg-amber-50 transition-colors">
+                                <input type="radio" name="ent-alarma" value="Si" class="text-amber-800 focus:ring-amber-500">
+                                <span class="text-xs font-black uppercase">Riesgo Sí</span>
+                            </label>
+                            <label class="flex-1 flex items-center justify-center gap-2 p-4 md-card cursor-pointer hover:bg-amber-50 transition-colors">
+                                <input type="radio" name="ent-alarma" value="No" checked class="text-amber-800 focus:ring-amber-500">
+                                <span class="text-xs font-black uppercase">Riesgo No</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-3">Plan de Trabajo</label>
+                        <input list="lista-trabajos-data" id="ent-trabajo-lista" placeholder="Buscar actividad..." class="w-full p-4 md-input font-bold mb-3">
+                        <datalist id="lista-trabajos-data"></datalist>
+                        <input type="text" id="ent-trabajo-otro" placeholder="Especificar otra actividad..." class="w-full p-4 md-input font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-3">Área de Trabajo</label>
+                        <select id="ent-edificio" class="w-full p-4 md-input font-bold appearance-none mb-3" onchange="toggleOtroEdificio(this.value)">
+                            <option value="">Seleccionar Edificio...</option>
+                            <option value="Tienda OXXO">Tienda OXXO</option>
+                            <option value="Edificio Rojo / Edison">Edificio Rojo / Edison</option>
+                            <option value="Edificio Azul / Administrativo">Edificio Azul / Administrativo</option>
+                            <option value="Edificio Amarillo / RH">Edificio Amarillo / RH</option>
+                            <option value="Edificio Morado / Almacén">Edificio Morado / Almacén</option>
+                            <option value="Edificio Expansión">Edificio Expansión</option>
+                            <option value="Edificio Naranja / TI">Edificio Naranja / TI</option>
+                            <option value="Edificio Rosa / Anexo TI">Edificio Rosa / Anexo TI</option>
+                            <option value="Edificio Verde / Logística - Inovation HUB">Edificio Verde / Logística - Inovation HUB</option>
+                            <option value="Edificio Gris / IMMEX">Edificio Gris / IMMEX</option>
+                            <option value="Edificio Anexo Edison">Edificio Anexo Edison</option>
+                            <option value="Edificio Michelena">Edificio Michelena</option>
+                            <option value="Área de Balance">Área de Balance</option>
+                            <option value="Otro">Otro (Especificar)</option>
+                        </select>
+                        <input type="text" id="ent-edificio-otro" placeholder="Escribir ubicación exacta..." class="hidden w-full p-4 md-input font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 mt-12">
+                <button onclick="closeModal('modal-entrada-detalles')" class="flex-1 py-5 text-xs font-black uppercase text-gray-400">Abortar</button>
+                <button onclick="confirmarEntrada()" class="flex-1 py-5 bg-amber-800 text-white rounded-2xl text-xs font-black uppercase shadow-xl shadow-amber-900/30">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, query, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic.pp';
+
+        let user = null;
+        let empresas = [];
+        let trabajadores = [];
+        let accesos = [];
+
+        const TRABAJOS_LISTA = [
+            "Albañilería general", "Pintura de muros interiores", "Pintura de fachada", "Plomería - reparación de fugas", 
+            "Plomería - instalación de sanitarios", "Electricidad - cambio de luminarias", "Electricidad - revisión de tableros", 
+            "Electricidad - cableado estructurado", "Aire Acondicionado - mantenimiento preventivo", "Aire Acondicionado - carga de gas",
+            "Aire Acondicionado - cambio de compresor", "Impermeabilización de azotea", "Carpintería - ajuste de puertas", 
+            "Carpintería - fabricación de mobiliario", "Cerrajería - cambio de chapas", "Cerrajería - apertura de puertas", 
+            "Limpieza de vidrios en altura", "Limpieza profunda de alfombras", "Instalación de CCTV", "Mantenimiento de elevadores",
+            "Jardinería - poda y limpieza", "Jardinería - fumigación", "Herrería - soldadura de rejas", "Herrería - reparación de barandales", 
+            "Tablaroca - muros divisorios", "Tablaroca - plafones falsos", "Piso - pulido de mármol", "Piso - colocación de loseta", 
+            "Piso - reparación de firme", "Instalación de alfombra modular", "Mantenimiento de subestación eléctrica", 
+            "Revisión de sistema contra incendio", "Recarga de extintores", "Mantenimiento de bombas de agua", "Limpieza de cisternas", 
+            "Desazolve de drenajes", "Instalación de señalética", "Rotulación de muros", "Montaje de racks", "Mudanza de mobiliario", 
+            "Instalación de persianas", "Reparación de cortinas metálicas", "Mantenimiento de puertas automáticas", 
+            "Instalación de vidrios y cancelería", "Sellado de ventanas", "Aplicación de pintura epóxica", "Mantenimiento de generador eléctrico", 
+            "Revisión de pararrayos", "Instalación de UPS", "Soporte técnico de red", "Configuración de biométricos", 
+            "Mantenimiento de sensores de movimiento", "Instalación de detectores de humo", "Cambio de filtros de aire", "Lavado de ductos", 
+            "Reparación de techumbre de lámina", "Instalación de policarbonato", "Aplicación de retardante de fuego", 
+            "Tratamiento de madera contra termitas", "Pulido de acero inoxidable", "Instalación de pasamanos", "Mantenimiento de caldera", 
+            "Revisión de líneas de gas", "Instalación de estufas industriales", "Reparación de cámaras frías", "Mantenimiento de montacargas", 
+            "Señalización de piso (tráfico)", "Instalación de topes de estacionamiento", "Pintura de guarniciones", 
+            "Reparación de baches en asfalto", "Instalación de malla ciclónica", "Mantenimiento de alberca / fuentes", 
+            "Revisión de estructura metálica", "Cálculo de carga estructural", "Peritaje de protección civil", "Instalación de paneles solares", 
+            "Mantenimiento de calentadores solares", "Cambio de balastros", "Instalación de bocinas / perifoneo", 
+            "Montaje de pantallas / proyectores", "Instalación de antenas", "Retiro de escombro", "Demolición de muros no cargales", 
+            "Ranurado de muros para tubería", "Instalación de canaleta plástica", "Peinado de nodos en rack", "Certificación de puntos de red", 
+            "Cambio de contactos y apagadores", "Instalación de lámparas de emergencia", "Mantenimiento de cercas electrificadas", 
+            "Instalación de concertina", "Lavado de fachadas con hidrolavadora", "Aplicación de sellador en pisos", "Reparación de goteras", 
+            "Cambio de domos", "Instalación de extractores", "Mantenimiento de torres de enfriamiento", "Revisión de transformadores", 
+            "Pruebas de tierras físicas", "Auditoría de eficiencia energética"
+        ];
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (u) {
+                document.getElementById('auth-status').innerText = `EN LÍNEA: ${u.uid.substring(0,6)}...`;
+                document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+                cargarDatos();
+                poblarListaTrabajos();
+            }
+        });
+
+        initAuth();
+
+        function poblarListaTrabajos() {
+            const list = document.getElementById('lista-trabajos-data');
+            if(list) list.innerHTML = TRABAJOS_LISTA.map(t => `<option value="${t}">`).join('');
+        }
+
+        function cargarDatos() {
+            if (!user) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Empresas'), (snap) => {
+                empresas = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderEmpresas();
+                updateEmpresaSelect();
+            });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Contratistas'), (snap) => {
+                trabajadores = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTrabajadores();
+            });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Accesos'), (snap) => {
+                const hoy = new Date().toLocaleDateString('es-MX');
+                accesos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(a => a.fecha === hoy);
+                renderAccesos();
+            });
+        }
+
+        window.renderEmpresas = () => {
+            const grid = document.getElementById('grid-empresas');
+            if(grid) grid.innerHTML = empresas.map(emp => `
+                <div class="md-card p-6 border border-gray-100 flex flex-col items-center text-center relative group">
+                    <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="prepararEdicionEmpresa('${emp.id}')" class="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-amber-100 hover:text-amber-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                        </button>
+                        <button onclick="eliminarEmpresa('${emp.id}')" class="p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-red-100 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                    <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 text-amber-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/></svg>
+                    </div>
+                    <h4 class="font-black text-gray-800 uppercase text-[11px] leading-tight">${emp.nombre}</h4>
+                    <p class="text-[9px] font-bold text-gray-400 uppercase mt-2 tracking-widest">${emp.giro || 'Servicios'}</p>
+                </div>
+            `).join('');
+        };
+
+        window.renderTrabajadores = () => {
+            const grid = document.getElementById('grid-trabajadores');
+            if(grid) grid.innerHTML = trabajadores.map(tra => `
+                <div class="md-card p-6 flex items-center gap-5 border-l-4 border-amber-800 relative group">
+                    <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="prepararEdicionTrabajador('${tra.id}')" class="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-amber-100 hover:text-amber-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                        </button>
+                        <button onclick="eliminarTrabajador('${tra.id}')" class="p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-red-100 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                    <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center text-amber-900 font-black text-xl">
+                        ${tra.nombre.charAt(0)}
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <h4 class="font-black text-gray-800 uppercase text-xs truncate">${tra.nombre}</h4>
+                        <p class="text-[9px] font-black text-amber-700 uppercase tracking-tighter">${tra.empresa}</p>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                            <p class="text-[8px] font-bold text-gray-400 uppercase">${tra.puesto || 'General'}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.renderAccesos = () => {
+            const list = document.getElementById('lista-accesos-hoy');
+            if(list) list.innerHTML = accesos.length ? accesos.map(acc => `
+                <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                    <td class="py-5 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black">${acc.nombre.charAt(0)}</div>
+                            <div>
+                                <p class="font-black text-xs uppercase text-gray-700">${acc.nombre}</p>
+                                <p class="text-[9px] font-bold uppercase text-gray-400 tracking-wider">${acc.empresa}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-5 px-6">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-black text-amber-800 uppercase">${acc.edificio}</span>
+                            <span class="text-[9px] font-medium text-gray-500 uppercase italic truncate max-w-[200px]">${acc.trabajo}</span>
+                        </div>
+                    </td>
+                    <td class="py-5 px-6">
+                        <div class="flex items-center gap-2">
+                            <div class="text-center">
+                                <p class="text-[8px] font-black text-gray-300 uppercase">Entrada</p>
+                                <p class="bg-green-50 text-green-700 px-2.5 py-1 rounded-lg text-[10px] font-black">${acc.entrada}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[8px] font-black text-gray-300 uppercase">Salida</p>
+                                <p class="${acc.salida ? 'bg-orange-50 text-orange-700' : 'bg-gray-50 text-gray-300'} px-2.5 py-1 rounded-lg text-[10px] font-black">${acc.salida || '--:--'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-5 px-6">
+                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="prepararEdicionAcceso('${acc.id}')" class="p-2 text-amber-800 hover:bg-amber-100 rounded-xl" title="Editar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                            </button>
+                            <button onclick="eliminarAcceso('${acc.id}')" class="p-2 text-red-600 hover:bg-red-100 rounded-xl" title="Eliminar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                            ${!acc.salida ? `<button onclick="marcarSalida('${acc.id}')" class="bg-amber-800 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-md hover:bg-black transition-all">Salida</button>` : ``}
+                        </div>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="4" class="py-20 text-center text-gray-300 font-bold uppercase text-[11px] tracking-widest">No hay movimientos registrados hoy</td></tr>`;
+        };
+
+        // --- LÓGICA DE EMPRESAS ---
+        window.prepararAltaEmpresa = () => {
+            document.getElementById('modal-empresa-titulo').innerText = "Nueva Empresa";
+            document.getElementById('edit-empresa-id').value = "";
+            document.getElementById('emp-nombre').value = "";
+            document.getElementById('emp-giro').value = "";
+            openModal('modal-empresa');
+        };
+
+        window.prepararEdicionEmpresa = (id) => {
+            const emp = empresas.find(e => e.id === id);
+            if (!emp) return;
+            document.getElementById('modal-empresa-titulo').innerText = "Editar Empresa";
+            document.getElementById('edit-empresa-id').value = id;
+            document.getElementById('emp-nombre').value = emp.nombre;
+            document.getElementById('emp-giro').value = emp.giro || "";
+            openModal('modal-empresa');
+        };
+
+        window.guardarEmpresa = async () => {
+            const id = document.getElementById('edit-empresa-id').value;
+            const nombre = document.getElementById('emp-nombre').value;
+            const giro = document.getElementById('emp-giro').value;
+            if (!nombre) return;
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Empresas');
+                if (id) {
+                    await updateDoc(doc(colRef, id), { nombre, giro });
+                } else {
+                    await addDoc(colRef, { nombre, giro, creado: serverTimestamp() });
+                }
+                closeModal('modal-empresa');
+            } catch (e) { console.error(e); }
+        };
+
+        window.eliminarEmpresa = async (id) => {
+            if (!confirm("¿Seguro que desea eliminar esta empresa? Esto no eliminará al personal asociado pero perderán su vínculo.")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Empresas', id));
+            } catch (e) { console.error(e); }
+        };
+
+        // --- LÓGICA DE TRABAJADORES ---
+        window.prepararAltaTrabajador = () => {
+            document.getElementById('modal-trabajador-titulo').innerText = "Alta de Personal";
+            document.getElementById('edit-trabajador-id').value = "";
+            document.getElementById('tra-nombre').value = "";
+            document.getElementById('tra-empresa').value = "";
+            document.getElementById('tra-puesto').value = "";
+            openModal('modal-trabajador');
+        };
+
+        window.prepararEdicionTrabajador = (id) => {
+            const tra = trabajadores.find(t => t.id === id);
+            if (!tra) return;
+            document.getElementById('modal-trabajador-titulo').innerText = "Editar Personal";
+            document.getElementById('edit-trabajador-id').value = id;
+            document.getElementById('tra-nombre').value = tra.nombre;
+            document.getElementById('tra-empresa').value = tra.empresa;
+            document.getElementById('tra-puesto').value = tra.puesto || "";
+            openModal('modal-trabajador');
+        };
+
+        window.guardarTrabajador = async () => {
+            const id = document.getElementById('edit-trabajador-id').value;
+            const nombre = document.getElementById('tra-nombre').value;
+            const empresa = document.getElementById('tra-empresa').value;
+            const puesto = document.getElementById('tra-puesto').value;
+            if (!nombre || !empresa) return;
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Contratistas');
+                if (id) {
+                    await updateDoc(doc(colRef, id), { nombre, empresa, puesto });
+                } else {
+                    await addDoc(colRef, { nombre, empresa, puesto, activo: true, creado: serverTimestamp() });
+                }
+                closeModal('modal-trabajador');
+            } catch (e) { console.error(e); }
+        };
+
+        window.eliminarTrabajador = async (id) => {
+            if (!confirm("¿Desea eliminar este trabajador de la base de datos?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Contratistas', id));
+            } catch (e) { console.error(e); }
+        };
+
+        // --- LÓGICA DE ACCESOS ---
+        window.prepararEdicionAcceso = (id) => {
+            const acc = accesos.find(a => a.id === id);
+            if (!acc) return;
+            
+            document.getElementById('modal-entrada-titulo').innerText = "Editar Registro de Acceso";
+            document.getElementById('edit-acceso-id').value = id;
+            document.getElementById('det-trabajador-id').value = acc.trabajadorId;
+            document.getElementById('det-trabajador-info').innerText = `${acc.nombre} • ${acc.empresa}`;
+            
+            // Poblar campos
+            const esGeshtion = acc.gafete === "Geshtion";
+            document.getElementById('ent-gafete-geshtion').checked = esGeshtion;
+            document.getElementById('ent-gafete').value = esGeshtion ? "" : acc.gafete;
+            document.getElementById('ent-gafete').disabled = esGeshtion;
+            
+            const radios = document.getElementsByName('ent-alarma');
+            radios.forEach(r => r.checked = (r.value === acc.alarma_riesgo));
+            
+            // Trabajo
+            const enLista = TRABAJOS_LISTA.includes(acc.trabajo);
+            document.getElementById('ent-trabajo-lista').value = enLista ? acc.trabajo : "";
+            document.getElementById('ent-trabajo-otro').value = enLista ? "" : acc.trabajo;
+            
+            // Edificio
+            const edificiosSelect = ["Tienda OXXO", "Edificio Rojo / Edison", "Edificio Azul / Administrativo", "Edificio Amarillo / RH", "Edificio Morado / Almacén", "Edificio Expansión", "Edificio Naranja / TI", "Edificio Rosa / Anexo TI", "Edificio Verde / Logística - Inovation HUB", "Edificio Gris / IMMEX", "Edificio Anexo Edison", "Edificio Michelena", "Área de Balance"];
+            const esOtroEdif = !edificiosSelect.includes(acc.edificio);
+            document.getElementById('ent-edificio').value = esOtroEdif ? "Otro" : acc.edificio;
+            document.getElementById('ent-edificio-otro').value = esOtroEdif ? acc.edificio : "";
+            document.getElementById('ent-edificio-otro').classList.toggle('hidden', !esOtroEdif);
+            
+            openModal('modal-entrada-detalles');
+        };
+
+        window.marcarEntrada = (traId) => {
+            const tra = trabajadores.find(t => t.id === traId);
+            if (!tra) return;
+            document.getElementById('modal-entrada-titulo').innerText = "Formulario de Ingreso";
+            document.getElementById('edit-acceso-id').value = "";
+            document.getElementById('det-trabajador-id').value = traId;
+            document.getElementById('det-trabajador-info').innerText = `${tra.nombre} • ${tra.empresa}`;
+            
+            // Reset modal
+            document.getElementById('ent-gafete').value = "";
+            document.getElementById('ent-gafete-geshtion').checked = false;
+            document.getElementById('ent-gafete').disabled = false;
+            document.getElementById('ent-trabajo-lista').value = "";
+            document.getElementById('ent-trabajo-otro').value = "";
+            document.getElementById('ent-edificio').value = "";
+            document.getElementById('ent-edificio-otro').classList.add('hidden');
+            
+            openModal('modal-entrada-detalles');
+        };
+
+        window.confirmarEntrada = async () => {
+            const idAcceso = document.getElementById('edit-acceso-id').value;
+            const traId = document.getElementById('det-trabajador-id').value;
+            const tra = trabajadores.find(t => t.id === traId);
+            const gafete = document.getElementById('ent-gafete-geshtion').checked ? "Geshtion" : document.getElementById('ent-gafete').value;
+            const alarma = document.querySelector('input[name="ent-alarma"]:checked').value;
+            const trabajo = document.getElementById('ent-trabajo-lista').value || document.getElementById('ent-trabajo-otro').value;
+            let edificio = document.getElementById('ent-edificio').value;
+            if (edificio === 'Otro') edificio = document.getElementById('ent-edificio-otro').value;
+
+            if (!trabajo || !edificio) return;
+
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Accesos');
+                if (idAcceso) {
+                    await updateDoc(doc(colRef, idAcceso), { gafete, alarma_riesgo: alarma, trabajo, edificio });
+                } else {
+                    const hoy = new Date().toLocaleDateString('es-MX');
+                    const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                    await addDoc(colRef, {
+                        trabajadorId: traId, nombre: tra.nombre, empresa: tra.empresa, fecha: hoy, entrada: hora,
+                        salida: null, gafete, alarma_riesgo: alarma, trabajo, edificio, timestamp: serverTimestamp()
+                    });
+                }
+                closeModal('modal-entrada-detalles');
+                document.getElementById('search-trabajador').value = '';
+                document.getElementById('search-results').innerHTML = '';
+            } catch (e) { console.error(e); }
+        };
+
+        window.marcarSalida = async (accId) => {
+            const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Accesos', accId), { salida: hora });
+            } catch (e) { console.error(e); }
+        };
+
+        window.eliminarAcceso = async (id) => {
+            if (!confirm("¿Eliminar este registro de acceso?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Prestadores_Accesos', id));
+            } catch (e) { console.error(e); }
+        };
+
+        // --- UTILIDADES ---
+        window.toggleGafeteInput = (checked) => {
+            const input = document.getElementById('ent-gafete');
+            input.disabled = checked;
+            if (checked) input.value = '';
+        };
+
+        window.toggleOtroEdificio = (val) => {
+            const input = document.getElementById('ent-edificio-otro');
+            input.classList.toggle('hidden', val !== 'Otro');
+        };
+
+        document.getElementById('search-trabajador').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            const results = document.getElementById('search-results');
+            if (q.length < 2) { results.innerHTML = ''; return; }
+            const filtered = trabajadores.filter(t => t.nombre.toLowerCase().includes(q));
+            results.innerHTML = filtered.map(t => {
+                const enSitio = accesos.find(a => a.trabajadorId === t.id && !a.salida);
+                return `
+                    <div class="md-card p-5 flex justify-between items-center border border-gray-50 fade-in">
+                        <div>
+                            <p class="text-xs font-black text-gray-800 uppercase">${t.nombre}</p>
+                            <p class="text-[9px] font-bold text-amber-800 uppercase tracking-widest">${t.empresa}</p>
+                        </div>
+                        <button onclick="marcarEntrada('${t.id}')" 
+                            ${enSitio ? 'disabled' : ''}
+                            class="${enSitio ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-amber-800 text-white shadow-md hover:bg-black'} px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all">
+                            ${enSitio ? 'En Sitio' : 'Ingresar'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        });
+
+        function updateEmpresaSelect() {
+            const select = document.getElementById('tra-empresa');
+            if(select) select.innerHTML = `<option value="">Seleccionar Empresa...</option>` + empresas.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('');
+        }
+
+        window.switchTab = (tab) => {
+            ['view-registro', 'view-contratistas', 'view-empresas'].forEach(v => document.getElementById(v)?.classList.add('hidden'));
+            ['tab-registro', 'tab-contratistas', 'tab-empresas'].forEach(t => document.getElementById(t)?.classList.remove('active-tab'));
+            document.getElementById(`view-${tab}`)?.classList.remove('hidden');
+            document.getElementById(`tab-${tab}`)?.classList.add('active-tab');
+        };
+
+        window.openModal = (id) => document.getElementById(id)?.classList.remove('hidden');
+        window.closeModal = (id) => document.getElementById(id)?.classList.add('hidden');
+
+    </script>
+</body>
+</html>

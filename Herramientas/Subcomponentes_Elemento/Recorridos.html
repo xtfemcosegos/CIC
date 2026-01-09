@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 20px; }
+        .card-material { background: white; border-radius: 28px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 24px; }
+        .btn-primary { background: #450a0a; color: white; border-radius: 18px; padding: 14px; font-weight: 800; text-transform: uppercase; font-size: 11px; width: 100%; transition: all 0.2s; cursor: pointer; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px; font-weight: 800; text-transform: uppercase; font-size: 11px; width: 100%; cursor: pointer; }
+        .input-standard { width: 100%; background: #f8fafc; border: 2px solid #f1f5f9; border-radius: 16px; padding: 10px 14px; font-size: 13px; font-weight: 600; outline: none; }
+        .input-standard:focus { border-color: #450a0a; background: white; }
+        .section-header { font-size: 10px; font-weight: 800; color: #450a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; display: block; border-left: 3px solid #450a0a; padding-left: 10px; }
+        .note-item { font-size: 11px; color: #475569; display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+        .note-item i { color: #450a0a; margin-top: 2px; }
+        
+        .option-group { display: flex; gap: 10px; margin-top: 5px; }
+        .option-btn { flex: 1; border: 2px solid #f1f5f9; border-radius: 12px; padding: 10px; text-align: center; font-size: 10px; font-weight: 800; cursor: pointer; transition: 0.2s; color: #94a3b8; text-transform: uppercase; }
+        .option-btn.active-si { border-color: #059669; color: #059669; background: #f0fdf4; }
+        .option-btn.active-no { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+        .option-btn.active-choice { border-color: #450a0a; color: #450a0a; background: #fdf8f8; }
+
+        .operator-header { background: #450a0a; border-radius: 24px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: white; }
+        .operator-avatar { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2); }
+
+        #camera-overlay { position: fixed; inset: 0; background: black; z-index: 100; display: none; flex-direction: column; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .checkpoint-badge { background: #f1f5f9; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; color: #475569; }
+    </style>
+</head>
+<body>
+    <div class="max-w-xl mx-auto space-y-6">
+        
+        <!-- HEADER DEL OPERADOR -->
+        <div class="operator-header shadow-lg">
+            <img id="op-avatar" src="https://ui-avatars.com/api/?background=450a0a&color=fff&name=O" class="operator-avatar" alt="Operador">
+            <div>
+                <p class="text-[8px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">Sesión de Terminal</p>
+                <h3 id="op-name" class="text-[11px] font-black uppercase leading-none">Cargando...</h3>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN INICIAL -->
+        <div id="setup-view" class="card-material space-y-6">
+            <span class="section-header">Configuración del Recorrido</span>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Elemento que realiza el recorrido</label>
+                    <div id="display-name" class="p-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-slate-800 text-xs uppercase tracking-tight">Cargando...</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Caseta / Ubicación</label>
+                        <select id="select-caseta" class="input-standard">
+                            <option value="Complejo OS">Complejo OS</option>
+                            <option value="Michelena">Michelena</option>
+                            <option value="Simón Bolívar">Simón Bolívar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Tipo de Recorrido</label>
+                        <div class="option-group">
+                            <div id="btn-interior" class="option-btn" onclick="setPatrolType('Interior')">Interior</div>
+                            <div id="btn-exterior" class="option-btn" onclick="setPatrolType('Exterior')">Exterior</div>
+                        </div>
+                        <input type="hidden" id="patrol-type" value="">
+                    </div>
+                </div>
+
+                <button onclick="validateAndStart()" class="btn-primary mt-4">Iniciar Recorrido</button>
+            </div>
+
+            <!-- NORMATIVA -->
+            <div class="pt-6 border-t border-slate-100 space-y-2">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Recordatorios Protección OS</p>
+                <div class="note-item"><i class="fa-solid fa-clock"></i> <span>Tiempo máximo: 1 Hora.</span></div>
+                <div class="note-item"><i class="fa-solid fa-triangle-exclamation"></i> <span>Reportar incidencias críticas al CCO.</span></div>
+            </div>
+        </div>
+
+        <!-- VISTA: EN RECORRIDO -->
+        <div id="patrol-view" class="hidden card-material text-center space-y-6">
+            <div class="py-6">
+                <div class="w-20 h-20 bg-red-50 text-red-900 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <i class="fa-solid fa-person-walking text-3xl"></i>
+                </div>
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Recorrido en curso</h3>
+                <h2 id="timer" class="text-5xl font-black text-slate-800 my-2">00:00</h2>
+                <div class="flex flex-col items-center gap-1 mb-6">
+                    <p id="patrol-employee" class="text-[10px] font-black text-red-900 uppercase">---</p>
+                    <span id="patrol-meta" class="text-[8px] font-bold text-slate-400 uppercase">---</span>
+                </div>
+
+                <!-- ACCIONES DURANTE RECORRIDO -->
+                <div class="space-y-3 px-4">
+                    <button onclick="openCheckpointCamera()" class="w-full bg-slate-800 text-white rounded-2xl p-4 font-black uppercase text-[10px] flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
+                        <i class="fa-solid fa-location-dot text-red-400"></i> Registrar Punto de Control
+                    </button>
+                    <div id="checkpoint-list" class="flex flex-wrap justify-center gap-2 mt-4">
+                        <!-- Puntos registrados -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100">
+                <button onclick="finishPatrolTime()" class="btn-primary bg-emerald-700">Finalizar Recorrido y Reportar</button>
+            </div>
+        </div>
+
+        <!-- FORMULARIO: EVALUACIÓN FINAL (TODAS LAS PREGUNTAS) -->
+        <div id="post-form" class="hidden card-material space-y-6">
+            <span class="section-header">Reporte de Hallazgos e Inspección</span>
+            
+            <div id="all-questions-container" class="space-y-8">
+                <!-- Se inyectan todas las preguntas aquí -->
+            </div>
+            
+            <div class="space-y-4 pt-6 border-t border-slate-100">
+                <span class="section-header">Información Adicional</span>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Ticket SAFE / SEOF (Opcional)</label>
+                    <input type="text" id="ticket-number" class="input-standard" placeholder="Ej: 12345">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Hallazgos relevantes</label>
+                    <textarea id="hallazgos" class="input-standard h-24 py-3" placeholder="Detalla cualquier novedad detectada en el recorrido..."></textarea>
+                </div>
+            </div>
+
+            <button onclick="saveFullReport()" class="btn-primary">Enviar Reporte Completo</button>
+        </div>
+
+        <!-- ÉXITO -->
+        <div id="success-view" class="hidden card-material text-center py-12 space-y-6">
+            <i class="fa-solid fa-circle-check text-6xl text-emerald-500"></i>
+            <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Reporte Sincronizado</h2>
+            <p class="text-[10px] font-black text-slate-400 uppercase">El recorrido y sus hallazgos han sido guardados.</p>
+            <button onclick="location.reload()" class="btn-primary">Nuevo Recorrido</button>
+        </div>
+
+    </div>
+
+    <!-- OVERLAY CÁMARA PARA PUNTOS DE CONTROL -->
+    <div id="camera-overlay">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="absolute top-10 w-full text-center px-6">
+            <span class="bg-black/50 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase border border-white/20 backdrop-blur-md">Evidencia de Punto de Control</span>
+        </div>
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-4 px-10">
+            <button onclick="closeCheckpointCamera()" class="flex-1 bg-white/10 text-white p-5 rounded-3xl font-black uppercase text-[10px] backdrop-blur-md">Cancelar</button>
+            <button onclick="captureCheckpoint()" class="flex-[2] bg-emerald-500 text-white p-5 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-camera"></i> Capturar Punto
+            </button>
+        </div>
+    </div>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUid = urlParams.get('uid');
+        let operatorUid = null;
+        let employeeName = "";
+        let startTime = null;
+        let timerInterval = null;
+        let checkpoints = [];
+        let stream = null;
+
+        const isBusinessDay = [1, 2, 3, 4, 5].includes(new Date().getDay());
+
+        const allQuestions = [
+            // Preguntas Iniciales (Ahora al final)
+            { id: 'pc_cctv', label: '¿La PC de caseta esta encendida y mostrando cámaras de CCTV?' },
+            { id: 'llave_elevadores', label: '¿La llave de apertura de elevadores se encuentra a la vista y disponible?' },
+            { id: 'interior_oficinas', label: '¿Se realizo recorrido al interior de las oficinas?' },
+            { id: 'visitantes_solitarios', label: '¿Las oficinas están libres de visitantes solitarios?', note: 'Toda visita debe estar acompañada.', businessOnly: true },
+            { id: 'gafete_vista', label: '¿Todos los empleados portan su gafete a la vista?', note: 'Dentro de las instalaciones es obligatorio.', businessOnly: true },
+            { id: 'laptop_resguardo', label: '¿Las mesas y salas de juntas están libres sin laptop abandonadas?', note: 'Revisar mesitas de puntos de reunión.' },
+            // Preguntas de Recorrido
+            { id: 'reporte_cco', label: '¿Se reporto a CCO alguna incidencia?' },
+            { id: 'contratistas_area', label: '¿Los contratistas se encuentran en su área de trabajo asignada?', note: 'Solo circular en rutas autorizadas.' },
+            { id: 'contratistas_sistema_incendio', label: '¿Los trabajos de contratistas son confiables de no activar alarmas?', note: 'No obstruir sensores, no polvo ni humo.' },
+            { id: 'estacionamiento_marbetes', label: '¿Cajones ocupados por vehículos con marbetes adecuados?' },
+            { id: 'posicion_salida', label: '¿Todos lo vehículos están estacionados en posición de salida?' },
+            { id: 'puertas_portones', label: '¿Las puertas y portones están cerrados adecuadamente?' },
+            { id: 'luminarias', label: '¿Las luminarias se encuentran funcionando?' },
+            { id: 'grafiti_perimetro', label: '¿Instalaciones libres de algún daño o grafiti en perímetros?', note: 'Revisar contorno, puertas y ventanas.' },
+            { id: 'perimetro_sospechosos', label: '¿El perímetro esta libre de personas o vehículos sospechosos?' },
+            { id: 'site_orden', label: '¿Los Site se encuentran en orden?', note: 'Revisar acceso, clima y alarmas.' }
+        ];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                operatorUid = user.uid;
+                if (!targetUid) targetUid = user.uid;
+                
+                const opSnap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', operatorUid));
+                if(opSnap.exists()) {
+                    document.getElementById('op-name').innerText = opSnap.data().nombre;
+                    if(opSnap.data().foto) document.getElementById('op-avatar').src = opSnap.data().foto;
+                }
+
+                const targetSnap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', targetUid));
+                if (targetSnap.exists()) {
+                    employeeName = targetSnap.data().nombre;
+                    document.getElementById('display-name').innerText = employeeName;
+                    document.getElementById('patrol-employee').innerText = employeeName;
+                }
+            }
+        });
+
+        window.setPatrolType = (type) => {
+            document.getElementById('patrol-type').value = type;
+            document.getElementById('btn-interior').className = type === 'Interior' ? 'option-btn active-choice' : 'option-btn';
+            document.getElementById('btn-exterior').className = type === 'Exterior' ? 'option-btn active-choice' : 'option-btn';
+        };
+
+        window.validateAndStart = () => {
+            if(!document.getElementById('patrol-type').value) {
+                alert("Seleccione el tipo de recorrido.");
+                return;
+            }
+            startTime = new Date();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('patrol-view').classList.remove('hidden');
+            
+            const caseta = document.getElementById('select-caseta').value;
+            const tipo = document.getElementById('patrol-type').value;
+            document.getElementById('patrol-meta').innerText = `${caseta} • ${tipo}`;
+
+            timerInterval = setInterval(() => {
+                const diff = new Date() - startTime;
+                const m = String(Math.floor(diff / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        };
+
+        // --- LÓGICA DE PUNTOS DE CONTROL DURANTE RECORRIDO ---
+
+        window.openCheckpointCamera = async () => {
+            document.getElementById('camera-overlay').style.display = 'flex';
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                document.getElementById('video').srcObject = stream;
+            } catch (err) {
+                alert("Error al acceder a la cámara trasera.");
+                closeCheckpointCamera();
+            }
+        };
+
+        window.closeCheckpointCamera = () => {
+            if(stream) stream.getTracks().forEach(track => track.stop());
+            document.getElementById('camera-overlay').style.display = 'none';
+        };
+
+        window.captureCheckpoint = async () => {
+            const canvas = document.getElementById('canvas');
+            const video = document.getElementById('video');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const b64 = canvas.toDataURL('image/jpeg', 0.6);
+            
+            let locationStr = "Sin GPS";
+            try {
+                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 5000}));
+                locationStr = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            } catch(e) {}
+
+            checkpoints.push({
+                timestamp: new Date().toISOString(),
+                location: locationStr,
+                photo: b64
+            });
+
+            updateCheckpointList();
+            closeCheckpointCamera();
+        };
+
+        function updateCheckpointList() {
+            const list = document.getElementById('checkpoint-list');
+            list.innerHTML = checkpoints.map((cp, i) => `
+                <div class="checkpoint-badge">
+                    <i class="fa-solid fa-camera"></i> Punto ${i + 1}
+                </div>
+            `).join('');
+        }
+
+        // --- FINALIZACIÓN Y PREGUNTAS ---
+
+        window.finishPatrolTime = () => {
+            clearInterval(timerInterval);
+            document.getElementById('patrol-view').classList.add('hidden');
+            document.getElementById('post-form').classList.remove('hidden');
+            renderAllQuestions();
+        };
+
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            container.innerHTML = "";
+            
+            allQuestions.forEach(q => {
+                if (q.businessOnly && !isBusinessDay) return;
+                
+                const div = document.createElement('div');
+                div.className = "space-y-3";
+                div.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-black text-slate-700 uppercase leading-tight">${q.label}</span>
+                        ${q.note ? `<span class="text-[9px] font-bold text-slate-400 mt-1 italic">${q.note}</span>` : ''}
+                    </div>
+                    <div class="option-group">
+                        <div class="option-btn" onclick="setAnswer('${q.id}', 'si', this)">Si</div>
+                        <div class="option-btn" onclick="setAnswer('${q.id}', 'no', this)">No</div>
+                    </div>
+                    <input type="hidden" id="ans_${q.id}" value="">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.setAnswer = (id, val, el) => {
+            document.getElementById(`ans_${id}`).value = val;
+            const btns = el.parentElement.querySelectorAll('.option-btn');
+            btns.forEach(b => b.classList.remove('active-si', 'active-no'));
+            el.classList.add(val === 'si' ? 'active-si' : 'active-no');
+        };
+
+        window.saveFullReport = async () => {
+            const container = document.getElementById('all-questions-container');
+            const inputs = container.querySelectorAll('input[type="hidden"]');
+            let complete = true;
+            inputs.forEach(i => { if(!i.value) complete = false; });
+            
+            if(!complete) {
+                alert("Por favor responda todas las preguntas del reporte.");
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i>Sincronizando...';
+
+            const endTime = new Date();
+            const duration = Math.round((endTime - startTime) / 60000);
+            
+            const results = {};
+            allQuestions.forEach(q => {
+                const el = document.getElementById(`ans_${q.id}`);
+                if (el) results[q.id] = el.value;
+            });
+
+            const data = {
+                uid: targetUid,
+                operador_terminal: operatorUid,
+                elemento_nombre: employeeName,
+                ubicacion: document.getElementById('select-caseta').value,
+                tipo_recorrido: document.getElementById('patrol-type').value,
+                inicio: startTime.toISOString(),
+                fin: endTime.toISOString(),
+                duracion_minutos: duration,
+                respuestas: results,
+                puntos_control: checkpoints, // Array de fotos y GPS
+                ticket_safe: document.getElementById('ticket-number').value,
+                hallazgos: document.getElementById('hallazgos').value,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', 'cic.pp', 'public', 'data', 'Recorridos'), data);
+                document.getElementById('post-form').classList.add('hidden');
+                document.getElementById('success-view').classList.remove('hidden');
+            } catch (e) {
+                alert("Error al guardar en la nube.");
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

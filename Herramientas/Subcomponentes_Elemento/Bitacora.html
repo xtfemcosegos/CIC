@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 20px; }
+        .card-material { background: white; border-radius: 28px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 24px; }
+        .input-standard { width: 100%; background: #f8fafc; border: 2px solid #f1f5f9; border-radius: 16px; padding: 12px 16px; font-size: 13px; font-weight: 600; outline: none; transition: 0.2s; }
+        .input-standard:focus { border-color: #450a0a; background: white; }
+        .btn-primary { background: #450a0a; color: white; border-radius: 18px; padding: 14px; font-weight: 800; text-transform: uppercase; font-size: 11px; width: 100%; transition: all 0.2s; }
+        .btn-back { display: flex; align-items: center; gap: 8px; color: #94a3b8; transition: all 0.2s; margin-bottom: 20px; width: fit-content; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .entry-card { border-left: 4px solid #450a0a; background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body>
+    <div class="max-w-xl mx-auto space-y-6">
+        <a id="link-back" href="Herramientas_Menu.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Regresar</a>
+
+        <div class="card-material space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Bitácora Operativa</h2>
+                    <p id="target-name" class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Cargando...</p>
+                </div>
+                <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-book"></i>
+                </div>
+            </div>
+
+            <form id="bitacora-form" class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Tipo de Evento</label>
+                    <select name="tipo_evento" class="input-standard">
+                        <option value="Novedad Ordinaria">Novedad Ordinaria</option>
+                        <option value="Incidencia Crítica">Incidencia Crítica</option>
+                        <option value="Entrega de Turno">Entrega de Turno</option>
+                        <option value="Recepción de Paquetería">Recepción de Paquetería</option>
+                        <option value="Reporte de CCO">Reporte de CCO</option>
+                        <option value="Observación de Seguridad">Observación de Seguridad</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 mb-1 block">Descripción del Suceso</label>
+                    <textarea name="descripcion" class="input-standard h-32 py-3" placeholder="Detalla lo ocurrido, personas involucradas, áreas y acciones tomadas..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Registrar en Bitácora</button>
+            </form>
+        </div>
+
+        <div class="space-y-4">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Registros de Hoy</h3>
+            <div id="log-entries-container" class="space-y-3">
+                <!-- Registros dinámicos -->
+                <div class="text-center py-10 opacity-20">
+                    <i class="fa-solid fa-clock-rotate-left text-2xl mb-2 block"></i>
+                    <p class="text-[9px] font-black uppercase">Sin registros previos hoy</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            storageBucket: "cic6-pp-web.firebasestorage.app", 
+            messagingSenderId: "248659087868", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUid = urlParams.get('uid');
+        let operatorUid = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                operatorUid = user.uid;
+                if (!targetUid) targetUid = user.uid;
+                
+                document.getElementById('link-back').href = `Herramientas_Menu.html?uid=${targetUid}`;
+
+                const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', targetUid));
+                if (snap.exists()) {
+                    document.getElementById('target-name').innerText = `Registrando para: ${snap.data().nombre}`;
+                }
+
+                loadTodaysLogs();
+            }
+        });
+
+        function loadTodaysLogs() {
+            // Regla 1 & 2: Ruta estricta y sin queries complejas
+            const logsRef = collection(db, 'artifacts', 'cic.pp', 'public', 'data', 'Bitacora');
+            
+            onSnapshot(logsRef, (snapshot) => {
+                const container = document.getElementById('log-entries-container');
+                const logs = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Filtro manual en memoria por fecha de hoy y UID del objetivo
+                    const today = new Date().toISOString().split('T')[0];
+                    const logDate = data.timestamp?.toDate().toISOString().split('T')[0];
+                    
+                    if (data.target_uid === targetUid && logDate === today) {
+                        logs.push({ id: doc.id, ...data });
+                    }
+                });
+
+                // Orden manual en memoria por timestamp descendente
+                logs.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+
+                if (logs.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10 opacity-20"><p class="text-[9px] font-black uppercase">Sin registros hoy</p></div>`;
+                    return;
+                }
+
+                container.innerHTML = logs.map(log => `
+                    <div class="entry-card animate-fade">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded ${log.tipo_evento === 'Incidencia Crítica' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}">${log.tipo_evento}</span>
+                            <span class="text-[9px] font-bold text-slate-400">${log.timestamp?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-relaxed font-semibold">${log.descripcion}</p>
+                    </div>
+                `).join('');
+            }, (error) => console.error(error));
+        }
+
+        document.getElementById('bitacora-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const formData = new FormData(e.target);
+            
+            if (!formData.get('descripcion').trim()) return;
+
+            btn.disabled = true;
+            btn.innerText = "Registrando...";
+
+            try {
+                await addDoc(collection(db, 'artifacts', 'cic.pp', 'public', 'data', 'Bitacora'), {
+                    target_uid: targetUid,
+                    operador_uid: operatorUid,
+                    tipo_evento: formData.get('tipo_evento'),
+                    descripcion: formData.get('descripcion'),
+                    timestamp: serverTimestamp()
+                });
+                e.target.reset();
+            } catch (err) {
+                alert("Error al guardar registro");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Registrar en Bitácora";
+            }
+        };
+    </script>
+</body>
+</html>
