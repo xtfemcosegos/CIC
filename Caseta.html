@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIC6 - Sistema de Control de Acceso</title>
+    <title>CIC6 - Terminal de Caseta</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --md-primary: #450a0a;
+            /* Cambio a paleta Azul Marino */
+            --md-primary: #0f172a; 
             --md-surface: #ffffff;
-            --md-background: #fdf8f8;
-            --md-on-surface: #1f1a1a;
-            --md-outline: #e5e7eb;
+            --md-background: #f1f5f9;
+            --md-on-surface: #0f172a;
+            --md-outline: #e2e8f0;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--md-background);
+            /* Fondo azul marino degradado solicitado */
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: var(--md-on-surface);
             margin: 0;
             height: 100vh;
@@ -28,8 +30,9 @@
         .header-surface {
             background-color: var(--md-primary);
             color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .side-panel {
@@ -47,9 +50,11 @@
         }
 
         .main-content {
-            background-color: white;
+            background-color: #f8fafc;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            border-radius: 24px 0 0 0;
+            margin-top: 8px;
         }
 
         /* Estilo para iframes apilados */
@@ -125,15 +130,15 @@
 
         /* --- LOGIN MATERIAL --- */
         #login-overlay {
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
+            background-color: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
             z-index: 1000;
         }
 
         .login-card {
             background: white;
-            border-radius: 28px;
-            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            border-radius: 32px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
             overflow: hidden;
             width: 100%;
             max-width: 400px;
@@ -149,7 +154,7 @@
             top: 12px;
             right: 12px;
             z-index: 60;
-            background: rgba(69, 10, 10, 0.9);
+            background: rgba(15, 23, 42, 0.9);
             color: white;
             width: 32px;
             height: 32px;
@@ -161,25 +166,24 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .floating-close:hover { background: #450a0a; transform: scale(1.1); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
     <!-- Pantalla de Login -->
     <div id="login-overlay" class="fixed inset-0 flex items-center justify-center hidden">
-        <div class="login-card p-8 flex flex-col items-center">
-            <div class="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6">
+        <div class="login-card p-10 flex flex-col items-center">
+            <div class="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6">
                 <img src="Multimedia/Logo.png" class="w-12 h-12 object-contain" alt="Logo">
             </div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2 uppercase tracking-tight">Acceso al Núcleo</h2>
-            <p class="text-sm text-gray-500 mb-8 uppercase tracking-widest font-bold">Portal CIC-6</p>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2 uppercase tracking-tight">Acceso Caseta</h2>
+            <p class="text-sm text-slate-500 mb-8 uppercase tracking-widest font-bold">Terminal CIC-6</p>
             
             <div class="w-full space-y-6">
-                <input type="email" id="email-input" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium" placeholder="Usuario">
-                <input type="password" id="pass-input" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-red-900 outline-none text-sm font-medium" placeholder="Contraseña">
+                <input type="email" id="email-input" class="w-full px-4 py-4 rounded-xl border border-slate-200 focus:border-slate-900 outline-none text-sm font-medium" placeholder="Usuario">
+                <input type="password" id="pass-input" class="w-full px-4 py-4 rounded-xl border border-slate-200 focus:border-slate-900 outline-none text-sm font-medium" placeholder="Contraseña">
                 <p id="login-error" class="text-red-600 text-[10px] font-bold uppercase text-center hidden"></p>
-                <button onclick="handleLogin()" id="btn-login" class="w-full bg-[#450a0a] text-white py-4 rounded-2xl font-bold uppercase tracking-widest md-button shadow-lg shadow-red-900/20">
+                <button onclick="handleLogin()" id="btn-login" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold uppercase tracking-widest md-button shadow-lg shadow-slate-900/20">
                     Autenticar
                 </button>
             </div>
@@ -194,27 +198,27 @@
             </button>
             <div class="flex items-center gap-3">
                 <img src="Multimedia/Logo.png" class="w-8 h-8 object-contain" alt="Logo">
-                <span class="font-bold tracking-tight text-lg hidden sm:block uppercase">Protección Patrimonial</span>
+                <span class="font-bold tracking-tight text-lg hidden sm:block uppercase">Protección Patrimonial <span class="font-normal opacity-50 ml-2">Caseta</span></span>
             </div>
         </div>
 
         <!-- PERFIL DE USUARIO DINÁMICO -->
         <div class="profile-container py-2">
-            <div class="flex items-center gap-3 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-2xl transition-all cursor-default">
+            <div class="flex items-center gap-3 bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-2xl transition-all cursor-default border border-white/10">
                 <div class="w-9 h-9 rounded-full bg-white/10 border border-white/20 p-0.5 overflow-hidden">
-                    <img id="avatar-display" src="" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&name=?'">
+                    <img id="avatar-display" src="" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=0f172a&color=fff&name=?'">
                 </div>
                 <div class="hidden md:flex flex-col items-start leading-tight">
                     <span id="user-name-display" class="text-[12px] font-bold text-white uppercase tracking-tight">Cargando...</span>
-                    <span id="user-role-display" class="text-[9px] text-red-200/80 font-bold uppercase tracking-widest">Identificando...</span>
+                    <span id="user-role-display" class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Identificando...</span>
                 </div>
             </div>
 
             <!-- TARJETA DESPLEGABLE -->
             <div class="profile-card-dropdown">
                 <div class="flex flex-col items-center text-center mb-6">
-                    <div class="w-16 h-16 rounded-2xl overflow-hidden mb-3 border-2 border-red-50 shadow-sm">
-                        <img id="dropdown-avatar" src="" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=450a0a&color=fff&name=?'">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden mb-3 border-2 border-slate-50 shadow-sm">
+                        <img id="dropdown-avatar" src="" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?background=0f172a&color=fff&name=?'">
                     </div>
                     <h3 id="dropdown-name" class="text-sm font-black uppercase text-slate-800 tracking-tight leading-tight">---</h3>
                     <p id="dropdown-role" class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">---</p>
@@ -223,12 +227,11 @@
                 <div class="space-y-1">
                     <button onclick="openMyProfile()" class="dropdown-btn btn-view-profile">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Ver Perfil
+                        Mi Perfil
                     </button>
-                    <!-- BOTÓN PANEL DE ELEMENTO -->
                     <button onclick="openElementPanel()" class="dropdown-btn btn-panel">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                        Panel de Elemento
+                        Panel Operativo
                     </button>
                     <button onclick="handleLogout()" class="dropdown-btn btn-logout">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -242,7 +245,8 @@
     <!-- Área Principal -->
     <main class="flex flex-1 overflow-hidden relative">
         <aside id="leftPanel" class="side-panel w-72 shrink-0">
-            <iframe id="navFrame" src="Nav.html"></iframe>
+            <!-- Cambio solicitado: Nav_Caseta.html -->
+            <iframe id="navFrame" src="Nav_Caseta.html"></iframe>
         </aside>
 
         <section id="mainArea" class="main-content flex-1 overflow-hidden">
@@ -258,11 +262,11 @@
     </main>
 
     <!-- Footer -->
-    <footer class="h-8 bg-black text-[#39FF14] flex items-center px-4 justify-between shrink-0 text-[10px] font-mono z-50">
+    <footer class="h-8 bg-black/80 backdrop-blur-md text-[#39FF14] flex items-center px-4 justify-between shrink-0 text-[10px] font-mono z-50">
         <div class="flex items-center gap-4">
             <span class="animate-pulse">●</span>
-            <span>SISTEMA CIC-6 CONECTADO</span>
-            <span id="footer-log" class="hidden sm:inline opacity-80 uppercase tracking-tighter ml-4">Consola de operaciones activa...</span>
+            <span>TERMINAL CASETA ACTIVA</span>
+            <span id="footer-log" class="hidden sm:inline opacity-80 uppercase tracking-tighter ml-4">Monitorizando accesos...</span>
         </div>
         <div id="clock" class="font-bold tracking-widest">00:00:00</div>
     </footer>
@@ -340,65 +344,44 @@
 
         // --- PERSISTENCIA LOCAL ---
         const STORAGE_KEYS = {
-            LEFT_OPEN: 'cic6_left_open',
-            RIGHT_OPEN: 'cic6_right_open',
-            URL_MAIN: 'cic6_url_main'
+            LEFT_OPEN_CASETA: 'cic6_left_open_caseta',
+            URL_MAIN_CASETA: 'cic6_url_main_caseta'
         };
 
         function saveState(currentUrl) {
-            localStorage.setItem(STORAGE_KEYS.LEFT_OPEN, !UI.leftPanel.classList.contains('hidden'));
-            localStorage.setItem(STORAGE_KEYS.RIGHT_OPEN, !UI.rightPanel.classList.contains('hidden'));
-            if (currentUrl) localStorage.setItem(STORAGE_KEYS.URL_MAIN, currentUrl);
+            localStorage.setItem(STORAGE_KEYS.LEFT_OPEN_CASETA, !UI.leftPanel.classList.contains('hidden'));
+            if (currentUrl) localStorage.setItem(STORAGE_KEYS.URL_MAIN_CASETA, currentUrl);
         }
 
         function restoreState() {
-            const leftOpen = localStorage.getItem(STORAGE_KEYS.LEFT_OPEN) !== 'false';
-            const rightOpen = localStorage.getItem(STORAGE_KEYS.RIGHT_OPEN) === 'true';
-            const urlMain = localStorage.getItem(STORAGE_KEYS.URL_MAIN) || 'Home.html';
+            const leftOpen = localStorage.getItem(STORAGE_KEYS.LEFT_OPEN_CASETA) !== 'false';
+            const urlMain = localStorage.getItem(STORAGE_KEYS.URL_MAIN_CASETA) || 'Home_Caseta.html';
 
             if (!leftOpen) UI.leftPanel.classList.add('hidden');
-            if (rightOpen) UI.rightPanel.classList.remove('hidden');
             window.navigateMain(urlMain);
         }
 
         window.toggleLeftPanel = () => { UI.leftPanel.classList.toggle('hidden'); saveState(); };
-        window.closeRightPanel = () => { UI.rightPanel.classList.add('hidden'); saveState(); };
+        window.closeRightPanel = () => { UI.rightPanel.classList.add('hidden'); };
 
         function log(msg) { UI.footerLog.innerText = msg; }
 
-        // --- CARGAR PERFIL DE USUARIO Y VALIDAR ACCESO ---
         async function fetchUserProfile(uid) {
             try {
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid);
                 const snap = await getDoc(userRef);
                 if (snap.exists()) {
                     const d = snap.data();
-                    const name = d.nombre || "Usuario CIC6";
-                    const role = (d.puesto || "Operador").toLowerCase().trim();
+                    const name = d.nombre || "Operador Caseta";
                     
-                    // --- RESTRICCIÓN DE ACCESO Y REDIRECCIONAMIENTO ---
-                    if (role === "caseta") {
-                        console.info("Redirigiendo a Interfaz de Caseta...");
-                        window.location.href = 'Caseta.html';
-                        return;
-                    }
-
-                    const adminRoles = ["administrador", "operador cco", "encargado"];
-                    if (!adminRoles.includes(role)) {
-                        console.warn("Acceso denegado al núcleo. Redirigiendo a Panel de Elemento...");
-                        window.location.href = 'Herramientas/index_Elemento.html';
-                        return;
-                    }
-
-                    // Si es administrador o CCO, cargamos el index
-                    const photo = d.foto || `https://ui-avatars.com/api/?background=450a0a&color=fff&name=${encodeURIComponent(name)}`;
+                    const photo = d.foto || `https://ui-avatars.com/api/?background=0f172a&color=fff&name=${encodeURIComponent(name)}`;
                     
                     UI.userName.innerText = name;
-                    UI.userRole.innerText = d.puesto || "Operador";
+                    UI.userRole.innerText = d.puesto || "Caseta";
                     UI.avatarImg.src = photo;
                     
                     UI.dropName.innerText = name;
-                    UI.dropRole.innerText = d.puesto || "Operador";
+                    UI.dropRole.innerText = d.puesto || "Caseta";
                     UI.dropAvatar.src = photo;
                 }
             } catch (e) { console.error("Error cargando perfil:", e); }
@@ -419,17 +402,16 @@
             const email = document.getElementById('email-input').value;
             const pass = document.getElementById('pass-input').value;
             const errorLabel = document.getElementById('login-error');
-            
             try { 
                 await signInWithEmailAndPassword(auth, email, pass); 
             } catch (e) { 
-                errorLabel.innerText = "Credenciales inválidas";
+                errorLabel.innerText = "Error de acceso";
                 errorLabel.classList.remove('hidden');
             }
         };
 
         window.handleLogout = async () => {
-            if(confirm("¿Cerrar sesión del sistema?")) { 
+            if(confirm("¿Cerrar sesión de terminal?")) { 
                 await signOut(auth); 
                 localStorage.clear();
                 window.location.reload(); 

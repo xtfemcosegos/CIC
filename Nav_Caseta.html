@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background-color: #ffffff; 
+            user-select: none; 
+            font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        .active-tab { background-color: #0f172a !important; color: white !important; }
+        .active-tab svg { stroke: white !important; }
+        .menu-item { transition: all 0.2s ease; cursor: pointer; }
+        .menu-item:hover { background-color: #f3f4f6; }
+        .subitem-selected {
+            background-color: #f1f5f9 !important; color: #0f172a !important;
+            border-left: 3px solid #0f172a; padding-left: 1rem !important;
+        }
+        .subitem-selected span { background-color: #0f172a !important; }
+
+        /* Scrollbar Personalizado */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0f172a; }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Botones Principales de Caseta -->
+    <div class="flex gap-2 mb-6">
+        <button onclick="setView('accesos')" id="btn-accesos" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+            <span>Accesos</span>
+        </button>
+        <button onclick="setView('recorridos')" id="btn-recorridos" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>Recorridos</span>
+        </button>
+        <button onclick="setView('bitacora')" id="btn-bitacora" class="flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-bold uppercase border border-gray-100 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Bitácora</span>
+        </button>
+    </div>
+
+    <!-- Área de Contenido Dinámico -->
+    <div id="content-area" class="min-h-[220px] border-t border-gray-50 pt-4"></div>
+
+    <script>
+        let currentView = 'accesos';
+        let selectedSubItem = localStorage.getItem('cic6_caseta_lastSubItem');
+
+        const data = {
+            accesos: ['Prestadores de servicios', 'Consultores', 'Visitas'],
+            recorridos: ['Nuevo Recorrido', 'Historial'],
+            bitacora: ['Nueva bitácora', 'Historial']
+        };
+
+        function setView(view) {
+            currentView = view;
+            localStorage.setItem('cic6_caseta_lastView', view);
+            
+            // Actualizar estado visual de los botones
+            document.querySelectorAll('button').forEach(btn => btn.classList.remove('active-tab'));
+            const activeBtn = document.getElementById(`btn-${view}`);
+            if (activeBtn) activeBtn.classList.add('active-tab');
+
+            const container = document.getElementById('content-area');
+            const items = data[view] || [];
+            
+            container.innerHTML = `
+                <div class="mb-3">
+                    <h3 class="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-4">Módulos de Operación</h3>
+                    <ul class="space-y-1">
+                        ${items.map(item => `
+                            <li onclick="selectItem('${item}')" class="menu-item group flex items-center p-2 rounded-md text-xs text-gray-500 font-semibold ${selectedSubItem === item ? 'subitem-selected' : ''}">
+                                <span class="w-1.5 h-1.5 bg-gray-100 rounded-full mr-3 transition-colors"></span>
+                                ${item}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function selectItem(item) {
+            selectedSubItem = item;
+            localStorage.setItem('cic6_caseta_lastSubItem', item);
+            
+            let url = null;
+            
+            // Lógica de ruteo para Caseta
+            if (item === 'Nuevo Recorrido') url = 'Subcomponentes_Elemento/Recorridos.html';
+            else if (item === 'Nueva bitácora') url = 'Subcomponentes_Elemento/Bitacora.html';
+            // Otros enlaces se pueden añadir aquí cuando existan los archivos
+            
+            if (url && window.parent) {
+                // Notificar al index_caseta.html para cambiar el frame principal
+                window.parent.postMessage({ type: 'navigate', url: url }, '*');
+            }
+            
+            setView(currentView);
+        }
+
+        window.onload = () => {
+            const lastView = localStorage.getItem('cic6_caseta_lastView') || 'accesos';
+            setView(lastView);
+        };
+    </script>
+</body>
+</html>
