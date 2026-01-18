@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIC6 - Gestión de Usuarios</title>
+    <title>CIC6 - Gestión de Usuarios (Optimizado)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Paleta Coherente con Administracion.html (Sky Blue & Metal) */
-            --md-primary: #0369a1; /* Sky Blue */
+            --md-primary: #0369a1; 
             --md-surface: #ffffff;
             --md-background: #f8fafc;
             --md-outline: #e2e8f0;
@@ -63,14 +62,6 @@
             background-color: #f1f5f9;
         }
 
-        .btn-delete-zone {
-            border-left: 1px solid #f1f5f9;
-            transition: all 0.2s;
-        }
-        .btn-delete-zone:hover {
-            background-color: #fef2f2;
-        }
-
         .booth-select {
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
@@ -85,9 +76,7 @@
             width: 100%;
             max-width: 150px;
         }
-        .booth-select:focus { border-color: var(--md-primary); background: white; }
 
-        /* Estilo Metal Sky Blue para el Header */
         .metallic-header {
             background: linear-gradient(135deg, var(--metal-dark) 0%, var(--metal-mid) 100%);
             color: white;
@@ -97,81 +86,57 @@
             position: relative;
             overflow: hidden;
         }
-
-        .metallic-header::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 11px);
-        }
     </style>
 </head>
 <body class="p-6">
 
     <header class="max-w-7xl mx-auto flex flex-col gap-6 mb-8">
-        <!-- Header con estilo metal-sky -->
         <div class="metallic-header flex items-center justify-between border border-white/10">
             <div class="flex items-center gap-5 relative z-10">
-                <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-tight uppercase leading-none">Administración de Usuarios</h1>
-                    <p class="text-[10px] text-sky-200/70 font-bold uppercase tracking-widest mt-1">Terminal de Control CIC-6</p>
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase tracking-widest mt-1">Terminal con Firebase Storage</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3 relative z-10">
-                <button onclick="exportToJSON()" class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all btn-md border border-white/10">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    <span class="text-[10px] font-black uppercase tracking-widest">Exportar</span>
-                </button>
                 <button onclick="openImportModal()" class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all btn-md border border-white/10">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    <span class="text-[10px] font-black uppercase tracking-widest">Importar</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest">Sincronización Masiva</span>
                 </button>
                 <div class="h-8 w-px bg-white/10 mx-1"></div>
                 <button onclick="openAddUserModal()" class="bg-white text-sky-950 px-6 py-2.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:shadow-xl transition-all btn-md">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     Nuevo Usuario
                 </button>
             </div>
         </div>
 
-        <!-- Buscador -->
         <div class="relative group">
-            <input type="text" id="user-search" oninput="filterUsers()" placeholder="Filtrar por nombre, ID o puesto..." 
-                class="search-input w-full bg-white border border-slate-200 rounded-2xl py-4.5 pl-14 pr-6 text-sm font-semibold outline-none transition-all placeholder:text-slate-400 shadow-sm">
-            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="user-search" oninput="filterUsers()" placeholder="Buscar por nombre o ID..." 
+                class="search-input w-full bg-white border border-slate-200 rounded-2xl py-4 pl-14 pr-6 text-sm font-semibold outline-none transition-all">
+            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto">
         <div class="card-material overflow-hidden">
-            <div class="overflow-x-auto no-scrollbar">
+            <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
                         <tr class="bg-slate-50/50 border-b border-slate-100">
-                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identidad del Usuario</th>
-                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Comunicación</th>
+                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</th>
+                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Correo</th>
                             <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Puesto</th>
-                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Punto de Acceso</th>
+                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Acceso</th>
                             <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
-                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center w-24">Acciones</th>
+                            <th class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="users-table-body" class="divide-y divide-slate-50">
-                        <tr>
-                            <td colspan="6" class="py-24 text-center">
-                                <div class="flex flex-col items-center gap-4">
-                                    <div class="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Usuarios...</span>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="users-table-body" class="divide-y divide-slate-50"></tbody>
                 </table>
             </div>
         </div>
@@ -179,79 +144,67 @@
 
     <!-- Modal Nuevo Usuario -->
     <div id="add-user-modal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
-        <div class="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden m-4 animate-in fade-in zoom-in duration-300">
+        <div class="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden m-4">
             <div class="bg-sky-950 p-6 text-white flex justify-between items-center">
-                <h3 class="font-bold text-xs uppercase tracking-widest">Crear Registro Maestro</h3>
-                <button onclick="closeAddUserModal()" class="text-white/50 hover:text-white transition-colors">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
+                <h3 class="font-bold text-xs uppercase tracking-widest">Nuevo Registro Maestro</h3>
+                <button onclick="closeAddUserModal()">✕</button>
             </div>
             <form id="add-user-form" class="p-8 space-y-6">
                 <div class="flex flex-col items-center">
-                    <div id="photo-preview" class="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer hover:border-sky-600 hover:bg-sky-50 transition-all group" onclick="document.getElementById('new-user-photo').click()">
-                        <span class="text-[10px] font-black text-slate-400 uppercase group-hover:text-sky-600">Añadir Foto</span>
+                    <div id="photo-preview" class="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer" onclick="document.getElementById('new-user-photo').click()">
+                        <span class="text-[10px] font-black text-slate-400 uppercase">Foto</span>
                     </div>
                     <input type="file" id="new-user-photo" class="hidden" accept="image/*" onchange="previewImage(this)">
                 </div>
                 <div class="space-y-4">
-                    <div class="input-group">
-                        <label class="text-[9px] font-black text-sky-700 uppercase tracking-widest ml-2">ID Empleado</label>
-                        <input type="number" id="new-user-id" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-sky-600 outline-none text-sm font-semibold transition-all" placeholder="Ej: 12345">
-                    </div>
-                    <div class="input-group">
-                        <label class="text-[9px] font-black text-sky-700 uppercase tracking-widest ml-2">Nombre Completo</label>
-                        <input type="text" id="new-user-name" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-sky-600 outline-none text-sm font-semibold transition-all" placeholder="Apellidos, Nombres">
-                    </div>
-                    <div class="input-group">
-                        <label class="text-[9px] font-black text-sky-700 uppercase tracking-widest ml-2">Correo Corporativo</label>
-                        <input type="email" id="new-user-email" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-sky-600 outline-none text-sm font-semibold transition-all" placeholder="usuario@empresa.com">
-                    </div>
+                    <input type="number" id="new-user-id" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200" placeholder="ID Empleado">
+                    <input type="text" id="new-user-name" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200" placeholder="Nombre Completo">
+                    <input type="email" id="new-user-email" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200" placeholder="usuario@cic.com">
                 </div>
-                <button type="submit" id="btn-submit" class="w-full bg-sky-600 text-white py-4 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] btn-md shadow-lg shadow-sky-600/20">Finalizar Registro</button>
+                <button type="submit" id="btn-submit" class="w-full bg-sky-600 text-white py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest">Guardar en Cloud Storage</button>
             </form>
         </div>
     </div>
 
     <!-- Modal Importar -->
     <div id="import-modal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
-        <div class="bg-white w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden m-4 animate-in fade-in zoom-in duration-300">
+        <div class="bg-white w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden m-4">
             <div class="bg-sky-950 p-6 text-white flex justify-between items-center">
                 <h3 class="font-bold text-xs uppercase tracking-widest">Sincronización Masiva</h3>
-                <button onclick="closeImportModal()" class="text-white/50 hover:text-white">✕</button>
+                <button onclick="closeImportModal()">✕</button>
             </div>
-            <div class="p-8 space-y-8">
-                <div class="space-y-5">
-                    <div class="p-4 bg-sky-50 border border-sky-100 rounded-2xl">
-                        <label class="text-[10px] font-black text-sky-800 uppercase block mb-3 tracking-widest">Archivo Maestro (JSON)</label>
-                        <input type="file" id="import-json" accept=".json" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-sky-600 file:text-white hover:file:bg-sky-700 cursor-pointer">
-                    </div>
-                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                        <label class="text-[10px] font-black text-slate-500 uppercase block mb-3 tracking-widest">Lote de Imágenes (JPG)</label>
-                        <input type="file" id="import-photos" multiple accept="image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-slate-200 file:text-slate-600 hover:file:bg-slate-300 cursor-pointer">
-                    </div>
+            <div class="p-8 space-y-6">
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <label class="text-[10px] font-black text-slate-500 uppercase block mb-3">Archivo JSON</label>
+                    <input type="file" id="import-json" accept=".json" class="w-full text-xs">
                 </div>
-                <button onclick="processImport()" class="w-full bg-sky-950 text-white py-4.5 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] btn-md shadow-xl">Iniciar Carga de Datos</button>
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <label class="text-[10px] font-black text-slate-500 uppercase block mb-3">Lote de Fotos (.jpg)</label>
+                    <input type="file" id="import-photos" multiple accept="image/jpeg" class="w-full text-xs">
+                </div>
+                <button onclick="processImport()" class="w-full bg-sky-950 text-white py-4.5 rounded-2xl font-black uppercase text-[11px] tracking-widest">Iniciar Migración</button>
             </div>
         </div>
     </div>
 
-    <!-- Cargando Overlay -->
     <div id="loading-overlay" class="fixed inset-0 modal-overlay flex items-center justify-center hidden">
         <div class="bg-white p-10 rounded-[48px] flex flex-col items-center gap-5 shadow-2xl">
             <div class="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
-            <span id="loading-msg" class="text-[11px] font-black text-slate-700 uppercase tracking-[0.2em]">Ejecutando...</span>
+            <span id="loading-msg" class="text-[11px] font-black text-slate-700 uppercase tracking-widest">Procesando...</span>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", storageBucket: "cic6-pp-web.firebasestorage.app", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const appId = 'cic.pp';
 
         const adminApp = initializeApp(firebaseConfig, "AdminApp");
@@ -260,10 +213,10 @@
         const tableBody = document.getElementById('users-table-body');
         const searchInput = document.getElementById('user-search');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingMsg = document.getElementById('loading-msg');
         
         let currentPhotoB64 = "";
         let currentUsersData = [];
-
         const casetasDisponibles = ["SIN ASIGNAR", "Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
 
         onAuthStateChanged(auth, (user) => {
@@ -283,90 +236,56 @@
             });
         }
 
-        window.filterUsers = () => {
-            const term = searchInput.value.toLowerCase().trim();
-            if (!term) {
-                renderTable(currentUsersData);
-                return;
-            }
-            const filtered = currentUsersData.filter(u => 
-                (u.nombre && u.nombre.toLowerCase().includes(term)) || 
-                (u.id_empleado && u.id_empleado.toString().includes(term)) ||
-                (u.puesto && u.puesto.toLowerCase().includes(term))
-            );
-            renderTable(filtered);
-        };
-
         function renderTable(users) {
             tableBody.innerHTML = '';
-            if (users.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="py-20 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin resultados encontrados</td></tr>`;
-                return;
-            }
             users.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-            users.forEach(u => renderRow(u.uid, u));
-        }
-
-        function renderRow(id, u) {
-            const avatar = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=f1f5f9&color=0369a1&bold=true&rounded=true`;
-            const tr = document.createElement('tr');
-            tr.className = "user-row group";
-            tr.onclick = () => openProfile(id);
-
-            const currentBooth = u.acceso_predeterminado || "SIN ASIGNAR";
-
-            tr.innerHTML = `
-                <td class="py-3 px-6">
-                    <div class="flex items-center gap-4">
-                        <img src="${avatar}" class="w-11 h-11 rounded-2xl object-cover border border-slate-100 shadow-sm">
-                        <div class="flex flex-col">
-                            <span class="text-[13px] font-black text-slate-900 uppercase tracking-tight">${u.nombre || 'Sin Nombre'}</span>
-                            <span class="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider">ID: ${u.id_empleado || '---'}</span>
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = "user-row group";
+                const avatar = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=f1f5f9&color=0369a1&bold=true`;
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-6">
+                        <div class="flex items-center gap-4">
+                            <img src="${avatar}" class="w-11 h-11 rounded-2xl object-cover border border-slate-100">
+                            <div class="flex flex-col">
+                                <span class="text-[13px] font-black text-slate-900 uppercase">${u.nombre || 'Sin Nombre'}</span>
+                                <span class="text-[9px] font-mono text-slate-400">ID: ${u.id_empleado || '---'}</span>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td class="py-3 px-6">
-                    <span class="text-[11px] text-slate-500 font-bold">${u.correo_principal || '---'}</span>
-                </td>
-                <td class="py-3 px-6">
-                    <span class="text-[10px] font-black text-sky-800 uppercase tracking-widest">${u.puesto || 'MIEMBRO'}</span>
-                </td>
-                <td class="py-3 px-6" onclick="event.stopPropagation()">
-                    <select class="booth-select" onchange="updateDefaultBooth('${id}', this.value)">
-                        ${casetasDisponibles.map(c => `<option value="${c}" ${currentBooth === c ? 'selected' : ''}>${c}</option>`).join('')}
-                    </select>
-                </td>
-                <td class="py-3 px-6 text-center">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full ${u.status === 'Baja' ? 'bg-red-50' : 'bg-green-50'}">
-                        <div class="w-1.5 h-1.5 rounded-full ${u.status === 'Baja' ? 'bg-red-500' : 'bg-green-500'}"></div>
+                    </td>
+                    <td class="py-3 px-6 text-[11px] text-slate-500 font-bold">${u.correo_principal || '---'}</td>
+                    <td class="py-3 px-6 text-[10px] font-black text-sky-800 uppercase">${u.puesto || 'MIEMBRO'}</td>
+                    <td class="py-3 px-6">
+                        <select class="booth-select" onchange="updateDefaultBooth('${u.uid}', this.value)">
+                            ${casetasDisponibles.map(c => `<option value="${c}" ${u.acceso_predeterminado === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td class="py-3 px-6 text-center">
                         <span class="text-[9px] font-black uppercase ${u.status === 'Baja' ? 'text-red-600' : 'text-green-700'}">${u.status || 'Activo'}</span>
-                    </div>
-                </td>
-                <td class="py-3 px-6 text-center btn-delete-zone" onclick="event.stopPropagation(); confirmDeleteUser('${id}', '${u.correo_principal}', '${u.nombre}')">
-                    <button class="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all mx-auto block">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
+                    </td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="confirmDeleteUser('${u.uid}', '${u.correo_principal}', '${u.nombre}')" class="text-slate-300 hover:text-red-600">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                `;
+                tr.onclick = (e) => { if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON') openProfile(u.uid); };
+                tableBody.appendChild(tr);
+            });
         }
 
         window.updateDefaultBooth = async (uid, newBooth) => {
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid), { acceso_predeterminado: newBooth });
-            } catch (err) { console.error("Error actualizando caseta:", err); }
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid), { acceso_predeterminado: newBooth });
         };
 
-        window.exportToJSON = () => {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentUsersData, null, 4));
-            const dl = document.createElement('a');
-            dl.setAttribute("href", dataStr);
-            dl.setAttribute("download", `maestro_usuarios_cic_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(dl); dl.click(); dl.remove();
-        };
-
-        window.openImportModal = () => document.getElementById('import-modal').classList.remove('hidden');
-        window.closeImportModal = () => document.getElementById('import-modal').classList.add('hidden');
+        // --- LÓGICA DE FIREBASE STORAGE ---
+        async function uploadUserPhoto(uid, base64) {
+            if (!base64 || !base64.startsWith('data:image')) return "";
+            const photoRef = ref(storage, `Usuarios/fotos/${uid}.jpg`);
+            await uploadString(photoRef, base64, 'data_url');
+            return await getDownloadURL(photoRef);
+        }
 
         window.processImport = async () => {
             const jsonFile = document.getElementById('import-json').files[0];
@@ -385,105 +304,101 @@
                 for (let user of users) {
                     const id = user.id || user.id_empleado;
                     if (!id) continue;
-                    const email = user.correo_principal || `${id}@cic.com`;
-                    document.getElementById('loading-msg').innerText = `Sincronizando: ${id}`;
+                    loadingMsg.innerText = `Procesando: ${user.nombre || id}`;
                     
+                    const email = user.correo_principal || `${id}@cic.com`;
                     try {
                         const cred = await createUserWithEmailAndPassword(adminAuth, email, "Comercio01");
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', cred.user.uid), {
+                        const uid = cred.user.uid;
+                        
+                        // 1. Subir foto a Storage si existe en el mapa
+                        let photoUrl = "";
+                        const b64 = photoMap.get(id.toString());
+                        if (b64) photoUrl = await uploadUserPhoto(uid, b64);
+
+                        // 2. Guardar en Firestore con la URL del Storage
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid), {
                             ...user,
                             id_empleado: id,
-                            foto: photoMap.get(id.toString()) || user.foto || "",
+                            foto: photoUrl || user.foto || "",
                             correo_principal: email,
                             status: user.status || 'Activo',
                             lastUpdate: new Date().toISOString()
                         });
                         await signOut(adminAuth);
-                    } catch (e) { console.warn(`Error en registro Auth: ${id}`, e); }
+                    } catch (e) { console.warn(`Error con ${id}:`, e); }
                 }
                 closeImportModal();
-            } catch (err) { alert("Fallo en sincronización masiva"); }
+            } catch (err) { alert("Error en proceso masivo"); }
             finally { loadingOverlay.classList.add('hidden'); }
-        };
-
-        const fileToBase64 = (file) => new Promise((res) => {
-            const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file);
-        });
-
-        window.openAddUserModal = () => document.getElementById('add-user-modal').classList.remove('hidden');
-        window.closeAddUserModal = () => document.getElementById('add-user-modal').classList.add('hidden');
-
-        document.getElementById('new-user-id').addEventListener('input', (e) => {
-            const emailField = document.getElementById('new-user-email');
-            if(!emailField.dataset.manual) {
-                emailField.value = e.target.value ? `${e.target.value}@cic.com` : '';
-            }
-        });
-        document.getElementById('new-user-email').addEventListener('input', (e) => {
-            e.target.dataset.manual = "true";
-        });
-
-        window.previewImage = (input) => {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentPhotoB64 = e.target.result;
-                document.getElementById('photo-preview').innerHTML = `<img src="${currentPhotoB64}" class="w-full h-full object-cover">`;
-            };
-            reader.readAsDataURL(file);
         };
 
         document.getElementById('add-user-form').onsubmit = async (e) => {
             e.preventDefault();
+            loadingOverlay.classList.remove('hidden');
+            loadingMsg.innerText = "Creando credenciales...";
+
             const id = document.getElementById('new-user-id').value;
             const name = document.getElementById('new-user-name').value;
             const email = document.getElementById('new-user-email').value;
-            
-            loadingOverlay.classList.remove('hidden');
+
             try {
                 const cred = await createUserWithEmailAndPassword(adminAuth, email, "Comercio01");
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', cred.user.uid), {
+                const uid = cred.user.uid;
+
+                loadingMsg.innerText = "Subiendo imagen a la nube...";
+                const photoUrl = await uploadUserPhoto(uid, currentPhotoB64);
+
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid), {
                     id_empleado: Number(id),
                     nombre: name,
-                    foto: currentPhotoB64,
+                    foto: photoUrl,
                     correo_principal: email,
                     status: 'Activo',
                     puesto: 'NUEVO INGRESO',
                     createdAt: serverTimestamp()
                 });
+
                 await signOut(adminAuth);
                 closeAddUserModal();
                 e.target.reset();
-                document.getElementById('photo-preview').innerHTML = `<span class="text-[10px] font-black text-slate-400 uppercase">Añadir Foto</span>`;
-                delete document.getElementById('new-user-email').dataset.manual;
+                document.getElementById('photo-preview').innerHTML = "Foto";
             } catch (err) { alert(`Error: ${err.message}`); }
             finally { loadingOverlay.classList.add('hidden'); }
         };
 
         window.confirmDeleteUser = async (uid, email, name) => {
-            if (!confirm(`¿Eliminar registro maestro de ${name}?\nEsta acción es irreversible y removerá el expediente y accesos.`)) return;
+            if (!confirm(`¿Eliminar a ${name}?`)) return;
             loadingOverlay.classList.remove('hidden');
             try {
+                // Limpiar Storage si existe
                 try {
-                    const u = await signInWithEmailAndPassword(adminAuth, email, "Comercio01");
-                    await deleteUser(u.user);
-                } catch(e){
-                    console.warn("No se pudo eliminar de Auth. Puede que el usuario no exista o haya cambiado la contraseña.");
-                }
+                    const photoRef = ref(storage, `Usuarios/fotos/${uid}.jpg`);
+                    await deleteObject(photoRef);
+                } catch(e) {}
+
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
-            } catch (err) {
-                alert("Error al remover datos del servidor.");
-            } finally { loadingOverlay.classList.add('hidden'); }
+            } catch (err) { alert("Error al eliminar."); }
+            finally { loadingOverlay.classList.add('hidden'); }
         };
 
-        // --- REFINAMIENTO DE RUTAS: Integración con Shell Administracion.html ---
-        window.openProfile = (uid) => {
-            // Solicita al padre (Administracion.html) abrir el expediente en el panel derecho
-            window.parent.postMessage({ 
-                type: 'OPEN_SIDE_PANEL', 
-                url: `Apps/Perfil.html?uid=${uid}` 
-            }, '*');
+        const fileToBase64 = (f) => new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); });
+        window.previewImage = (input) => { 
+            fileToBase64(input.files[0]).then(b64 => {
+                currentPhotoB64 = b64;
+                document.getElementById('photo-preview').innerHTML = `<img src="${b64}" class="w-full h-full object-cover">`;
+            });
+        };
+
+        window.openAddUserModal = () => document.getElementById('add-user-modal').classList.remove('hidden');
+        window.closeAddUserModal = () => document.getElementById('add-user-modal').classList.add('hidden');
+        window.openImportModal = () => document.getElementById('import-modal').classList.remove('hidden');
+        window.closeImportModal = () => document.getElementById('import-modal').classList.add('hidden');
+        window.openProfile = (uid) => window.parent.postMessage({ type: 'OPEN_SIDE_PANEL', url: `Apps/Perfil.html?uid=${uid}` }, '*');
+        window.filterUsers = () => {
+            const term = searchInput.value.toLowerCase();
+            const filtered = currentUsersData.filter(u => u.nombre?.toLowerCase().includes(term) || u.id_empleado?.toString().includes(term));
+            renderTable(filtered);
         };
     </script>
 </body>

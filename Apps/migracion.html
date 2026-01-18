@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Migrador y Configurador de Seguridad - CIC 6.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-10 font-sans">
+
+    <div class="max-w-3xl mx-auto space-y-8">
+        <!-- Estado de Autenticación -->
+        <div id="auth-banner" class="bg-red-900/20 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="auth-dot" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span id="auth-status" class="text-xs font-bold uppercase tracking-widest text-red-200">Verificando Permisos...</span>
+            </div>
+            <span id="user-email" class="text-[10px] font-mono text-white/40">---</span>
+        </div>
+
+        <!-- Herramienta de Migración -->
+        <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-white/10">
+            <h1 class="text-2xl font-black uppercase tracking-tighter mb-2">Optimizador de Base de Datos</h1>
+            <p class="text-slate-400 text-sm mb-6">Convirtiendo fotos Base64 a Cloud Storage usando el <strong>UID de Auth</strong> como identificador maestro.</p>
+
+            <div id="stats" class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center">
+                    <span class="block text-[9px] text-slate-500 uppercase font-bold mb-1">Total Registros</span>
+                    <span id="count-total" class="text-2xl font-black">0</span>
+                </div>
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center">
+                    <span class="block text-[9px] text-slate-500 uppercase font-bold mb-1">Migrados</span>
+                    <span id="count-done" class="text-2xl font-black text-green-400">0</span>
+                </div>
+                <div id="error-stat" class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center">
+                    <span class="block text-[9px] text-slate-500 uppercase font-bold mb-1">Omitidos/Error</span>
+                    <span id="count-error" class="text-2xl font-black text-amber-500">0</span>
+                </div>
+            </div>
+
+            <div id="log" class="h-64 overflow-y-auto bg-black/30 rounded-xl p-4 font-mono text-[10px] text-slate-300 mb-6 border border-white/5 space-y-1">
+                > Sistema listo.
+            </div>
+
+            <button id="btn-start" disabled class="w-full bg-sky-600 hover:bg-sky-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                Ejecutar Migración por UID
+            </button>
+        </div>
+
+        <!-- Recordatorio de Reglas -->
+        <div class="bg-blue-900/20 p-6 rounded-2xl border border-blue-500/20">
+            <h3 class="text-blue-400 font-bold text-xs uppercase mb-2">Nota sobre Identificadores</h3>
+            <p class="text-[11px] text-blue-200/60 leading-relaxed">
+                El sistema detectó que algunos documentos usan el <strong>ID numérico</strong> como nombre de documento. Esta versión del script intentará migrar los datos respetando el nombre exacto del documento en Firestore para evitar errores de duplicidad o "No document to update".
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", storageBucket: "cic6-pp-web.firebasestorage.app", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = 'cic.pp';
+
+        const logEl = document.getElementById('log');
+        const btn = document.getElementById('btn-start');
+        const authBanner = document.getElementById('auth-banner');
+        const authStatus = document.getElementById('auth-status');
+        const authDot = document.getElementById('auth-dot');
+        const userEmail = document.getElementById('user-email');
+
+        function log(msg, color = "") {
+            const div = document.createElement('div');
+            if (color) div.className = color;
+            div.textContent = `> ${msg}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', user.uid));
+                    const isAdmin = userDoc.exists() && userDoc.data().puesto?.toLowerCase() === 'administrador';
+
+                    if (isAdmin) {
+                        authBanner.className = "bg-green-900/20 border border-green-500/50 p-4 rounded-2xl flex items-center justify-between";
+                        authDot.className = "w-3 h-3 bg-green-500 rounded-full";
+                        authStatus.textContent = "Acceso de Administrador Autorizado";
+                        authStatus.className = "text-xs font-bold uppercase tracking-widest text-green-200";
+                        userEmail.textContent = user.email;
+                        btn.disabled = false;
+                        log("Sesión validada. Listo para procesar registros.");
+                    } else {
+                        authStatus.textContent = "Acceso Denegado: Rol no autorizado";
+                        log("Error: Tu usuario no tiene el puesto de 'administrador' en Firestore.", "text-red-400");
+                    }
+                } catch (e) { log("Error: " + e.message, "text-red-400"); }
+            } else {
+                log("Esperando inicio de sesión en el sistema...", "text-amber-400");
+            }
+        });
+
+        btn.onclick = async () => {
+            btn.disabled = true;
+            log("Escaneando colección 'Usuarios'...", "font-bold");
+            
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+                const users = [];
+                snap.forEach(d => {
+                    users.push({ docId: d.id, ...d.data() });
+                });
+                
+                document.getElementById('count-total').textContent = users.length;
+                let processed = 0;
+                let errors = 0;
+
+                for (let user of users) {
+                    const empId = user.id_empleado || "N/A";
+                    const docId = user.docId;
+
+                    // Si la foto es Base64 procedemos
+                    if (user.foto && user.foto.startsWith('data:image')) {
+                        log(`Procesando Emp:${empId} (DocID:${docId})...`);
+                        
+                        try {
+                            // Guardamos en Storage usando el ID del documento (UID) para consistencia
+                            const photoRef = ref(storage, `Usuarios/fotos/${docId}.jpg`);
+                            await uploadString(photoRef, user.foto, 'data_url');
+                            const url = await getDownloadURL(photoRef);
+                            
+                            // Actualizamos el documento exacto usando setDoc con merge
+                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', docId);
+                            await setDoc(docRef, {
+                                foto: url,
+                                migrationMetadata: {
+                                    migratedAt: new Date().toISOString(),
+                                    originalFormat: "base64",
+                                    empresaId: empId
+                                }
+                            }, { merge: true });
+                            
+                            processed++;
+                            document.getElementById('count-done').textContent = processed;
+                            log(`MIGRADO: ${empId}`, "text-green-400");
+                        } catch (e) {
+                            errors++;
+                            document.getElementById('count-error').textContent = errors;
+                            log(`FALLO en ${empId}: ${e.message}`, "text-red-400");
+                            if (e.code === 'storage/unauthorized') break;
+                        }
+                    } else {
+                        log(`OMITIDO: ${empId} (Ya optimizado o sin imagen)`);
+                    }
+                }
+                
+                log("MIGRACIÓN FINALIZADA", "text-sky-400 font-bold");
+            } catch (err) {
+                log(`FALLO GENERAL: ${err.message}`, "text-red-500 font-bold");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
