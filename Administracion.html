@@ -19,7 +19,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
             height: 42px; 
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            will-change: background-position; /* Optimización de renderizado */
+            will-change: background-position;
         }
 
         /* --- ÁREA DE TABS --- */
@@ -90,7 +90,7 @@
             display: none;
             overflow: hidden;
             flex-direction: column;
-            pointer-events: none; /* Evita interferencia de apps inactivas */
+            pointer-events: none;
         }
 
         .app-window.active {
@@ -99,6 +99,23 @@
         }
 
         iframe { width: 100%; height: 100%; border: none; }
+
+        /* --- LANZADOR DE APPS Y PUENTE INVISIBLE --- */
+        #app-launcher {
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        /* El Puente Invisible */
+        #app-launcher::before {
+            content: "";
+            position: absolute;
+            top: -20px; /* Cubre el hueco hasta la barra superior */
+            left: 0;
+            width: 100px; /* Ancho suficiente para cubrir el área del botón 'Apps' */
+            height: 25px;
+            background: transparent;
+            z-index: -1;
+        }
 
         /* --- PANEL LATERAL --- */
         #side-panel {
@@ -167,6 +184,7 @@
         </div>
     </nav>
 
+    <!-- Lanzador de Apps -->
     <div id="app-launcher" class="hidden absolute top-[45px] left-4 w-80 glass-panel rounded-2xl shadow-2xl p-6 z-50 bg-slate-900/95 backdrop-blur-xl border border-white/10">
         <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Servicios Activos</h3>
         <div class="grid grid-cols-1 gap-2">
@@ -237,7 +255,7 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", "authDomain": "cic6-pp-web.firebaseapp.com", "projectId": "cic6-pp-web", "appId": "1:248659087868:web:a277ef700d83c7f1d22279"}');
+        const firebaseConfig = {apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279"};
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -247,6 +265,7 @@
         let openAppsRegistry = []; 
         let currentActiveTab = 'dashboard';
         const openAppsSet = new Set(['dashboard']);
+        let launcherTimeout = null;
 
         const hideLoadingScreen = () => {
             const ls = document.getElementById('loading-screen');
@@ -302,7 +321,6 @@
             document.querySelectorAll('.app-tab').forEach(t => t.classList.toggle('active', t.id === `tab-${id}`));
             document.querySelectorAll('.app-window').forEach(w => w.classList.toggle('active', w.id === `view-${id}`));
             
-            // Sincronizar estado del panel lateral solo con la app activa
             const isPanelOpen = document.getElementById('side-panel').classList.contains('open');
             notifyAppOfPanelState(id, isPanelOpen);
 
@@ -313,7 +331,7 @@
         window.closeApp = (id) => {
             if (id === 'dashboard') return;
             const iframe = document.getElementById(`frame-${id}`);
-            if (iframe) iframe.src = "about:blank"; // Limpieza de memoria inmediata
+            if (iframe) iframe.src = "about:blank"; 
 
             document.getElementById(`tab-${id}`)?.remove();
             document.getElementById(`view-${id}`)?.remove();
@@ -322,7 +340,6 @@
             switchTab('dashboard');
         };
 
-        // --- OPTIMIZACIÓN DE MENSAJERÍA ---
         function notifyAppOfPanelState(id, isOpen) {
             const frame = document.getElementById(`frame-${id}`);
             if (frame && frame.contentWindow) {
@@ -362,11 +379,25 @@
 
         setInterval(() => { document.getElementById('system-time').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }, 1000);
 
+        // LÓGICA DE HOVER MEJORADA CON PUENTE Y DELAY
         const startBtn = document.getElementById('start-button');
         const launcher = document.getElementById('app-launcher');
-        startBtn.onmouseenter = () => launcher.classList.remove('hidden');
-        launcher.onmouseenter = () => launcher.classList.remove('hidden');
-        document.addEventListener('mouseover', (e) => { if (!launcher.contains(e.target) && !startBtn.contains(e.target)) launcher.classList.add('hidden'); });
+
+        const showLauncher = () => {
+            clearTimeout(launcherTimeout);
+            launcher.classList.remove('hidden');
+        };
+
+        const hideLauncherWithDelay = () => {
+            launcherTimeout = setTimeout(() => {
+                launcher.classList.add('hidden');
+            }, 200); // 200ms de gracia para movimientos accidentales
+        };
+
+        startBtn.onmouseenter = showLauncher;
+        launcher.onmouseenter = showLauncher;
+        startBtn.onmouseleave = hideLauncherWithDelay;
+        launcher.onmouseleave = hideLauncherWithDelay;
 
         window.handleLogout = async () => { localStorage.clear(); await signOut(auth); window.location.href = 'index.html'; };
     </script>
