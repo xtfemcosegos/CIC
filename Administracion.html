@@ -19,7 +19,7 @@
             margin: 0;
         }
 
-        /* --- ARQUITECTURA DE COMPRESIÓN (FLEX) --- */
+        /* --- ARQUITECTURA DE COMPRESIÓN (FLEX) SIN RESPONSIVIDAD --- */
         .main-viewport {
             height: calc(100vh - 48px);
             width: 100%;
@@ -49,7 +49,7 @@
 
         body.side-panel-open #side-panel {
             width: 450px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1);
         }
 
         /* Barra de tareas Metálica */
@@ -83,14 +83,9 @@
         }
 
         iframe { width: 100%; height: 100%; border: none; }
-
-        @media (max-width: 767px) {
-            body.side-panel-open #side-panel { width: 100vw; }
-            body.side-panel-open #desktop { flex: 0; }
-        }
     </style>
 </head>
-<body class="text-slate-200">
+<body class="no-scrollbar">
 
     <!-- Pantalla de Carga -->
     <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center">
@@ -111,7 +106,7 @@
         </div>
 
         <div class="absolute left-1/2 -translate-x-1/2 pointer-events-none">
-            <h1 class="font-black text-[11px] md:text-[13px] tracking-[0.5em] uppercase text-white/90">
+            <h1 class="font-black text-[13px] tracking-[0.5em] uppercase text-white/90">
                 Protección Patrimonial
             </h1>
         </div>
@@ -119,6 +114,16 @@
         <div class="flex-1"></div>
 
         <div class="flex items-center gap-3 h-full z-10">
+            <!-- Botón de Notas (OneNote) - Enlace actualizado -->
+            <button onclick="openSidePanel('https://1drv.ms/o/c/a7d82598120f0a25/IgDKcPDywXCKTovQ8mH0_XygAZnO7IVwzENlt-xAy6R7_rE?e=r3CXXk')" 
+                    class="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all active:scale-95" 
+                    title="Notas de OneNote">
+                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+
+            <!-- Reloj del Sistema -->
             <div class="flex h-10 bg-black/40 px-4 items-center rounded-xl border border-white/5">
                 <span id="system-time" class="text-xl font-black text-white tracking-tighter">00:00:00</span>
             </div>
@@ -228,7 +233,7 @@
             <div id="app-content-container" class="h-full w-full hidden"></div>
         </main>
 
-        <!-- Panel Lateral Limpio (Sin encabezado) -->
+        <!-- Panel Lateral Limpio -->
         <aside id="side-panel">
             <iframe id="side-panel-frame" class="w-full h-full" src="about:blank"></iframe>
         </aside>
@@ -279,6 +284,7 @@
             }
         });
 
+        // Abrir App en contenedor principal
         window.openApp = (id, title, url, color) => {
             toggleLauncher(false);
             const container = document.getElementById('app-content-container');
@@ -299,18 +305,27 @@
             closeSidePanel();
         };
 
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'OPEN_SIDE_PANEL') {
-                document.getElementById('side-panel-frame').src = event.data.url;
-                document.body.classList.add('side-panel-open');
-            }
-            if (event.data.type === 'CLOSE_SIDE_PANEL') closeSidePanel();
-        });
+        // Función para abrir el panel lateral directamente
+        window.openSidePanel = (url) => {
+            const frame = document.getElementById('side-panel-frame');
+            frame.src = url;
+            document.body.classList.add('side-panel-open');
+        };
 
         window.closeSidePanel = () => {
             document.body.classList.remove('side-panel-open');
             setTimeout(() => { document.getElementById('side-panel-frame').src = 'about:blank'; }, 400);
         };
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'OPEN_SIDE_PANEL') {
+                openSidePanel(event.data.url);
+            }
+            if (event.data.type === 'CLOSE_SIDE_PANEL') closeSidePanel();
+            if (event.data.type === 'navigateRight') {
+                openSidePanel(event.data.url);
+            }
+        });
 
         const toggleLauncher = (show) => {
             document.getElementById('app-launcher').classList.toggle('hidden', !show);
