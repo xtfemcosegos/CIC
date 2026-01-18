@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Asistencia - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --md-sys-color-primary: #991b1b;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-surface: #fdfbff;
+            --md-sys-color-outline: #79747e;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #f4f7fa; 
+            min-height: 100vh; 
+            padding: 16px; 
+            color: #1c1b1f;
+        }
+
+        /* Acabados Material Design */
+        .card-material { 
+            background: #ffffff; 
+            border-radius: 32px; 
+            padding: 32px; 
+            text-align: center; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .btn-camera { 
+            background: #059669; 
+            color: white; 
+            border-radius: 20px; 
+            padding: 18px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            font-size: 13px; 
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 12px; 
+            box-shadow: 0 8px 16px rgba(5, 150, 105, 0.2);
+            transition: all 0.2s ease; 
+        }
+
+        .btn-camera:active { 
+            transform: scale(0.96); 
+            box-shadow: 0 4px 8px rgba(5, 150, 105, 0.1);
+        }
+
+        /* Animaciones */
+        .animate-in { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Perfil de Usuario */
+        #profile-photo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #profile-photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Buscador */
+        .search-container {
+            transition: all 0.3s ease;
+        }
+
+        #search-results { 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border-radius: 24px; 
+            margin-top: 12px; 
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12); 
+            z-index: 50; 
+            overflow: hidden; 
+            border: 1px solid #f1f5f9; 
+            text-align: left; 
+            backdrop-filter: blur(10px);
+        }
+
+        .result-item { 
+            padding: 16px 24px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #44474e; 
+            cursor: pointer; 
+            border-bottom: 1px solid #f8fafc; 
+            transition: all 0.2s;
+        }
+
+        .result-item:hover { 
+            background: #fef2f2; 
+            color: #991b1b; 
+        }
+
+        /* Cámara Overlay */
+        #camera-layer { 
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            display: none; 
+            flex-direction: column; 
+            z-index: 100; 
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-md mx-auto space-y-6 animate-in">
+        <!-- CABECERA Y BUSCADOR -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <a href="#" onclick="window.history.back()" class="p-2 -ml-2 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </a>
+                <span class="text-[10px] font-black uppercase tracking-[3px] text-slate-400">Control de Acceso</span>
+                <div class="w-8"></div>
+            </div>
+            
+            <div class="relative search-container">
+                <div class="flex items-center bg-white rounded-[28px] shadow-sm border border-slate-100 px-6 focus-within:ring-2 ring-red-100 transition-all">
+                    <i class="fa-solid fa-magnifying-glass text-slate-300 mr-4"></i>
+                    <input type="text" id="search-input" autocomplete="off" 
+                           class="w-full py-5 text-xs font-bold outline-none uppercase tracking-widest placeholder:text-slate-300" 
+                           placeholder="Buscar nombre o ID..." oninput="filterUsers(this.value)">
+                </div>
+                <div id="search-results" class="fade-in"></div>
+            </div>
+        </div>
+
+        <!-- TARJETA PRINCIPAL -->
+        <div class="card-material space-y-6">
+            <!-- CONTEXTO DE EMPLEADO -->
+            <div id="user-header" class="hidden fade-in">
+                <div id="profile-photo-container">
+                    <i id="photo-placeholder" class="fa-solid fa-user text-3xl text-slate-200"></i>
+                    <img id="profile-photo" class="hidden" src="" alt="Perfil">
+                </div>
+                <div class="space-y-1">
+                    <h1 id="target-name" class="text-lg font-extrabold text-slate-800 uppercase tracking-tight">---</h1>
+                    <span id="target-id" class="text-[9px] font-black text-slate-400 uppercase tracking-[2px]">ID EMPLEADO</span>
+                </div>
+            </div>
+
+            <div id="empty-state" class="py-12">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-id-badge text-2xl text-slate-200"></i>
+                </div>
+                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
+                    Seleccione un perfil para<br>comenzar la validación
+                </p>
+            </div>
+
+            <!-- ESTADO CARGANDO -->
+            <div id="status-loading" class="hidden py-10">
+                <div class="flex justify-center space-x-1">
+                    <div class="w-2 h-2 bg-red-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+
+            <!-- DATOS DE ASIGNACIÓN -->
+            <div id="assign-data" class="hidden space-y-6 fade-in">
+                <div class="bg-slate-50 p-6 rounded-[28px] border border-slate-100 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-[0.03]">
+                        <i class="fa-solid fa-clock text-8xl"></i>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Turno Detectado</p>
+                    <h2 id="shift-name" class="text-3xl font-black text-slate-800 uppercase">---</h2>
+                    <p id="booth-name" class="text-[10px] font-bold text-red-700/60 uppercase mt-1">---</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-4 bg-white rounded-2xl border border-slate-100 text-left">
+                        <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Hora Planificada</label>
+                        <span id="time-plan" class="text-sm font-extrabold text-slate-700">--:--</span>
+                    </div>
+                    <div class="p-4 bg-white rounded-2xl border border-slate-100 text-left">
+                        <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Registro Real</label>
+                        <span id="time-real" class="text-sm font-extrabold text-emerald-600 italic">Pendiente</span>
+                    </div>
+                </div>
+
+                <div id="action-zone" class="pt-4">
+                    <button onclick="openCamera()" class="btn-camera">
+                        <i class="fa-solid fa-camera"></i> Iniciar Captura
+                    </button>
+                    <p class="text-[8px] font-bold text-slate-400 mt-4 uppercase tracking-widest italic">Captura biométrica requerida</p>
+                </div>
+                
+                <div id="success-msg" class="hidden p-6 bg-emerald-500 text-white rounded-[28px] font-black uppercase text-xs shadow-lg shadow-emerald-100">
+                    <i class="fa-solid fa-circle-check text-2xl mb-2 block"></i> Asistencia Validada
+                </div>
+            </div>
+
+            <!-- SIN ASIGNACIÓN -->
+            <div id="no-assign" class="hidden py-10 fade-in">
+                <i class="fa-solid fa-calendar-minus text-4xl text-slate-200 mb-4 block"></i>
+                <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin programación para hoy</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAPA DE CÁMARA (FULLSCREEN MATERIAL) -->
+    <div id="camera-layer">
+        <video id="video-stream" autoplay playsinline muted></video>
+        <div class="absolute inset-0 border-[20px] border-black/40 pointer-events-none"></div>
+        <div class="absolute bottom-12 left-0 w-full flex flex-col items-center gap-6 px-8">
+            <div class="text-white text-[9px] font-black uppercase tracking-widest bg-black/50 px-4 py-2 rounded-full backdrop-blur-md">
+                Encuadre su rostro en el centro
+            </div>
+            <div class="flex w-full gap-4">
+                <button onclick="closeCamera()" class="flex-1 bg-white/10 text-white p-5 rounded-3xl font-black uppercase text-[10px] backdrop-blur-xl border border-white/20">Cancelar</button>
+                <button onclick="capture()" class="flex-[2] bg-white text-black p-5 rounded-3xl font-black uppercase text-[10px] shadow-2xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-shutter-speed"></i> Capturar Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp'; 
+
+        let allUsers = [];
+        let filteredResults = [];
+        let activeAssignment = null;
+        let selectedUid = null;
+        let stream = null;
+        let operatorUid = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                operatorUid = user.uid;
+                await fetchUsers();
+            } else {
+                await signInAnonymously(auth);
+            }
+        });
+
+        async function fetchUsers() {
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+                allUsers = [];
+                snap.forEach(d => allUsers.push({ uid: d.id, ...d.data() }));
+            } catch (e) { console.error("Error cargando catálogo:", e); }
+        }
+
+        window.filterUsers = (val) => {
+            const resBox = document.getElementById('search-results');
+            if(!val.trim()) { 
+                resBox.style.display = 'none'; 
+                return; 
+            }
+            const query = val.toLowerCase();
+            filteredResults = allUsers.filter(u => 
+                (u.nombre && u.nombre.toLowerCase().includes(query)) || 
+                (u.id_empleado && String(u.id_empleado).includes(query))
+            ).slice(0, 5);
+            
+            renderResults();
+        };
+
+        function renderResults() {
+            const resBox = document.getElementById('search-results');
+            resBox.innerHTML = filteredResults.map(u => `
+                <div class="result-item flex items-center gap-4" onclick="selectEmployee('${u.uid}')">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
+                        ${u.foto ? `<img src="${u.foto}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-slate-300 p-2"></i>`}
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[12px] font-bold text-slate-800">${u.nombre}</span>
+                        <span class="text-[8px] font-black text-slate-400 tracking-widest">ID: ${u.id_empleado || '---'}</span>
+                    </div>
+                </div>
+            `).join('');
+            resBox.style.display = filteredResults.length ? 'block' : 'none';
+        }
+
+        window.selectEmployee = async (uid) => {
+            selectedUid = uid;
+            document.getElementById('search-input').value = "";
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('empty-state').classList.add('hidden');
+            
+            resetUI();
+            document.getElementById('status-loading').classList.remove('hidden');
+
+            try {
+                // Obtener datos del perfil para la foto y nombre (Uso del campo 'foto')
+                const snapU = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
+                if(snapU.exists()) {
+                    const userData = snapU.data();
+                    document.getElementById('user-header').classList.remove('hidden');
+                    document.getElementById('target-name').innerText = userData.nombre;
+                    document.getElementById('target-id').innerText = `ID: ${userData.id_empleado || '---'}`;
+                    
+                    const img = document.getElementById('profile-photo');
+                    const ph = document.getElementById('photo-placeholder');
+                    if(userData.foto) {
+                        img.src = userData.foto;
+                        img.classList.remove('hidden');
+                        ph.classList.add('hidden');
+                    } else {
+                        img.classList.add('hidden');
+                        ph.classList.remove('hidden');
+                    }
+                }
+
+                // Buscar turno
+                const now = new Date();
+                const dateId = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+                const shifts = ['matutino', 'vespertino', 'nocturno'];
+                let found = false;
+
+                for(let s of shifts) {
+                    const path = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, s, uid);
+                    const snap = await getDoc(path);
+                    if(snap.exists()){
+                        activeAssignment = { shiftId: s, dateId, data: snap.data(), path };
+                        displayAssignment();
+                        found = true;
+                        break;
+                    }
+                }
+
+                document.getElementById('status-loading').classList.add('hidden');
+                if (found) {
+                    document.getElementById('assign-data').classList.remove('hidden');
+                } else {
+                    document.getElementById('no-assign').classList.remove('hidden');
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        function displayAssignment() {
+            const data = activeAssignment.data;
+            document.getElementById('shift-name').innerText = activeAssignment.shiftId;
+            document.getElementById('booth-name').innerText = data.Caseta || "Punto de Control General";
+            document.getElementById('time-plan').innerText = `${data.entrada_planificada || '07:00'} hrs`;
+            
+            if(data.entrada_real) {
+                document.getElementById('time-real').innerText = `${data.entrada_real} hrs`;
+                document.getElementById('action-zone').classList.add('hidden');
+                document.getElementById('success-msg').classList.remove('hidden');
+            } else {
+                document.getElementById('time-real').innerText = "Pendiente";
+                document.getElementById('action-zone').classList.remove('hidden');
+                document.getElementById('success-msg').classList.add('hidden');
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('assign-data').classList.add('hidden');
+            document.getElementById('no-assign').classList.add('hidden');
+            document.getElementById('success-msg').classList.add('hidden');
+            document.getElementById('user-header').classList.add('hidden');
+        }
+
+        window.openCamera = async () => {
+            document.getElementById('camera-layer').style.display = 'flex';
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } 
+                });
+                document.getElementById('video-stream').srcObject = stream;
+            } catch(e) { 
+                alert("Error: Cámara no disponible"); 
+                closeCamera(); 
+            }
+        };
+
+        window.closeCamera = () => { 
+            if(stream) stream.getTracks().forEach(t => t.stop()); 
+            document.getElementById('camera-layer').style.display = 'none'; 
+        };
+
+        window.capture = async () => {
+            const video = document.getElementById('video-stream');
+            const canvas = document.getElementById('canvas');
+            canvas.width = 480; canvas.height = 640;
+            canvas.getContext('2d').drawImage(video, 0, 0, 480, 640);
+            const b64 = canvas.toDataURL('image/jpeg', 0.6);
+            closeCamera();
+            await saveAttendance(b64);
+        };
+
+        async function saveAttendance(photo) {
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            let coords = "No disponible";
+            
+            try {
+                const pos = await new Promise((res, rej) => 
+                    navigator.geolocation.getCurrentPosition(res, rej, {timeout: 4000})
+                );
+                coords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            } catch(e){}
+
+            try {
+                // Registro en Turno
+                await updateDoc(activeAssignment.path, {
+                    entrada_real: nowTime,
+                    foto_evidencia: photo,
+                    ubicacion_checador: coords,
+                    operador_terminal: operatorUid,
+                    timestamp_checada: new Date().toISOString()
+                });
+
+                // Registro en Historial Fotos (Solicitado)
+                const fotosRef = collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios', selectedUid, 'Fotos');
+                await addDoc(fotosRef, {
+                    photoData: photo,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Actualizar Perfil (Uso del campo 'foto' para consistencia)
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', selectedUid);
+                await updateDoc(userRef, {
+                    foto: photo,
+                    ultima_validacion: new Date().toISOString()
+                });
+
+                document.getElementById('time-real').innerText = `${nowTime} hrs`;
+                document.getElementById('action-zone').classList.add('hidden');
+                document.getElementById('success-msg').classList.remove('hidden');
+                
+                // Actualizar foto en el UI local
+                const img = document.getElementById('profile-photo');
+                img.src = photo;
+                img.classList.remove('hidden');
+                document.getElementById('photo-placeholder').classList.add('hidden');
+
+            } catch(e) { 
+                console.error(e);
+                alert("Error de sincronización."); 
+            }
+        }
+    </script>
+</body>
+</html>

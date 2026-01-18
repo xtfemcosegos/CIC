@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; padding: 12px; }
+        
+        /* Estilos de Tarjetas Compactas */
+        .tool-card { background: white; border: 1px solid #e5e7eb; border-radius: 20px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .tool-card.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+        .tool-card:active { transform: scale(0.98); background: #f8fafc; }
+        
+        .icon-box-sm { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+        
+        /* Buscador Ajustado */
+        #search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; margin-top: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 50; overflow: hidden; display: none; border: 1px solid #f1f5f9; }
+        .result-item { padding: 10px 16px; font-size: 11px; font-weight: 700; color: #1e293b; cursor: pointer; border-bottom: 1px solid #f8fafc; }
+        .result-item:hover, .result-item.selected { background: #fdf8f8; color: #450a0a; border-left: 4px solid #450a0a; }
+        
+        .animate-fade { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Cajón de Conteo: COLOR PERLA */
+        .counting-drawer { 
+            background: linear-gradient(135deg, #fdfcfb 0%, #f5f3f2 100%); 
+            border: 1px solid #e5e7eb;
+            border-radius: 28px; 
+            padding: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            min-height: 140px; 
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .count-btn { 
+            background: white; 
+            border: 1px solid #e2e8f0;
+            border-radius: 20px; 
+            padding: 16px 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            transition: 0.2s; 
+            flex: 1;
+            min-width: 90px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .count-btn:active { background: #f8fafc; transform: scale(0.96); border-color: #cbd5e1; }
+        .count-value { font-size: 18px; font-weight: 800; color: #1e293b; line-height: 1; }
+        .count-label { font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; }
+
+        /* Barra de Totales */
+        .total-summary-bar {
+            background: #1e293b;
+            border-radius: 18px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #334155;
+        }
+        .total-summary-bar:active { transform: scale(0.98); background: #0f172a; }
+
+        /* Estilo Select Caseta Adaptado a Perla */
+        .caseta-select {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 8px 12px;
+            border-radius: 12px;
+            outline: none;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        /* Modales */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="space-y-4">
+
+    <!-- SECCIÓN SUPERIOR: IDENTIDAD Y BÚSQUEDA -->
+    <div class="max-w-xl mx-auto space-y-3">
+        <!-- Banner de Identidad -->
+        <div id="consulting-banner" class="bg-white border border-slate-100 rounded-[22px] p-3 flex items-center justify-between shadow-sm animate-fade">
+            <div class="flex items-center gap-3">
+                <div id="sel-avatar" class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
+                    <i class="fa-solid fa-user text-slate-300"></i>
+                </div>
+                <div>
+                    <p class="text-[7px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Gestionando a:</p>
+                    <h3 id="sel-name" class="text-[11px] font-black uppercase text-slate-800 tracking-tight">Cargando...</h3>
+                </div>
+            </div>
+            <button onclick="resetToSelf()" class="text-[7px] font-black uppercase text-red-900 bg-red-50 px-2 py-1.5 rounded-lg hover:bg-red-100 transition-colors border border-red-100">Mi Perfil</button>
+        </div>
+
+        <!-- BUSCADOR (Reubicado debajo del encabezado) -->
+        <div class="relative">
+            <div class="flex items-center bg-white rounded-2xl shadow-sm border border-slate-100 px-4 h-11">
+                <i class="fa-solid fa-magnifying-glass text-slate-300 text-xs mr-3"></i>
+                <input type="text" id="search-input" autocomplete="off" class="w-full text-[11px] font-bold outline-none uppercase tracking-widest placeholder:text-slate-300" placeholder="Cambiar empleado a gestionar..." oninput="filterUsers(this.value)">
+            </div>
+            <div id="search-results"></div>
+        </div>
+
+        <!-- CAJÓN DE CONTEO DINÁMICO (CDI) -->
+        <div class="counting-drawer">
+            <!-- Selector de Caseta -->
+            <div class="flex items-center gap-3 border-b border-slate-200 pb-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <i class="fa-solid fa-map-location-dot text-slate-400 text-xs"></i>
+                </div>
+                <div class="flex-grow">
+                    <p class="text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1">Ubicación Actual:</p>
+                    <div class="flex gap-2">
+                        <select id="caseta-selector" class="caseta-select" onchange="changeCaseta(this.value)">
+                            <option value="Edison">Edison</option>
+                            <option value="Recepcion">Recepcion</option>
+                            <option value="Impulso">Impulso</option>
+                            <option value="Carranza">Carranza</option>
+                            <option value="U.N">U.N</option>
+                            <option value="Michelena">Michelena</option>
+                            <option value="Simon Bolivar">Simon Bolivar</option>
+                        </select>
+                        <button onclick="openNewCasetaModal()" class="w-9 h-9 shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 active:scale-95 transition-all">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contadores Específicos -->
+            <div id="counting-grid" class="flex gap-2 flex-grow overflow-x-auto pb-1">
+                <!-- Los botones se generarán dinámicamente aquí -->
+            </div>
+
+            <!-- Resumen de Totales -->
+            <div onclick="openDetailModal()" class="total-summary-bar">
+                <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-globe text-[10px] text-white/50"></i>
+                    </div>
+                    <span class="text-[8px] font-black text-white uppercase tracking-widest">Total General</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-user-group text-rose-400 text-[10px]"></i>
+                        <span id="total-p" class="text-[12px] font-black text-white">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-car-side text-sky-400 text-[10px]"></i>
+                        <span id="total-v" class="text-[12px] font-black text-white">0</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 text-[8px]"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTADO DE HERRAMIENTAS -->
+    <div class="max-w-xl mx-auto grid grid-cols-1 gap-2">
+        <a id="link-checador" href="#" onclick="checkSelection(event, 'Checador.html')" class="tool-card disabled">
+            <div class="icon-box-sm bg-emerald-100 text-emerald-600 shadow-inner"><i class="fa-solid fa-id-card-clip"></i></div>
+            <div class="text-left flex-grow">
+                <p class="text-[7px] font-black text-emerald-600 uppercase tracking-[0.15em] leading-none mb-1">Seguridad</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Checador Biométrico</h3>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
+        </a>
+
+        <a id="link-recorrido" href="#" onclick="checkSelection(event, 'Recorridos.html')" class="tool-card disabled">
+            <div class="icon-box-sm bg-blue-100 text-blue-600 shadow-inner"><i class="fa-solid fa-route"></i></div>
+            <div class="text-left flex-grow">
+                <p class="text-[7px] font-black text-blue-600 uppercase tracking-[0.15em] mb-1">Supervisión</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Iniciar Recorrido QR</h3>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
+        </a>
+
+        <a id="link-bitacora" href="#" onclick="checkSelection(event, 'Bitacora.html')" class="tool-card disabled">
+            <div class="icon-box-sm bg-amber-100 text-amber-600 shadow-inner"><i class="fa-solid fa-clipboard-list"></i></div>
+            <div class="text-left flex-grow">
+                <p class="text-[7px] font-black text-amber-600 uppercase tracking-[0.15em] mb-1">Registros</p>
+                <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-tight">Bitácora Operativa</h3>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-200 text-[10px]"></i>
+        </a>
+    </div>
+
+    <!-- MODALES (DETALLE Y NUEVA CASETA) -->
+    <div id="modal-detalle" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h4 class="text-xs font-black uppercase text-slate-900 tracking-widest">Resumen de Casetas</h4>
+                    <p id="detail-date" class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1"></p>
+                </div>
+                <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="detail-list" class="p-4 space-y-2 overflow-y-auto"></div>
+            <div class="p-6 bg-slate-50 border-t border-slate-100">
+                <button onclick="closeDetailModal()" class="w-full bg-slate-900 text-white rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest">Cerrar Detalle</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-caseta" class="modal-overlay">
+        <div class="modal-content p-6 space-y-4">
+            <h4 class="text-xs font-black uppercase text-slate-900 tracking-widest text-center">Configurar Caseta</h4>
+            <div class="space-y-3">
+                <input type="text" id="new-caseta-name" placeholder="NOMBRE DE LA CASETA" class="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-[10px] font-bold outline-none uppercase">
+                <div class="flex gap-2">
+                    <button id="toggle-p" onclick="this.classList.toggle('bg-rose-500'); this.classList.toggle('text-white');" class="flex-1 border border-slate-100 rounded-xl p-3 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Personas</button>
+                    <button id="toggle-v" onclick="this.classList.toggle('bg-sky-500'); this.classList.toggle('text-white');" class="flex-1 border border-slate-100 rounded-xl p-3 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Vehículos</button>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeNewCasetaModal()" class="flex-1 p-3 text-[9px] font-black uppercase text-slate-400">Cancelar</button>
+                <button onclick="createNewCaseta()" class="flex-1 bg-slate-900 text-white rounded-xl p-3 text-[9px] font-black uppercase">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, increment, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            storageBucket: "cic6-pp-web.firebasestorage.app", 
+            messagingSenderId: "248659087868", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let CASETA_CONFIG = {
+            "Edison": ["P", "V"], "Recepcion": ["P"], "Impulso": ["P", "V"], "Carranza": ["P", "V"],
+            "U.N": ["V"], "Michelena": ["P", "V_Principal", "V_Anexo"], "Simon Bolivar": ["P", "V"]
+        };
+
+        let allUsers = [];
+        let selectedUid = null;
+        let myUid = null;
+        let myCaseta = "Edison"; 
+        let cdiUnsubscribe = null;
+        let currentCDIData = {};
+        let filteredResults = [];
+        let selectedIndex = -1;
+
+        const getTodayStr = () => new Date().toISOString().split('T')[0];
+        const getTurnoStr = () => {
+            const h = new Date().getHours();
+            if (h >= 6 && h < 14) return "Matutino";
+            if (h >= 14 && h < 22) return "Vespertino";
+            return "Nocturno";
+        };
+
+        window.onload = async () => {
+            const snap = await getDocs(collection(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios'));
+            snap.forEach(d => allUsers.push({ uid: d.id, ...d.data() }));
+
+            try {
+                const configSnap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Config_Global', 'Casetas'));
+                if(configSnap.exists()) {
+                    CASETA_CONFIG = { ...CASETA_CONFIG, ...configSnap.data() };
+                    refreshCasetaSelector();
+                }
+            } catch(e) {}
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    myUid = user.uid;
+                    await autoDetectCaseta();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    loadSelectedUser(urlParams.get('uid') || user.uid);
+                }
+            });
+        };
+
+        function refreshCasetaSelector() {
+            const selector = document.getElementById('caseta-selector');
+            selector.innerHTML = Object.keys(CASETA_CONFIG).sort().map(c => 
+                `<option value="${c}">${c}</option>`
+            ).join('');
+            selector.value = myCaseta;
+        }
+
+        async function autoDetectCaseta() {
+            const savedCaseta = localStorage.getItem('selectedCaseta');
+            if (savedCaseta && CASETA_CONFIG[savedCaseta]) {
+                myCaseta = savedCaseta;
+                document.getElementById('caseta-selector').value = myCaseta;
+                renderCountingButtons();
+                initCDIListener();
+                return;
+            }
+
+            const dateStr = getTodayStr();
+            const turnoStr = getTurnoStr();
+            try {
+                const regRef = doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'regas', dateStr, turnoStr, myUid);
+                const snap = await getDoc(regRef);
+                if(snap.exists() && snap.data().Caseta) {
+                    myCaseta = snap.data().Caseta;
+                    document.getElementById('caseta-selector').value = myCaseta;
+                }
+            } catch (e) {}
+            
+            renderCountingButtons();
+            initCDIListener();
+        }
+
+        window.changeCaseta = (val) => {
+            myCaseta = val;
+            localStorage.setItem('selectedCaseta', val);
+            renderCountingButtons();
+            initCDIListener();
+        };
+
+        function renderCountingButtons() {
+            const grid = document.getElementById('counting-grid');
+            const config = CASETA_CONFIG[myCaseta] || ["P", "V"];
+            
+            grid.innerHTML = config.map(type => {
+                let icon, color, label;
+                if (type === 'P') { icon = 'fa-user-group'; color = 'text-rose-500'; label = 'Personas'; }
+                else if (type === 'V') { icon = 'fa-car-side'; color = 'text-sky-500'; label = 'Vehículos'; }
+                else if (type === 'V_Principal') { icon = 'fa-car'; color = 'text-sky-500'; label = 'Veh. Principal'; }
+                else if (type === 'V_Anexo') { icon = 'fa-car'; color = 'text-indigo-500'; label = 'Veh. Anexo'; }
+                
+                return `
+                    <button onclick="incrementCDI('${type}')" class="count-btn">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid ${icon} ${color} text-[15px]"></i>
+                            <span id="display-${type}" class="count-value">0</span>
+                        </div>
+                        <span class="count-label">${label}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function initCDIListener() {
+            if(cdiUnsubscribe) cdiUnsubscribe();
+            const dateStr = getTodayStr();
+            const cdiRef = doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'CDI', dateStr);
+
+            cdiUnsubscribe = onSnapshot(cdiRef, (snapshot) => {
+                currentCDIData = snapshot.exists() ? snapshot.data() : {};
+                const config = CASETA_CONFIG[myCaseta] || [];
+                config.forEach(type => {
+                    const el = document.getElementById(`display-${type}`);
+                    if(el) el.innerText = currentCDIData[`${myCaseta}_${type}`] || 0;
+                });
+
+                let totalP = 0, totalV = 0;
+                Object.keys(currentCDIData).forEach(key => {
+                    if(key.endsWith('_P')) totalP += (Number(currentCDIData[key]) || 0);
+                    if(key.includes('_V')) totalV += (Number(currentCDIData[key]) || 0);
+                });
+
+                document.getElementById('total-p').innerText = totalP;
+                document.getElementById('total-v').innerText = totalV;
+                if(!snapshot.exists()) setDoc(cdiRef, { fecha: dateStr }, { merge: true });
+            });
+        }
+
+        window.incrementCDI = async (type) => {
+            const dateStr = getTodayStr();
+            const fieldName = `${myCaseta}_${type}`;
+            const cdiRef = doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'CDI', dateStr);
+            try { await updateDoc(cdiRef, { [fieldName]: increment(1) }); } 
+            catch (e) { await setDoc(cdiRef, { [fieldName]: 1, fecha: dateStr }, { merge: true }); }
+        };
+
+        window.openDetailModal = () => {
+            const list = document.getElementById('detail-list');
+            document.getElementById('detail-date').innerText = `Operación al: ${new Date().toLocaleDateString()}`;
+            list.innerHTML = Object.keys(CASETA_CONFIG).sort().map(caseta => {
+                const config = CASETA_CONFIG[caseta];
+                let p = 0, v = 0;
+                config.forEach(type => {
+                    const val = currentCDIData[`${caseta}_${type}`] || 0;
+                    if(type === 'P') p += val; else if(type.includes('V')) v += val;
+                });
+                return `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 bg-white border border-slate-200 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-house-shield text-[8px] text-slate-400"></i>
+                            </div>
+                            <span class="text-[10px] font-black text-slate-700 uppercase">${caseta}</span>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex items-center gap-1.5"><i class="fa-solid fa-user-group text-rose-400 text-[8px]"></i><span class="text-[10px] font-bold text-slate-900">${p}</span></div>
+                            <div class="flex items-center gap-1.5"><i class="fa-solid fa-car-side text-sky-400 text-[8px]"></i><span class="text-[10px] font-bold text-slate-900">${v}</span></div>
+                        </div>
+                    </div>`;
+            }).join('');
+            document.getElementById('modal-detalle').style.display = 'flex';
+        };
+
+        window.closeDetailModal = () => document.getElementById('modal-detalle').style.display = 'none';
+        window.openNewCasetaModal = () => document.getElementById('modal-caseta').style.display = 'flex';
+        window.closeNewCasetaModal = () => {
+            document.getElementById('modal-caseta').style.display = 'none';
+            document.getElementById('new-caseta-name').value = "";
+            document.getElementById('toggle-p').classList.remove('bg-rose-500', 'text-white');
+            document.getElementById('toggle-v').classList.remove('bg-sky-500', 'text-white');
+        };
+
+        window.createNewCaseta = async () => {
+            const name = document.getElementById('new-caseta-name').value.trim();
+            if(!name) return;
+            const config = [];
+            if(document.getElementById('toggle-p').classList.contains('bg-rose-500')) config.push('P');
+            if(document.getElementById('toggle-v').classList.contains('bg-sky-500')) config.push('V');
+            if(config.length === 0) config.push('P', 'V');
+            CASETA_CONFIG[name] = config;
+            try { await setDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Config_Global', 'Casetas'), CASETA_CONFIG, { merge: true }); } catch(e) {}
+            refreshCasetaSelector();
+            document.getElementById('caseta-selector').value = name;
+            changeCaseta(name);
+            closeNewCasetaModal();
+        };
+
+        async function loadSelectedUser(uid) {
+            selectedUid = uid;
+            const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', uid));
+            if (snap.exists()) {
+                const d = snap.data();
+                document.getElementById('sel-name').innerText = d.nombre || "---";
+                document.getElementById('sel-avatar').innerHTML = d.foto 
+                    ? `<img src="${d.foto}" class="w-full h-full object-cover">` 
+                    : `<i class="fa-solid fa-user text-slate-300"></i>`;
+                document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('disabled'));
+            }
+        }
+
+        window.filterUsers = (val) => {
+            const res = document.getElementById('search-results');
+            selectedIndex = -1;
+            if(!val.trim()){ res.style.display = 'none'; return; }
+            const q = val.toLowerCase();
+            filteredResults = allUsers.filter(u => u.nombre?.toLowerCase().includes(q) || String(u.id_empleado).includes(q)).slice(0, 5);
+            renderResults();
+        };
+
+        function renderResults() {
+            const res = document.getElementById('search-results');
+            res.innerHTML = filteredResults.map((u, index) => `
+                <div class="result-item ${index === selectedIndex ? 'selected' : ''}" onclick="selectUser('${u.uid}')">
+                    ${u.nombre} <span class="opacity-20 text-[8px] ml-1">#${u.id_empleado || '---'}</span>
+                </div>`).join('');
+            res.style.display = filteredResults.length ? 'block' : 'none';
+        }
+
+        window.selectUser = (uid) => {
+            document.getElementById('search-input').value = "";
+            document.getElementById('search-results').style.display = 'none';
+            loadSelectedUser(uid);
+        };
+
+        window.resetToSelf = () => loadSelectedUser(myUid);
+        window.checkSelection = (e, t) => { e.preventDefault(); if(selectedUid) window.location.href = `${t}?uid=${selectedUid}`; };
+
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            if (!filteredResults.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedIndex = (selectedIndex + 1) % filteredResults.length; renderResults(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedIndex = (selectedIndex - 1 + filteredResults.length) % filteredResults.length; renderResults(); }
+            else if (e.key === 'Enter' && selectedIndex >= 0) { e.preventDefault(); selectUser(filteredResults[selectedIndex].uid); }
+        });
+    </script>
+</body>
+</html>

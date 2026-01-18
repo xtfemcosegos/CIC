@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Recorridos - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #f4f7fa; 
+            min-height: 100vh; 
+            padding: 16px; 
+            color: #1c1b1f;
+        }
+
+        .card-material { 
+            background: #ffffff; 
+            border-radius: 32px; 
+            padding: 28px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .btn-primary { 
+            background: #450a0a; 
+            color: white; 
+            border-radius: 20px; 
+            padding: 18px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            font-size: 12px; 
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 12px; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+
+        .option-btn { 
+            flex: 1; 
+            border: 2px solid #f1f5f9; 
+            border-radius: 16px; 
+            padding: 14px; 
+            text-align: center; 
+            font-size: 11px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            color: #94a3b8; 
+            text-transform: uppercase; 
+        }
+        .option-btn.active-si { border-color: #059669; color: #059669; background: #f0fdf4; }
+        .option-btn.active-no { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+        .option-btn.active-choice { border-color: #450a0a; color: #450a0a; background: #fdf8f8; }
+
+        .input-standard { 
+            width: 100%; 
+            background: #f8fafc; 
+            border: 2px solid #f1f5f9; 
+            border-radius: 20px; 
+            padding: 14px 20px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            outline: none; 
+            transition: all 0.2s;
+        }
+        .input-standard:focus { border-color: #450a0a; background: white; }
+
+        #camera-overlay { position: fixed; inset: 0; background: black; z-index: 100; display: none; flex-direction: column; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        .animate-in { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .checkpoint-dot { 
+            width: 8px; height: 8px; background: #059669; border-radius: 50%; 
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="max-w-md mx-auto space-y-6 animate-in">
+        
+        <!-- HEADER OPERADOR (MD3) -->
+        <div class="flex items-center gap-4 bg-white/60 backdrop-blur-md p-4 rounded-[28px] border border-white shadow-sm">
+            <div class="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 border-2 border-white shadow-sm">
+                <img id="op-avatar" src="https://ui-avatars.com/api/?background=450a0a&color=fff&name=O" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <p class="text-[9px] font-black uppercase tracking-[2px] text-slate-400 leading-none mb-1">Terminal Activa</p>
+                <h3 id="op-name" class="text-xs font-bold text-slate-800 uppercase">Cargando...</h3>
+            </div>
+        </div>
+
+        <!-- PASO 1: CONFIGURACIÓN -->
+        <div id="view-setup" class="card-material space-y-6">
+            <div class="text-center">
+                <div class="w-20 h-20 mx-auto bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                    <img id="target-photo" src="" class="hidden w-full h-full rounded-full object-cover">
+                    <i id="target-icon" class="fa-solid fa-user-shield text-3xl text-slate-200"></i>
+                </div>
+                <h2 id="target-name" class="text-lg font-extrabold text-slate-800 uppercase tracking-tight">---</h2>
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-[3px]">Responsable Recorrido</span>
+            </div>
+
+            <div class="space-y-5 pt-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ubicación de Salida</label>
+                    <select id="select-caseta" class="input-standard">
+                        <option value="Complejo OS">Complejo OS</option>
+                        <option value="Michelena">Michelena</option>
+                        <option value="Simón Bolívar">Simón Bolívar</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Modalidad</label>
+                    <div class="flex gap-3">
+                        <div id="btn-interior" class="option-btn" onclick="setPatrolType('Interior')">Interior</div>
+                        <div id="btn-exterior" class="option-btn" onclick="setPatrolType('Exterior')">Exterior</div>
+                    </div>
+                    <input type="hidden" id="patrol-type" value="">
+                </div>
+
+                <button onclick="startPatrol()" class="btn-primary mt-4 shadow-lg shadow-red-900/10">
+                    <i class="fa-solid fa-play"></i> Iniciar Recorrido
+                </button>
+            </div>
+        </div>
+
+        <!-- PASO 2: EN CURSO -->
+        <div id="view-active" class="hidden card-material space-y-8 text-center">
+            <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 bg-red-50 px-4 py-1.5 rounded-full border border-red-100">
+                    <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-black text-red-900 uppercase tracking-widest">Recorrido en Vivo</span>
+                </div>
+                <h2 id="timer" class="text-6xl font-black text-slate-800 tracking-tighter">00:00</h2>
+                <p id="active-meta" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">---</p>
+            </div>
+
+            <div class="space-y-4">
+                <button onclick="openCheckpoint()" class="w-full bg-slate-900 text-white rounded-2xl p-5 font-black uppercase text-[11px] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
+                    <i class="fa-solid fa-location-dot text-red-500"></i> Registrar Punto de Control
+                </button>
+                
+                <div id="checkpoint-status" class="flex flex-wrap justify-center gap-2 min-h-[32px]">
+                    <!-- Puntos -->
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-50">
+                <button onclick="finishPatrol()" class="btn-primary bg-emerald-600 shadow-emerald-900/10">
+                    Finalizar y Evaluar
+                </button>
+            </div>
+        </div>
+
+        <!-- PASO 3: FORMULARIO POST-RECORRIDO -->
+        <div id="view-form" class="hidden card-material space-y-8">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 border-l-4 border-red-900 pl-3">Inspección de Área</h3>
+                <span id="form-progress" class="text-[10px] font-black text-slate-300">0/0</span>
+            </div>
+
+            <div id="questions-container" class="space-y-10">
+                <!-- Preguntas -->
+            </div>
+
+            <div class="space-y-4 pt-8 border-t border-slate-50">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ticket SAFE / SEOF</label>
+                    <input type="text" id="ticket" class="input-standard" placeholder="Opcional">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Observaciones</label>
+                    <textarea id="notes" class="input-standard h-32 py-4 resize-none" placeholder="Detalle cualquier novedad..."></textarea>
+                </div>
+            </div>
+
+            <button onclick="submitReport()" class="btn-primary shadow-red-900/10">
+                Enviar Reporte Final
+            </button>
+        </div>
+
+        <!-- ÉXITO -->
+        <div id="view-success" class="hidden card-material text-center py-16 space-y-6">
+            <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-500 border border-emerald-100">
+                <i class="fa-solid fa-check-double text-4xl"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">Reporte Enviado</h2>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronización completa con la nube</p>
+            </div>
+            <button onclick="location.reload()" class="btn-primary max-w-[200px] mx-auto">Nuevo Registro</button>
+        </div>
+
+    </div>
+
+    <!-- CÁMARA OVERLAY -->
+    <div id="camera-layer">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="absolute inset-0 border-[24px] border-black/40 pointer-events-none"></div>
+        <div class="absolute bottom-12 left-0 w-full flex flex-col items-center gap-6 px-10">
+            <div class="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                <span class="text-white text-[9px] font-black uppercase tracking-widest">Captura de Punto de Control</span>
+            </div>
+            <div class="flex w-full gap-4">
+                <button onclick="closeCamera()" class="flex-1 bg-white/10 text-white p-5 rounded-3xl font-black uppercase text-[10px] backdrop-blur-md">Cancelar</button>
+                <button onclick="capturePoint()" class="flex-[2] bg-white text-black p-5 rounded-3xl font-black uppercase text-[10px] shadow-2xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-camera"></i> Registrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas" class="hidden"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUid = urlParams.get('uid');
+        let operatorUid = null;
+        let employeeName = "";
+        let startTime = null;
+        let timerId = null;
+        let points = [];
+        let stream = null;
+
+        const isWorkDay = [1, 2, 3, 4, 5].includes(new Date().getDay());
+
+        const questions = [
+            { id: 'q1', label: '¿PC de caseta encendida y cámaras CCTV operativas?' },
+            { id: 'q2', label: '¿Llave de elevadores disponible y a la vista?' },
+            { id: 'q3', label: '¿Recorrido realizado al interior de oficinas?' },
+            { id: 'q4', label: '¿Oficinas libres de visitantes solitarios?', note: 'Obligatorio en horario laboral', workOnly: true },
+            { id: 'q5', label: '¿Empleados con gafete visible?', note: 'Regla interna OS', workOnly: true },
+            { id: 'q6', label: '¿Áreas comunes libres de laptops abandonadas?' },
+            { id: 'q7', label: '¿Se reportó alguna incidencia crítica a CCO?' },
+            { id: 'q8', label: '¿Contratistas en sus áreas asignadas?' },
+            { id: 'q9', label: '¿Puertas y portones cerrados correctamente?' },
+            { id: 'q10', label: '¿Luminarias en funcionamiento?' },
+            { id: 'q11', label: '¿Perímetro libre de grafitis o daños?' },
+            { id: 'q12', label: '¿Site en orden (Clima, Acceso, Alarmas)?' }
+        ];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                operatorUid = user.uid;
+                if (!targetUid) targetUid = user.uid;
+                loadData();
+            } else {
+                await signInAnonymously(auth);
+            }
+        });
+
+        async function loadData() {
+            try {
+                // Operador
+                const opSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', operatorUid));
+                if(opSnap.exists()) {
+                    document.getElementById('op-name').innerText = opSnap.data().nombre;
+                    if(opSnap.data().foto) document.getElementById('op-avatar').src = opSnap.data().foto;
+                }
+                // Target
+                const targetSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', targetUid));
+                if (targetSnap.exists()) {
+                    const data = targetSnap.data();
+                    employeeName = data.nombre;
+                    document.getElementById('target-name').innerText = employeeName;
+                    if(data.foto) {
+                        const img = document.getElementById('target-photo');
+                        img.src = data.foto;
+                        img.classList.remove('hidden');
+                        document.getElementById('target-icon').classList.add('hidden');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        window.setPatrolType = (type) => {
+            document.getElementById('patrol-type').value = type;
+            document.getElementById('btn-interior').className = type === 'Interior' ? 'option-btn active-choice' : 'option-btn';
+            document.getElementById('btn-exterior').className = type === 'Exterior' ? 'option-btn active-choice' : 'option-btn';
+        };
+
+        window.startPatrol = () => {
+            if(!document.getElementById('patrol-type').value) return alert("Seleccione modalidad");
+            startTime = new Date();
+            document.getElementById('view-setup').classList.add('hidden');
+            document.getElementById('view-active').classList.remove('hidden');
+            
+            const meta = `${document.getElementById('select-caseta').value} • ${document.getElementById('patrol-type').value}`;
+            document.getElementById('active-meta').innerText = meta;
+
+            timerId = setInterval(() => {
+                const diff = new Date() - startTime;
+                const m = String(Math.floor(diff / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        };
+
+        window.openCheckpoint = async () => {
+            document.getElementById('camera-layer').style.display = 'flex';
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                document.getElementById('video').srcObject = stream;
+            } catch(e) { closeCamera(); }
+        };
+
+        window.closeCamera = () => {
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            document.getElementById('camera-layer').style.display = 'none';
+        };
+
+        window.capturePoint = async () => {
+            const canvas = document.getElementById('canvas');
+            const video = document.getElementById('video');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const photo = canvas.toDataURL('image/jpeg', 0.5);
+            
+            let loc = "No GPS";
+            try {
+                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 4000}));
+                loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            } catch(e) {}
+
+            points.push({ photoData: photo, timestamp: new Date().toISOString(), location: loc });
+            updatePointsUI();
+            closeCamera();
+        };
+
+        function updatePointsUI() {
+            const box = document.getElementById('checkpoint-status');
+            box.innerHTML = points.map(() => `<div class="checkpoint-dot"></div>`).join('');
+        }
+
+        window.finishPatrol = () => {
+            clearInterval(timerId);
+            document.getElementById('view-active').classList.add('hidden');
+            document.getElementById('view-form').classList.remove('hidden');
+            renderQuestions();
+        };
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            const filtered = questions.filter(q => !q.workOnly || isWorkDay);
+            document.getElementById('form-progress').innerText = `0/${filtered.length}`;
+            
+            container.innerHTML = filtered.map(q => `
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-[11px] font-black text-slate-700 uppercase leading-tight">${q.label}</p>
+                        ${q.note ? `<p class="text-[9px] font-bold text-slate-400 mt-1 italic">${q.note}</p>` : ''}
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="option-btn" onclick="setAns('${q.id}', 'si', this)">SÍ</div>
+                        <div class="option-btn" onclick="setAns('${q.id}', 'no', this)">NO</div>
+                    </div>
+                    <input type="hidden" id="ans_${q.id}" value="">
+                </div>
+            `).join('');
+        }
+
+        window.setAns = (id, val, el) => {
+            document.getElementById(`ans_${id}`).value = val;
+            const parent = el.parentElement;
+            parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active-si', 'active-no'));
+            el.classList.add(val === 'si' ? 'active-si' : 'active-no');
+            
+            const answered = document.querySelectorAll('input[type="hidden"][id^="ans_"]').length;
+            const current = Array.from(document.querySelectorAll('input[type="hidden"][id^="ans_"]')).filter(i => i.value).length;
+            document.getElementById('form-progress').innerText = `${current}/${answered}`;
+        };
+
+        window.submitReport = async () => {
+            const inputs = Array.from(document.querySelectorAll('input[type="hidden"][id^="ans_"]'));
+            if(inputs.some(i => !i.value)) return alert("Responda todas las preguntas");
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Sincronizando...';
+
+            const endTime = new Date();
+            const answers = {};
+            inputs.forEach(i => answers[i.id.replace('ans_', '')] = i.value);
+
+            const report = {
+                uid: targetUid,
+                operador: operatorUid,
+                nombre_elemento: employeeName,
+                caseta: document.getElementById('select-caseta').value,
+                tipo: document.getElementById('patrol-type').value,
+                inicio: startTime.toISOString(),
+                fin: endTime.toISOString(),
+                duracion: Math.round((endTime - startTime) / 60000),
+                respuestas: answers,
+                fotos_puntos: points,
+                ticket: document.getElementById('ticket').value,
+                hallazgos: document.getElementById('notes').value,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'Recorridos'), report);
+                document.getElementById('view-form').classList.add('hidden');
+                document.getElementById('view-success').classList.remove('hidden');
+            } catch(e) {
+                alert("Error al guardar");
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
