@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planeación Maestro - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Paleta Fiusha Metal Premium */
+            --metal-fuchsia-dark: #1a031c;
+            --metal-fuchsia-mid: #4a044e;
+            --metal-fuchsia-light: #701a75;
+            
+            --md-primary: var(--metal-fuchsia-mid);
+            --md-outline: #e2e8f0;
+            
+            --cell-width: 62px; 
+            --row-height: 61px; 
+            --header-height: 60px;
+            --left-col-width: 260px;
+            --nav-btn-width: 44px;
+
+            /* Colores de Turno */
+            --color-mat: #fbbf24; 
+            --color-ves: #3b82f6; 
+            --color-noc: #1a031c; 
+            --color-aus: #64748b; 
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+        }
+
+        #auth-overlay {
+            position: fixed; inset: 0; background: #f8fafc;
+            z-index: 2000; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+        }
+
+        .viewport {
+            display: grid;
+            grid-template-columns: var(--left-col-width) 1fr;
+            grid-template-rows: var(--header-height) 1fr;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- CABECERAS --- */
+        .corner-cell {
+            background: var(--metal-fuchsia-dark);
+            color: white;
+            z-index: 150;
+            position: sticky;
+            top: 0; left: 0;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 24px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+        }
+
+        .header-nav-container {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            background: #ffffff;
+            border-bottom: 1px solid var(--md-outline);
+            z-index: 110;
+            overflow: hidden;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.01) 10px, rgba(0,0,0,0.01) 11px);
+        }
+
+        .nav-btn-container {
+            width: var(--nav-btn-width);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            z-index: 120;
+            flex-shrink: 0;
+        }
+
+        .scroll-nav-btn {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--metal-fuchsia-mid);
+            border: 1px solid var(--md-outline);
+            background: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .scroll-nav-btn:hover { background: var(--metal-fuchsia-mid); color: white; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(74, 4, 78, 0.2); }
+
+        #grid-header {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .header-cell {
+            width: var(--cell-width);
+            min-width: var(--cell-width);
+            max-width: var(--cell-width);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-right: 1px solid var(--md-outline);
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .header-cell.is-today {
+            background: #fff1f2;
+            color: #be123c;
+            box-shadow: inset 0 -4px 0 #be123c;
+        }
+
+        /* --- COLUMNA IZQUIERDA --- */
+        .left-col {
+            grid-row: 2;
+            grid-column: 1;
+            overflow-y: hidden;
+            z-index: 90;
+            background: white;
+            border-right: 2px solid var(--md-outline);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+        }
+
+        .user-row-info {
+            height: var(--row-height);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--md-outline);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .user-row-info:hover { background: #fdf2f8; padding-left: 20px; }
+
+        /* --- GRILLA PRINCIPAL --- */
+        .grid-viewport {
+            grid-row: 2;
+            grid-column: 2;
+            overflow: auto;
+            background: #f8fafc;
+            scroll-behavior: smooth;
+        }
+
+        .grid-body-container {
+            display: inline-block;
+            padding: 0 var(--nav-btn-width);
+        }
+
+        .row-container { display: flex; height: var(--row-height); }
+
+        .data-cell {
+            width: var(--cell-width);
+            min-width: var(--cell-width);
+            max-width: var(--cell-width);
+            height: var(--row-height);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            border-right: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            background: white;
+            position: relative;
+            transition: background-color 0.2s;
+            padding: 2px;
+        }
+        .data-cell:hover { background-color: #fdf4ff; }
+
+        /* --- ETIQUETAS "PRO" --- */
+        .shift-tag {
+            font-size: 8px;
+            font-weight: 900;
+            width: 48px;
+            height: 18px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+            border: 1px solid rgba(0,0,0,0.1);
+            letter-spacing: 0.05em;
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.1), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        .shift-tag:hover { transform: scale(1.1); z-index: 10; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
+
+        .tag-matutino { background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); color: #451a03; }
+        .tag-vespertino { background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); color: white; }
+        .tag-nocturno { background: linear-gradient(180deg, #312e81 0%, #1a031c 100%); color: #f472b6; border-color: rgba(244, 114, 182, 0.2); }
+        .tag-vacaciones { background: linear-gradient(180deg, #10b981 0%, #059669 100%); color: white; }
+        .tag-descanso { background: linear-gradient(180deg, #94a3b8 0%, #475569 100%); color: white; }
+        .tag-falta { background: linear-gradient(180deg, #fef08a 0%, #facc15 100%); color: #991b1b; }
+        .tag-suspendido { background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%); color: white; }
+        .tag-incapacidad { background: linear-gradient(180deg, #92400e 0%, #78350f 100%); color: white; }
+        .tag-permiso { background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%); color: #064e3b; }
+        .tag-ausentismo { background: linear-gradient(180deg, #94a3b8 0%, #475569 100%); color: white; }
+
+        .incident-badge {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.6);
+            z-index: 5;
+        }
+
+        .btn-go-today {
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+            width: fit-content;
+        }
+        .btn-go-today:hover { background: white; color: var(--metal-fuchsia-dark); transform: scale(1.05); }
+
+        .group-header {
+            background: #f8fafc; height: 36px; display: flex; 
+            align-items: center; padding: 0 16px; font-weight: 900; font-size: 10px; 
+            color: var(--metal-fuchsia-mid); text-transform: uppercase; letter-spacing: 0.12em;
+            border-bottom: 1px solid var(--md-outline); border-right: 1px solid var(--md-outline);
+            background-image: linear-gradient(to right, #f8fafc, #ffffff);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* --- MENÚ CONTEXTUAL Y SUBMENÚS CON PUENTE --- */
+        .context-submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            padding-left: 12px; /* Puente invisible */
+            margin-left: -4px;
+            z-index: 1001;
+        }
+
+        /* El puente invisible real para el mouse */
+        .context-submenu::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 12px;
+            height: 100%;
+            background: transparent;
+        }
+
+        .context-menu-item:hover > .context-submenu {
+            display: block;
+        }
+
+        .submenu-content {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 6px;
+            min-width: 180px;
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <div id="auth-overlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Sincronizando Terminal Maestro</p>
+    </div>
+
+    <!-- Menú Contextual Premium -->
+    <div id="context-menu" class="fixed z-[1000] bg-white/95 rounded-2xl shadow-2xl p-2 border border-slate-200 hidden min-w-[220px] backdrop-blur-md">
+        <div class="p-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 mb-2 text-center">Operaciones de Celda</div>
+        
+        <!-- Turnos con Submenús de Casetas -->
+        <div class="context-menu-item group relative p-3 hover:bg-yellow-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-amber-400"></div> Matutino</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu">
+                <div class="submenu-content" id="sub-matutino"></div>
+            </div>
+        </div>
+
+        <div class="context-menu-item group relative p-3 hover:bg-blue-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Vespertino</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu">
+                <div class="submenu-content" id="sub-vespertino"></div>
+            </div>
+        </div>
+
+        <div class="context-menu-item group relative p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-900"></div> Nocturno</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu">
+                <div class="submenu-content" id="sub-nocturno"></div>
+            </div>
+        </div>
+
+        <!-- Ausentismo -->
+        <div class="context-menu-item group relative p-3 hover:bg-fuchsia-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-400"></div> Ausentismo</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu">
+                <div class="submenu-content">
+                    <div class="p-2 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center border-b mb-2">Seleccionar Motivo</div>
+                    <div onclick="window.quickAssignAbsence('Descanso')" class="p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Descanso</div>
+                    <div onclick="window.quickAssignAbsence('Vacaciones')" class="p-2 hover:bg-emerald-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Vacaciones</div>
+                    <div onclick="window.quickAssignAbsence('Falta')" class="p-2 hover:bg-yellow-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Falta</div>
+                    <div onclick="window.quickAssignAbsence('Incapacidad')" class="p-2 hover:bg-amber-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-amber-800"></div> Incapacidad</div>
+                    <div onclick="window.quickAssignAbsence('Suspendido')" class="p-2 hover:bg-orange-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-orange-600"></div> Suspendido</div>
+                    <div onclick="window.quickAssignAbsence('Permiso')" class="p-2 hover:bg-orange-50 rounded-lg mb-2 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-orange-200"></div> Permiso</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opción Patrones -->
+        <div onclick="window.openPatrones()" class="context-menu-item p-3 hover:bg-indigo-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex items-center gap-3 transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Patrones
+        </div>
+
+        <!-- OPCIONES DE ELIMINACIÓN -->
+        <div class="h-px bg-slate-100 my-2"></div>
+
+        <div onclick="window.quickDelete()" class="p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3 transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Limpiar Celda
+        </div>
+
+        <div onclick="window.deleteFromHere()" class="p-3 hover:bg-red-100 text-red-700 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3 transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 5H19V11M19 5L5 19M5 19H11M5 19V13"></path></svg>
+            Eliminar desde aquí
+        </div>
+    </div>
+
+    <div class="viewport">
+        <!-- Esquina -->
+        <div class="base-cell corner-cell">
+            <span class="text-[14px] font-black uppercase tracking-tight leading-none mb-1">Planeación</span>
+            <div class="btn-go-today" onclick="window.scrollToToday()">HOY</div>
+        </div>
+
+        <!-- Fila de Fechas -->
+        <div class="header-nav-container">
+            <div class="nav-btn-container">
+                <button class="scroll-nav-btn" onclick="window.handleManualScroll(-1)" title="Semana Anterior">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+            </div>
+            
+            <div id="grid-header" class="no-scrollbar"></div>
+            
+            <div class="nav-btn-container">
+                <button class="scroll-nav-btn" onclick="window.handleManualScroll(1)" title="Siguiente Semana">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div id="left-col" class="left-col no-scrollbar"></div>
+        
+        <div id="grid-viewport" class="grid-viewport">
+            <div id="grid-body-container" class="grid-body-container">
+                <div id="grid-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let users = [];
+        let userDataMap = {}; 
+        let baseDate = new Date(); baseDate.setDate(baseDate.getDate() - 60); 
+
+        let activeListeners = new Map();
+        let currentContext = { uid: null, dateId: null };
+        const totalDays = 180; 
+
+        const UI = {
+            viewport: document.getElementById('grid-viewport'),
+            gridBody: document.getElementById('grid-body'),
+            header: document.getElementById('grid-header'),
+            overlay: document.getElementById('auth-overlay'),
+            menu: document.getElementById('context-menu')
+        };
+
+        const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
+
+        window.handleManualScroll = (dir) => { UI.viewport.scrollLeft += (dir * 62 * 7); };
+        window.scrollToToday = () => { UI.viewport.scrollTo({ left: (60 * 62), behavior: 'smooth' }); };
+
+        async function startSystem() {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            users = usersSnap.docs.map(doc => {
+                const d = doc.data();
+                userDataMap[doc.id] = d;
+                return { uid: doc.id, ...d };
+            }).filter(u => (u.status || "").toLowerCase() !== 'baja').sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            
+            // Poblar submenús de casetas una sola vez
+            ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
+                const container = document.getElementById(`sub-${shift}`);
+                container.innerHTML = `<div class="p-2 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center border-b mb-2">Asignar Caseta</div>`;
+                casetasOrden.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = "p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3 text-[9px] font-bold";
+                    div.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> ${c}`;
+                    div.onclick = () => window.quickAssignShift(shift, c);
+                    container.appendChild(div);
+                });
+            });
+
+            renderStructure();
+            setupAssignments();
+            UI.overlay.style.display = 'none';
+            setTimeout(window.scrollToToday, 500);
+        }
+
+        function renderStructure() {
+            const grouped = users.reduce((acc, el) => {
+                const g = el.acceso_predeterminado || "GENERAL";
+                if (!acc[g]) acc[g] = [];
+                acc[g].push(el);
+                return acc;
+            }, {});
+
+            UI.header.innerHTML = ''; 
+            document.getElementById('left-col').innerHTML = ''; 
+            UI.gridBody.innerHTML = '';
+            
+            const realTodayStr = new Date().toISOString().split('T')[0];
+
+            for(let i=0; i<totalDays; i++) {
+                const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                const isoStr = d.toISOString().split('T')[0];
+                const cell = document.createElement('div');
+                cell.className = `header-cell ${isoStr === realTodayStr ? 'is-today' : ''}`;
+                cell.innerHTML = `<span class="opacity-40 text-[7px] font-black uppercase mb-1">${d.toLocaleDateString('es-ES', { weekday: 'short' })}</span><span class="text-xs font-black">${d.getDate()}</span>`;
+                UI.header.appendChild(cell);
+            }
+
+            casetasOrden.forEach(groupName => {
+                if(!grouped[groupName]) return;
+                const ghL = document.createElement('div'); ghL.className = 'group-header'; ghL.innerText = groupName; document.getElementById('left-col').appendChild(ghL);
+                const ghR = document.createElement('div'); ghR.className = 'group-header'; ghR.style.width = `${totalDays * 62}px`; UI.gridBody.appendChild(ghR);
+
+                grouped[groupName].forEach(user => {
+                    const uRow = document.createElement('div');
+                    uRow.className = 'user-row-info';
+                    uRow.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `../../Perfil.html?uid=${user.uid}` }, '*');
+                    uRow.innerHTML = `<img src="${user.foto || ''}" class="w-9 h-9 rounded-xl object-cover shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=${user.nombre}&background=4a044e&color=fff'"><div class="flex flex-col leading-none overflow-hidden"><span class="text-[10px] font-black uppercase truncate mb-1.5 text-slate-800">${user.nombre}</span><span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">${user.puesto || 'S/P'}</span></div>`;
+                    document.getElementById('left-col').appendChild(uRow);
+
+                    const gRow = document.createElement('div');
+                    gRow.className = 'row-container';
+                    for(let i=0; i<totalDays; i++) {
+                        const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                        const dateId = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
+                        const cell = document.createElement('div');
+                        cell.id = `cell-${user.uid}-${dateId}`;
+                        cell.className = `data-cell`;
+                        cell.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${user.uid}&date=${d.toISOString().split('T')[0]}` }, '*');
+                        cell.oncontextmenu = (e) => {
+                            e.preventDefault();
+                            currentContext = { uid: user.uid, dateId };
+                            UI.menu.style.display = 'block'; 
+                            UI.menu.style.left = `${Math.min(e.clientX, window.innerWidth - 240)}px`; 
+                            UI.menu.style.top = `${Math.min(e.clientY, window.innerHeight - 300)}px`;
+                        };
+                        gRow.appendChild(cell);
+                    }
+                    UI.gridBody.appendChild(gRow);
+                });
+            });
+        }
+
+        function setupAssignments() {
+            activeListeners.forEach(u => u()); activeListeners.clear();
+            for (let i = 30; i < 120; i++) { 
+                const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                const dateId = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
+                ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
+                    const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t), (snap) => {
+                        snap.forEach(docSnap => updateCellUI(docSnap.id, dateId, docSnap.data(), t));
+                        snap.docChanges().forEach(change => { if (change.type === "removed") clearCellUI(change.doc.id, dateId, t); });
+                    });
+                    activeListeners.set(`${dateId}_${t}`, unsub);
+                });
+            }
+        }
+
+        const contractionMap = { 'matutino': 'Mat', 'vespertino': 'Ves', 'nocturno': 'Noc', 'vacaciones': 'Vac', 'descanso': 'Des', 'falta': 'Fal', 'suspendido': 'Sus', 'incapacidad': 'Inc', 'permiso': 'Per' };
+
+        function updateCellUI(uid, dateId, data, type) {
+            const cell = document.getElementById(`cell-${uid}-${dateId}`);
+            if (!cell) return;
+            let existing = cell.querySelector(`.tag-${type}`);
+            if (existing) existing.remove();
+
+            const motive = (data.motivo || "").toLowerCase();
+            let specificClass = `tag-${type}`;
+            let label = contractionMap[type] || 'Reg';
+            
+            if (type === 'ausentismo') {
+                label = 'Aus'; 
+                if (motive.includes('vacaciones')) { specificClass = 'tag-vacaciones'; label = 'Vac'; }
+                else if (motive.includes('descanso')) { specificClass = 'tag-descanso'; label = 'Des'; }
+                else if (motive.includes('falta')) { specificClass = 'tag-falta'; label = 'Fal'; }
+                else if (motive.includes('suspendido')) { specificClass = 'tag-suspendido'; label = 'Sus'; }
+                else if (motive.includes('incapacidad')) { specificClass = 'tag-incapacidad'; label = 'Inc'; }
+                else if (motive.includes('permiso')) { specificClass = 'tag-permiso'; label = 'Per'; }
+            }
+
+            const tag = document.createElement('div');
+            tag.className = `shift-tag ${specificClass} animate-in zoom-in-95 duration-200`;
+            tag.innerHTML = `<span>${label}</span>`;
+
+            if (data.es_extra) tag.innerHTML += `<div class="incident-badge bg-pink-500" style="top: -4px; right: -4px;"></div>`;
+            if (data.es_recuperacion) tag.innerHTML += `<div class="incident-badge bg-emerald-500" style="top: -4px; left: -4px;"></div>`;
+            if (data.retardo) tag.innerHTML += `<div class="incident-badge bg-red-600" style="bottom: -4px; right: -4px;"></div>`;
+            if (data.es_festivo) tag.innerHTML += `<div class="incident-badge bg-orange-400" style="bottom: -4px; left: -4px;"></div>`;
+
+            tag.onclick = (e) => { 
+                e.stopPropagation(); 
+                const iso = `${dateId.substring(4)}-${dateId.substring(2,4)}-${dateId.substring(0,2)}`;
+                window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${uid}&date=${iso}&active=${type}` }, '*'); 
+            };
+
+            const order = { 'matutino': 0, 'vespertino': 1, 'nocturno': 2, 'ausentismo': 3 };
+            tag.dataset.order = order[type];
+            const children = Array.from(cell.children);
+            const nextChild = children.find(child => parseInt(child.dataset.order) > order[type]);
+            if (nextChild) cell.insertBefore(tag, nextChild);
+            else cell.appendChild(tag);
+        }
+
+        function clearCellUI(uid, dateId, type) {
+            const cell = document.getElementById(`cell-${uid}-${dateId}`);
+            if (cell) { const tag = cell.querySelector(`.tag-${type}`); if (tag) tag.remove(); }
+        }
+
+        UI.viewport.onscroll = () => { 
+            document.getElementById('left-col').scrollTop = UI.viewport.scrollTop; 
+            UI.header.scrollLeft = UI.viewport.scrollLeft; 
+        };
+        
+        window.quickAssignShift = async (turno, caseta) => {
+            UI.menu.style.display = 'none';
+            const { uid, dateId } = currentContext;
+            const user = userDataMap[uid];
+            
+            let entryTime = turno === 'matutino' ? "07:00" : (turno === 'vespertino' ? "15:00" : "23:00");
+            if (user && user.Entrada_predetermiada && user.Entrada_predetermiada[turno]) {
+                entryTime = user.Entrada_predetermiada[turno];
+            } else if (user && user.Entrada_predeterminada && user.Entrada_predeterminada[turno]) {
+                entryTime = user.Entrada_predeterminada[turno];
+            }
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, turno, uid), { 
+                Caseta: caseta, turno, 
+                entrada_planificada: entryTime,
+                es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false
+            }, { merge: true });
+            
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid));
+        };
+
+        window.quickAssignAbsence = async (motivo) => {
+            UI.menu.style.display = 'none';
+            const { uid, dateId } = currentContext;
+            ['matutino', 'vespertino', 'nocturno'].forEach(async t => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid)));
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid), { motivo }, { merge: true });
+        };
+
+        window.openPatrones = () => {
+            UI.menu.style.display = 'none';
+            window.parent.postMessage({ type: 'navigateRight', url: `Patrones.html?uid=${currentContext.uid}` }, '*');
+        };
+
+        window.quickDelete = async () => {
+            UI.menu.style.display = 'none';
+            const { uid, dateId } = currentContext;
+            ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(async t => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid)));
+        };
+
+        // --- NUEVA LÓGICA: Borrado en cascada desde fecha seleccionada ---
+        window.deleteFromHere = async () => {
+            if (!confirm("¿Confirma que desea eliminar toda la programación de este elemento desde esta fecha hacia adelante?")) return;
+            
+            UI.menu.style.display = 'none';
+            const { uid, dateId } = currentContext;
+            
+            // Reconstruir objeto de fecha inicial
+            const day = parseInt(dateId.substring(0, 2));
+            const month = parseInt(dateId.substring(2, 4)) - 1;
+            const year = parseInt(dateId.substring(4, 8));
+            const startDate = new Date(year, month, day);
+
+            // Calcular fecha final del sistema (baseDate + totalDays)
+            const endDate = new Date(baseDate);
+            endDate.setDate(baseDate.getDate() + totalDays);
+
+            const promises = [];
+            let loopDate = new Date(startDate);
+
+            while (loopDate <= endDate) {
+                const dId = `${String(loopDate.getDate()).padStart(2, '0')}${String(loopDate.getMonth() + 1).padStart(2, '0')}${loopDate.getFullYear()}`;
+                ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
+                    promises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dId, t, uid)));
+                });
+                loopDate.setDate(loopDate.getDate() + 1);
+            }
+
+            try {
+                await Promise.all(promises);
+            } catch (err) {
+                console.error("Error en borrado masivo:", err);
+            }
+        };
+
+        document.addEventListener('click', (e) => { if (!e.target.closest('#context-menu')) UI.menu.style.display = 'none'; });
+        onAuthStateChanged(auth, (user) => { if (user) startSystem(); else signInAnonymously(auth); });
+    </script>
+</body>
+</html>

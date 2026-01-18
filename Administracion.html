@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Protección Patrimonial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Barra de tareas Azul Marino Metálico */
+        .metallic-bar {
+            background: linear-gradient(90deg, #000c24 25%, #001a4d 50%, #000c24 75%);
+            background-size: 200% 100%;
+            animation: shimmer 8s infinite linear;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            height: 42px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            will-change: background-position; /* Optimización de renderizado */
+        }
+
+        /* --- ÁREA DE TABS --- */
+        #tabs-container {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%),
+                repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.03) 15px, rgba(255,255,255,0.03) 16px);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            border-radius: 6px;
+            margin: 2px 10px;
+            height: 38px; 
+            display: flex;
+            align-items: flex-end; 
+            padding: 0 4px;
+            overflow: hidden;
+        }
+
+        .main-wrapper {
+            display: flex;
+            height: calc(100vh - 42px);
+            width: 100%;
+            overflow: hidden;
+            background: #020617;
+        }
+
+        #desktop {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            min-width: 0;
+        }
+
+        .app-tab {
+            transition: all 0.15s ease-out;
+            max-width: 200px;
+            background: linear-gradient(180deg, #f1f5f9 0%, #94a3b8 100%);
+            border: 1px solid rgba(0,0,0,0.4);
+            border-bottom: none;
+            color: #1e293b;
+            height: 85%; 
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            margin-right: 2px;
+            position: relative;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+
+        .app-tab.active {
+            background: var(--active-color, #0f172a);
+            color: #ffffff;
+            border-top: 2px solid #38bdf8;
+            height: 95%; 
+            z-index: 10;
+        }
+
+        .app-window {
+            height: 100%;
+            width: 100%;
+            display: none;
+            overflow: hidden;
+            flex-direction: column;
+            pointer-events: none; /* Evita interferencia de apps inactivas */
+        }
+
+        .app-window.active {
+            display: flex;
+            pointer-events: auto;
+        }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* --- PANEL LATERAL --- */
+        #side-panel {
+            width: 0;
+            background: white;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border-left: 0 solid rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            z-index: 200;
+        }
+
+        #side-panel.open { width: 450px; border-left-width: 1px; }
+
+        .btn-close-side {
+            position: absolute; top: 12px; right: 12px; z-index: 100;
+            width: 32px; height: 32px; background: rgba(15, 23, 42, 0.05);
+            backdrop-filter: blur(8px); color: #0f172a; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: bold; transition: all 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        #loading-screen {
+            position: fixed; inset: 0; background: #020617;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.5s ease;
+        }
+
+        .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: #38bdf8; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-slate-900 overflow-hidden font-sans text-slate-200">
+
+    <div id="loading-screen">
+        <div class="loader mb-4"></div>
+        <h2 class="text-white text-xs font-bold tracking-[0.3em] uppercase text-center px-4">Optimizando Entorno CIC</h2>
+    </div>
+
+    <nav class="metallic-bar w-full flex items-center px-4 relative z-50">
+        <button id="start-button" class="flex items-center gap-2 px-3 py-1 hover:bg-white/10 rounded-lg transition-all group">
+            <img src="M/Apps.png" alt="Apps" class="h-5 w-5 object-contain group-hover:scale-110 transition-transform">
+            <span class="font-bold tracking-widest hidden md:block text-[9px] uppercase text-white">Apps</span>
+        </button>
+
+        <div class="h-5 w-px bg-white/20 mx-1"></div>
+
+        <div id="tabs-container" class="flex-1 no-scrollbar">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="app-tab active" style="--active-color: #0f172a">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Escritorio
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2 h-full">
+            <div class="h-[80%] bg-black/40 px-3 flex items-center rounded border border-white/5">
+                <span id="system-time" class="text-sm font-bold text-white tracking-tighter">00:00:00</span>
+            </div>
+            <button onclick="handleLogout()" class="px-3 h-[80%] bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[9px] uppercase">Salir</button>
+        </div>
+    </nav>
+
+    <div id="app-launcher" class="hidden absolute top-[45px] left-4 w-80 glass-panel rounded-2xl shadow-2xl p-6 z-50 bg-slate-900/95 backdrop-blur-xl border border-white/10">
+        <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Servicios Activos</h3>
+        <div class="grid grid-cols-1 gap-2">
+            <button onclick="openApp('regas', 'Registro Asistencia', 'M/Logo-App/RegAs.png', 'Apps/RegAs.html', '#4a044e')" class="flex items-center gap-4 p-3 hover:bg-white/10 rounded-xl transition-all w-full text-left group">
+                <div class="h-10 w-10 bg-indigo-500/20 rounded-lg flex items-center justify-center border border-indigo-500/30">
+                    <img src="M/Logo-App/RegAs.png" class="h-7 w-7 object-contain">
+                </div>
+                <div class="text-left">
+                    <span class="block text-[11px] font-bold text-white uppercase">Registro Asistencia</span>
+                    <span class="block text-[8px] text-slate-400 uppercase">Operaciones y Personal</span>
+                </div>
+            </button>
+            <button onclick="openApp('regsin', 'Registro Siniestros', 'M/Logo-App/RegSin.png', 'Apps/RegSin.html', '#7f1d1d')" class="flex items-center gap-4 p-3 hover:bg-white/10 rounded-xl transition-all w-full text-left group">
+                <div class="h-10 w-10 bg-red-500/20 rounded-lg flex items-center justify-center border border-red-500/30">
+                    <img src="M/Logo-App/RegSin.png" class="h-7 w-7 object-contain">
+                </div>
+                <div class="text-left">
+                    <span class="block text-[11px] font-bold text-white uppercase">Registro Siniestros</span>
+                    <span class="block text-[8px] text-slate-400 uppercase">Incidentes y Reportes</span>
+                </div>
+            </button>
+            <button onclick="openApp('users', 'Administración de usuarios', 'M/Logo-App/Users.png', 'Apps/Admin_Users.html', '#0369a1')" class="flex items-center gap-4 p-3 hover:bg-white/10 rounded-xl transition-all w-full text-left group">
+                <div class="h-10 w-10 bg-sky-500/20 rounded-lg flex items-center justify-center border border-sky-500/30">
+                    <img src="M/Logo-App/Users.png" class="h-7 w-7 object-contain">
+                </div>
+                <div class="text-left">
+                    <span class="block text-[11px] font-bold text-white uppercase">Administración de usuarios</span>
+                    <span class="block text-[8px] text-slate-400 uppercase">Perfiles y Accesos</span>
+                </div>
+            </button>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <img id="launcher-user-img" src="" class="h-10 w-10 rounded-full object-cover bg-slate-700 hidden">
+                    <div id="launcher-user-initials" class="h-10 w-10 bg-slate-800 rounded-full flex items-center justify-center font-bold text-xs border border-white/10 text-white">..</div>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="text-[11px] font-bold truncate text-white" id="launcher-user-name">Usuario</div>
+                    <div class="text-[9px] text-slate-400 uppercase truncate" id="launcher-user-puesto">Perfil</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+        <main id="desktop">
+            <div id="view-dashboard" class="app-window active items-center justify-center p-6 text-center">
+                <div class="opacity-20 select-none">
+                    <img src="M/Logo.png" class="h-48 mx-auto mb-8 grayscale">
+                    <h2 class="text-xl font-light tracking-[0.4em] uppercase text-white">Terminal de Administración</h2>
+                </div>
+            </div>
+            <div id="app-content-container" class="h-full w-full"></div>
+        </main>
+
+        <aside id="side-panel">
+            <button onclick="closeSidePanel()" class="btn-close-side">×</button>
+            <div class="flex-1 bg-white">
+                <iframe id="side-panel-frame" class="w-full h-full"></iframe>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", "authDomain": "cic6-pp-web.firebaseapp.com", "projectId": "cic6-pp-web", "appId": "1:248659087868:web:a277ef700d83c7f1d22279"}');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let currentUserData = null;
+        let openAppsRegistry = []; 
+        let currentActiveTab = 'dashboard';
+        const openAppsSet = new Set(['dashboard']);
+
+        const hideLoadingScreen = () => {
+            const ls = document.getElementById('loading-screen');
+            if (ls) { ls.style.opacity = '0'; setTimeout(() => ls.style.display = 'none', 500); }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user && !user.isAnonymous) {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', user.uid));
+                if (snap.exists()) {
+                    currentUserData = snap.data();
+                    updateUserProfileUI(currentUserData);
+                    restoreAppState();
+                }
+                hideLoadingScreen();
+            } else { window.location.href = 'index.html'; }
+        });
+
+        function updateUserProfileUI(data) {
+            document.getElementById('launcher-user-name').textContent = data.nombre || "Usuario";
+            document.getElementById('launcher-user-puesto').textContent = data.puesto || "Personal";
+            const imgEl = document.getElementById('launcher-user-img');
+            const initialsEl = document.getElementById('launcher-user-initials');
+            if (data.foto) { imgEl.src = data.foto; imgEl.classList.remove('hidden'); initialsEl.classList.add('hidden'); }
+            else { imgEl.classList.add('hidden'); initialsEl.classList.remove('hidden'); initialsEl.textContent = (data.nombre || "U").substring(0, 2).toUpperCase(); }
+        }
+
+        window.openApp = (id, title, iconPath, url, color = '#0f172a', shouldSwitch = true) => {
+            document.getElementById('app-launcher').classList.add('hidden');
+            if (openAppsSet.has(id)) { if (shouldSwitch) switchTab(id); return; }
+
+            const tab = document.createElement('button');
+            tab.id = `tab-${id}`;
+            tab.onclick = () => switchTab(id);
+            tab.className = `app-tab`;
+            tab.style.setProperty('--active-color', color);
+            tab.innerHTML = `<img src="${iconPath}" class="h-3 w-3 object-contain mr-2"> <span class="truncate">${title}</span> <span onclick="event.stopPropagation(); closeApp('${id}')" class="ml-3 hover:text-red-500">×</span>`;
+            document.getElementById('tabs-container').appendChild(tab);
+
+            const win = document.createElement('div');
+            win.id = `view-${id}`;
+            win.className = `app-window`;
+            win.innerHTML = `<iframe id="frame-${id}" src="${url}" loading="lazy"></iframe>`;
+            document.getElementById('app-content-container').appendChild(win);
+            
+            openAppsSet.add(id);
+            openAppsRegistry.push({ id, title, iconPath, url, color });
+            if (shouldSwitch) switchTab(id);
+        };
+
+        window.switchTab = (id) => {
+            currentActiveTab = id;
+            document.querySelectorAll('.app-tab').forEach(t => t.classList.toggle('active', t.id === `tab-${id}`));
+            document.querySelectorAll('.app-window').forEach(w => w.classList.toggle('active', w.id === `view-${id}`));
+            
+            // Sincronizar estado del panel lateral solo con la app activa
+            const isPanelOpen = document.getElementById('side-panel').classList.contains('open');
+            notifyAppOfPanelState(id, isPanelOpen);
+
+            if (id === 'dashboard') closeSidePanel();
+            saveAppState();
+        };
+
+        window.closeApp = (id) => {
+            if (id === 'dashboard') return;
+            const iframe = document.getElementById(`frame-${id}`);
+            if (iframe) iframe.src = "about:blank"; // Limpieza de memoria inmediata
+
+            document.getElementById(`tab-${id}`)?.remove();
+            document.getElementById(`view-${id}`)?.remove();
+            openAppsSet.delete(id);
+            openAppsRegistry = openAppsRegistry.filter(a => a.id !== id);
+            switchTab('dashboard');
+        };
+
+        // --- OPTIMIZACIÓN DE MENSAJERÍA ---
+        function notifyAppOfPanelState(id, isOpen) {
+            const frame = document.getElementById(`frame-${id}`);
+            if (frame && frame.contentWindow) {
+                frame.contentWindow.postMessage({ type: 'SIDE_PANEL_STATE_CHANGED', open: isOpen }, '*');
+            }
+        }
+
+        function saveAppState() {
+            localStorage.setItem('cic_open_apps', JSON.stringify(openAppsRegistry));
+            localStorage.setItem('cic_active_tab', currentActiveTab);
+        }
+
+        function restoreAppState() {
+            const savedApps = JSON.parse(localStorage.getItem('cic_open_apps') || '[]');
+            const savedActive = localStorage.getItem('cic_active_tab') || 'dashboard';
+            savedApps.forEach(app => openApp(app.id, app.title, app.iconPath, app.url, app.color, false));
+            switchTab(savedActive);
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'REQUEST_USER_CONTEXT') {
+                event.source.postMessage({ type: 'USER_CONTEXT_RESPONSE', user: { uid: auth.currentUser?.uid, ...currentUserData }, appId }, '*');
+            }
+            if (event.data.type === 'OPEN_SIDE_PANEL') {
+                document.getElementById('side-panel-frame').src = event.data.url;
+                document.getElementById('side-panel').classList.add('open');
+                notifyAppOfPanelState(currentActiveTab, true);
+            }
+            if (event.data.type === 'CLOSE_SIDE_PANEL') closeSidePanel();
+        });
+
+        window.closeSidePanel = () => {
+            document.getElementById('side-panel').classList.remove('open');
+            setTimeout(() => { document.getElementById('side-panel-frame').src = 'about:blank'; }, 400);
+            notifyAppOfPanelState(currentActiveTab, false);
+        };
+
+        setInterval(() => { document.getElementById('system-time').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }, 1000);
+
+        const startBtn = document.getElementById('start-button');
+        const launcher = document.getElementById('app-launcher');
+        startBtn.onmouseenter = () => launcher.classList.remove('hidden');
+        launcher.onmouseenter = () => launcher.classList.remove('hidden');
+        document.addEventListener('mouseover', (e) => { if (!launcher.contains(e.target) && !startBtn.contains(e.target)) launcher.classList.add('hidden'); });
+
+        window.handleLogout = async () => { localStorage.clear(); await signOut(auth); window.location.href = 'index.html'; };
+    </script>
+</body>
+</html>

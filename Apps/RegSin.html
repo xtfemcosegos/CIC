@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC6 - Registro de Siniestros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Colores Metal Rojo */
+            --metal-red-dark: #2d0505;
+            --metal-red-mid: #450a0a;
+            --metal-red-light: #7f1d1d;
+            
+            --md-surface: #ffffff;
+            --md-background: #fef2f2;
+            --md-outline: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-background);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- ENCABEZADO --- */
+        .header-surface {
+            position: relative;
+            background: linear-gradient(135deg, var(--metal-red-dark) 0%, var(--metal-red-mid) 50%, var(--metal-red-light) 100%);
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+
+        .header-surface::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(255,255,255, 0.03) 0px, rgba(255,255,255, 0.03) 1px, transparent 1px, transparent 10px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .header-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .header-btn.active {
+            background: white;
+            color: var(--metal-red-mid);
+            border-color: white;
+        }
+
+        /* --- RIBBON DE PESTAÑAS --- */
+        .tool-ribbon {
+            height: 32px;
+            background: #cbd5e1;
+            border-bottom: 1px solid #94a3b8;
+            display: flex;
+            align-items: stretch;
+            z-index: 80;
+            transition: all 0.3s ease;
+        }
+        .tool-ribbon.hidden {
+            height: 0;
+            border-bottom: none;
+            overflow: hidden;
+        }
+
+        .tabs-manager {
+            display: flex;
+            height: 100%;
+            align-items: stretch;
+            flex: 1;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .tabs-manager::-webkit-scrollbar { display: none; }
+
+        .tab-item {
+            background: #ffffff;
+            padding: 0 16px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            min-width: 100px;
+            max-width: 350px; 
+            flex-shrink: 0;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            border-right: 1px solid #cbd5e1;
+            height: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tab-item.active {
+            background: linear-gradient(180deg, var(--metal-red-mid) 0%, var(--metal-red-dark) 100%);
+            color: #ffffff;
+            box-shadow: inset 0 -2px 0 #ef4444; 
+            z-index: 10;
+        }
+
+        .tab-close {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .tab-close:hover { opacity: 1; background: rgba(0,0,0,0.1); color: #f87171; }
+
+        /* --- VISOR --- */
+        .viewport {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+
+        .module-frame {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: none;
+            display: none; 
+        }
+
+        .module-frame.active {
+            display: block;
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-surface">
+        <div class="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span class="font-bold tracking-widest text-sm uppercase">RegSin</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-historial" onclick="switchView('historial')" class="header-btn active">
+                <i class="fa-solid fa-clock-rotate-left mr-2"></i> Historial
+            </button>
+            <button onclick="addNewSiniestro()" class="header-btn">
+                <i class="fa-solid fa-plus mr-2"></i> Nuevo Registro
+            </button>
+        </div>
+    </header>
+
+    <nav id="tool-ribbon" class="tool-ribbon hidden">
+        <div id="tabs-manager" class="tabs-manager"></div>
+    </nav>
+
+    <main id="viewport" class="viewport">
+        <iframe id="frame-historial" src="Componentes/RegSin/Historial.html" class="module-frame active animate-fade"></iframe>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+        const viewsBase = "Componentes/RegSin/";
+
+        const UI = {
+            tabsContainer: document.getElementById('tabs-manager'),
+            ribbon: document.getElementById('tool-ribbon'),
+            viewport: document.getElementById('viewport'),
+            btnHistorial: document.getElementById('btn-historial')
+        };
+
+        let openTabs = new Map(); 
+        let activeTabId = 'historial';
+        let currentUser = null;
+
+        function updateRibbonVisibility() {
+            UI.ribbon.classList.toggle('hidden', openTabs.size === 0);
+        }
+
+        window.addNewSiniestro = (existingDocId = null) => {
+            const id = 'tab-' + (existingDocId || Date.now());
+            const docId = existingDocId; 
+            
+            if (openTabs.has(id)) { switchView(id); return; }
+
+            const tabEl = document.createElement('div');
+            tabEl.id = id;
+            tabEl.className = 'tab-item animate-fade';
+            tabEl.onclick = () => switchView(id);
+            tabEl.innerHTML = `
+                <span id="title-${id}">${docId ? 'RESTAURANDO...' : 'NUEVO SINIESTRO'}</span>
+                <div class="tab-close" onclick="event.stopPropagation(); closeTab('${id}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+            `;
+            
+            UI.tabsContainer.appendChild(tabEl);
+
+            const iframe = document.createElement('iframe');
+            iframe.id = 'frame-' + id;
+            iframe.src = docId ? `${viewsBase}Nuevo.html?id=${docId}` : `${viewsBase}Nuevo.html`;
+            iframe.className = 'module-frame';
+            UI.viewport.appendChild(iframe);
+
+            openTabs.set(id, { title: 'Nuevo Siniestro', iframe: iframe, docId: docId });
+            updateRibbonVisibility();
+            switchView(id);
+        };
+
+        window.switchView = (id) => {
+            activeTabId = id;
+            localStorage.setItem('regsin_active_tab', id);
+
+            UI.btnHistorial.classList.toggle('active', id === 'historial');
+
+            document.querySelectorAll('.tab-item').forEach(btn => btn.classList.toggle('active', btn.id === id));
+            document.querySelectorAll('.module-frame').forEach(frame => {
+                frame.classList.toggle('active', frame.id === 'frame-' + id);
+            });
+        };
+
+        window.closeTab = async (id) => {
+            const data = openTabs.get(id);
+            if (!data) return;
+
+            const docIdToDelete = data.docId;
+            if (docIdToDelete) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Siniestros', docIdToDelete);
+                    const snap = await getDoc(docRef);
+                    if (snap.exists() && snap.data().terminado === false) {
+                        await deleteDoc(docRef);
+                    }
+                } catch (e) { console.warn("Limpieza de borrador fallida:", e); }
+            }
+
+            data.iframe.remove();
+            document.getElementById(id)?.remove();
+            openTabs.delete(id);
+            updateRibbonVisibility();
+
+            if (activeTabId === id) {
+                if (openTabs.size > 0) {
+                    const keys = Array.from(openTabs.keys());
+                    switchView(keys[keys.length - 1]);
+                } else switchView('historial');
+            }
+        };
+
+        async function loadUnfinishedReports() {
+            if (!currentUser) return;
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Siniestros');
+                const snap = await getDocs(colRef);
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.terminado === false && data.uid === currentUser.uid) {
+                        addNewSiniestro(docSnap.id);
+                    }
+                });
+                const savedActiveTab = localStorage.getItem('regsin_active_tab');
+                if (savedActiveTab) switchView(savedActiveTab);
+            } catch (e) { console.error("Error recuperando borradores:", e); }
+        }
+
+        window.addEventListener('message', (event) => {
+            const msg = event.data;
+            if (!msg) return;
+
+            let sourceId = null;
+            openTabs.forEach((data, id) => {
+                if (data.iframe.contentWindow === event.source) sourceId = id;
+            });
+
+            if (!sourceId) return;
+
+            if (msg.type === 'siniestro_id_assigned') {
+                const data = openTabs.get(sourceId);
+                if (data) data.docId = msg.docId;
+            }
+
+            if (msg.type === 'siniestro_data_update') {
+                const tipo = msg.tipo || '';
+                const subtipo = msg.subtipo || '';
+                let newTitle = 'NUEVO SINIESTRO';
+                if (tipo && subtipo) {
+                    const full = `${tipo} - ${subtipo}`;
+                    newTitle = (full.length > 20) ? subtipo : full;
+                } else if (tipo || subtipo) newTitle = subtipo || tipo;
+                
+                const titleSpan = document.getElementById(`title-${sourceId}`);
+                if (titleSpan) titleSpan.innerText = newTitle.toUpperCase();
+            }
+
+            if (msg.type === 'siniestro_submitted') {
+                const data = openTabs.get(sourceId);
+                if (data) data.docId = null; 
+                closeTab(sourceId);
+                const historialFrame = document.getElementById('frame-historial');
+                if (historialFrame?.contentWindow) {
+                    historialFrame.contentWindow.postMessage({ type: 'refresh_historial' }, '*');
+                }
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadUnfinishedReports();
+            } else signInAnonymously(auth);
+        });
+    </script>
+</body>
+</html>

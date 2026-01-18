@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ausentismos - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #4a044e;
+            --md-primary-dark: #2d0630;
+            --md-background: #f5f3ff;
+            --md-outline: #ddd6fe;
+            
+            /* Colores Institucionales Metal Fiusha */
+            --metal-fuchsia-dark: #2d0630;
+            --metal-fuchsia-mid: #4a044e;
+            --metal-fuchsia-light: #701a75;
+        }
+
+        @keyframes subtle-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+
+        body {
+            font-family: 'Roboto', sans-serif; 
+            background-color: var(--md-background); 
+            color: #1e293b;
+            margin: 0; 
+            padding: 16px; 
+            padding-top: 76px; 
+            overflow-x: hidden;
+        }
+
+        /* --- HEADER DE CONTEXTO --- */
+        .date-context-header {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white;
+            border-bottom: 2px solid var(--md-outline); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 24px; z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .view-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--metal-fuchsia-mid); letter-spacing: 0.15em; }
+        .current-date-text { font-size: 13px; font-weight: 800; color: var(--metal-fuchsia-dark); text-transform: uppercase; }
+
+        /* --- ENCABEZADOS DE GRUPO INSTITUCIONALES --- */
+        .group-header {
+            background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
+            padding: 12px 24px; 
+            border-radius: 16px; 
+            margin-bottom: 20px; 
+            position: relative; 
+            overflow: hidden;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            box-shadow: 0 8px 20px rgba(45, 6, 48, 0.15);
+        }
+
+        /* Trama de metal industrial */
+        .group-header::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(circle, rgba(255,255,255,0.03) 0.5px, transparent 0.5px),
+                linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 4px 4px, 12px 12px;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Brillo sutil */
+        .group-header::after {
+            content: ""; 
+            position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 70%);
+            animation: subtle-glow 8s infinite ease-in-out;
+            z-index: 1;
+        }
+
+        .group-title { 
+            color: white; 
+            font-size: 11px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            letter-spacing: 0.15em; 
+            z-index: 2; 
+            position: relative;
+        }
+
+        /* --- CARDS DE AUSENTISMO --- */
+        .absence-card {
+            background: white; 
+            border-radius: 20px; 
+            border: 1px solid var(--md-outline); 
+            padding: 14px;
+            display: flex; 
+            align-items: center; 
+            gap: 14px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .absence-card:hover { 
+            transform: translateY(-4px); 
+            border-color: var(--metal-fuchsia-mid); 
+            box-shadow: 0 12px 20px rgba(74, 4, 78, 0.08); 
+        }
+
+        .avatar { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 14px; 
+            object-fit: cover; 
+            background: #f1f5f9; 
+            border: 1px solid #f1f5f9;
+        }
+
+        .element-info p:first-child { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: -0.01em; }
+        .element-info p:last-child { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #94a3b8; }
+
+        #loading-state { background: var(--md-background); z-index: 2000; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <!-- Pantalla de Carga -->
+    <div id="loading-state" class="fixed inset-0 flex flex-col items-center justify-center gap-4">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Ausentismos</span>
+    </div>
+
+    <!-- Header de Contexto -->
+    <div id="date-header" class="date-context-header">
+        <div class="flex flex-col">
+            <span class="view-label">Control de Ausentismos</span>
+            <span id="display-date-long" class="current-date-text">---</span>
+        </div>
+    </div>
+
+    <!-- Contenedor de Grupos -->
+    <div id="absences-container" class="space-y-12 max-w-7xl mx-auto"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDocs, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let userDataCache = {};
+        let selectedDate = new Date().toISOString().split('T')[0];
+        let unsubListener = null;
+
+        const formatDateToId = (isoStr) => isoStr.split('-').reverse().join('');
+
+        onAuthStateChanged(auth, (user) => { if (user) init(); else signInAnonymously(auth); });
+
+        async function init() {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            usersSnap.forEach(d => userDataCache[d.id] = d.data());
+            syncHeader();
+            loadData();
+        }
+
+        function syncHeader() {
+            const dateObj = new Date(selectedDate + "T00:00:00");
+            document.getElementById('display-date-long').innerText = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function loadData() {
+            if (unsubListener) unsubListener();
+            const dateId = formatDateToId(selectedDate);
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo');
+            unsubListener = onSnapshot(colRef, (snap) => {
+                const absences = [];
+                snap.forEach(docSnap => absences.push({ uid: docSnap.id, ...docSnap.data() }));
+                renderAbsences(absences);
+                document.getElementById('loading-state').style.display = 'none';
+            });
+        }
+
+        function renderAbsences(data) {
+            const container = document.getElementById('absences-container');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-black uppercase tracking-[0.3em] text-[10px]">Sin ausentismos registrados</div>`;
+                return;
+            }
+
+            const grouped = data.reduce((acc, curr) => {
+                const motive = curr.motivo || 'Otros';
+                if (!acc[motive]) acc[motive] = [];
+                acc[motive].push(curr);
+                return acc;
+            }, {});
+
+            Object.keys(grouped).sort().forEach(motive => {
+                const elements = grouped[motive];
+                const section = document.createElement('div');
+                section.className = "animate-in fade-in slide-in-from-bottom-4 duration-500";
+                section.innerHTML = `
+                    <div class="group-header">
+                        <span class="group-title">${motive} <span class="ml-2 opacity-50 font-light">/ ${elements.length} Elementos</span></span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${elements.map(e => {
+                            const u = userDataCache[e.uid] || { nombre: 'Desconocido' };
+                            return `
+                                <div class="absence-card" onclick="window.parent.postMessage({type:'navigateRight', url:'Detalle.html?uid=${e.uid}&date=${selectedDate}'}, '*')">
+                                    <img src="${u.foto || ''}" class="avatar shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=${u.nombre}&background=4c1d95&color=fff'">
+                                    <div class="min-w-0 element-info">
+                                        <p class="truncate">${u.nombre}</p>
+                                        <p class="truncate">${u.puesto || 'Seguridad Patrimonial'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'INIT_SUBMODULE' || e.data.type === 'DATE_CHANGED' || e.data.type === 'regas_date_change') {
+                selectedDate = e.data.date;
+                syncHeader();
+                loadData();
+            }
+        });
+    </script>
+</body>
+</html>

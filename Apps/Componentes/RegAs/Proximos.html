@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo de Operaciones - CIC6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-primary: #4c1d95;
+            --md-primary-dark: #1e1b4b;
+            --md-surface: #ffffff;
+            --md-background: #f5f3ff;
+            --md-outline: #ddd6fe;
+            --stats-width: 300px;
+            
+            /* Colores Metal Fiusha */
+            --metal-fuchsia-dark: #2d0630;
+            --metal-fuchsia-mid: #4a044e;
+            --metal-fuchsia-light: #701a75;
+        }
+
+        @keyframes subtle-glow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-background);
+            color: #1e293b;
+            margin: 0;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* --- LAYOUT PRINCIPAL (SIN ANIMACIONES) --- */
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: var(--stats-width) 1fr;
+            gap: 20px;
+            align-items: start;
+            width: 100%;
+        }
+
+        /* Estado Colapsado Instantáneo */
+        .dashboard-wrapper.stats-collapsed {
+            grid-template-columns: 80px 1fr;
+        }
+
+        @media (max-width: 1279px) {
+            .dashboard-wrapper { grid-template-columns: 1fr !important; }
+            .stats-panel {
+                position: fixed;
+                left: 0; top: 0; bottom: 0;
+                z-index: 1000;
+                background: white;
+                width: var(--stats-width);
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+                padding: 20px;
+            }
+            .stats-panel.mobile-open { transform: translateX(0); }
+        }
+
+        .stats-panel {
+            position: sticky;
+            top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 50; 
+            min-height: calc(100vh - 32px);
+            overflow: visible;
+        }
+
+        .dashboard-wrapper.stats-collapsed .stats-panel {
+            align-items: center;
+        }
+
+        /* Ocultar contenido instantáneamente */
+        #stats-content-wrapper, #stats-title-container {
+            width: 100%;
+            display: block;
+        }
+
+        .dashboard-wrapper.stats-collapsed #stats-content-wrapper,
+        .dashboard-wrapper.stats-collapsed #stats-title-container {
+            display: none !important;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid var(--md-outline);
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.03);
+            margin-bottom: 16px;
+        }
+
+        /* --- ESTADÍSTICAS TABLA --- */
+        .stats-table {
+            width: 100%;
+            font-size: 10px;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        .stats-table td {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .stats-table tr:last-child td { border-bottom: none; }
+        
+        .stat-label-cell {
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.05em;
+        }
+        .stat-value-cell {
+            text-align: right;
+            font-weight: 900;
+            color: var(--metal-fuchsia-dark);
+            font-size: 13px;
+        }
+
+        /* --- BOTÓN HAMBURGUESA --- */
+        .toggle-stats-btn {
+            width: 48px; height: 48px;
+            background: var(--metal-fuchsia-dark);
+            color: white;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(45, 6, 48, 0.3);
+            flex-shrink: 0;
+            z-index: 100;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .toggle-stats-btn:hover { background: var(--metal-fuchsia-mid); transform: scale(1.05); }
+        .toggle-stats-btn:active { transform: scale(0.95); }
+
+        /* --- CONTENEDORES DINÁMICOS --- */
+        .status-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .status-layout.full-width {
+            grid-template-columns: 1fr;
+        }
+
+        @media (max-width: 1023px) {
+            .status-layout { grid-template-columns: 1fr !important; }
+        }
+
+        .status-group-box {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid var(--md-outline);
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.03);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: fit-content;
+        }
+
+        .status-header {
+            background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-header::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 70%);
+            animation: subtle-glow 8s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        .status-title { color: white; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; position: relative; z-index: 1; }
+
+        .elements-grid {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .absences-grid-compact {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+        }
+
+        .element-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background: #f8fafc;
+            border-radius: 14px; border: 1px solid #f1f5f9;
+            cursor: pointer; transition: all 0.2s;
+        }
+
+        .element-row:hover { transform: translateY(-1px); border-color: var(--md-outline); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+
+        .absence-compact-card {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 10px; background: #ffffff;
+            border-radius: 12px; border: 1px solid #f1f5f9;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .absence-compact-card:hover { border-color: var(--md-outline); background: #f8fafc; transform: translateY(-1px); }
+
+        .avatar-mini { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+        .avatar-micro { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+
+        .btn-action { font-size: 8px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; color: white; border: none; cursor: pointer; flex-shrink: 0; }
+        .btn-in { background: #10b981; }
+        .btn-out { background: #ef4444; }
+
+        .shift-badge { font-size: 7px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .badge-mat { background: #fef9c3; color: #854d0e; }
+        .badge-ves { background: #dbeafe; color: #1e40af; }
+        .badge-noc { background: #1e3a8a; color: white; }
+
+        .uncovered-point { font-size: 8px; font-weight: 800; padding: 4px 8px; background: #fee2e2; color: #991b1b; border-radius: 6px; margin-bottom: 4px; display: block; text-transform: uppercase; }
+
+        #loading-state { position: fixed; inset: 0; background: var(--md-background); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <!-- Pantalla de Carga -->
+    <div id="loading-state">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Operaciones</span>
+    </div>
+
+    <div id="dashboard-main" class="dashboard-wrapper p-4">
+        
+        <!-- PANEL IZQUIERDO -->
+        <aside id="stats-aside" class="stats-panel">
+            <div class="flex items-center justify-between px-2 w-full mb-2">
+                <div id="stats-title-container" class="flex flex-col">
+                    <span class="text-[10px] font-black text-indigo-900 uppercase tracking-tighter leading-none">Panel de</span>
+                    <span class="text-[12px] font-black text-indigo-900 uppercase tracking-tight mt-1">Estadísticas</span>
+                </div>
+
+                <div class="toggle-stats-btn" onclick="toggleStats()" title="Alternar Estadísticas">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DE DATOS -->
+            <div id="stats-content-wrapper">
+                <div class="stats-card">
+                    <h3 class="stat-label-cell mb-2 text-indigo-900">Resumen Diario</h3>
+                    <table class="stats-table">
+                        <tr>
+                            <td class="stat-label-cell">Personas en Turno</td>
+                            <td id="stat-active" class="stat-value-cell">0</td>
+                        </tr>
+                        <tr>
+                            <td class="stat-label-cell text-emerald-600">Personal Extra</td>
+                            <td id="stat-extra" class="stat-value-cell text-emerald-700">0</td>
+                        </tr>
+                        <tr>
+                            <td class="stat-label-cell text-blue-600">Recuperación</td>
+                            <td id="stat-recuperacion" class="stat-value-cell text-blue-700">0</td>
+                        </tr>
+                        <tr>
+                            <td class="stat-label-cell text-red-600">Faltas Hoy</td>
+                            <td id="stat-faltas" class="stat-value-cell text-red-700">0</td>
+                        </tr>
+                        <tr>
+                            <td class="stat-label-cell text-slate-500">Otras Incidencias</td>
+                            <td id="stat-otras" class="stat-value-cell text-slate-600">0</td>
+                        </tr>
+                        <tr>
+                            <td class="stat-label-cell text-orange-600">Retardos</td>
+                            <td id="stat-retardos" class="stat-value-cell text-orange-700">0</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="stats-card">
+                    <h3 class="stat-label-cell mb-2 text-red-900">Puntos sin Elemento</h3>
+                    <div id="uncovered-list" class="space-y-1"></div>
+                    <div class="mt-4 pt-4 border-t flex justify-between items-center">
+                        <span class="stat-label-cell">Cobertura Real</span>
+                        <span id="stat-coverage" class="font-black text-indigo-600 text-sm">0%</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- COLUMNAS -->
+        <main class="space-y-6">
+            <div id="status-layout" class="status-layout">
+                <div class="flex flex-col gap-6">
+                    <div id="group-active" class="status-group-box">
+                        <div class="status-header">
+                            <h2 class="status-title">Elementos en Turno</h2>
+                            <span id="count-active" class="text-[9px] font-black text-indigo-300 uppercase">0 Elementos</span>
+                        </div>
+                        <div id="list-active" class="elements-grid"></div>
+                    </div>
+
+                    <div id="group-recent" class="status-group-box" style="border-top: 4px solid #10b981;">
+                        <div class="status-header" style="background: #1e293b;">
+                            <h2 class="status-title text-emerald-400">Recién Llegados (Ventana 30 min)</h2>
+                            <span id="count-recent" class="text-[9px] font-black text-emerald-500 uppercase">0 Elementos</span>
+                        </div>
+                        <div id="list-recent" class="elements-grid max-h-80 overflow-y-auto no-scrollbar"></div>
+                    </div>
+                </div>
+
+                <div id="group-upcoming" class="status-group-box h-full">
+                    <div class="status-header">
+                        <h2 class="status-title">Próximos Ingresos</h2>
+                        <span id="count-upcoming" class="text-[9px] font-black text-indigo-300 uppercase">0 Elementos</span>
+                    </div>
+                    <div id="list-upcoming" class="elements-grid"></div>
+                </div>
+            </div>
+
+            <div id="group-absences" class="status-group-box w-full">
+                <div class="status-header">
+                    <h2 class="status-title">Ausentismos del Día</h2>
+                    <span id="count-absences" class="text-[9px] font-black text-red-300 uppercase">0 Registros</span>
+                </div>
+                <div id="list-absences" class="p-6 space-y-8"></div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
+        const motiveColors = { 'Descanso': { bg: '#f1f5f9', text: '#64748b', border: '#e2e8f0' }, 'Falta': { bg: '#fee2e2', text: '#991b1b', border: '#fecdd3' }, 'Incapacidad': { bg: '#fef9c3', text: '#854d0e', border: '#fef08a' }, 'Vacaciones': { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' }, 'Permiso': { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' } };
+
+        let userDataCache = {};
+        let dataSets = { active: [], recent: [], upcoming: [], absences: [] };
+        let activeUnsubs = [];
+        let operatorContext = null;
+
+        const formatDateToId = (date) => {
+            const d = date.getDate().toString().padStart(2, '0');
+            const m = (date.getMonth() + 1).toString().padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}${m}${y}`;
+        };
+
+        onAuthStateChanged(auth, (user) => { if (user) init(); else signInAnonymously(auth); });
+
+        async function init() {
+            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
+            usersSnap.forEach(d => userDataCache[d.id] = d.data());
+            const today = new Date();
+            startListeners(today.toISOString().split('T')[0]);
+        }
+
+        function isRecentlyArrived(entradaReal, dateId) {
+            if (!entradaReal) return false;
+            const now = new Date();
+            const [h, m] = entradaReal.split(':').map(Number);
+            const d = parseInt(dateId.substring(0, 2)), mo = parseInt(dateId.substring(2, 4)) - 1, y = parseInt(dateId.substring(4, 8));
+            const entryDate = new Date(y, mo, d, h, m);
+            const diffHours = (now - entryDate) / (1000 * 60 * 60);
+            return diffHours >= 0 && diffHours < 0.5; 
+        }
+
+        function startListeners(isoDate) {
+            activeUnsubs.forEach(u => u());
+            activeUnsubs = [];
+            const selectedDate = new Date(isoDate + 'T00:00:00');
+            const dateId = formatDateToId(selectedDate);
+            const shifts = ['matutino', 'vespertino', 'nocturno'];
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            let targetShift = currentHour >= 5 && currentHour < 12 ? 'matutino' : (currentHour >= 12 && currentHour < 17 ? 'vespertino' : 'nocturno');
+
+            shifts.forEach(sId => {
+                const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, sId), (snap) => {
+                    dataSets.active = dataSets.active.filter(e => !(e.shiftId === sId && e.dateId === dateId));
+                    dataSets.recent = dataSets.recent.filter(e => !(e.shiftId === sId && e.dateId === dateId));
+                    if (sId === targetShift) dataSets.upcoming = dataSets.upcoming.filter(e => !(e.shiftId === sId && e.dateId === dateId));
+                    
+                    snap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        const element = { uid: docSnap.id, shiftId: sId, dateId: dateId, ...d };
+                        if (d.entrada_real && !d.salida_real) {
+                            if (isRecentlyArrived(d.entrada_real, dateId)) dataSets.recent.push(element);
+                            else dataSets.active.push(element);
+                        } else if (sId === targetShift && !d.entrada_real && !d.ausencia) {
+                            dataSets.upcoming.push(element);
+                        }
+                    });
+                    render();
+                    document.getElementById('loading-state').style.display = 'none';
+                });
+                activeUnsubs.push(unsub);
+            });
+
+            if (currentHour < 8) {
+                const yesterday = new Date(selectedDate);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayId = formatDateToId(yesterday);
+                activeUnsubs.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', yesterdayId, 'nocturno'), (snap) => {
+                    dataSets.active = dataSets.active.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
+                    dataSets.recent = dataSets.recent.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
+                    snap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        if (d.entrada_real && !d.salida_real) {
+                            const element = { uid: docSnap.id, shiftId: 'nocturno', dateId: yesterdayId, ...d };
+                            if (isRecentlyArrived(d.entrada_real, yesterdayId)) dataSets.recent.push(element);
+                            else dataSets.active.push(element);
+                        }
+                    });
+                    render();
+                }));
+            }
+
+            activeUnsubs.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo'), (snap) => {
+                dataSets.absences = [];
+                snap.forEach(d => dataSets.absences.push({ uid: d.id, dateId: dateId, ...d.data() }));
+                render();
+            }));
+        }
+
+        function render() {
+            const layout = document.getElementById('status-layout');
+            const hasUpcoming = dataSets.upcoming.length > 0;
+            const hasLeftSection = dataSets.active.length > 0 || dataSets.recent.length > 0;
+
+            document.getElementById('group-active').classList.toggle('hidden', dataSets.active.length === 0);
+            document.getElementById('group-recent').classList.toggle('hidden', dataSets.recent.length === 0);
+            document.getElementById('group-upcoming').classList.toggle('hidden', !hasUpcoming);
+            document.getElementById('group-absences').classList.toggle('hidden', dataSets.absences.length === 0);
+
+            layout.classList.toggle('full-width', !hasUpcoming || !hasLeftSection);
+
+            renderList('list-active', 'count-active', dataSets.active);
+            renderList('list-recent', 'count-recent', dataSets.recent);
+            renderList('list-upcoming', 'count-upcoming', dataSets.upcoming);
+            renderAbsences();
+            calculateStats();
+        }
+
+        function renderList(targetId, countId, dataList) {
+            const container = document.getElementById(targetId);
+            document.getElementById(countId).innerText = `${dataList.length} Elementos`;
+            container.innerHTML = '';
+            if (dataList.length === 0) return;
+            dataList.sort((a,b) => (a.Caseta || '').localeCompare(b.Caseta || ''));
+            dataList.forEach(e => {
+                const u = userDataCache[e.uid] || { nombre: 'Desconocido' };
+                const isUpcoming = targetId.includes('upcoming');
+                const badgeClass = e.shiftId.startsWith('mat') ? 'badge-mat' : e.shiftId.startsWith('ves') ? 'badge-ves' : 'badge-noc';
+                const row = document.createElement('div');
+                row.className = "element-row";
+                row.onclick = () => openDetail(e.uid, e.dateId);
+                row.innerHTML = `
+                    <img src="${u.foto || ''}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=${u.nombre}&background=4c1d95&color=fff'">
+                    <div class="flex-grow min-w-0">
+                        <p class="text-[10px] font-black uppercase truncate tracking-tight text-slate-800">${u.nombre}</p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="shift-badge ${badgeClass}">${e.shiftId.substring(0,3)}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase truncate">${e.Caseta || u.acceso_predeterminado || 'General'}</span>
+                        </div>
+                    </div>
+                    <button class="btn-action ${isUpcoming ? 'btn-in' : 'btn-out'}" onclick="event.stopPropagation(); quickAction('${e.uid}','${e.shiftId}','${e.dateId}','${isUpcoming ? 'entry' : 'exit'}')">${isUpcoming ? 'In' : 'Out'}</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderAbsences() {
+            const container = document.getElementById('list-absences');
+            document.getElementById('count-absences').innerText = `${dataSets.absences.length} Registros`;
+            container.innerHTML = '';
+            if (dataSets.absences.length === 0) return;
+            const grouped = dataSets.absences.reduce((acc, curr) => {
+                const motive = curr.motivo || 'Otros';
+                if (!acc[motive]) acc[motive] = [];
+                acc[motive].push(curr);
+                return acc;
+            }, {});
+            Object.keys(grouped).sort().forEach(motive => {
+                const elements = grouped[motive];
+                const style = motiveColors[motive] || { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' };
+                const groupSection = document.createElement('div');
+                groupSection.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="h-px flex-1 bg-slate-100"></div>
+                        <span class="text-[9px] font-black uppercase tracking-[0.15em] px-3 py-0.5 rounded-full border" style="background: ${style.bg}; color: ${style.text}; border-color: ${style.border}">${motive} (${elements.length})</span>
+                        <div class="h-px flex-1 bg-slate-100"></div>
+                    </div>
+                    <div class="absences-grid-compact">
+                        ${elements.map(e => {
+                            const u = userDataCache[e.uid] || { nombre: 'Elemento' };
+                            return `<div class="absence-compact-card" onclick="openDetail('${e.uid}', '${e.dateId}')">
+                                <img src="${u.foto || ''}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=${u.nombre}&background=cbd5e1&color=64748b'">
+                                <span class="text-[9px] font-bold uppercase truncate text-slate-700">${u.nombre}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(groupSection);
+            });
+        }
+
+        function calculateStats() {
+            const workingNow = [...dataSets.active, ...dataSets.recent];
+            const allAssigned = [...workingNow, ...dataSets.upcoming];
+            
+            document.getElementById('stat-active').innerText = workingNow.length;
+            document.getElementById('stat-extra').innerText = allAssigned.filter(e => e.es_extra).length;
+            document.getElementById('stat-recuperacion').innerText = allAssigned.filter(e => e.es_recuperacion).length;
+            document.getElementById('stat-faltas').innerText = dataSets.absences.filter(e => e.motivo === 'Falta').length;
+            document.getElementById('stat-otras').innerText = dataSets.absences.filter(e => e.motivo !== 'Falta').length;
+            document.getElementById('stat-retardos').innerText = allAssigned.filter(e => e.retardo).length;
+            
+            let coveredCount = 0;
+            const list = document.getElementById('uncovered-list'); 
+            list.innerHTML = '';
+            casetasOrden.forEach(c => {
+                if (workingNow.some(e => e.Caseta === c)) coveredCount++;
+                else {
+                    const span = document.createElement('div');
+                    span.className = 'uncovered-point';
+                    span.innerText = c;
+                    list.appendChild(span);
+                }
+            });
+            if (list.innerHTML === '') list.innerHTML = '<div class="text-[8px] font-black text-emerald-500 uppercase tracking-widest text-center py-2">Cobertura Total</div>';
+            document.getElementById('stat-coverage').innerText = `${Math.round((coveredCount / casetasOrden.length) * 100)}%`;
+        }
+
+        window.quickAction = async (uid, sId, dId, type) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dId, sId, uid);
+            const now = new Date().toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            if (type === 'entry') {
+                const snap = await getDoc(docRef);
+                const data = snap.data() || {};
+                const [pH, pM] = (data.entrada_planificada || "00:00").split(':').map(Number);
+                const planDate = new Date(); planDate.setHours(pH, pM, 0);
+                await updateDoc(docRef, { entrada_real: now, retardo: new Date() > planDate, operador_registro: operatorContext?.nombre || 'SISTEMA' });
+            } else await updateDoc(docRef, { salida_real: now });
+        };
+
+        window.openDetail = (uid, dateId) => {
+            const day = dateId.substring(0,2), month = dateId.substring(2,4), year = dateId.substring(4,8);
+            window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${uid}&date=${year}-${month}-${day}` }, '*');
+        };
+
+        window.toggleStats = (force) => {
+            const dashboard = document.getElementById('dashboard-main');
+            if (typeof force === 'boolean') {
+                force ? dashboard.classList.add('stats-collapsed') : dashboard.classList.remove('stats-collapsed');
+            } else {
+                dashboard.classList.toggle('stats-collapsed');
+            }
+        };
+
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'INIT_SUBMODULE') { operatorContext = e.data.user; startListeners(e.data.date); }
+            if (e.data.type === 'regas_date_change' || e.data.type === 'DATE_CHANGED') startListeners(e.data.date); 
+            // Cierre automático eliminado: SIDE_PANEL_STATE_CHANGED ya no activa toggleStats automáticamente
+        });
+    </script>
+</body>
+</html>
