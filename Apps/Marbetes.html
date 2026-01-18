@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marbetes - CIC 6.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Animación del vehículo/persona manejando */
+        .car-container {
+            position: relative;
+            width: 200px;
+            height: 100px;
+            margin-bottom: 2rem;
+        }
+
+        .car {
+            position: absolute;
+            bottom: 0;
+            width: 100px;
+            height: 40px;
+            background: #10b981; /* Emerald 500 */
+            border-radius: 10px 40px 10px 10px;
+            animation: drive 3s infinite linear, bounce 0.5s infinite alternate;
+        }
+
+        .car::after { /* Ventana */
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 15px;
+            width: 30px;
+            height: 15px;
+            background: #ecfdf5;
+            border-radius: 0 15px 0 0;
+        }
+
+        .wheel {
+            position: absolute;
+            bottom: -5px;
+            width: 20px;
+            height: 20px;
+            background: #334155;
+            border: 3px solid #1e293b;
+            border-radius: 50%;
+            animation: spin 0.5s infinite linear;
+        }
+
+        .wheel-front { right: 15px; }
+        .wheel-back { left: 15px; }
+
+        .ground {
+            position: absolute;
+            bottom: -10px;
+            width: 300px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            left: -50px;
+            overflow: hidden;
+        }
+
+        .ground::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 100%;
+            background: #10b981;
+            animation: road 1s infinite linear;
+        }
+
+        @keyframes drive {
+            0% { transform: translateX(-50px); }
+            100% { transform: translateX(150px); }
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-2px); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes road {
+            from { left: -50px; }
+            to { left: 300px; }
+        }
+
+        .text-shimmer {
+            background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="flex flex-col items-center text-center p-8">
+        <!-- Animación -->
+        <div class="car-container">
+            <div class="car">
+                <div class="wheel wheel-back"></div>
+                <div class="wheel wheel-front"></div>
+            </div>
+            <div class="ground"></div>
+        </div>
+
+        <!-- Contenido -->
+        <h1 class="text-3xl md:text-5xl font-black uppercase tracking-[0.2em] mb-4">
+            Módulo <span class="text-shimmer">Marbetes</span>
+        </h1>
+        
+        <div class="inline-flex items-center gap-3 px-6 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-8">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">En Construcción</span>
+        </div>
+
+        <p class="max-w-md text-slate-400 text-sm leading-relaxed font-medium">
+            Estamos configurando el sistema de control vehicular y asignación de marbetes para el personal del CIC. 
+            <br><span class="text-[10px] opacity-50 block mt-4 uppercase">Protección Patrimonial 6.2</span>
+        </p>
+
+        <!-- Botón de retorno (Opcional si se usa dentro de Iframe) -->
+        <button onclick="window.parent.postMessage({type: 'CLOSE_SIDE_PANEL'}, '*')" class="mt-12 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
+            Cerrar Ventana
+        </button>
+    </div>
+
+</body>
+</html>

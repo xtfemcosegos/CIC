@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administración - Protección Patrimonial | CIC 6.2</title>
+    <title>Administración - CIC 6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -14,249 +14,223 @@
 
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            background: #020617;
+            overflow: hidden;
+            margin: 0;
         }
 
-        /* Barra de tareas Azul Marino Metálico */
-        .metallic-bar {
-            background: linear-gradient(90deg, #000c24 25%, #001a4d 50%, #000c24 75%);
-            background-size: 200% 100%;
-            animation: shimmer 8s infinite linear;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-            height: 48px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            will-change: background-position;
-        }
-
-        /* ÁREA DE TABS */
-        #tabs-container {
-            background-color: #1e293b;
-            background-image: 
-                linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%),
-                repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.03) 15px, rgba(255,255,255,0.03) 16px);
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-            border-radius: 6px;
-            margin: 2px 10px;
-            height: 38px; 
-            display: flex;
-            align-items: flex-end; 
-            padding: 0 4px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        #tabs-container::-webkit-scrollbar { display: none; }
-
-        .main-wrapper {
-            display: flex;
+        /* --- ARQUITECTURA DE COMPRESIÓN (FLEX) --- */
+        .main-viewport {
             height: calc(100vh - 48px);
             width: 100%;
+            display: flex;
             overflow: hidden;
-            background: #020617;
+            position: relative;
         }
 
         #desktop {
             flex: 1;
+            min-width: 0;
+            height: 100%;
             position: relative;
             background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            min-width: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Pestañas Metálicas */
-        .app-tab {
-            transition: all 0.15s ease-out;
-            min-width: 120px;
-            max-width: 200px;
-            background: linear-gradient(180deg, #f1f5f9 0%, #cbd5e1 100%);
-            border: 1px solid rgba(0,0,0,0.4);
-            border-bottom: none;
-            color: #0f172a;
-            height: 85%; 
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-            font-size: 8px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            border-radius: 8px 8px 0 0;
-            margin-right: 2px;
+        #side-panel {
+            width: 0;
+            height: 100%;
+            background: white;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            white-space: nowrap;
+            z-index: 50;
+            overflow: hidden;
         }
 
-        .app-tab.active {
-            background: var(--active-color, #0f172a);
-            color: #ffffff;
-            border-top: 2px solid #38bdf8;
-            height: 95%; 
-            z-index: 10;
+        body.side-panel-open #side-panel {
+            width: 450px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
         }
 
-        .app-window {
-            height: 100%; width: 100%;
-            display: none; pointer-events: none;
+        /* Barra de tareas Metálica */
+        .metallic-bar {
+            background: linear-gradient(90deg, #000c24 25%, #001a4d 50%, #000c24 75%);
+            background-size: 200% 100%;
+            animation: shimmer 8s infinite linear;
+            height: 48px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 100;
         }
 
-        .app-window.active { display: flex; pointer-events: auto; }
+        /* Launcher y Cards */
+        .glass-panel {
+            background: rgba(2, 6, 23, 0.98);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .app-item-card {
+            background: rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .app-item-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            border-color: rgba(255,255,255,0.15);
+        }
 
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Panel Lateral */
-        #side-panel {
-            position: fixed; top: 0; right: 0; height: 100%;
-            width: 0; background: white;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column;
-            z-index: 200; overflow: hidden;
-        }
-        #side-panel.open { width: 100%; }
-        @media (min-width: 768px) { #side-panel.open { width: 450px; } }
-
-        /* Estilo Legible para Apps en Launcher */
-        .app-item-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.2s ease;
-        }
-        .app-item-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateX(4px);
-        }
-
-        /* Ajustes Móviles */
         @media (max-width: 767px) {
-            #tabs-container { display: none; }
-            .metallic-bar { padding: 0 8px; justify-content: space-between; }
-            #app-launcher { width: calc(100vw - 16px); left: 8px; top: 52px; }
+            body.side-panel-open #side-panel { width: 100vw; }
+            body.side-panel-open #desktop { flex: 0; }
         }
     </style>
 </head>
-<body class="bg-slate-900 overflow-hidden font-sans text-slate-200">
+<body class="text-slate-200">
 
     <!-- Pantalla de Carga -->
     <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 class="text-white text-[10px] font-black tracking-[0.3em] uppercase">Sincronizando Entorno Seguro</h2>
+        <h2 class="text-white text-[10px] font-black tracking-[0.3em] uppercase">Sincronizando Protección Patrimonial</h2>
     </div>
 
-    <!-- Barra de Tareas Principal -->
-    <nav class="metallic-bar w-full flex items-center px-4 relative z-50">
-        <div class="flex items-center gap-2">
+    <!-- Barra de Tareas -->
+    <nav class="metallic-bar w-full flex items-center px-4">
+        <div class="flex items-center gap-4 z-10">
             <button id="start-button" class="flex items-center gap-2.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 active:scale-95">
                 <img src="M/Apps.png" alt="Apps" class="h-5 w-5 object-contain">
                 <div class="flex flex-col items-start leading-none">
-                    <span id="current-app-name" class="font-black tracking-widest text-[9px] uppercase text-white">Apps</span>
-                    <span class="md:hidden text-[7px] font-bold text-sky-400 uppercase">Selector</span>
+                    <span id="current-app-name" class="font-black tracking-widest text-[9px] uppercase text-white">ESCRITORIO</span>
+                    <span class="text-[7px] font-bold text-sky-400 uppercase">Sistema CIC</span>
                 </div>
             </button>
-
-            <div class="md:hidden h-8 bg-black/40 px-3 flex items-center rounded-xl border border-white/5">
-                <span id="system-time-mobile" class="text-[10px] font-black text-white tracking-tighter">00:00</span>
-            </div>
         </div>
 
-        <div id="tabs-container" class="flex-1">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="app-tab active" style="--active-color: #0f172a">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Escritorio
-            </button>
+        <div class="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+            <h1 class="font-black text-[11px] md:text-[13px] tracking-[0.5em] uppercase text-white/90">
+                Protección Patrimonial
+            </h1>
         </div>
 
-        <div class="flex items-center gap-2 h-full">
-            <div class="hidden md:flex h-8 bg-black/40 px-3 items-center rounded-xl border border-white/5">
-                <span id="system-time" class="text-sm font-bold text-white tracking-tighter">00:00:00</span>
+        <div class="flex-1"></div>
+
+        <div class="flex items-center gap-3 h-full z-10">
+            <div class="flex h-10 bg-black/40 px-4 items-center rounded-xl border border-white/5">
+                <span id="system-time" class="text-xl font-black text-white tracking-tighter">00:00:00</span>
             </div>
-            <button onclick="handleLogout()" class="px-3 h-8 bg-red-600/20 hover:bg-red-600 text-red-100 rounded-xl border border-red-500/20 font-black text-[9px] uppercase transition-all active:scale-95">
-                <span class="hidden md:inline">Cerrar Sesión</span>
-                <svg class="md:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            </button>
         </div>
     </nav>
 
-    <!-- Lanzador de Aplicaciones (Contraste Mejorado) -->
-    <div id="app-launcher" class="hidden absolute glass-panel rounded-[32px] shadow-[0_20px_80px_rgba(0,0,0,0.5)] p-6 z-[60] bg-slate-950/95 backdrop-blur-3xl border border-white/10 w-80">
-        <h3 class="text-[10px] font-black text-slate-500 uppercase mb-5 tracking-[0.2em] px-1">Servicios de Red CIC</h3>
+    <!-- Lanzador de Aplicaciones -->
+    <div id="app-launcher" class="hidden absolute left-4 top-14 glass-panel rounded-[32px] shadow-2xl p-6 z-[110] w-[340px] max-h-[85vh] overflow-y-auto">
         
-        <div class="space-y-2">
-            <button onclick="openApp('regas', 'Registro Asistencia', 'M/Logo-App/RegAs.png', 'Apps/RegAs.html', '#4a044e')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left group">
-                <div class="h-11 w-11 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-400/30 shadow-inner">
-                    <img src="M/Logo-App/RegAs.png" class="h-7 w-7 object-contain drop-shadow-md">
+        <!-- Tarjeta de Perfil del Elemento con Botón de Salida -->
+        <div id="user-profile-card" class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="h-14 w-14 rounded-full border-2 border-sky-500/30 overflow-hidden bg-slate-800 shrink-0">
+                    <img id="user-avatar" src="M/User.png" class="h-full w-full object-cover opacity-0 transition-opacity duration-500">
                 </div>
-                <div>
-                    <span class="block text-[11px] font-black text-white uppercase tracking-tight">Registro Asistencia</span>
-                    <span class="block text-[8px] text-indigo-300/60 uppercase font-bold tracking-wider">Módulo Operativo</span>
+                <div class="flex flex-col overflow-hidden flex-1">
+                    <span id="user-name" class="text-[12px] font-black text-white uppercase truncate text-shimmer">Cargando...</span>
+                    <span id="user-puesto" class="text-[9px] font-bold text-sky-400 uppercase tracking-wider truncate">Identificando...</span>
                 </div>
-            </button>
-
-            <button onclick="openApp('regsin', 'Registro Siniestros', 'M/Logo-App/RegSin.png', 'Apps/RegSin.html', '#7f1d1d')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left group">
-                <div class="h-11 w-11 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-400/30 shadow-inner">
-                    <img src="M/Logo-App/RegSin.png" class="h-7 w-7 object-contain drop-shadow-md">
-                </div>
-                <div>
-                    <span class="block text-[11px] font-black text-white uppercase tracking-tight">Registro Siniestros</span>
-                    <span class="block text-[8px] text-red-300/60 uppercase font-bold tracking-wider">Reporte de Eventos</span>
-                </div>
-            </button>
-
-            <button onclick="openApp('users', 'Gestión de Usuarios', 'M/Logo-App/Users.png', 'Apps/Admin_Users.html', '#0369a1')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left group">
-                <div class="h-11 w-11 bg-sky-500/20 rounded-xl flex items-center justify-center border border-sky-400/30 shadow-inner">
-                    <img src="M/Logo-App/Users.png" class="h-7 w-7 object-contain drop-shadow-md">
-                </div>
-                <div>
-                    <span class="block text-[11px] font-black text-white uppercase tracking-tight">Gestión de Usuarios</span>
-                    <span class="block text-[8px] text-sky-300/60 uppercase font-bold tracking-wider">Control Central</span>
-                </div>
+            </div>
+            <button onclick="handleLogout()" class="w-full py-2 bg-red-600/20 hover:bg-red-600 text-red-100 rounded-xl border border-red-500/20 font-black text-[10px] uppercase transition-all flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                Finalizar Sesión
             </button>
         </div>
 
-        <!-- Sección Usuario (Contraste Reforzado) -->
-        <div class="mt-8 pt-5 border-t border-white/10 space-y-4">
-            <button onclick="openApp('mi-espacio', 'Mi espacio', 'M/Logo-App/Space.png', 'Apps/index_Elemento.html', '#059669')" class="flex items-center gap-4 p-3 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-2xl transition-all w-full text-left border border-emerald-400/20 shadow-lg group">
-                <div class="h-11 w-11 bg-emerald-500/20 rounded-xl flex items-center justify-center border border-emerald-400/30">
-                    <img src="M/Logo-App/Space.png" class="h-7 w-7 object-contain group-hover:scale-110 transition-transform">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-[0.2em] px-2">Servicios Autorizados</h3>
+        
+        <div class="grid grid-cols-1 gap-2">
+            <!-- Escritorio -->
+            <button onclick="openApp('dashboard', 'Escritorio', '', '')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-slate-500/20 rounded-xl flex items-center justify-center border border-slate-400/30">
+                    <img src="M/Logo.png" class="h-6 w-6 object-contain grayscale invert">
                 </div>
                 <div>
-                    <span class="block text-[11px] font-black text-white uppercase tracking-tight">Mi Espacio</span>
-                    <span class="block text-[8px] text-emerald-400 font-black tracking-widest">PORTAL PERSONAL</span>
+                    <span class="block text-[11px] font-black text-white uppercase">Escritorio</span>
+                    <span class="block text-[8px] text-slate-300/60 uppercase font-bold">Panel Principal</span>
                 </div>
             </button>
 
-            <div class="flex items-center gap-4 px-2 py-1 bg-white/[0.02] rounded-2xl border border-white/5">
-                <div class="relative">
-                    <img id="launcher-user-img" src="" class="h-10 w-10 rounded-full object-cover border-2 border-white/10 hidden">
-                    <div id="launcher-user-initials" class="h-10 w-10 bg-slate-800 rounded-full flex items-center justify-center font-black text-[11px] text-sky-400 border border-sky-400/20 shadow-inner">..</div>
+            <!-- Registro Asistencia -->
+            <button onclick="openApp('regas', 'Registro Asistencia', 'Apps/RegAs.html', '#4a044e')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-400/30">
+                    <img src="M/Logo-App/RegAs.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
                 </div>
-                <div class="overflow-hidden">
-                    <div class="text-[11px] font-black text-white uppercase truncate tracking-tight" id="launcher-user-name">Usuario</div>
-                    <div class="text-[9px] text-slate-400 uppercase font-bold truncate tracking-[0.15em]" id="launcher-user-puesto">Cargando Perfil...</div>
+                <div>
+                    <span class="block text-[11px] font-black text-white uppercase">Registro Asistencia</span>
+                    <span class="block text-[8px] text-indigo-300/60 uppercase font-bold">Control de Turnos</span>
                 </div>
-            </div>
+            </button>
+
+            <!-- Registro Siniestros -->
+            <button onclick="openApp('regsin', 'Registro Siniestros', 'Apps/RegSin.html', '#7f1d1d')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-400/30">
+                    <img src="M/Logo-App/RegSin.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
+                </div>
+                <div>
+                    <span class="block text-[11px] font-black text-white uppercase">Registro Siniestros</span>
+                    <span class="block text-[8px] text-red-300/60 uppercase font-bold">Reporte de Eventos</span>
+                </div>
+            </button>
+
+            <!-- Gestión de Usuarios -->
+            <button onclick="openApp('users', 'Gestión de Usuarios', 'Apps/Admin_Users.html', '#0369a1')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-sky-500/20 rounded-xl flex items-center justify-center border border-sky-400/30">
+                    <img src="M/Logo-App/Users.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
+                </div>
+                <div>
+                    <span class="block text-[11px] font-black text-white uppercase">Gestión de Usuarios</span>
+                    <span class="block text-[8px] text-sky-300/60 uppercase font-bold">Administración Central</span>
+                </div>
+            </button>
+
+            <!-- Mi Espacio -->
+            <button onclick="openApp('miespacio', 'Mi Espacio', 'Apps/MiEspacio.html', '#1e293b')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-slate-500/20 rounded-xl flex items-center justify-center border border-slate-400/30">
+                    <img src="M/Logo-App/Space.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
+                </div>
+                <div>
+                    <span class="block text-[11px] font-black text-white uppercase">Mi Espacio</span>
+                    <span class="block text-[8px] text-slate-300/60 uppercase font-bold">Perfil del Colaborador</span>
+                </div>
+            </button>
+
+            <!-- Marbetes -->
+            <button onclick="openApp('marbetes', 'Marbetes', 'Apps/Marbetes.html', '#166534')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+                <div class="h-10 w-10 bg-green-500/20 rounded-xl flex items-center justify-center border border-green-400/30">
+                    <img src="M/Logo-App/Marbetes.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
+                </div>
+                <div>
+                    <span class="block text-[11px] font-black text-white uppercase">Marbetes</span>
+                    <span class="block text-[8px] text-green-300/60 uppercase font-bold">Control Vehicular</span>
+                </div>
+            </button>
         </div>
     </div>
 
-    <div class="main-wrapper">
+    <!-- Contenedor Principal con Flex-Compression -->
+    <div class="main-viewport">
         <main id="desktop">
-            <div id="view-dashboard" class="app-window active items-center justify-center p-6 text-center">
+            <div id="view-dashboard" class="flex flex-col items-center justify-center h-full w-full p-6 text-center">
                 <div class="opacity-10 select-none flex flex-col items-center">
-                    <img src="M/Logo.png" class="h-32 md:h-48 mb-8 grayscale invert">
-                    <h2 class="text-sm md:text-xl font-light tracking-[0.4em] uppercase text-white">Terminal Maestro CIC 6.2</h2>
+                    <img src="M/Logo.png" class="h-56 mb-8 grayscale invert">
+                    <h2 class="text-xl font-light tracking-[0.5em] uppercase text-white">Centro de Inteligencia y Control</h2>
                 </div>
             </div>
-            <div id="app-content-container" class="h-full w-full"></div>
+            <div id="app-content-container" class="h-full w-full hidden"></div>
         </main>
 
+        <!-- Panel Lateral Limpio (Sin encabezado) -->
         <aside id="side-panel">
-            <button onclick="closeSidePanel()" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 z-50 shadow-lg hover:bg-slate-200 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-            <div class="flex-1">
-                <iframe id="side-panel-frame" class="w-full h-full"></iframe>
-            </div>
+            <iframe id="side-panel-frame" class="w-full h-full" src="about:blank"></iframe>
         </aside>
     </div>
 
@@ -272,131 +246,95 @@
             storageBucket: "cic6-pp-web.firebasestorage.app", 
             appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'cic.pp';
-
-        let currentUserData = null;
-        let openAppsRegistry = []; 
-        let currentActiveTab = 'dashboard';
-        const openAppsSet = new Set(['dashboard']);
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', user.uid));
-                if (snap.exists() && snap.data().puesto?.toLowerCase() === 'administrador') {
-                    currentUserData = snap.data();
-                    updateUserProfileUI(currentUserData);
-                    restoreAppState();
-                    document.getElementById('loading-screen').classList.add('hidden');
-                } else { window.location.href = 'index.html?error=unauthorized'; }
-            } else { window.location.href = 'index.html'; }
+                try {
+                    const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', user.uid));
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        const puesto = data.puesto?.toLowerCase();
+                        if (puesto === 'administrador' || puesto === 'operador cco') {
+                            document.getElementById('user-name').textContent = data.nombre || 'Personal CIC';
+                            document.getElementById('user-puesto').textContent = data.puesto || 'Operativo';
+                            const avatar = document.getElementById('user-avatar');
+                            avatar.src = data.foto || 'M/User.png';
+                            avatar.onload = () => avatar.classList.remove('opacity-0');
+                            document.getElementById('loading-screen').classList.add('hidden');
+                        } else {
+                            window.location.href = 'index.html?error=unauthorized';
+                        }
+                    } else {
+                        window.location.href = 'index.html?error=notfound';
+                    }
+                } catch (e) {
+                    window.location.href = 'index.html?error=database';
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
         });
 
-        function updateUserProfileUI(data) {
-            document.getElementById('launcher-user-name').textContent = data.nombre || "Usuario";
-            document.getElementById('launcher-user-puesto').textContent = data.puesto || "Personal Operativo";
-            const imgEl = document.getElementById('launcher-user-img');
-            const initialsEl = document.getElementById('launcher-user-initials');
-            if (data.foto) { imgEl.src = data.foto; imgEl.classList.remove('hidden'); initialsEl.classList.add('hidden'); }
-            else { initialsEl.textContent = (data.nombre || "U").substring(0, 2).toUpperCase(); }
-        }
-
-        window.openApp = (id, title, iconPath, url, color = '#0f172a', shouldSwitch = true) => {
+        window.openApp = (id, title, url, color) => {
             toggleLauncher(false);
-            if (openAppsSet.has(id)) { if (shouldSwitch) switchTab(id); return; }
+            const container = document.getElementById('app-content-container');
+            const dashboard = document.getElementById('view-dashboard');
+            const appLabel = document.getElementById('current-app-name');
 
-            const tab = document.createElement('button');
-            tab.id = `tab-${id}`;
-            tab.onclick = () => switchTab(id);
-            tab.className = `app-tab`;
-            tab.style.setProperty('--active-color', color);
-            tab.innerHTML = `<img src="${iconPath}" class="h-3.5 w-3.5 object-contain mr-2"> <span class="truncate">${title}</span> <span onclick="event.stopPropagation(); closeApp('${id}')" class="ml-3 opacity-50 hover:opacity-100">×</span>`;
-            document.getElementById('tabs-container').appendChild(tab);
+            appLabel.textContent = title;
 
-            const win = document.createElement('div');
-            win.id = `view-${id}`;
-            win.className = `app-window`;
-            win.innerHTML = `<iframe id="frame-${id}" src="${url}" loading="lazy"></iframe>`;
-            document.getElementById('app-content-container').appendChild(win);
-            
-            openAppsSet.add(id);
-            openAppsRegistry.push({ id, title, iconPath, url, color });
-            if (shouldSwitch) switchTab(id);
+            if (id === 'dashboard') {
+                dashboard.classList.remove('hidden');
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            } else {
+                dashboard.classList.add('hidden');
+                container.classList.remove('hidden');
+                container.innerHTML = `<iframe id="frame-${id}" src="${url}" title="${title}" loading="lazy"></iframe>`;
+            }
+            closeSidePanel();
         };
-
-        window.switchTab = (id) => {
-            currentActiveTab = id;
-            document.querySelectorAll('.app-tab').forEach(t => t.classList.toggle('active', t.id === `tab-${id}`));
-            document.querySelectorAll('.app-window').forEach(w => w.classList.toggle('active', w.id === `view-${id}`));
-            
-            const appInfo = openAppsRegistry.find(a => a.id === id);
-            document.getElementById('current-app-name').textContent = appInfo ? appInfo.title : "Apps";
-            
-            if (id === 'dashboard') closeSidePanel();
-            saveAppState();
-        };
-
-        window.closeApp = (id) => {
-            if (id === 'dashboard') return;
-            document.getElementById(`tab-${id}`)?.remove();
-            document.getElementById(`view-${id}`)?.remove();
-            openAppsSet.delete(id);
-            openAppsRegistry = openAppsRegistry.filter(a => a.id !== id);
-            switchTab('dashboard');
-        };
-
-        function saveAppState() {
-            localStorage.setItem('cic_open_apps', JSON.stringify(openAppsRegistry));
-            localStorage.setItem('cic_active_tab', currentActiveTab);
-        }
-
-        function restoreAppState() {
-            const savedApps = JSON.parse(localStorage.getItem('cic_open_apps') || '[]');
-            const savedActive = localStorage.getItem('cic_active_tab') || 'dashboard';
-            savedApps.forEach(app => openApp(app.id, app.title, app.iconPath, app.url, app.color, false));
-            switchTab(savedActive);
-        }
 
         window.addEventListener('message', (event) => {
             if (event.data.type === 'OPEN_SIDE_PANEL') {
                 document.getElementById('side-panel-frame').src = event.data.url;
-                document.getElementById('side-panel').classList.add('open');
+                document.body.classList.add('side-panel-open');
             }
             if (event.data.type === 'CLOSE_SIDE_PANEL') closeSidePanel();
         });
 
         window.closeSidePanel = () => {
-            document.getElementById('side-panel').classList.remove('open');
+            document.body.classList.remove('side-panel-open');
             setTimeout(() => { document.getElementById('side-panel-frame').src = 'about:blank'; }, 400);
         };
 
-        setInterval(() => {
-            const now = new Date();
-            const time = now.toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit' });
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            document.getElementById('system-time').textContent = `${time}:${seconds}`;
-            document.getElementById('system-time-mobile').textContent = time;
-        }, 1000);
-
         const toggleLauncher = (show) => {
-            const launcher = document.getElementById('app-launcher');
-            launcher.classList.toggle('hidden', !show);
+            document.getElementById('app-launcher').classList.toggle('hidden', !show);
         };
 
         document.getElementById('start-button').onclick = (e) => {
             e.stopPropagation();
-            const isHidden = document.getElementById('app-launcher').classList.contains('hidden');
-            toggleLauncher(isHidden);
+            toggleLauncher(document.getElementById('app-launcher').classList.contains('hidden'));
         };
 
         document.addEventListener('click', (e) => {
-            if (!document.getElementById('app-launcher').contains(e.target)) toggleLauncher(false);
+            const launcher = document.getElementById('app-launcher');
+            const startBtn = document.getElementById('start-button');
+            if (!launcher.contains(e.target) && !startBtn.contains(e.target)) toggleLauncher(false);
         });
 
-        window.handleLogout = async () => { localStorage.clear(); await signOut(auth); window.location.href = 'index.html'; };
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('system-time').textContent = now.toLocaleTimeString('es-MX', { 
+                hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }, 1000);
+
+        window.handleLogout = async () => { await signOut(auth); window.location.href = 'index.html'; };
     </script>
 </body>
 </html>
