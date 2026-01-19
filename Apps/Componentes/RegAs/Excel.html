@@ -6,7 +6,6 @@
     <title>Reporte Maestro Excel - CIC6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <!-- Librerías para generación de Excel y Captura -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -30,24 +29,24 @@
             background: white;
             border-radius: 24px;
             border: 1px solid var(--md-outline);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
             overflow: hidden;
         }
 
         .panel-header {
             background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
-            padding: 24px;
+            padding: 28px 24px;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        /* --- FILTROS CONFIGURACIÓN 4+1 --- */
+        /* --- FILTROS CONFIGURACIÓN --- */
         .filter-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr) 180px; 
-            gap: 16px;
+            gap: 20px;
             padding: 24px;
             background: #ffffff;
             border-bottom: 1px solid var(--md-outline);
@@ -56,7 +55,7 @@
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             position: relative;
         }
 
@@ -64,73 +63,78 @@
             font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
-            color: #94a3b8;
-            letter-spacing: 0.1em;
+            color: #64748b;
+            letter-spacing: 0.08em;
             margin-left: 4px;
         }
 
         /* --- TOGGLE LOGICO --- */
         .logic-switch {
-            width: 28px;
-            height: 16px;
+            width: 32px;
+            height: 18px;
             background: var(--metal-fuchsia-mid);
             border-radius: 20px;
             display: flex;
             align-items: center;
             padding: 2px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             user-select: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
         }
         .logic-switch.or-mode { background: #1e1b4b; }
         .logic-switch::after {
             content: 'Y';
             position: absolute;
-            right: 4px;
+            right: 6px;
             font-size: 8px;
             font-weight: 900;
             color: white;
+            opacity: 0.8;
         }
         .logic-switch.or-mode::after {
             content: 'O';
-            left: 4px;
+            left: 6px;
             right: auto;
         }
         .logic-switch .dot {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             background: white;
             border-radius: 50%;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .logic-switch.or-mode .dot { transform: translateX(12px); }
+        .logic-switch.or-mode .dot { transform: translateX(14px); }
 
         .form-control {
             background: #f1f5f9;
             border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 10px 14px;
+            border-radius: 14px;
+            padding: 10px 16px;
             font-size: 12px;
             font-weight: 600;
             outline: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             width: 100%;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 42px;
+            height: 44px;
+            color: #334155;
         }
 
+        .form-control:hover { background: #e2e8f0; }
         .form-control:focus, .form-control.active {
             background: white;
             border-color: var(--metal-fuchsia-mid);
-            box-shadow: 0 4px 12px rgba(74, 4, 78, 0.1);
+            box-shadow: 0 4px 15px rgba(74, 4, 78, 0.08);
         }
 
-        /* --- CUSTOM COMBOBOX --- */
+        /* --- CUSTOM COMBOBOX & DROPDOWN HEADER --- */
         .combobox-dropdown {
             position: absolute;
             top: 100%;
@@ -138,44 +142,72 @@
             right: 0;
             background: white;
             border: 1px solid var(--md-outline);
-            border-radius: 16px;
-            margin-top: 8px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-radius: 18px;
+            margin-top: 10px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
             z-index: 100;
             display: none;
-            max-height: 220px;
+            max-height: 260px;
             overflow-y: auto;
-            padding: 8px;
+            padding: 10px;
         }
 
-        .combobox-dropdown.show { display: block; animation: fadeInDown 0.2s ease-out; }
+        .combobox-dropdown.show { display: block; animation: fadeInScale 0.2s ease-out; }
 
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px 12px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 8px;
+        }
+
+        .btn-toggle-all {
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-toggle-all:hover {
+            background: var(--metal-fuchsia-mid);
+            color: white;
         }
 
         .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 10px;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             transition: background 0.2s;
+            color: #475569;
         }
 
-        .dropdown-item:hover { background: #fdf2f8; }
-        .dropdown-item input { accent-color: var(--metal-fuchsia-mid); width: 15px; height: 15px; }
+        .dropdown-item:hover { background: #fdf2f8; color: var(--metal-fuchsia-mid); }
+        .dropdown-item input { accent-color: var(--metal-fuchsia-mid); width: 16px; height: 16px; }
 
         /* --- TABLA DE RESULTADOS --- */
         .results-container {
             padding: 0;
             overflow-x: auto;
-            max-height: calc(100vh - 400px);
+            max-height: calc(100vh - 420px);
             min-height: 200px;
         }
 
@@ -190,59 +222,60 @@
 
         th {
             background: #f8fafc;
-            padding: 14px 12px;
+            padding: 16px 14px;
             text-align: left;
             font-weight: 800;
             text-transform: uppercase;
             color: #64748b;
             border-bottom: 2px solid #f1f5f9;
             font-size: 10px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
         }
 
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 500; }
+        td { padding: 14px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 500; }
         tr:hover td { background-color: #fdf4ff; }
 
-        /* --- BOTONES --- */
+        /* --- BOTONES PRINCIPALES --- */
         .btn-search {
             background: var(--metal-fuchsia-mid);
             color: white;
             font-weight: 800;
             text-transform: uppercase;
             padding: 10px;
-            border-radius: 16px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(74, 4, 78, 0.2);
-            height: 52px;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(74, 4, 78, 0.25);
+            height: 54px;
             flex-shrink: 0;
         }
-        .btn-search:hover { transform: translateY(-1px); background: var(--metal-fuchsia-dark); }
+        .btn-search:hover { transform: translateY(-2px); background: var(--metal-fuchsia-dark); box-shadow: 0 12px 24px rgba(74, 4, 78, 0.35); }
+        .btn-search:active { transform: translateY(0); }
 
         .btn-secondary-action {
-            padding: 8px 4px;
-            border-radius: 12px;
-            font-size: 8px;
+            padding: 10px 4px;
+            border-radius: 14px;
+            font-size: 9px;
             font-weight: 900;
             text-transform: uppercase;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 6px;
             transition: all 0.2s;
             color: white;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .btn-export-style { background: #10b981; }
-        .btn-export-style:hover { background: #059669; transform: translateY(-1px); }
+        .btn-export-style { background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+        .btn-export-style:hover { background: #059669; transform: translateY(-2px); }
 
-        .btn-email-style { background: var(--metal-fuchsia-dark); }
-        .btn-email-style:hover { background: var(--metal-fuchsia-mid); transform: translateY(-1px); }
+        .btn-email-style { background: var(--metal-fuchsia-dark); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .btn-email-style:hover { background: var(--metal-fuchsia-mid); transform: translateY(-2px); }
 
         /* --- MODAL --- */
         .modal-overlay {
@@ -250,20 +283,20 @@
             z-index: 2000; display: none; align-items: center; justify-content: center;
         }
         .modal-content {
-            background: white; border-radius: 24px; width: 90%; max-width: 420px;
-            padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            background: white; border-radius: 28px; width: 90%; max-width: 440px;
+            padding: 36px; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.45);
         }
 
         /* --- BADGES --- */
-        .badge { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
+        .badge { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 8px; text-transform: uppercase; }
         .bg-mat { background: #fef9c3; color: #854d0e; }
         .bg-ves { background: #dbeafe; color: #1e40af; }
         .bg-noc { background: #1e1b4b; color: white; }
         .bg-aus { background: #f1f5f9; color: #475569; }
 
         #loading-overlay {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px); z-index: 1000;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(6px); z-index: 1000;
             display: none; flex-direction: column; align-items: center; justify-content: center;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -272,41 +305,41 @@
 <body class="no-scrollbar">
 
     <div id="loading-overlay">
-        <div class="w-12 h-12 border-4 border-fuchsia-200 border-t-fuchsia-700 rounded-full animate-spin"></div>
-        <p class="text-[10px] font-black uppercase mt-4 tracking-widest text-fuchsia-900">Procesando Datos...</p>
-        <span id="load-progress" class="text-[9px] font-bold text-slate-400 mt-1">0%</span>
+        <div class="w-14 h-14 border-4 border-fuchsia-200 border-t-fuchsia-700 rounded-full animate-spin"></div>
+        <p class="text-[10px] font-black uppercase mt-5 tracking-[0.2em] text-fuchsia-950">Optimizando Reporte...</p>
+        <span id="load-progress" class="text-[10px] font-bold text-slate-400 mt-2">0%</span>
     </div>
 
     <!-- Modal de Envío de Correo -->
     <div id="email-modal" class="modal-overlay">
-        <div class="modal-content space-y-6">
+        <div class="modal-content space-y-8">
             <div class="text-center">
-                <div class="w-12 h-12 bg-fuchsia-100 text-fuchsia-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                <div class="w-14 h-14 bg-fuchsia-100 text-fuchsia-700 rounded-2xl flex items-center justify-center mx-auto mb-5 rotate-3 shadow-lg shadow-fuchsia-100">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                 </div>
-                <h3 class="text-lg font-black uppercase text-indigo-950 tracking-tight">Enviar Reporte Consolidado</h3>
-                <p class="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Sincronización de Datos • CIC-6</p>
+                <h3 class="text-xl font-black uppercase text-slate-900 tracking-tight">Consolidado Digital</h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mt-2 tracking-widest">Motor de Distribución • CIC-6</p>
             </div>
             
-            <div class="flex gap-2">
-                <button onclick="setEmailPreset('prueba')" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 transition-all">Prueba</button>
-                <button onclick="setEmailPreset('default')" class="flex-1 py-2 px-3 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-xl text-[10px] font-black uppercase text-fuchsia-900 transition-all">Oficial</button>
+            <div class="flex gap-3">
+                <button onclick="setEmailPreset('prueba')" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 transition-all border border-slate-200">Prueba</button>
+                <button onclick="setEmailPreset('default')" class="flex-1 py-2.5 px-4 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-xl text-[10px] font-black uppercase text-fuchsia-900 transition-all border border-fuchsia-100">Oficial</button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Destinatarios:</label>
-                    <input type="text" id="email-to" class="w-full bg-slate-50 border-2 border-slate-100 focus:border-fuchsia-600 rounded-xl px-4 py-3 text-[13px] font-semibold outline-none transition-all" placeholder="correo@ejemplo.com">
+            <div class="space-y-5">
+                <div class="input-group">
+                    <label>Para:</label>
+                    <input type="text" id="email-to" class="w-full bg-slate-50 border-2 border-slate-100 focus:border-fuchsia-600 rounded-xl px-4 py-3.5 text-[13px] font-semibold outline-none transition-all" placeholder="destinatarios@ejemplo.com">
                 </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">CC (Copia):</label>
-                    <input type="text" id="email-cc" class="w-full bg-slate-50 border-2 border-slate-100 focus:border-fuchsia-600 rounded-xl px-4 py-3 text-[13px] font-semibold outline-none transition-all" placeholder="Copia a...">
+                <div class="input-group">
+                    <label>Copia (CC):</label>
+                    <input type="text" id="email-cc" class="w-full bg-slate-50 border-2 border-slate-100 focus:border-fuchsia-600 rounded-xl px-4 py-3.5 text-[13px] font-semibold outline-none transition-all" placeholder="cc@ejemplo.com">
                 </div>
             </div>
 
-            <div class="flex gap-3 pt-2">
-                <button onclick="closeEmailModal()" class="flex-1 py-3 text-[11px] font-black uppercase text-slate-400 hover:text-slate-600">Cerrar</button>
-                <button id="btn-confirm-send" onclick="prepareAndSend()" class="flex-[2] bg-indigo-950 text-white rounded-xl py-3 text-[11px] font-black uppercase shadow-lg active:scale-95 transition-all">Confirmar Envío</button>
+            <div class="flex gap-4 pt-4">
+                <button onclick="closeEmailModal()" class="flex-1 py-3 text-[11px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
+                <button id="btn-confirm-send" onclick="prepareAndSend()" class="flex-[2] bg-slate-900 text-white rounded-2xl py-3.5 text-[11px] font-black uppercase shadow-xl active:scale-95 transition-all">Enviar Reporte</button>
             </div>
         </div>
     </div>
@@ -314,20 +347,19 @@
     <div class="glass-card">
         <header class="panel-header">
             <div>
-                <h1 class="text-xl font-black uppercase tracking-tight">Reporte de asistencias e incidencias</h1>
-                <p class="text-[10px] font-bold text-fuchsia-200/60 uppercase tracking-widest mt-1">Reporte filtrado</p>
+                <h1 class="text-2xl font-black uppercase tracking-tighter">Reporte Maestro de Operaciones</h1>
+                <p class="text-[11px] font-bold text-fuchsia-200/50 uppercase tracking-[0.2em] mt-1.5">Inteligencia de Datos • Control de Asistencia</p>
             </div>
         </header>
 
         <div class="filter-grid" id="filter-panel">
-            <!-- FILA 1 -->
             <div class="input-group">
-                <label>Periodo Rápido</label>
+                <label>Periodo Sugerido</label>
                 <select id="filter-preset" class="form-control" onchange="applyDatePreset(this.value)">
                     <option value="custom">PERSONALIZADO</option>
-                    <option value="curr_week">SEMANA EN CURSO</option>
+                    <option value="curr_week">ESTA SEMANA</option>
                     <option value="last_week">SEMANA PASADA</option>
-                    <option value="curr_month">MES EN CURSO</option>
+                    <option value="curr_month">ESTE MES</option>
                     <option value="last_month">MES PASADO</option>
                 </select>
             </div>
@@ -340,7 +372,7 @@
                 <input type="date" id="filter-end" class="form-control">
             </div>
             <div class="input-group">
-                <label>Turno Base</label>
+                <label>Turno Operativo</label>
                 <select id="filter-shift" class="form-control">
                     <option value="all">TODOS LOS TURNOS</option>
                     <option value="matutino">MATUTINO</option>
@@ -349,35 +381,33 @@
                 </select>
             </div>
 
-            <!-- BOTÓN FILTRAR Y ACCIONES SECUNDARIAS (COLUMNA 5) -->
-            <div class="input-group row-span-2 flex flex-col gap-2">
+            <div class="input-group row-span-2 flex flex-col gap-3">
                 <button onclick="runQuery()" class="btn-search w-full">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <span class="text-[10px] tracking-widest font-black uppercase">Filtrar</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <span class="text-[11px] tracking-widest font-black uppercase">Filtrar</span>
                 </button>
-                <div class="grid grid-cols-2 gap-2 flex-grow">
+                <div class="grid grid-cols-2 gap-3 flex-grow">
                     <button onclick="openEmailModal()" class="btn-secondary-action btn-email-style">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                        <span>Correo</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                        <span>E-Mail</span>
                     </button>
                     <button onclick="exportToExcel()" class="btn-secondary-action btn-export-style">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         <span>Excel</span>
                     </button>
                 </div>
             </div>
 
-            <!-- FILA 2 -->
             <div class="input-group">
                 <label>Elementos</label>
                 <div class="form-control" onclick="toggleDropdown('user-dropdown')">
                     <span id="user-label" class="truncate">Cargando...</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
                 <div id="user-dropdown" class="combobox-dropdown no-scrollbar">
                     <div class="dropdown-header">
-                        <span class="text-[8px] font-black uppercase text-slate-400">Seleccionar</span>
-                        <span class="btn-toggle-all" onclick="toggleAll('user', event)">Todos / Ninguno</span>
+                        <span class="text-[9px] font-black uppercase text-slate-400">Personal</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('user', event)">Todo / Ninguno</span>
                     </div>
                     <div id="user-options"></div>
                 </div>
@@ -385,18 +415,18 @@
 
             <div class="input-group">
                 <div class="flex justify-between items-center pr-1">
-                    <label>Casetas</label>
+                    <label>Zonas / Casetas</label>
                     <div id="op-caseta" onclick="toggleLogic('caseta')" class="logic-switch" title="Operador lógico">
                         <div class="dot"></div>
                     </div>
                 </div>
                 <div class="form-control" onclick="toggleDropdown('caseta-dropdown')">
                     <span id="caseta-label" class="truncate">Todas</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
                 <div id="caseta-dropdown" class="combobox-dropdown no-scrollbar">
                     <div class="dropdown-header">
-                        <span class="text-[8px] font-black uppercase text-slate-400">Seleccionar</span>
+                        <span class="text-[9px] font-black uppercase text-slate-400">Ubicaciones</span>
                         <span class="btn-toggle-all" onclick="toggleAll('caseta', event)">Todas / Ninguna</span>
                     </div>
                     <div id="caseta-options"></div>
@@ -412,11 +442,11 @@
                 </div>
                 <div class="form-control" onclick="toggleDropdown('motive-dropdown')">
                     <span id="motive-label" class="truncate">Todos</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
                 <div id="motive-dropdown" class="combobox-dropdown no-scrollbar">
                     <div class="dropdown-header">
-                        <span class="text-[8px] font-black uppercase text-slate-400">Seleccionar</span>
+                        <span class="text-[9px] font-black uppercase text-slate-400">Ausentismos</span>
                         <span class="btn-toggle-all" onclick="toggleAll('motive', event)">Todos / Ninguno</span>
                     </div>
                     <div id="motive-options">
@@ -432,18 +462,18 @@
 
             <div class="input-group">
                 <div class="flex justify-between items-center pr-1">
-                    <label>Alertas</label>
+                    <label>Incidencias</label>
                     <div id="op-incidence" onclick="toggleLogic('incidence')" class="logic-switch" title="Operador lógico">
                         <div class="dot"></div>
                     </div>
                 </div>
                 <div class="form-control" onclick="toggleDropdown('incidence-dropdown')">
                     <span id="incidence-label" class="truncate">Cualquiera</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
                 <div id="incidence-dropdown" class="combobox-dropdown no-scrollbar">
                     <div class="dropdown-header">
-                        <span class="text-[8px] font-black uppercase text-slate-400">Seleccionar</span>
+                        <span class="text-[9px] font-black uppercase text-slate-400">Alertas</span>
                         <span class="btn-toggle-all" onclick="toggleAll('incidence', event)">Todas / Ninguna</span>
                     </div>
                     <div id="incidence-options">
@@ -474,16 +504,16 @@
                     </thead>
                     <tbody id="table-body">
                         <tr>
-                            <td colspan="9" class="text-center py-20 text-slate-300 font-bold uppercase tracking-widest">Defina parámetros y filtre</td>
+                            <td colspan="9" class="text-center py-24 text-slate-300 font-bold uppercase tracking-[0.3em]">Configure filtros y ejecute consulta</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="p-4 bg-slate-50 border-t flex justify-between items-center">
-            <span id="results-count" class="text-[10px] font-black text-slate-400 uppercase">0 Registros encontrados</span>
-            <span class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">CIC-6 Data Engine v3.8</span>
+        <div class="px-6 py-4 bg-slate-50 border-t flex justify-between items-center">
+            <span id="results-count" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">0 Registros encontrados</span>
+            <span class="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">CIC-6 Analytics v4.0</span>
         </div>
     </div>
 
@@ -630,6 +660,8 @@
             rawResults = [];
             let processed = 0;
 
+            const applyOp = (current, op, condition) => op === 'AND' ? (current && condition) : (current || condition);
+
             for (let i = 0; i < diffDays; i++) {
                 const current = new Date(startDate);
                 current.setDate(startDate.getDate() + i);
@@ -650,21 +682,24 @@
                         const isCasetaMatch = allCasetasChecked || selectedCasetas.includes(casetaBase);
 
                         let matchesFinal = isUserMatch;
-                        const applyOp = (current, op, condition) => op === 'AND' ? (current && condition) : (current || condition);
-
                         matchesFinal = applyOp(matchesFinal, filterLogic.caseta, isCasetaMatch);
+
+                        const isIncMatch = allIncChecked || (
+                            (selectedIncidences.includes('retardo') && d.retardo) ||
+                            (selectedIncidences.includes('es_extra') && d.es_extra) ||
+                            (selectedIncidences.includes('es_recuperacion') && d.es_recuperacion) ||
+                            (selectedIncidences.includes('es_festivo') && d.es_festivo)
+                        );
 
                         if (s === 'ausentismo') {
                             const isMotiveMatch = allMotivesChecked || selectedMotives.includes(d.motivo);
                             matchesFinal = applyOp(matchesFinal, filterLogic.motive, isMotiveMatch);
+                            
+                            // Lógica de filtrado estricto: Si se pide una incidencia específica, ocultar ausentismos
+                            if (filterLogic.incidence === 'AND' && !allIncChecked) {
+                                matchesFinal = false; 
+                            }
                         } else {
-                            matchesFinal = applyOp(matchesFinal, filterLogic.motive, false);
-                            const isIncMatch = allIncChecked || (
-                                (selectedIncidences.includes('retardo') && d.retardo) ||
-                                (selectedIncidences.includes('es_extra') && d.es_extra) ||
-                                (selectedIncidences.includes('es_recuperacion') && d.es_recuperacion) ||
-                                (selectedIncidences.includes('es_festivo') && d.es_festivo)
-                            );
                             matchesFinal = applyOp(matchesFinal, filterLogic.incidence, isIncMatch);
                         }
 
@@ -761,8 +796,6 @@
             btn.disabled = true; btn.innerText = "CAPTURANDO...";
             try {
                 const captureArea = document.getElementById('capture-area');
-                
-                // SOLUCIÓN AL SCROLL: Usamos onclone para expandir el contenedor en el documento clonado
                 const canvas = await html2canvas(captureArea, {
                     scale: 2.0, 
                     backgroundColor: '#ffffff', 
@@ -771,7 +804,6 @@
                     onclone: (clonedDoc) => {
                         const resultsCont = clonedDoc.querySelector('.results-container');
                         if (resultsCont) {
-                            // Eliminamos límites de altura para que html2canvas dibuje todo el contenido
                             resultsCont.style.maxHeight = 'none';
                             resultsCont.style.height = 'auto';
                             resultsCont.style.overflow = 'visible';
