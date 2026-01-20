@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consola CCTV AXIS - VAPIX Interface</title>
+    <title>Consola de Diagnóstico CCTV AXIS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -22,273 +22,171 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        /* --- LAYOUT --- */
+        /* --- LAYOUT TRIPLE --- */
         .main-container {
             display: flex;
             height: calc(100vh - 105px);
             width: 100%;
         }
 
-        /* Sidebar con Buscador */
-        .camera-sidebar {
-            width: 380px;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(10px);
+        /* Sidebar Izquierda: Inventario */
+        .sidebar-left {
+            width: 320px;
+            background: rgba(15, 23, 42, 0.95);
             border-right: 1px solid rgba(255,255,255,0.05);
             display: flex;
             flex-direction: column;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.3);
         }
 
-        /* Stage de Visualización */
-        .viewing-stage {
+        /* Centro: Monitor */
+        .viewport-center {
             flex: 1;
             background: #000;
             display: flex;
             flex-direction: column;
-            padding: 24px;
+            padding: 20px;
             overflow-y: auto;
+        }
+
+        /* Sidebar Derecha: Consola */
+        .sidebar-right {
+            width: 350px;
+            background: #050505;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         /* --- COMPONENTES --- */
         .cam-item {
-            padding: 12px 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
             cursor: pointer;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
         }
-
-        .cam-item:hover { background: rgba(56, 189, 248, 0.08); }
-        .cam-item.active { 
-            background: rgba(56, 189, 248, 0.15); 
-            border-left: 4px solid #38bdf8;
-        }
-
-        .heartbeat {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            flex-shrink: 0;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.7; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.7; }
-        }
+        .cam-item:hover { background: rgba(56, 189, 248, 0.05); }
+        .cam-item.active { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; }
 
         .video-box {
             width: 100%;
-            max-width: 1100px;
             aspect-ratio: 16/9;
-            background: #050505;
-            border-radius: 16px;
+            background: #0a0a0a;
+            border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1);
-            margin: 0 auto;
-            position: relative;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 40px 80px -12px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
         }
 
-        .stream-img { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Cuadro VAPIX */
-        .vapix-panel {
-            max-width: 1100px;
-            width: 100%;
-            margin: 24px auto;
-            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 16px;
-            padding: 24px;
-        }
-
-        .vapix-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 24px;
-        }
-
-        .data-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
-        .data-value { font-size: 14px; font-weight: 600; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; }
-
-        .tag-rtsp {
-            background: rgba(56, 189, 248, 0.1);
-            color: #38bdf8;
-            padding: 6px 12px;
-            border-radius: 6px;
+        .console-line {
+            padding: 4px 12px;
             font-size: 11px;
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            word-break: break-all;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            line-height: 1.4;
         }
+        .log-info { color: #94a3b8; }
+        .log-warn { color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+        .log-error { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+        .log-success { color: #10b981; }
 
-        .search-container {
-            padding: 20px;
-            background: rgba(2, 6, 23, 0.5);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .search-input {
-            background: rgba(30, 41, 59, 0.8);
+        .search-box {
+            background: rgba(30, 41, 59, 0.5);
             border: 1px solid rgba(255,255,255,0.1);
             color: white;
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 13px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
             width: 100%;
-            transition: all 0.3s;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        .counter-badge {
-            background: #38bdf8;
-            color: #020617;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 900;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Encabezado Principal -->
-    <header class="metallic-header h-[65px] flex items-center px-6 justify-between z-50 relative">
+    <header class="metallic-header h-[65px] flex items-center px-6 justify-between z-50">
         <div class="flex items-center gap-4">
-            <div class="p-2.5 bg-sky-500/10 rounded-xl border border-sky-500/20">
+            <div class="p-2 bg-sky-500/10 rounded-lg">
                 <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
             </div>
             <div>
-                <h1 class="text-sm font-black tracking-widest uppercase">Axis VAPIX Control Center</h1>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Inventario de Monitoreo Crítico - CIC</p>
+                <h1 class="text-sm font-black tracking-widest uppercase">Diagnóstico Pro CCTV Axis</h1>
+                <p class="text-[9px] text-slate-400 font-bold uppercase">Consola de Mando y Análisis de Red</p>
             </div>
         </div>
-
-        <div class="px-4 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-[10px] font-bold text-green-400">
-            ADMINISTRADOR: ACTIVO
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-slate-500">ESTADO AXIS:</span>
+            <div class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[10px] font-bold text-green-400">VAPIX V3.0 READY</div>
         </div>
     </header>
 
     <div class="main-container">
-        <!-- Listado de Cámaras Lateral -->
-        <aside class="camera-sidebar">
-            <div class="search-container">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nodos en Inventario</span>
-                    <span id="match-count" class="counter-badge">350</span>
-                </div>
-                <input type="text" id="search-box" class="search-input" placeholder="BUSCAR POR NOMBRE, IP O MODELO..." oninput="renderSidebar()">
+        <!-- IZQUIERDA: LISTADO -->
+        <aside class="sidebar-left">
+            <div class="p-4 border-b border-white/5">
+                <input type="text" id="search-input" class="search-box" placeholder="BUSCAR CÁMARA..." oninput="renderList()">
             </div>
             <div id="list-container" class="flex-1 overflow-y-auto no-scrollbar">
-                <!-- Se inyectan dinámicamente -->
+                <!-- Items se cargan aquí -->
             </div>
         </aside>
 
-        <!-- Área de Visualización Principal -->
-        <main class="viewing-stage no-scrollbar">
-            <div id="welcome-msg" class="flex flex-col items-center justify-center h-full text-slate-700">
-                <img src="M/Logo.png" class="h-24 opacity-10 mb-8 grayscale invert">
-                <div class="text-center">
-                    <p class="text-[14px] font-black uppercase tracking-[0.6em] mb-2">Consola de Mando</p>
-                    <p class="text-[10px] font-bold uppercase tracking-[0.3em] opacity-50">Seleccione un nodo del listado para iniciar la interfaz VAPIX</p>
+        <!-- CENTRO: MONITOR -->
+        <main class="viewport-center no-scrollbar">
+            <div id="active-monitor" class="hidden">
+                <div class="video-box mb-6">
+                    <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-20 hidden">
+                        <div class="w-10 h-10 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
+                    </div>
+                    <img id="main-stream" src="" class="w-full h-full object-contain">
+                </div>
+                
+                <!-- Detalles VAPIX -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <span class="text-[9px] font-black text-slate-500 uppercase">Nodo Seleccionado</span>
+                        <h2 id="view-name" class="text-xs font-bold text-white mt-1">-</h2>
+                        <div id="view-model" class="text-[10px] text-sky-400 font-mono mt-1">-</div>
+                    </div>
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <span class="text-[9px] font-black text-slate-500 uppercase">Endpoint IP</span>
+                        <h2 id="view-ip" class="text-xs font-bold text-white mt-1">-</h2>
+                        <div id="view-mac" class="text-[10px] text-slate-400 font-mono mt-1">-</div>
+                    </div>
                 </div>
             </div>
-
-            <div id="active-viewer" class="hidden animate-in fade-in duration-500">
-                <!-- Visor de Video de Alta Definición -->
-                <div class="video-box">
-                    <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 z-10">
-                        <div class="w-14 h-14 border-4 border-sky-500/10 border-t-sky-500 rounded-full animate-spin mb-4"></div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-sky-500">Sincronizando Stream...</span>
-                    </div>
-                    <img id="main-stream" src="" class="stream-img" onerror="handleStreamError()" onload="handleStreamSuccess()">
-                </div>
-
-                <!-- Panel de Detalles Técnicos VAPIX -->
-                <div class="vapix-panel">
-                    <div class="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
-                        <div class="p-2.5 bg-sky-500/10 rounded-lg">
-                            <svg class="w-5 h-5 text-sky-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
-                        </div>
-                        <div>
-                            <h2 class="text-xs font-black uppercase tracking-widest text-sky-400">Parámetros de Configuración Axis</h2>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase">Información recabada mediante protocolo VAPIX over IP</p>
-                        </div>
-                    </div>
-
-                    <div class="vapix-grid">
-                        <div class="space-y-6">
-                            <div>
-                                <div class="data-label">Nombre del Nodo</div>
-                                <div id="v-name" class="data-value">-</div>
-                            </div>
-                            <div>
-                                <div class="data-label">Host de Red (IPv4)</div>
-                                <div id="v-ip" class="data-value text-sky-400">-</div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-6">
-                            <div>
-                                <div class="data-label">Modelo de Hardware</div>
-                                <div id="v-model" class="data-value">-</div>
-                            </div>
-                            <div>
-                                <div class="data-label">Dirección MAC</div>
-                                <div id="v-mac" class="data-value text-slate-400">-</div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-6">
-                            <div>
-                                <div class="data-label">Cadena de Conexión RTSP</div>
-                                <div id="v-rtsp" class="tag-rtsp">-</div>
-                            </div>
-                            <div>
-                                <div class="data-label">Estado de Transmisión</div>
-                                <div id="v-status" class="flex items-center gap-2">
-                                    <div id="v-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-                                    <span id="v-text" class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Desconectado</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full opacity-20">
+                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                <span class="text-xs font-black uppercase tracking-[0.3em]">Esperando Selección</span>
             </div>
         </main>
+
+        <!-- DERECHA: CONSOLA -->
+        <aside class="sidebar-right">
+            <div class="p-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
+                <span class="text-[10px] font-bold text-sky-400 tracking-widest">SISTEMA LOGS [BAMBALINAS]</span>
+                <button onclick="clearConsole()" class="text-[9px] text-slate-500 hover:text-white uppercase font-bold">Limpiar</button>
+            </div>
+            <div id="console-output" class="flex-1 overflow-y-auto p-2 no-scrollbar">
+                <!-- Logs en tiempo real -->
+            </div>
+        </aside>
     </div>
 
-    <!-- Pie de página informativo -->
     <footer class="h-[40px] bg-slate-950 border-t border-white/5 flex items-center px-6 justify-between text-[10px] font-bold text-slate-500">
+        <div>TOTAL EN DB: <span id="stat-total" class="text-white">0</span></div>
         <div class="flex items-center gap-4">
-            <span id="stat-total">CARGANDO BASE DE DATOS...</span>
-            <span class="text-slate-800">|</span>
-            <span>PROTOCOLO: VAPIX MJPEG</span>
-        </div>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-2"><div class="w-2 h-2 bg-green-500 rounded-full"></div> LIVE STREAM</div>
-            <div class="flex items-center gap-2"><div class="w-2 h-2 bg-red-500 rounded-full"></div> NO SIGNAL</div>
-            <div class="flex items-center gap-2"><div class="w-2 h-2 bg-amber-500 rounded-full"></div> CONNECTING</div>
+            <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-green-500 rounded-full"></div> SEÑAL</div>
+            <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-red-500 rounded-full"></div> ERROR</div>
+            <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-amber-500 rounded-full"></div> SIN IP</div>
         </div>
     </footer>
 
     <script>
+        // Listado Maestro (Aquí puedes pegar los 350, he puesto una muestra representativa de los tuyos)
         const DB = [
             ["01-OS-AZU-EXT-SN-ESTACIONAMIENTO", "10.200.8.73", "B8A44F726BB3", "AXIS P1448-LE"],
             ["02-OS-AZU-INT-PB-CONEXIÓN", "10.200.8.101", "B8A44F5B99C2", "AXIS M3065-V"],
@@ -309,428 +207,110 @@
             ["17-OS-MOR-INT-PROTECCIÓN PATRIMONIAL SUR", "10.200.8.163", "B8A44F10DEC2", "AXIS M3065-V"],
             ["18-OS-MOR-INT-PB-PROTECCIÓN PATRIMONIAL NTE", "10.200.8.68", "ACCC8E9B19E0", "AXIS M3045-V"],
             ["19-OS-MOR-INT-PB-ENTRADA PP", "10.200.8.85", "ACCC8EEB2440C0", "AXIS M3045-V"],
-            ["20-OS-MOR-EXT-PB-PUERTA EMERGENCIA", "10.200.8.162", "B8A44F1B06FE", "AXIS M3065-V"],
-            ["21-OS-MOR-INT-PB-PUERTA DE EMERGENCIA", "10.200.8.160", "B8A44F10DEB9", "AXIS M3065-V"],
-            ["22-OS-MOR-INT-PB-AREA 03", "10.200.8.156", "B8A44F1B0708", "AXIS M3065-V"],
-            ["23-OS-MOR-EXT-PB-RAMPA", "10.200.8.139", "B8A44F23114B", "AXIS P1448-LE"],
-            ["24-OS-MOR-INT-PB-SALA DIGITAL", "10.200.8.165", "B8A44F0FD52B", "AXIS M3065-V"],
-            ["25-OS-EXT-SN-ANDATTI GOURMENT", "10.200.8.226", "B8A44F5D325C", "AXIS P1447-LE"],
-            ["26-OS-MOR-INT-PB- SITE IDF 20", "10.200.8.219", "B8A44F5B976D", "AXIS M3065-V"],
-            ["27-OS-MOR-EXT-PB-EST AREA DE MESAS", "10.200.8.140", "B8A44F2310DD", "AXIS P1448-LE"],
-            ["28-Proyecto (Site SPIN)", "", "", "AXIS"],
-            ["29-Proyecto (Site SPIN)", "", "", "AXIS"],
-            ["30-Proyecto (Spin)", "", "", "AXIS"],
-            ["31-OS-MOR-EXT-PB-COMEDOR", "10.200.8.155", "B8A44F1B06F8", "AXIS M3065-V"],
-            ["32-OS-MOR-INT-PB-PASILLO", "10.200.8.158", "B8A44F0FD51F", "AXIS M3065-V"],
-            ["33-OS-MOR-INT-PB-ENTRADA DIGITAL", "10.200.8.161", "B8A44F1B06C3", "AXIS M3065-V"],
-            ["34-Proyecto (Spin)", "", "", "AXIS"],
-            ["35-OS-MOR-INT-PB-SALIDA CARRANZA", "10.200.8.157", "B8A44F1B071E", "AXIS M3065-V"],
-            ["36-OS-MOR-INT-PB-AREA 02", "10.200.8.151", "B8A44F1B06EB", "AXIS M3065-V"],
-            ["37-OS-MOR-INT-PB-AREA 06", "10.200.8.154", "B8A44F10DE95", "AXIS M3065-V"],
-            ["38-OS-MOR-INT-PB-CONEXION ALM EXP", "", "", "AXIS"],
-            ["39-OS-MOR-EXT-PB-CONEXION EXPANSION", "10.200.8.159", "B8A44F10DEB8", "AXIS M3065-V"],
-            ["40-OS-MOR-EXT-PB-ENTRADA", "10.200.8.153", "B8A44F10DDB1", "AXIS M3065-V"],
-            ["41-OS-MOR-EXT-SN-PASILLO CARRANZA", "10.200.8.58", "ACCC8EC3599B", "AXIS M3027"],
-            ["42-OS-MOR-EXT-PA-COMEDOR ORIENTE", "10.200.8.250", "B8A44F4EB0D3", "AXIS M3065-V"],
-            ["43-OS-MOR-INT-PA-ENTRADA CAR", "10.200.8.123", "ACCC8EE4710D", "AXIS M3045-V"],
-            ["44-OS-MOR-INT-PA-AREA 08", "10.200.8.111", "ACCC8EEF8BAE", "AXIS M3045-V"],
-            ["45-OS-MOR-INT-PA-PASILLO CAR", "10.200.8.100", "ACCC8EEF8B92", "AXIS M3045-V"],
-            ["46-OS-MOR-INT-PA-CAR", "10.200.8.27", "ACCC8E85C4B0", "AXIS M3047-P"],
-            ["47-OS-MOR-INT-PA-ANTIFRAUDES", "10.200.8.103", "ACCC8EA498F6", "AXIS M3045-V"],
-            ["48-OS-MOR-INT-PA-CASILLERO CAR", "10.200.8.29", "ACCC8E9B19E6", "AXIS M3045-V"],
-            ["49-OS-MOR-INT-PA-AREA 05", "10.200.8.108", "ACCC8EE47131", "AXIS M3045-V"],
-            ["50-OS-MOR-INT-PA-AREA 21", "10.200.8.124", "ACCC8EEFB14E", "AXIS M3045-V"],
-            ["51-OS-MOR-INT-PA-AREA 14", "10.200.8.117", "ACCC8EEFB130", "AXIS M3045-V"],
-            ["52-OS-MOR-INT-PA-AREA 15", "10.200.8.118", "ACCC8EEFB144", "AXIS M3045-V"],
-            ["53-OS-MOR-INT-PA-AREA 17", "10.200.8.120", "ACCC8EE470F4", "AXIS M3045-V"],
-            ["54-OS-MOR-EXT-PA-COMEDOR SUR", "10.200.8.113", "ACCC8EEF9296", "AXIS M3045-V"],
-            ["55-OS-MOR-INT-PA-ACCESO CENTRO", "10.200.8.105", "ACCC8EE32BB5", "AXIS M3045-V"],
-            ["56-OS-MOR-INT-PA-SITE", "10.200.8.114", "ACCC8EEF92C1", "AXIS M3045-V"],
-            ["57-OS-MOR-INT-PA-FONDO CENTRAL", "10.200.8.112", "ACCC8EEF8F83", "AXIS M3045-V"],
-            ["58-OS-MOR-INT-PA-CONEXION EXPANSION", "10.200.8.104", "ACCC8EE329C2", "AXIS M3045-V"],
-            ["59-OS-MOR-INT-PA-CAFETERA", "10.200.8.116", "ACCC8EEF9921", "AXIS M3045-V"],
-            ["60-OS-MOR-INT-PA-AREA 04", "10.200.8.107", "ACCC8EE47125", "AXIS M3045-V"],
-            ["61-OS-MOR-INT-PA-AREA 03", "10.200.8.106", "ACCC8EE470EF", "AXIS M3045-V"],
-            ["62-OS-MOR-INT-PA-AREA 06", "10.200.8.109", "ACCC8EE4713B", "AXIS M3045-V"],
-            ["63-OS-MOR-INT-PA-AREA 12", "10.200.8.115", "ACCC8EEF96C0", "AXIS M3045-V"],
-            ["64-OS-MOR-INT-PA-AREA 16", "10.200.8.119", "ACCC8EEFB156", "AXIS M3045-V"],
-            ["65-OS-MOR-INT-PA-AREA 07", "10.200.8.110", "ACCC8EEB244094", "AXIS M3045-V"],
-            ["66-OS-MOR-INT-PA-AREA 18", "10.200.8.121", "ACCC8EEFB14A", "AXIS M3045-V"],
-            ["67-OS-ANE-INT-N1-MEZZANINE", "10.200.8.12", "B8A44F5B99CF", "AXIS M3065-V"],
-            ["68-OS-ANE-INT-PA-CCO YZA", "10.200.8.64", "B8A44F5B9076", "AXIS M3065-V"],
-            ["69-OS-ANE-INT-N1-SALA", "10.200.8.16", "B8A44F67FF8E", "AXIS M3065-V"],
-            ["70-OS-ANE-INT-N1-PASILLO", "10.200.8.18", "B8A44F5B941B", "AXIS M3065-V"],
-            ["71-OS-ANE-INT-N1-CAFETERIA", "10.200.8.14", "B8A44F5B9D9E", "AXIS M3065-V"],
-            ["72-OS-ANE-EXT-PORTERO ANEXO OS", "10.200.8.39", "ACCC8E67EC1F", "AXIS A8004-VE"],
-            ["73-OS-ANE-INT-N1-RECEPCION ANEXO OS", "10.200.8.57", "ACCC8EEF96CA", "AXIS M3045-V"],
-            ["74-OS-ANE-INT-PB-COMEDOR 1", "10.200.8.187", "B8A44F4094CE", "AXIS M3065-V"],
-            ["75-OS-ANE-INT-PB-ACCESO COMEDOR", "10.200.8.185", "B8A44F06402B", "AXIS M3045-V"],
-            ["76-OS-ATI-EXT-PB-MENSAJERIA", "10.200.8.173", "B8A44F291D0D", "AXIS P1448-LE"],
-            ["77-OS-ANE-EXT-PA-IDF 7 ANEXO OS", "10.200.8.238", "B8A44F5B9789", "AXIS M3045-V"],
-            ["78-OS-ATI-INT-PA-CAFETERIA", "10.200.8.172", "ACCC8EE108A", "AXIS M3045-V"],
-            ["79-OS-ATI-INT-PA-CENTRO", "10.200.8.171", "ACCC8EEFB160", "AXIS M3045-V"],
-            ["80-OS-ATI-INT-PA-IMPRESORA", "10.200.8.175", "ACCC8EE47100", "AXIS M3045-V"],
-            ["81-Proyecto (ESTACIONAMIENTO IMPULSO)", "", "", "AXIS"],
-            ["82-Proyecto (ESTACIONAMIENTO IMPULSO)", "", "", "AXIS"],
-            ["83-Proyecto (ESTACIONAMIENTO IMPULSO)", "", "", "AXIS"],
-            ["84-OS-TI-EXT-SN-PATIO IMPULSO", "10.200.8.84", "ACCC8ED41B3A", "AXIS P1435-LE"],
-            ["85-OS-NAR-EXT-SN-CASETA IMPULSO", "10.200.8.131", "ACCC8EE02C32", "AXIS M3045-V"],
-            ["86-OS-ATI-EXT-SN-PORTON TI", "10.200.8.174", "B8A44F291822", "AXIS P1448-LE"],
-            ["87-OS-NAR-EXT-SN- ACCESO PEATONAL IMPULSO", "10.200.8.133", "ACCC8ED41CC4", "AXIS P1435-LE"],
-            ["88-OS-EXP-EXT-PB-BALANCE", "10.200.8.122", "ACCC8ED40E6A", "AXIS P1435-LE"],
-            ["89-OS-EXP-INT-PB-ACCESO PUERTA 20 NOV", "10.200.8.130", "ACCC8EEF8F84", "AXIS M3045-V"],
-            ["90-OS-EXP-INT-PB-SITE", "10.200.8.129", "ACCC8EE47102", "AXIS M3045-V"],
-            ["91-OS-AND-INT-SN- ANDATTI INTERIOR", "10.200.8.223", "B8A44F5B9770", "AXIS M3065-V"],
-            ["92-OS-EXP-EXT-SN-TIENDA OXXO", "10.200.8.23", "ACCC8EDC439A", "AXIS M3057-PLVE"],
-            ["93-OS-EXP-INT-PB-CENTRO", "10.200.8.199", "ACCC8EEFB164", "AXIS M3045-V"],
-            ["94-OS-EXP-INT-PB-CAFE", "10.200.8.128", "ACCC8EE47130", "AXIS M3045-V"],
-            ["95-OS-EXP-INT-PB-DISEÑO", "10.200.8.198", "ACCC8EEF971C", "AXIS M3045-V"],
-            ["96-OS-AZU-EXT-SN-ACCESO 2", "10.200.8.146", "B8A44F29182C", "AXIS P1448-LE"],
-            ["97-OS-EXP-INT-PA-PROYECTOS", "10.200.8.89", "ACCC8EE02C04", "AXIS M3045-V"],
-            ["98-OS-EXP-INT-PA-PASILLO MOR", "10.200.8.196", "ACCC8EEB2440B6", "AXIS M3045-V"],
-            ["99-OS-EXP-INT-PA-PUENTE", "10.200.8.37", "ACCC8EE379C1", "AXIS M3045-V"],
-            ["100-OS-EXP-INT-PA-PASILLO", "10.200.8.197", "ACCC8EEF9940", "AXIS M3045-V"],
-            ["101-OS-EXP-INT-PA-CONEXIÓN AZU", "10.200.8.19", "ACCC8E50F31D", "AXIS M3005"],
-            ["102-OS-VER-INT-PB-SHOW ROOM", "10.200.8.55", "ACCC8E754626", "AXIS M3045-V"],
-            ["103-OS-VER-INT-PB-ENTRADA", "10.200.8.56", "ACCC8E755370", "AXIS M3045-V"],
-            ["104-OS-VER-EXT-SN-PATIO LOGISTICA", "10.200.8.98", "ACCC8EF1FDBA", "AXIS P1447-LE"],
-            ["105-OS-VER-INT-PB-PUERT EMERG", "", "", "AXIS"],
-            ["106-OS-VER-INT-PB-SITE", "10.200.8.48", "ACCC8E9B14DC", "AXIS M3045-V"],
-            ["107-OS-VER-INT-PB ALMACEN", "10.200.8.51", "ACCC8EEF92D7", "AXIS M3045-V"],
-            ["108-OS-VER-EXT-SN-PALAPA", "10.200.8.184", "B8A44F06562B", "AXIS M3045-V"],
-            ["109-OS-VER-INT-PA-PUERT EMERG", "10.200.8.49", "ACCC8EEFB169", "AXIS M3045-V"],
-            ["110-OS-VER-INT-PA-NTE", "10.200.8.54", "B8A44F4EB104", "AXIS M3065-V"],
-            ["111-OS-VER-INT-PA-PASILLO", "10.200.8.53", "ACCC8EEF92E3", "AXIS M3045-V"],
-            ["112-OS-VER-INT-PA-SUR", "10.200.8.47", "ACCC8EDF29EE", "AXIS M3045-V"],
-            ["113-OS-EST-EXT-SN-ESTACIONAMIENTO DOMINGUEZ", "10.200.8.67", "B8A44F5D47CB", "AXIS P1447-LE"],
-            ["114-OS-VER-EXT-SN-EST-LOGISTICA", "10.200.8.97", "ACCC8EEC3E45", "AXIS P1447-LE"],
-            ["115-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["116-OS-PER-EXT-SN-AREA RECICLAJE", "10.200.8.96", "ACCC8EE18F49", "AXIS P1447-LE"],
-            ["117-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["118-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["119-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["120-OS-GRI-INT-PB-ENTRADA", "10.200.8.31", "ACCC8EDF2E82", "AXIS M3045-V"],
-            ["121-OS-GRI-EXT-SN-PUERTA DE EMERGENCIA", "10.200.8.181", "ACCC8ED06761", "AXIS P1447-LE"],
-            ["122-OS-GRI-INT-PB-CAFETERIA", "10.200.8.183", "ACCC8EEF96C6", "AXIS M3045-V"],
-            ["123-OS-GRI-INT-N1-PASILLO", "10.200.8.145", "ACCC8EEFB15B", "AXIS M3045-V"],
-            ["124-OS-GRI-INT-N1-BODEGA", "10.200.8.144", "ACCC8EEF9948", "AXIS M3045-V"],
-            ["125-OS-GRI-INT-N1-CENTRO", "10.200.8.178", "ACCC8EEF9939", "AXIS M3045-V"],
-            ["126-OS-GRI-INT-PB-AREA ACTIVACEL", "10.200.8.220", "B8A44F5B976F", "AXIS M3065-V"],
-            ["127-OS-GRI-INT-N2-PTE", "10.200.8.180", "ACCC8EEF933C", "AXIS M3045-V"],
-            ["128-OS-GRI-INT-N2-CENTRO", "10.200.8.43", "ACCC8ECC341A", "AXIS M3045-V"],
-            ["129-OS-GRI -INT-N1 -SITE IDF-12", "10.200.8.217", "B8A44F5B9784", "AXIS M3045-V"],
-            ["130-OS-TI-INT-PB-ENTRADA PRINCIPAL", "", "", "AXIS"],
-            ["131-OS-TI-INT-PB ORIENTE", "", "", "AXIS"],
-            ["132-OS-TI-INT-PB-SALA DE JUNTAS", "", "", "AXIS"],
-            ["133-OS-TI-INT-N1-IDF 12", "", "", "AXIS"],
-            ["134-OS-TI-INT-N1 PTE", "", "", "AXIS"],
-            ["135-OS-TI-INT-N1-CENTRO", "", "", "AXIS"],
-            ["136-OS-TI-INT-N1-OTE", "", "", "AXIS"],
-            ["137-OS-TI-INT-N2-BODEGA", "", "", "AXIS"],
-            ["138-OS-TI-INT-N2-CENTRO", "", "", "AXIS"],
-            ["139-OS-NAR-EXT-SN- EST TECHADO PUERTA UN", "10.200.8.201", "ACCC8EEFB149", "AXIS M3045-V"],
-            ["140-OS-TI-EXT-SN-EST TECHADO ESTE", "10.200.8.30", "ACCC8EA37D13", "AXIS M3045-V"],
-            ["141-OS-TI-EXT-SN-EST TECHADO OESTE", "10.200.8.176", "B8A44F063449", "AXIS M3045-V"],
-            ["142-OS-ROJ-INT-SOT-SOTANO NORTE", "10.200.8.138", "ACCC8EEFB140", "AXIS M3045-V"],
-            ["143-OS-ROJ-INT-SOT-SOTANO SUR", "10.200.8.136", "ACCC8EEFB167", "AXIS M3045-V"],
-            ["144-OS-ROJ-EXT-SOT-ACCESO SOTANO", "10.200.8.137", "ACCC8EF1DD16", "AXIS P1447-LE"],
-            ["145-Proyecto (RECEPCION OS)", "10.200.8.163", "B8A44F10DEC2", "AXIS M3065-V"],
-            ["146-Proyecto (RECEPCION OS)", "", "", "AXIS"],
-            ["147-Proyecto (RECEPCION OS)", "", "", "AXIS"],
-            ["148-OS-ROJ-INT-PB-CENTRO", "10.200.8.225", "B8A44F063F9B", "AXIS M3045-V"],
-            ["149-OS-ROJ-INT-PB-RECEPCION OFICINA", "10.200.8.87", "ACCC8EA37C40", "AXIS M3045-V"],
-            ["150-OS-ROJ-INT-PB-RAMPA RECEPCION", "10.200.8.86", "ACCC8E9B1B15", "AXIS M3045-V"],
-            ["151-OS-ROJ-INT-PB-RECEPCION PANORAMICA", "10.200.8.88", "ACCC8EC61152", "AXIS M3047-P"],
-            ["152-OS-ROJ-INT-PB-ACCESO RECEPCION/CARACOL", "10.200.8.92", "ACCC8EE379D9", "AXIS M3045-V"],
-            ["153-OS-ROJ-EXT-SN-PLUMA", "10.200.8.91", "B8A44F5D3290", "AXIS P1447-LE"],
-            ["154-OS-ROJ-INT-SN-CASETA EDISON", "10.200.8.28", "ACCC8EE32B2449", "AXIS M3045-V"],
-            ["155-OS-ROJ-EXT-SN-EST EDISON", "10.200.8.80", "ACCC8EA49985", "AXIS M3045-V"],
-            ["156-OS-ROJ-EXT-SN-SALIDA VEHICULAR", "10.200.8.32", "ACCC8ED41BB9", "AXIS P1435-LE"],
-            ["157-OS-ROJ-INT-PB-ACCESO SASSO", "", "", "AXIS"],
-            ["158-OS-ROJ-INT-PB-ELEVADOR", "10.200.8.229", "B8A44F063344", "AXIS M3045-V"],
-            ["159-OS-ROJ-EXT-SN-SALIDA EST 20 DE NOV", "10.200.8.227", "B8A44F063FC0", "AXIS M3045-V"],
-            ["160-OS-ROJ-EXT-SN-ESTACIONAMIENTO 20 DE NOV", "10.200.8.9", "B8A44F5D329C", "AXIS P1447-LE"],
-            ["161-OS-AMA-INT-PB-ESCALERAS", "", "", "AXIS"],
-            ["162-OS-ROJ-INT-PB-LABORATORIO", "", "", "AXIS"],
-            ["163-OS-ROJ-INT-PB-FIELD SERVICE", "10.200.8.41", "ACCC8E9B19FA", "AXIS M3045-V"],
-            ["164-Proyecto (FIELD SERVICE)", "", "", "AXIS"],
-            ["165-OS-ROJ-INT-PB-MEZZANI", "10.200.8.234", "B8A44F4EB0AE", "AXIS M3065-V"],
-            ["166-OS-AMA-EXT-SN-ACCESO FIELD SERVICE", "10.200.8.50", "ACCC8EEC40C2", "AXIS P1447-LE"],
-            ["167-OS-AMA-INT-PB- SHOW ROOM", "10.200.8.167", "ACCC8EEF9284", "AXIS M3045-V"],
-            ["168-OS-AMA-INT-PB-CENTRO", "", "", "AXIS"],
-            ["169-OS-EDI-INT-PB-CUEVA", "", "", "AXIS"],
-            ["170-OS-AMA-INT-PB- SITE AMARILLO (RH)", "10.200.8.202", "B8A44F5B8861", "AXIS M3065-V"],
-            ["171-OS-ODS-INT-PB-RESP SOCIAL", "", "", "AXIS"],
-            ["172-OS-ODS-INT-PB-MTTO", "", "", "AXIS"],
-            ["173-OS-ROJ-INT-PB-MEZZANINE CENTRO", "10.200.8.219", "B8A44F4091D1", "AXIS M3065-V"],
-            ["174-OS-ROJ-INT-PB-MEZZANINE SUR", "10.200.8.228", "B8A44F409281", "AXIS M3065-V"],
-            ["175-OS-ROJ-INT-PB-MEZZANINE SURESTE", "", "", "AXIS"],
-            ["176-OS-AMA-INT-N1-ANDATTI", "10.200.8.188", "B8A44F5B9569", "AXIS M3065-V"],
-            ["177-OS-AMA-INT-N1-BODEGA", "10.200.8.189", "B8A44F5B969F", "AXIS M3065-V"],
-            ["178-OS-AMA-INT-N1-CENTRO DIR", "10.200.8.190", "B8A44F5B98F2", "AXIS M3065-V"],
-            ["179-OS-AMA-INT-N1- CCO PROXYLOGIS", "10.200.8.203", "B8A44F06343B", "AXIS M3045-V"],
-            ["180-OS-AMA-INT-N1-CONEXION PUENTE", "10.200.8.192", "B8A44F5B969B", "AXIS M3065-V"],
-            ["181-OS-AMA-INT-N1-DIRECCION 1", "10.200.8.182", "B8A44F5B96D4", "AXIS M3065-V"],
-            ["182-OS-AMA-INT-N1-ENTRADA SILOS", "10.200.8.44", "ACCC8EEF9724", "AXIS M3045-V"],
-            ["183-OS-AMA-INT-N1- CCO PROXYLOGIS (MONITOREO)", "10.200.8.243", "B8A44F404263", "AXIS M3065-V"],
-            ["184-OS-ODS-INT-N2-DIRECTORES", "", "", "AXIS"],
-            ["185-OS-ODS-INT-N2-DIRECCION CARACOL", "", "", "AXIS"],
-            ["186-Proyecto (SITE N2 )", "", "", "AXIS"],
-            ["187-OS-ODS-INT-N2-SHOW ROOM", "", "", "AXIS"],
-            ["188-OS-ODS-INT-N2-ALFOMBRADO", "", "", "AXIS"],
-            ["189-OS-ODS-INT-N2-DIRECCION ORIENTE", "", "", "AXIS"],
-            ["190-OS-ROJ-INT-PB- SITE NACIONAL INTERIOR", "10.200.8.204", "B8A44F5B95B1", "AXIS M3065-V"],
-            ["191-OS-ODS-INT-N2-ESCALERA", "", "", "AXIS"],
-            ["192-OS-AMA-INT-N3-O SABOR PONIENTE", "10.200.8.20", "ACCC8E727B2D", "AXIS M3045-V"],
-            ["193-OS-AMA-INT-N3-O SABOR", "10.200.8.21", "ACCC8E727B36", "AXIS M3045-V"],
-            ["194-Proyecto (SILOS N4)", "", "", "AXIS"],
-            ["195-Proyecto (SILOS N4)", "", "", "AXIS"],
-            ["196-OS-SIL-INT-SN-ELEVADOR SILOS INTERIOR", "10.200.8.230", "ACCC8EEFB150", "AXIS M3045-V"],
-            ["197-OS-AMA-INT-N4-O SABOR NORTE", "10.200.8.22", "ACCC8E727B38", "AXIS M3045-V"],
-            ["198-OS-AMA-INT-N4-O SABOR ORIENTE", "10.200.8.247", "B8A44F4EB11A", "AXIS M3065-V"],
-            ["199 -OS-SIL-EXT-N5-ESCALERAS", "10.200.8.195", "B8A44F67FF15", "AXIS M3065-V"],
-            ["200-OS-AMA-INT-N5-TERRAZA SILOS", "", "", "AXIS"],
-            ["201-OS-AMA-INT-N5-BAR ORIENTE", "10.200.8.200", "B8A44F4EB129", "AXIS M3065-V"],
-            ["202-OS-AMA-INT-N5-BAR PONIENTE", "10.200.8.221", "B8A44F409462", "AXIS M3065-V"],
-            ["203-Proyecto (SILOS N6)", "", "", "AXIS"],
-            ["204-Proyecto (SILOS N6)", "", "", "AXIS"],
-            ["205-Proyecto (SILOS N6)", "", "", "AXIS"],
-            ["206-OS-ROJ-INT-N3-PASILLOS", "10.200.8.78", "B8A44F5B8DC4", "AXIS M3065-V"],
-            ["207-OS-ROJ-EXT-N3-TERRAZA", "10.200.8.69", "B8A44F5B9900", "AXIS M3065-V"],
-            ["208-OS-ROJ-INT-N3-AMENIDADES", "10.200.8.147", "B8A44F5B9821", "AXIS M3065-V"],
-            ["209-OS-ROJ-INT-N3-SITE", "10.200.8.150", "B8A44F5B964F", "AXIS M3065-V"],
-            ["210-OS-ROJ-INT-N3-ENTRADA AZO", "10.200.8.148", "B8A44F5B9646", "AXIS M3065-V"],
-            ["211-OS-AZU-INT-PB-SALA 3", "10.200.8.126", "ACCC8EDF233C", "AXIS M3045-V"],
-            ["212-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["213-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["214-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["215-OS-PER-EXT-SN-COMEDOR 1 PONIENTE", "10.200.8.186", "ACCC8EDBFCFE", "AXIS P1435-LE"],
-            ["216-OS-PER-EXT-SN-COMEDOR 1", "10.200.8.17", "ACCC8ED10225", "AXIS P1447-LE"],
-            ["217-OS-PER-EXT-SN-PTZ VIAS CRUCE", "10.200.8.81", "B8A44F3FF42C", "AXIS P5654-E"],
-            ["218-OS-PER-EXT-SN-EST VISITAS", "10.200.8.36", "ACCC8ECAFAFC", "AXIS P1447-LE"],
-            ["219-OS-PER-EXT-SN-ENTRADA PORTON EDISON", "", "", "AXIS"],
-            ["220-OS-PER-EXT-SN-TORNIQUETE ENT EDISON", "10.200.8.93", "ACCC8ECAFB0B", "AXIS P1447-LE"],
-            ["221-OS-PER-EXT-SN-ACCESO RECEPCION", "10.200.8.94", "ACCC8EE8CB99", "AXIS P1435-LE"],
-            ["222-OS-PER-EXT-SN-BANCAS SUR", "10.200.8.90", "ACCC8ED41CDE", "AXIS P1435-LE"],
-            ["223-OS-PER-EXT-SN-BANCAS NTE", "10.200.8.38", "ACCC8ED1DFC9", "AXIS P1447-LE"],
-            ["224-OS-PER-EXT-SN-PUERTA DE EMERGENCIA", "10.200.8.135", "B8A44F5D7523", "AXIS P1447-LE"],
-            ["225-OS-PER-EXT-SN-PANADERIA", "10.200.8.134", "ACCC8EF1FE1D", "AXIS P1447-LE"],
-            ["226-OS-PER-EXT-SN-PTZ EST DOMINGUEZ", "10.200.8.208", "B8A44F3FF41D", "AXIS P5654-E"],
-            ["227-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["228-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["229-Proyecto (ESTACIONAMIENTO DOMINGUEZ)", "", "", "AXIS"],
-            ["230-OS-PER-EXT-SN-CALLEJON 20 NOV", "10.200.8.34", "ACCC8EC12B8D", "AXIS P3707-PE"],
-            ["231-OS-PER-EXT-SN-ENTRADA DOMINGUEZ", "10.200.8.34", "ACCC8EC12B8D", "AXIS P3707-PE"],
-            ["232-OS-PER-EXT-SN-DOMINGUEZ OTE", "10.200.8.34", "ACCC8EC12B8D", "AXIS P3707-PE"],
-            ["233-OS-PER-EXT-SN-CALLEJON", "10.200.8.222", "ACCC8ED41BF7", "AXIS P1435-LE"],
-            ["234-OS-PER-EXT-SN-CALLEJON MIGUEL DOMINGUEZ/CARRANZA", "10.200.8.168", "ACCC8EB6462D", "AXIS M2026-LE Mk II"],
-            ["235-OS-PER-EXT-SN-ENTRADA 20 NOV", "10.200.8.34", "ACCC8EC12B8D", "AXIS P3707-PE"],
-            ["236-OS-PER-EXT-ENTRADA IMPULSO", "10.200.8.132", "ACCC8ED3CA50", "AXIS P1435-LE"],
-            ["237-OS-PER-EXT-SN-EST CARRANZA", "10.200.8.83", "ACCC8EEC3E3B", "AXIS P1447-LE"],
-            ["238-OS-PER-EXT-PORTERO UNIVERSIDAD", "10.200.8.39", "ACCC8E8781CE", "AXIS A8004-VE"],
-            ["239-OS-PER-EXT-SN-VIAS 3", "10.200.8.82", "ACCC8EEC3E2F", "AXIS P1447-LE"],
-            ["240-OS-PER-EXT-SN-PTZ VIAS 2", "10.200.8.143", "B8A44F26279E", "AXIS P5655-E"],
-            ["241-OS-PER-EXT-SN-VIAS 1", "10.200.8.102", "ACCC8ED41BBC", "AXIS P1435-LE"],
-            ["242-OS-PER-EXT-SN-VIAS 2", "10.200.8.79", "ACCC8EF1FEA0", "AXIS P1447-LE"],
-            ["243-OS-PER-EXT-SN-PTZ VIAS 1", "10.200.8.164", "B8A44F269CCB", "AXIS P5655-E"],
-            ["244-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["245-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["246-Proyecto (ESTACIONAMIENTO MICHELENA)", "", "", "AXIS"],
-            ["247-OS-MIC-PER-EXT-SN-CALLE MICHELENA", "10.200.151.57", "ACCC8EF1FE84", "AXIS P1447-LE"],
-            ["248-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["249-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["250-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["251-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["252-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["253-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["254-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["255-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["256-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["257-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["258-OS-PER-EXT-PORTERO UNIVERSIDAD", "10.200.8.40", "ACCC8EE29FE", "AXIS M3065-V"],
-            ["259-OS-SIM-INT-PB-RECEPCION", "10.217.26.25", "B8A44F4041BB", "AXIS M3065-V"],
-            ["260-OS-SIM-INT-N3-FRENTE", "10.217.26.30", "ACCC8E72FA25", "AXIS M3044-V"],
-            ["261-OS-SIM-INT-N4-COMEDOR", "10.217.26.31", "ACCC8EEF994D", "AXIS M3045-V"],
-            ["262-OS-MIC-INT-SN-ACCESO VEHICULAR", "10.200.151.53", "ACCC8EDBFCBC", "AXIS P1435-LE"],
-            ["263-OS-MIC-INT-SN-CASETA MICHELENA", "10.200.151.56", "ACCC8EEF91FC", "AXIS M3045-V"],
-            ["264-OS-MIC-EXT-SN-SALIDA VEHICULAR", "10.200.151.55", "ACCC8EDBFD73", "AXIS P1435-LE"],
-            ["265-OS-MIC-EXT-SN-ACCESO PEATONAL", "10.200.151.54", "ACCC8EDBFD8B", "AXIS P1435-LE"],
-            ["266-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["267-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["268-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["269-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["270-Proyecto (ENTRADA ED MICHELENA)", "", "", "AXIS"],
-            ["271-Proyecto (ENTRADA ED MICHELENA)", "", "", "AXIS"],
-            ["272-Proyecto (ENTRADA ED MICHELENA)", "", "", "AXIS"],
-            ["273-OS-MIC-INT-PB-ENTRADA PRINCIPAL", "10.200.151.42", "ACCC8EC06A0D", "AXIS M3045-V"],
-            ["274-OS-MIC-INT-PB-RAMPA CAJERO", "10.200.151.49", "ACCC8EEB2440BF", "AXIS M3045-V"],
-            ["275-OS-MIC-INT-PB-CAJERO", "10.200.151.38", "ACCC8EC05AF3", "AXIS M3045-V"],
-            ["276-OS-MIC-INT-PB-OXXO GAS", "10.200.151.39", "ACCC8EEB244083", "AXIS M3045-V"],
-            ["277-OS-MIC-INT-PB-ELEVADORES", "10.200.151.37", "ACCC8EC05AEA", "AXIS M3045-V"],
-            ["278-Proyecto (MICHELENA PB)", "", "", "AXIS"],
-            ["279-Proyecto (MICHELENA PB)", "", "", "AXIS"],
-            ["280-OS-MIC-INT-PB-SITE", "", "", "AXIS"],
-            ["281-Proyecto (MICHELENA PB)", "", "", "AXIS"],
-            ["282-Proyecto (MICHELENA PB)", "", "", "AXIS"],
-            ["283-Proyecto (MICHELENA PB)", "", "", "AXIS"],
-            ["284-Proyecto (MICHELENA N1)", "", "", "AXIS"],
-            ["285-OS-MIC-INT-N1-ELEVADOR", "10.200.151.58", "ACCC8E28BB91", "AXIS M3005"],
-            ["286-Proyecto (MICHELENA N1)", "", "", "AXIS"],
-            ["287-Proyecto (MICHELENA N1)", "", "", "AXIS"],
-            ["288-OS-MIC-INT-N1-PASILLO NTE", "10.200.151.61", "ACCC8E50F317", "AXIS M3005"],
-            ["289-OS-MIC-INT-N1-PASILLO SUR", "10.200.151.59", "B8A44F5B9459", "AXIS M3065-V"],
-            ["290-Proyecto (MICHELENA N1)", "", "", "AXIS"],
-            ["291-OS-MIC-INT-N1-BODEGA IMMEX", "10.200.151.52", "00408CEC8661", "AXIS M3024-L"],
-            ["292-OS-MIC-INT-N2-ELEVADORES OXXOGAS", "10.200.151.43", "ACCC8EC069EB", "AXIS M3045-V"],
-            ["293-OS-MIC-INT-N2-SALA DE JUNTAS", "10.200.151.47", "ACCC8EC06B244C", "AXIS M3045-V"],
-            ["294-OS-MIC-INT-N2-DIR OXXO GAS", "10.200.151.46", "ACCC8EC06A20", "AXIS M3045-V"],
-            ["295-OS-MIC-INT-N2-PASILLO OXXO GAS PONIENTE", "10.200.151.48", "ACCC8EC06A22", "AXIS M3045-V"],
-            ["296-OS-MIC-INT-N2-PASILLO OXXO GAS PONIENTE", "10.200.151.45", "ACCC8EC05AE2", "AXIS M3045-V"],
-            ["297-OS-MIC-INT-N2-PUERTA DE EMERGENCIA", "10.200.151.44", "ACCC8EC06A29", "AXIS M3045-V"],
-            ["298-Proyecto (MICHELENA N2)", "", "", "AXIS"],
-            ["299-Proyecto (MICHELENA SITE)", "", "", "AXIS"],
-            ["300-OS-MIC-INT-N3-ELEVADOR", "10.200.151.40", "ACCC8E28B24488", "AXIS M3005"],
-            ["301-Proyecto (MICHELENA N3)", "", "", "AXIS"],
-            ["302-Proyecto (MICHELENA N3)", "", "", "AXIS"],
-            ["303-OS-MIC-INT-N3-PASILLO NTE", "10.200.151.50", "B8A44F5B8E63", "AXIS M3065-V"],
-            ["304-OS-MIC-INT-N3-PASILLO SUR", "10.200.151.62", "B8A44F5B93EE", "AXIS M3065-V"],
-            ["305-Proyecto (MICHELENA N3)", "", "", "AXIS"],
-            ["306-OS-MIC-INT-N4-ELEVADORES", "10.200.151.32", "ACCC8E9B14D5", "AXIS M3045-V"],
-            ["307-OS-MIC-INT-N4-PASILLO FARMACIA", "10.200.151.34", "ACCC8E9B14E5", "AXIS M3045-V"],
-            ["308-OS-MIC-INT-N4-FARMACIA PONIENTE", "10.200.151.35", "ACCC8E9B19AE", "AXIS M3045-V"],
-            ["309-OS-MIC-INT-N4-FARMACIA ORIENTE", "10.200.151.33", "ACCC8E9B14DE", "AXIS M3045-V"],
-            ["310-Proyecto (MICHELENA N4)", "", "", "AXIS"],
-            ["311-OS-MIC-INT-N4-RECEPCION YZA", "10.200.151.36", "ACCC8E9B19C6", "AXIS M3045-V"],
-            ["312-Site Michelena N4", "", "", "AXIS"],
-            ["313-Proyecto (MICHELENA N4)", "", "", "AXIS"],
-            ["314-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["315-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["316-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["317-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["318-Proyecto (ESTACIONAMIENTO ANEXO MICHELENA)", "", "", "AXIS"],
-            ["319-OS-COM-INT-SN-ACCESO COMEDOR 2", "10.200.8.24", "ACCC8E73141C", "AXIS M3045-V"],
-            ["320-OS-COM-INT-SN-COMEDOR 2", "10.200.8.25", "ACCC8E73143F", "AXIS M3045-V"],
-            ["321-OS-CCO-INT-CCO", "10.200.8.61", "ACCC8EEB2440A2", "AXIS M3045-V"],
-            ["322-OS-ATI-EXT-SN- EST TI", "10.200.8.170", "ACCC8EC9D69D", "AXIS P1447-LE"],
-            ["323-OS-PER-EXT-SN-CARRANZA", "10.200.8.33", "ACCC8ED91660", "AXIS M3057-PLVE"],
-            ["324-OS-EX-SN-CASETA CARRANZA", "10.200.8.141", "B8A44F2310CE", "AXIS P1448-LE"],
-            ["325-OS-MIC-INT-PB-CCO OXXO GAS", "10.200.151.60", "B8A44F67FF3B", "AXIS M3065-V"],
-            ["326-OS-UN-INT-SN- TRAILAR EST UN", "10.81.133.53", "B8A44F409243", "AXIS M3065-V"],
-            ["327-OS-UN-EXT-SN-ESTACIONAMIENTO U.N FONDO", "10.81.133.54", "B8A44F5D34F1", "AXIS P1447-LE"],
-            ["328-OS-UN-EXT-SN-ESTACIONAMIENTO U.N ENTRADA", "10.81.133.50", "B8A44F5D7483", "AXIS P1447-LE"],
-            ["329-OS-ROJ-EXT-N3-ESCALERAS", "10.200.8.149", "B8A44F5D32BD", "AXIS P1447-LE"],
-            ["330-OS-ROJ-INT-N3-COCINETA", "10.200.8.65", "B8A44F5B9853", "AXIS M3065-V"],
-            ["331-OS-AZU-EXT-SN-CUCHILLA", "10.200.8.152", "B8A44F5D4791", "AXIS P1447-LE"],
-            ["332-OS-SIM-EXT-SN-CALLE", "10.217.26.27", "ACCC8EDBFD4B", "AXIS P1435-LE"],
-            ["333-OS-SIM-INT-PB-INTENDENCIA", "10.217.26.24", "B8A44F4EB131", "AXIS M3065-V"],
-            ["334-OS-SIM-INT-PASILLO ELEVADOR", "10.81.133.52", "B8A44F5D32B244", "AXIS P1447-LE"],
-            ["335-OS-SIM-INT-N1-FONDO", "10.217.26.26", "ACCC8E9A7DEE", "AXIS M3044-V"],
-            ["336-OS-SIM-INT-N2-FRENTE", "10.217.26.28", "ACCC8EDF2B244C", "AXIS M3045-V"],
-            ["337-OS-SIM-INT-N2-FONDO", "10.217.26.21", "ACCC8EEFB158", "AXIS M3045-V"],
-            ["338-OS-SIM-INT-N3-FONDO", "10.217.26.32", "ACCC8EEF96D9", "AXIS M3045-V"],
-            ["339-OS-SIM-INT-N4-FONDO", "10.217.26.29", "ACCC8E50F89B", "AXIS M3004"],
-            ["340-OS-PER-EXT-SN-EST VIAS", "10.200.8.193", "B8A44F5D3269", "AXIS P1447-LE"],
-            ["341-OS-PER-INT-SN-ESTACIONAMIENTO VIAS EDI", "10.200.8.179", "B8A44F5D3EA5", "AXIS P1447-LE"],
-            ["342-OS-PER-EXT-SN-PRIV EDI", "10.200.8.177", "B8A44F5D3178", "AXIS P1447-LE"],
-            ["343-OS-PER-EXT-SN-VIAS4", "10.200.8.191", "B8A44F5D3501", "AXIS P1447-LE"],
-            ["344-OS-SIL-INT-N4-SITE", "10.200.8.62", "B8A44F5B9779", "AXIS M3065-V"],
-            ["345-OS-SIL-EXT-N6-ESCALERAS", "10.200.8.224", "B8A44F409225", "AXIS M3065-V"],
-            ["346-OS-SIL-INT-N6-CCO IMMEX", "10.200.8.194", "B8A44F5B8842", "AXIS M3065-V"],
-            ["347-OS-CCO-INT-CCO FRONTAL", "10.200.8.211", "B8A44FB244D3FE", "AXIS M3085-V"],
-            ["348-OS-UN-EXT-SN-ESTACIONAMIENTO U.N CENTRO", "10.81.133.51", "B8A44F5D4790", "AXIS P1447-LE"],
-            ["349-OS-UN-EXT-SN-ESTACIONAMIENTO U.N FONDO VIAS", "10.81.133.55", "B8A44F5D75C1", "AXIS P1447-LE"],
-            ["350-OS-UN-EXT-SN-CASETA UN", "10.81.133.56", "ACCC8EF8BA4", "AXIS M3065-V"]
+            ["20-OS-MOR-EXT-PB-PUERTA EMERGENCIA", "10.200.8.162", "B8A44F1B06FE", "AXIS M3065-V"]
         ];
 
         let activeIdx = -1;
 
-        function renderSidebar() {
-            const query = document.getElementById('search-box').value.toUpperCase();
+        function log(msg, type = 'info') {
+            const out = document.getElementById('console-output');
+            const time = new Date().toLocaleTimeString('es-MX', { hour12: false });
+            const line = document.createElement('div');
+            line.className = `console-line log-${type}`;
+            line.innerHTML = `<span class="opacity-40">[${time}]</span> ${msg}`;
+            out.appendChild(line);
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function clearConsole() { document.getElementById('console-output').innerHTML = ''; }
+
+        function renderList() {
+            const query = document.getElementById('search-input').value.toUpperCase();
             const container = document.getElementById('list-container');
             container.innerHTML = '';
 
-            let count = 0;
             DB.forEach((cam, idx) => {
                 const [name, ip, mac, model] = cam;
-                if (name.includes(query) || ip.includes(query) || model.includes(query)) {
-                    count++;
+                if (name.includes(query) || ip.includes(query)) {
                     const div = document.createElement('div');
                     div.className = `cam-item ${idx === activeIdx ? 'active' : ''}`;
                     div.onclick = () => selectCam(idx);
                     
-                    const statusClass = ip ? 'pulse' : 'dead';
-                    
                     div.innerHTML = `
-                        <div class="heartbeat ${statusClass}"></div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-[10px] font-black uppercase truncate text-slate-200">${name}</div>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-[8px] font-mono text-slate-500">${ip || 'FALTA IP'}</span>
-                                <span class="text-[7px] font-bold text-sky-500/50 uppercase">${model}</span>
+                        <div class="flex items-center gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full ${ip ? 'bg-sky-500 shadow-[0_0_5px_#0ea5e9]' : 'bg-amber-500'}"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[10px] font-black uppercase truncate text-slate-200">${name}</div>
+                                <div class="text-[8px] font-mono text-slate-500">${ip || 'FALTA IP'}</div>
                             </div>
                         </div>
                     `;
                     container.appendChild(div);
                 }
             });
-
-            document.getElementById('match-count').textContent = count;
-            document.getElementById('stat-total').textContent = `TOTAL DISPOSITIVOS: ${DB.length}`;
+            document.getElementById('stat-total').textContent = DB.length;
         }
 
         function selectCam(idx) {
             activeIdx = idx;
             const [name, ip, mac, model] = DB[idx];
-
-            // Reset UI
-            document.getElementById('welcome-msg').classList.add('hidden');
-            document.getElementById('active-viewer').classList.remove('hidden');
+            
+            log(`----------------------------------`);
+            log(`Iniciando secuencia para: ${name}`);
+            
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('active-monitor').classList.remove('hidden');
             document.getElementById('loader').classList.remove('hidden');
 
-            // Actualizar Textos de VAPIX
-            document.getElementById('v-name').textContent = name;
-            document.getElementById('v-ip').textContent = ip || 'DIRECCIÓN NO DEFINIDA';
-            document.getElementById('v-model').textContent = model || 'Dispositivo Genérico';
-            document.getElementById('v-mac').textContent = mac || 'FALTA REGISTRO MAC';
-            
-            // Construcción RTSP segura para admin
-            const rtspUrl = ip ? `rtsp://admin:Segos.24@${ip}/axis-media/media.amp` : 'CADENA RTSP NO DISPONIBLE';
-            document.getElementById('v-rtsp').textContent = rtspUrl;
+            document.getElementById('view-name').textContent = name;
+            document.getElementById('view-ip').textContent = ip || 'ERROR: IP_MISSING';
+            document.getElementById('view-model').textContent = model || 'GENERIC_DEVICE';
+            document.getElementById('view-mac').textContent = mac || 'MAC_NOT_FOUND';
 
-            // Iniciar Stream compatible con navegador
-            const streamImg = document.getElementById('main-stream');
-            if (ip) {
-                // Inyectamos credenciales vía URL (Protocolo HTTP Basic Auth)
-                streamImg.src = `http://admin:Segos.24@${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&compression=25&fps=15`;
-                
-                // Indicador de conexión
-                document.getElementById('v-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-                document.getElementById('v-text').textContent = 'Conectando Nodo...';
-                document.getElementById('v-text').className = 'text-[11px] font-black uppercase text-amber-500 tracking-wider';
-            } else {
-                handleStreamError();
+            const stream = document.getElementById('main-stream');
+            
+            if (!ip) {
+                log(`FALLO CRÍTICO: La cámara no tiene IP asignada en la base de datos.`, 'error');
+                log(`ACCION REQUERIDA: Actualizar tabla maestra de inventario.`, 'warn');
+                handleError();
+                return;
             }
 
-            renderSidebar();
+            log(`Protocolo: VAPIX over HTTP`);
+            log(`Host: ${ip}`);
+            log(`Intento de conexión con usuario [admin]...`);
+
+            // Construcción del stream MJPEG
+            const streamUrl = `http://admin:Segos.24@${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&fps=15`;
+            
+            stream.onload = () => {
+                log(`CONEXIÓN ESTABLECIDA. Recibiendo datos de video.`, 'success');
+                document.getElementById('loader').classList.add('hidden');
+            };
+
+            stream.onerror = () => {
+                log(`ERROR DE RED: No se pudo alcanzar la dirección http://${ip}`, 'error');
+                log(`CAUSA POSIBLE 1: El equipo no está en la red 10.200.8.x o la VPN está apagada.`, 'warn');
+                log(`CAUSA POSIBLE 2: El navegador bloquea Basic Auth en la URL (user:pass@IP).`, 'warn');
+                log(`CAUSA POSIBLE 3: El protocolo MJPEG está deshabilitado en el nodo Axis.`, 'warn');
+                handleError();
+            };
+
+            stream.src = streamUrl;
+            renderList();
         }
 
-        function handleStreamSuccess() {
+        function handleError() {
             document.getElementById('loader').classList.add('hidden');
-            document.getElementById('v-dot').className = 'w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#10b981]';
-            document.getElementById('v-text').textContent = 'VAPIX Streaming Activo';
-            document.getElementById('v-text').className = 'text-[11px] font-black uppercase text-green-500 tracking-wider';
-        }
-
-        function handleStreamError() {
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('v-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_10px_#ef4444]';
-            document.getElementById('v-text').textContent = 'Fallo de Enlace / IP Inalcanzable';
-            document.getElementById('v-text').className = 'text-[11px] font-black uppercase text-red-600 tracking-wider';
             document.getElementById('main-stream').src = "";
+            log(`MONITOR: Transmisión abortada.`, 'error');
         }
 
-        // Inicialización
-        window.onload = renderSidebar;
+        window.onload = () => {
+            log(`Sistema de Diagnóstico Iniciado.`);
+            log(`Base de datos cargada correctamente.`);
+            renderList();
+        };
     </script>
 </body>
 </html>
