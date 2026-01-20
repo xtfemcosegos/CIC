@@ -39,16 +39,16 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* --- LAYOUT PRINCIPAL (SIN RESPONSIVIDAD) --- */
+        /* --- LAYOUT PRINCIPAL --- */
         .dashboard-wrapper {
             display: grid;
             grid-template-columns: var(--stats-width) 1fr;
             gap: 20px;
             align-items: start;
             width: 100%;
+            transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Estado Colapsado Instantáneo */
         .dashboard-wrapper.stats-collapsed {
             grid-template-columns: 80px 1fr;
         }
@@ -61,17 +61,6 @@
             gap: 16px;
             z-index: 50; 
             min-height: calc(100vh - 32px);
-            overflow: visible;
-        }
-
-        .dashboard-wrapper.stats-collapsed .stats-panel {
-            align-items: center;
-        }
-
-        /* Ocultar contenido instantáneamente */
-        #stats-content-wrapper, #stats-title-container {
-            width: 100%;
-            display: block;
         }
 
         .dashboard-wrapper.stats-collapsed #stats-content-wrapper,
@@ -128,7 +117,6 @@
             transition: transform 0.2s, background 0.2s;
         }
         .toggle-stats-btn:hover { background: var(--metal-fuchsia-mid); transform: scale(1.05); }
-        .toggle-stats-btn:active { transform: scale(0.95); }
 
         /* --- CONTENEDORES DINÁMICOS --- */
         .status-layout {
@@ -231,7 +219,7 @@
         <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Operaciones</span>
     </div>
 
-    <div id="dashboard-main" class="dashboard-wrapper p-4">
+    <div id="dashboard-main" class="dashboard-wrapper">
         
         <!-- PANEL IZQUIERDO -->
         <aside id="stats-aside" class="stats-panel">
@@ -246,35 +234,16 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR DE DATOS -->
             <div id="stats-content-wrapper">
                 <div class="stats-card">
                     <h3 class="stat-label-cell mb-2 text-indigo-900">Resumen Diario</h3>
                     <table class="stats-table">
-                        <tr>
-                            <td class="stat-label-cell">Personas en Turno</td>
-                            <td id="stat-active" class="stat-value-cell">0</td>
-                        </tr>
-                        <tr>
-                            <td class="stat-label-cell text-emerald-600">Personal Extra</td>
-                            <td id="stat-extra" class="stat-value-cell text-emerald-700">0</td>
-                        </tr>
-                        <tr>
-                            <td class="stat-label-cell text-blue-600">Recuperación</td>
-                            <td id="stat-recuperacion" class="stat-value-cell text-blue-700">0</td>
-                        </tr>
-                        <tr>
-                            <td class="stat-label-cell text-red-600">Faltas Hoy</td>
-                            <td id="stat-faltas" class="stat-value-cell text-red-700">0</td>
-                        </tr>
-                        <tr>
-                            <td class="stat-label-cell text-slate-500">Otras Incidencias</td>
-                            <td id="stat-otras" class="stat-value-cell text-slate-600">0</td>
-                        </tr>
-                        <tr>
-                            <td class="stat-label-cell text-orange-600">Retardos</td>
-                            <td id="stat-retardos" class="stat-value-cell text-orange-700">0</td>
-                        </tr>
+                        <tr><td class="stat-label-cell">Personas en Turno</td><td id="stat-active" class="stat-value-cell">0</td></tr>
+                        <tr><td class="stat-label-cell text-emerald-600">Personal Extra</td><td id="stat-extra" class="stat-value-cell text-emerald-700">0</td></tr>
+                        <tr><td class="stat-label-cell text-blue-600">Recuperación</td><td id="stat-recuperacion" class="stat-value-cell text-blue-700">0</td></tr>
+                        <tr><td class="stat-label-cell text-red-600">Faltas Hoy</td><td id="stat-faltas" class="stat-value-cell text-red-700">0</td></tr>
+                        <tr><td class="stat-label-cell text-slate-500">Otras Incidencias</td><td id="stat-otras" class="stat-value-cell text-slate-600">0</td></tr>
+                        <tr><td class="stat-label-cell text-orange-600">Retardos</td><td id="stat-retardos" class="stat-value-cell text-orange-700">0</td></tr>
                     </table>
                 </div>
 
@@ -289,7 +258,7 @@
             </div>
         </aside>
 
-        <!-- COLUMNAS -->
+        <!-- CONTENIDO PRINCIPAL -->
         <main class="space-y-6">
             <div id="status-layout" class="status-layout">
                 <div class="flex flex-col gap-6">
@@ -334,7 +303,12 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -347,21 +321,27 @@
         let dataSets = { active: [], recent: [], upcoming: [], absences: [] };
         let activeUnsubs = [];
         let operatorContext = null;
+        let isCacheReady = false;
 
-        const formatDateToId = (date) => {
-            const d = date.getDate().toString().padStart(2, '0');
-            const m = (date.getMonth() + 1).toString().padStart(2, '0');
-            const y = date.getFullYear();
-            return `${d}${m}${y}`;
+        const formatDateToId = (dateStr) => {
+            const parts = dateStr.split('-');
+            return `${parts[2]}${parts[1]}${parts[0]}`; // DDMMYYYY
         };
 
-        onAuthStateChanged(auth, (user) => { if (user) init(); else signInAnonymously(auth); });
+        onAuthStateChanged(auth, (user) => { 
+            if (user) {
+                init();
+            } else {
+                signInAnonymously(auth);
+            }
+        });
 
+        // FUNCIÓN CLAVE: Cargar usuarios antes o durante el render
         async function init() {
             const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
             usersSnap.forEach(d => userDataCache[d.id] = d.data());
-            const today = new Date();
-            startListeners(today.toISOString().split('T')[0]);
+            isCacheReady = true;
+            render(); // Redibujar una vez que la caché esté lista
         }
 
         function isRecentlyArrived(entradaReal, dateId) {
@@ -370,15 +350,18 @@
             const [h, m] = entradaReal.split(':').map(Number);
             const d = parseInt(dateId.substring(0, 2)), mo = parseInt(dateId.substring(2, 4)) - 1, y = parseInt(dateId.substring(4, 8));
             const entryDate = new Date(y, mo, d, h, m);
-            const diffHours = (now - entryDate) / (1000 * 60 * 60);
-            return diffHours >= 0 && diffHours < 0.5; 
+            const diffMs = now - entryDate;
+            const diffMinutes = diffMs / (1000 * 60);
+            return diffMinutes >= 0 && diffMinutes < 30; 
         }
 
         function startListeners(isoDate) {
             activeUnsubs.forEach(u => u());
             activeUnsubs = [];
-            const selectedDate = new Date(isoDate + 'T00:00:00');
-            const dateId = formatDateToId(selectedDate);
+            
+            dataSets = { active: [], recent: [], upcoming: [], absences: [] };
+            
+            const dateId = formatDateToId(isoDate);
             const shifts = ['matutino', 'vespertino', 'nocturno'];
             const now = new Date();
             const currentHour = now.getHours();
@@ -408,9 +391,11 @@
             });
 
             if (currentHour < 8) {
-                const yesterday = new Date(selectedDate);
+                const yesterday = new Date(isoDate + 'T12:00:00');
                 yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayId = formatDateToId(yesterday);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                const yesterdayId = formatDateToId(yesterdayStr);
+                
                 activeUnsubs.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', yesterdayId, 'nocturno'), (snap) => {
                     dataSets.active = dataSets.active.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
                     dataSets.recent = dataSets.recent.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
@@ -434,6 +419,8 @@
         }
 
         function render() {
+            if (!isCacheReady) return; // Esperar a que los usuarios estén cargados
+
             const layout = document.getElementById('status-layout');
             const hasUpcoming = dataSets.upcoming.length > 0;
             const hasLeftSection = dataSets.active.length > 0 || dataSets.recent.length > 0;
@@ -457,18 +444,23 @@
             document.getElementById(countId).innerText = `${dataList.length} Elementos`;
             container.innerHTML = '';
             if (dataList.length === 0) return;
+            
             dataList.sort((a,b) => (a.Caseta || '').localeCompare(b.Caseta || ''));
             dataList.forEach(e => {
-                const u = userDataCache[e.uid] || { nombre: 'Desconocido' };
+                const u = userDataCache[e.uid] || { nombre: 'Desconocido', foto: '' };
                 const isUpcoming = targetId.includes('upcoming');
                 const badgeClass = e.shiftId.startsWith('mat') ? 'badge-mat' : e.shiftId.startsWith('ves') ? 'badge-ves' : 'badge-noc';
                 const row = document.createElement('div');
                 row.className = "element-row";
                 row.onclick = () => openDetail(e.uid, e.dateId);
+                
+                // Generar URL de avatar si no hay foto
+                const photoSrc = u.foto || `https://ui-avatars.com/api/?name=${u.nombre || 'Elemento'}&background=4c1d95&color=fff`;
+
                 row.innerHTML = `
-                    <img src="${u.foto || ''}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=${u.nombre}&background=4c1d95&color=fff'">
+                    <img src="${photoSrc}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=User&background=cbd5e1&color=64748b'">
                     <div class="flex-grow min-w-0">
-                        <p class="text-[10px] font-black uppercase truncate tracking-tight text-slate-800">${u.nombre}</p>
+                        <p class="text-[10px] font-black uppercase truncate tracking-tight text-slate-800">${u.nombre || 'Desconocido'}</p>
                         <div class="flex items-center gap-2 mt-0.5">
                             <span class="shift-badge ${badgeClass}">${e.shiftId.substring(0,3)}</span>
                             <span class="text-[8px] font-bold text-slate-400 uppercase truncate">${e.Caseta || u.acceso_predeterminado || 'General'}</span>
@@ -485,12 +477,14 @@
             document.getElementById('count-absences').innerText = `${dataSets.absences.length} Registros`;
             container.innerHTML = '';
             if (dataSets.absences.length === 0) return;
+            
             const grouped = dataSets.absences.reduce((acc, curr) => {
                 const motive = curr.motivo || 'Otros';
                 if (!acc[motive]) acc[motive] = [];
                 acc[motive].push(curr);
                 return acc;
             }, {});
+
             Object.keys(grouped).sort().forEach(motive => {
                 const elements = grouped[motive];
                 const style = motiveColors[motive] || { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' };
@@ -503,9 +497,10 @@
                     </div>
                     <div class="absences-grid-compact">
                         ${elements.map(e => {
-                            const u = userDataCache[e.uid] || { nombre: 'Elemento' };
+                            const u = userDataCache[e.uid] || { nombre: 'Elemento', foto: '' };
+                            const photoSrc = u.foto || `https://ui-avatars.com/api/?name=${u.nombre || 'E'}&background=cbd5e1&color=64748b`;
                             return `<div class="absence-compact-card" onclick="openDetail('${e.uid}', '${e.dateId}')">
-                                <img src="${u.foto || ''}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=${u.nombre}&background=cbd5e1&color=64748b'">
+                                <img src="${photoSrc}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=User&background=cbd5e1&color=64748b'">
                                 <span class="text-[9px] font-bold uppercase truncate text-slate-700">${u.nombre}</span>
                             </div>`;
                         }).join('')}
@@ -569,8 +564,11 @@
         };
 
         window.addEventListener('message', (e) => {
-            if (e.data.type === 'INIT_SUBMODULE') { operatorContext = e.data.user; startListeners(e.data.date); }
-            if (e.data.type === 'regas_date_change' || e.data.type === 'DATE_CHANGED') startListeners(e.data.date); 
+            if (e.data.type === 'INIT_SUBMODULE') { 
+                operatorContext = e.data.user; 
+                startListeners(e.data.date); 
+            }
+            if (e.data.type === 'DATE_CHANGED') startListeners(e.data.date); 
         });
     </script>
 </body>

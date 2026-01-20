@@ -160,7 +160,6 @@
             flex-grow: 1;
         }
 
-        /* --- CARDS DE ELEMENTOS --- */
         .element-item {
             display: flex;
             align-items: center;
@@ -246,7 +245,17 @@
         const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
         let currentAssignments = [];
         let userDataCache = {};
-        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        // --- CORRECCIÓN DE FECHA LOCAL ---
+        const getLocalToday = () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        let selectedDate = getLocalToday();
         let operatorContext = null;
         let unsubListener = null;
 
@@ -262,11 +271,11 @@
         }
 
         function syncHeader() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalToday();
             const isNotToday = selectedDate !== today;
             const header = document.getElementById('date-header');
             const dateLabel = document.getElementById('display-date-long');
-            const dateObj = new Date(selectedDate + "T00:00:00");
+            const dateObj = new Date(selectedDate + "T12:00:00");
             dateLabel.innerText = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             header.classList.toggle('is-not-today', isNotToday);
             document.getElementById('today-action-area').classList.toggle('hidden', !isNotToday);
@@ -322,7 +331,6 @@
         function createElementRow(el) {
             const div = document.createElement('div');
             div.className = `element-item ${el.retardo ? 'is-late' : ''}`;
-            
             div.draggable = true;
             div.ondragstart = (e) => {
                 e.dataTransfer.setData("text/plain", JSON.stringify({ 
@@ -354,7 +362,7 @@
                 </div>
                 <img src="${el.foto || ''}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=${el.nombre}&background=4c1d95&color=fff'">
                 <div class="flex-grow min-w-0">
-                    <p class="text-[10px] font-black text-slate-800 truncate uppercase tracking-tight">${el.nombre}</p>
+                    <p class="text-[10px] font-black text-slate-800 truncate uppercase">${el.nombre}</p>
                     <p class="text-[8px] font-bold text-slate-400 uppercase">${el.entrada_planificada} • ${el.entrada_real || '--:--'}</p>
                 </div>
                 <div onclick="event.stopPropagation()">${actionBtnHtml}</div>
@@ -377,7 +385,7 @@
                 } else {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', data.uid));
                     
-                    let planTime = (targetCaseta === 'Centro de control' ? "14:00" : "15:00");
+                    let planTime = "15:00";
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'vespertino', data.uid), { 
                         Caseta: targetCaseta, 
                         turno: 'vespertino', 
@@ -410,7 +418,7 @@
         };
 
         window.goToToday = () => {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalToday();
             window.parent.postMessage({ type: 'DATE_CHANGED', date: today }, '*');
         };
 

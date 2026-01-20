@@ -37,7 +37,7 @@
             align-items: center; 
         }
 
-        /* --- HEADER PEGADO ARRIBA Y AL 100% (SIN ANIMACIÓN) --- */
+        /* --- HEADER PEGADO ARRIBA Y AL 100% --- */
         .header-card {
             position: relative;
             width: 100%;
@@ -55,7 +55,6 @@
             z-index: 50;
         }
 
-        /* Trama de metal industrial sutil */
         .header-card::before {
             content: "";
             position: absolute;
@@ -155,7 +154,6 @@
 </head>
 <body>
 
-    <!-- Header Pegado RegAs -->
     <header class="header-card">
         <div class="relative z-10 flex items-center justify-between w-full h-full">
             <div class="flex items-center gap-4 h-full">
@@ -186,10 +184,8 @@
         </div>
     </header>
 
-    <!-- Herramientas -->
     <div id="tool-ribbon" class="tool-ribbon"></div>
 
-    <!-- Contenido -->
     <div class="content-container">
         <iframe id="main-frame" name="main-frame" src="about:blank"></iframe>
     </div>
@@ -199,13 +195,17 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'cic.pp';
+        
         let userContext = null;
-
         const viewsBase = "Componentes/RegAs/";
         
         window.setDaySubView = (sub) => {
@@ -260,7 +260,7 @@
 
         window.adjustDate = (days) => {
             const current = document.getElementById('main-date').value;
-            const date = new Date(current + 'T00:00:00');
+            const date = new Date(current + 'T12:00:00'); // Usar mediodía para evitar desfases locales
             date.setDate(date.getDate() + days);
             window.updateGlobalDate(date.toISOString().split('T')[0]);
         };
@@ -284,7 +284,9 @@
                 window.syncRibbonDate();
             } else if (viewKey === 'planeacion') {
                 frame.src = `${viewsBase}Tabla.html`;
-                frame.onload = () => { frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); };
+                frame.onload = () => { 
+                    frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); 
+                };
             } else if (viewKey === 'reportes') {
                 window.setReportSubView(localStorage.getItem('regas_lastSubView_reportes') || 'Whatsapp');
             }
@@ -295,8 +297,7 @@
             localStorage.setItem('regas_selectedDate', val);
             document.getElementById('main-date').value = val;
             
-            const dateObj = new Date(val + 'T00:00:00');
-            // Formato de fecha larga
+            const dateObj = new Date(val + 'T12:00:00');
             const headerText = dateObj.toLocaleDateString('es-MX', { 
                 weekday: 'long', 
                 day: 'numeric', 
@@ -308,7 +309,7 @@
             window.syncRibbonDate();
             const frame = document.getElementById('main-frame');
             if (frame && frame.contentWindow) {
-                frame.contentWindow.postMessage({ type: 'DATE_CHANGED', date: val }, '*');
+                frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: val }, '*');
             }
         };
 
@@ -316,7 +317,7 @@
             const val = document.getElementById('main-date').value;
             const rDate = document.getElementById('ribbon-date-display');
             if (rDate) {
-                const dateObj = new Date(val + 'T00:00:00');
+                const dateObj = new Date(val + 'T12:00:00');
                 rDate.innerText = dateObj.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
             }
             const rPicker = document.getElementById('ribbon-picker');
@@ -331,7 +332,6 @@
                 const finalUrl = `Apps/${viewsBase}${event.data.url}`;
                 window.parent.postMessage({ type: 'OPEN_SIDE_PANEL', url: finalUrl, title: 'Perfil de Elemento' }, '*');
             }
-            // REENVIAR CAMBIO DE ESTADO DEL PANEL LATERAL AL SUB-MÓDULO
             if (event.data.type === 'SIDE_PANEL_STATE_CHANGED') {
                 const frame = document.getElementById('main-frame');
                 if (frame && frame.contentWindow) {
@@ -344,10 +344,14 @@
             if (user) {
                 window.parent.postMessage({ type: 'REQUEST_USER_CONTEXT' }, '*');
                 
-                // Cargar fecha actual del sistema por defecto
-                const systemToday = new Date().toISOString().split('T')[0];
-                window.updateGlobalDate(systemToday);
+                // FIX: Obtener fecha local YYYY-MM-DD sin desfase UTC
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const systemToday = `${year}-${month}-${day}`;
                 
+                window.updateGlobalDate(systemToday);
                 window.changeMainView(localStorage.getItem('regas_lastView') || 'dia');
             } else { window.location.href = "../index.html"; }
         });
