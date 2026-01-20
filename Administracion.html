@@ -29,7 +29,7 @@
             margin: 0;
         }
 
-        /* --- ARQUITECTURA DE COMPRESIÓN (FLEX) SIN RESPONSIVIDAD --- */
+        /* --- ARQUITECTURA DE COMPRESIÓN (FLEX) --- */
         .main-viewport {
             height: calc(100vh - 48px);
             width: 100%;
@@ -51,7 +51,7 @@
             min-width: 0;
             height: 100%;
             position: relative;
-            background: #ffffff; /* FONDO BLANCO */
+            background: #ffffff;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -83,7 +83,7 @@
             z-index: 100;
         }
 
-        /* --- RIBÓN DE PESTAÑAS --- */
+        /* RIBÓN DE PESTAÑAS */
         #app-ribbon {
             height: 0;
             background: rgba(0, 12, 36, 0.8);
@@ -121,43 +121,6 @@
         .close-tab { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: rgba(255,255,255,0.3); transition: all 0.2s; }
         .close-tab:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
-        /* --- GUÍAS ANIMADAS --- */
-        .guide-indicator {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            animation: bounce-up 2s infinite ease-in-out;
-            z-index: 60;
-            pointer-events: none;
-        }
-
-        .guide-bubble {
-            background: #4f46e5;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            margin-bottom: 8px;
-            position: relative;
-        }
-
-        .guide-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 50%;
-            transform: translateX(-50%) rotate(45deg);
-            width: 8px;
-            height: 8px;
-            background: #4f46e5;
-        }
-
-        /* Launcher y Cards */
         .glass-panel {
             background: rgba(2, 6, 23, 0.98);
             backdrop-filter: blur(25px);
@@ -184,13 +147,12 @@
     <!-- Pantalla de Carga -->
     <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 class="text-white text-[10px] font-black tracking-[0.3em] uppercase">Sincronizando Protección Patrimonial</h2>
+        <h2 class="text-white text-[10px] font-black tracking-[0.3em] uppercase">Sincronizando Sistema Administrativo</h2>
     </div>
 
     <!-- Barra de Tareas -->
     <nav class="metallic-bar w-full flex items-center px-4">
         <div class="flex items-center gap-2 z-10">
-            <!-- Botón de Inicio -->
             <button id="start-button" class="flex items-center gap-2.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 active:scale-95">
                 <img src="M/Apps.png" alt="Apps" class="h-5 w-5 object-contain">
                 <div class="flex flex-col items-start leading-none">
@@ -199,8 +161,7 @@
                 </div>
             </button>
 
-            <!-- Botón Toggle Ribón -->
-            <button onclick="toggleRibbon()" class="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all active:scale-95" title="Mostrar/Ocultar Pestañas">
+            <button onclick="toggleRibbon()" class="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all active:scale-95">
                 <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16m-7 6h7" />
                 </svg>
@@ -243,19 +204,13 @@
 
     <!-- Lanzador de Aplicaciones -->
     <div id="app-launcher" class="hidden absolute left-4 top-14 glass-panel rounded-[32px] shadow-2xl p-6 z-[110] w-[340px] max-h-[85vh] overflow-y-auto">
-        
-        <!-- Tarjeta de Perfil -->
-        <div id="user-profile-card" class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div class="flex items-center gap-4 mb-4">
-                <div class="h-14 w-14 rounded-full border-2 border-sky-500/30 overflow-hidden bg-slate-800 shrink-0">
-                    <img id="user-avatar" src="M/User.png" class="h-full w-full object-cover opacity-0 transition-opacity duration-500">
-                </div>
-                <div class="flex flex-col overflow-hidden flex-1">
-                    <span id="user-name" class="text-[12px] font-black text-white uppercase truncate">Cargando...</span>
-                    <span id="user-puesto" class="text-[9px] font-bold text-sky-400 uppercase tracking-wider truncate">Identificando...</span>
-                </div>
+        <div id="user-profile-card" class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+            <div class="h-14 w-14 rounded-full border-2 border-sky-500/30 overflow-hidden bg-slate-800 mx-auto mb-3">
+                <img id="user-avatar" src="M/User.png" class="h-full w-full object-cover">
             </div>
-            <button onclick="handleLogout()" class="w-full py-2 bg-red-600/20 hover:bg-red-600 text-red-100 rounded-xl border border-red-500/20 font-black text-[10px] uppercase transition-all flex items-center justify-center gap-2">
+            <span id="user-name" class="block text-[12px] font-black text-white uppercase">Cargando...</span>
+            <span id="user-puesto" class="block text-[9px] font-bold text-sky-400 uppercase tracking-wider">Identificando...</span>
+            <button onclick="handleLogout()" class="w-full mt-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-100 rounded-xl border border-red-500/20 font-black text-[10px] uppercase transition-all flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 Finalizar Sesión
             </button>
@@ -264,17 +219,18 @@
         <h3 class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-[0.2em] px-2">Servicios Autorizados</h3>
         
         <div class="grid grid-cols-1 gap-2">
+            <!-- Escritorio -->
             <button onclick="openApp('dashboard', 'Escritorio', '', '')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-slate-500/20 rounded-xl flex items-center justify-center border border-slate-400/30">
                     <img src="M/Logo.png" class="h-6 w-6 object-contain grayscale invert">
                 </div>
                 <div>
                     <span class="block text-[11px] font-black text-white uppercase">Escritorio</span>
-                    <span class="block text-[8px] text-slate-300/60 uppercase font-bold">Panel Principal</span>
+                    <span class="block text-[8px] text-slate-300/60 uppercase font-bold">Principal</span>
                 </div>
             </button>
 
-            <!-- Nueva App: Formularios -->
+            <!-- Centro de Formularios -->
             <button onclick="openApp('forms', 'Formularios', 'Apps/Formularios.html', '#4f46e5')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-400/30">
                     <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,6 +243,7 @@
                 </div>
             </button>
 
+            <!-- Registro Asistencia -->
             <button onclick="openApp('regas', 'Registro Asistencia', 'Apps/RegAs.html', '#4a044e')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-400/30">
                     <img src="M/Logo-App/RegAs.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
@@ -297,6 +254,7 @@
                 </div>
             </button>
 
+            <!-- Registro Siniestros -->
             <button onclick="openApp('regsin', 'Registro Siniestros', 'Apps/RegSin.html', '#7f1d1d')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-400/30">
                     <img src="M/Logo-App/RegSin.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
@@ -307,6 +265,7 @@
                 </div>
             </button>
 
+            <!-- Gestión de Usuarios -->
             <button onclick="openApp('users', 'Gestión de Usuarios', 'Apps/Admin_Users.html', '#0369a1')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-sky-500/20 rounded-xl flex items-center justify-center border border-sky-400/30">
                     <img src="M/Logo-App/Users.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
@@ -317,6 +276,7 @@
                 </div>
             </button>
 
+            <!-- Mi Espacio -->
             <button onclick="openApp('miespacio', 'Mi Espacio', 'Apps/MiEspacio.html', '#1e293b')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-slate-500/20 rounded-xl flex items-center justify-center border border-slate-400/30">
                     <img src="M/Logo-App/Space.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
@@ -327,7 +287,8 @@
                 </div>
             </button>
 
-            <button onclick="openApp('marbetes', 'Marbetes', 'Apps/Marbetes.html', '#166534')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
+            <!-- Marbetes -->
+            <button onclick="openApp('marbetes', 'Gestión de Marbetes', 'Apps/Marbetes.html', '#166534')" class="app-item-card flex items-center gap-4 p-3 rounded-2xl w-full text-left">
                 <div class="h-10 w-10 bg-green-500/20 rounded-xl flex items-center justify-center border border-green-400/30">
                     <img src="M/Logo-App/Marbetes.png" class="h-6 w-6 object-contain" onerror="this.src='M/Apps.png'">
                 </div>
@@ -341,38 +302,18 @@
 
     <!-- Contenedor Principal -->
     <div class="main-viewport">
-        <!-- Ribón de Pestañas Abiertas -->
         <div id="app-ribbon"></div>
 
         <div class="content-area">
             <main id="desktop">
                 <div id="view-dashboard" class="relative flex flex-col items-center justify-center h-full w-full p-6 text-center animate-[fade-in_1s_ease-out]">
-                    
-                    <!-- Guía 1: Apps -->
-                    <div class="guide-indicator top-4 left-10">
-                        <div class="guide-bubble">¡Comienza aquí!</div>
-                        <span class="text-3xl">👆</span>
-                    </div>
-
-                    <!-- Guía 2: Notas -->
-                    <div class="guide-indicator top-4 right-20">
-                        <div class="guide-bubble">Toma notas aquí</div>
-                        <span class="text-3xl">👆</span>
-                    </div>
-
-                    <!-- BLOQUE DE LOGOTIPO CON CONTRASTE -->
                     <div class="flex items-center gap-12 bg-[#0a0a0a] p-16 rounded-[48px] shadow-2xl transition-transform hover:scale-[1.02] duration-700">
-                        <!-- Cámara Izquierda -->
                         <img src="M/Cam.gif" class="h-40 w-40 object-contain select-none">
-                        
-                        <!-- Contenido Central -->
                         <div class="select-none flex flex-col items-center">
                             <img src="M/Logo.png" class="h-80 mb-10">
                             <h2 class="text-3xl font-black tracking-[0.3em] uppercase text-white">Centro de Información y Comunicación</h2>
                             <div class="mt-6 h-1.5 w-32 bg-indigo-500 rounded-full"></div>
                         </div>
-
-                        <!-- Cámara Derecha -->
                         <img src="M/Cam.gif" class="h-40 w-40 object-contain select-none">
                     </div>
                 </div>
@@ -412,19 +353,13 @@
                     const snap = await getDoc(doc(db, 'artifacts', 'cic.pp', 'public', 'data', 'Usuarios', user.uid));
                     if (snap.exists()) {
                         const data = snap.data();
-                        const puesto = data.puesto?.toLowerCase();
-                        if (puesto === 'administrador' || puesto === 'operador cco') {
-                            document.getElementById('user-name').textContent = data.nombre || 'Personal CIC';
-                            document.getElementById('user-puesto').textContent = data.puesto || 'Operativo';
-                            const avatar = document.getElementById('user-avatar');
-                            avatar.src = data.foto || 'M/User.png';
-                            avatar.onload = () => avatar.classList.remove('opacity-0');
-                            document.getElementById('loading-screen').classList.add('hidden');
-                        } else {
-                            window.location.href = 'index.html?error=unauthorized';
-                        }
-                    } else { window.location.href = 'index.html?error=notfound'; }
-                } catch (e) { window.location.href = 'index.html?error=database'; }
+                        document.getElementById('user-name').textContent = data.nombre || 'Personal CIC';
+                        document.getElementById('user-puesto').textContent = data.puesto || 'Operativo';
+                        const avatar = document.getElementById('user-avatar');
+                        avatar.src = data.foto || 'M/User.png';
+                        document.getElementById('loading-screen').classList.add('hidden');
+                    } else { window.location.href = 'index.html'; }
+                } catch (e) { window.location.href = 'index.html'; }
             } else { window.location.href = 'index.html'; }
         });
 
@@ -488,10 +423,30 @@
             setTimeout(() => { document.getElementById('side-panel-frame').src = 'about:blank'; }, 400);
         };
 
+        // --- MANEJO DE MENSAJES (INTEGRACIÓN MULTI-APP) ---
         window.addEventListener('message', (event) => {
-            if (event.data.type === 'OPEN_SIDE_PANEL') openSidePanel(event.data.url);
-            if (event.data.type === 'CLOSE_SIDE_PANEL') closeSidePanel();
-            if (event.data.type === 'navigateRight') openSidePanel(event.data.url);
+            const msg = event.data;
+            if (!msg) return;
+
+            if (msg.type === 'OPEN_SIDE_PANEL' || msg.type === 'navigateRight') {
+                openSidePanel(msg.url);
+            }
+            
+            if (msg.type === 'CLOSE_SIDE_PANEL' || msg.type === 'CLOSE_MARBETE_DETAIL') {
+                closeSidePanel();
+            }
+
+            // Lógica para abrir detalle desde Marbetes
+            if (msg.type === 'OPEN_MARBETE_DETAIL') {
+                openSidePanel('Apps/Componentes/Marbetes/Detalle_Marbete.html');
+                const detailFrame = document.getElementById('side-panel-frame');
+                setTimeout(() => {
+                    detailFrame.contentWindow.postMessage({
+                        type: 'LOAD_DATA',
+                        data: msg.data
+                    }, '*');
+                }, 300);
+            }
         });
 
         const toggleLauncher = (show) => {
