@@ -102,6 +102,18 @@
             width: 100%;
         }
 
+        .btn-action {
+            background: #38bdf8;
+            color: #020617;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background: #7dd3fc; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -114,12 +126,12 @@
             </div>
             <div>
                 <h1 class="text-sm font-black tracking-widest uppercase">Diagnóstico Pro CCTV Axis</h1>
-                <p class="text-[9px] text-slate-400 font-bold uppercase">Consola de Mando y Análisis de Red</p>
+                <p class="text-[9px] text-slate-400 font-bold uppercase">Consola de Mando y Análisis de Seguridad SSL</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-slate-500">ESTADO AXIS:</span>
-            <div class="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[10px] font-bold text-green-400">VAPIX V3.0 READY</div>
+            <span class="text-[10px] font-bold text-slate-500">CONEXIÓN EXTERNA:</span>
+            <div class="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-bold text-blue-400 uppercase tracking-tighter">HTTPS Enforcement</div>
         </div>
     </header>
 
@@ -151,13 +163,32 @@
                         <h2 id="view-name" class="text-xs font-bold text-white mt-1">-</h2>
                         <div id="view-model" class="text-[10px] text-sky-400 font-mono mt-1">-</div>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <span class="text-[9px] font-black text-slate-500 uppercase">Endpoint IP</span>
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 relative">
+                        <span class="text-[9px] font-black text-slate-500 uppercase">Endpoint Seguro</span>
                         <h2 id="view-ip" class="text-xs font-bold text-white mt-1">-</h2>
-                        <div id="view-mac" class="text-[10px] text-slate-400 font-mono mt-1">-</div>
+                        <div class="mt-2 flex gap-2">
+                            <button id="btn-fix-ssl" onclick="openCertTab()" class="btn-action hidden">
+                                Autorizar Certificado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerta de Seguridad Contextual -->
+                <div id="ssl-warning" class="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl hidden">
+                    <div class="flex gap-3">
+                        <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <div>
+                            <h3 class="text-xs font-bold text-amber-500 uppercase">Advertencia de Seguridad Detectada</h3>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                                El navegador ha bloqueado la conexión por un certificado no válido o auto-firmado. 
+                                Haga clic en <strong>Autorizar Certificado</strong>, acepte el riesgo en la nueva pestaña y regrese aquí.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <div id="empty-state" class="flex flex-col items-center justify-center h-full opacity-20">
                 <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 <span class="text-xs font-black uppercase tracking-[0.3em]">Esperando Selección</span>
@@ -167,7 +198,7 @@
         <!-- DERECHA: CONSOLA -->
         <aside class="sidebar-right">
             <div class="p-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
-                <span class="text-[10px] font-bold text-sky-400 tracking-widest">SISTEMA LOGS [BAMBALINAS]</span>
+                <span class="text-[10px] font-bold text-sky-400 tracking-widest">DIAGNÓSTICO TÉCNICO</span>
                 <button onclick="clearConsole()" class="text-[9px] text-slate-500 hover:text-white uppercase font-bold">Limpiar</button>
             </div>
             <div id="console-output" class="flex-1 overflow-y-auto p-2 no-scrollbar">
@@ -179,14 +210,13 @@
     <footer class="h-[40px] bg-slate-950 border-t border-white/5 flex items-center px-6 justify-between text-[10px] font-bold text-slate-500">
         <div>TOTAL EN DB: <span id="stat-total" class="text-white">0</span></div>
         <div class="flex items-center gap-4">
+            <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-blue-500 rounded-full"></div> HTTPS</div>
             <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-green-500 rounded-full"></div> SEÑAL</div>
             <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-red-500 rounded-full"></div> ERROR</div>
-            <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-amber-500 rounded-full"></div> SIN IP</div>
         </div>
     </footer>
 
     <script>
-        // Listado Maestro (Aquí puedes pegar los 350, he puesto una muestra representativa de los tuyos)
         const DB = [
             ["01-OS-AZU-EXT-SN-ESTACIONAMIENTO", "10.200.8.73", "B8A44F726BB3", "AXIS P1448-LE"],
             ["02-OS-AZU-INT-PB-CONEXIÓN", "10.200.8.101", "B8A44F5B99C2", "AXIS M3065-V"],
@@ -211,6 +241,7 @@
         ];
 
         let activeIdx = -1;
+        let currentIp = "";
 
         function log(msg, type = 'info') {
             const out = document.getElementById('console-output');
@@ -230,7 +261,7 @@
             container.innerHTML = '';
 
             DB.forEach((cam, idx) => {
-                const [name, ip, mac, model] = cam;
+                const [name, ip] = cam;
                 if (name.includes(query) || ip.includes(query)) {
                     const div = document.createElement('div');
                     div.className = `cam-item ${idx === activeIdx ? 'active' : ''}`;
@@ -238,7 +269,7 @@
                     
                     div.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <div class="w-1.5 h-1.5 rounded-full ${ip ? 'bg-sky-500 shadow-[0_0_5px_#0ea5e9]' : 'bg-amber-500'}"></div>
+                            <div class="w-1.5 h-1.5 rounded-full ${ip ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-amber-500'}"></div>
                             <div class="flex-1 min-w-0">
                                 <div class="text-[10px] font-black uppercase truncate text-slate-200">${name}</div>
                                 <div class="text-[8px] font-mono text-slate-500">${ip || 'FALTA IP'}</div>
@@ -254,61 +285,69 @@
         function selectCam(idx) {
             activeIdx = idx;
             const [name, ip, mac, model] = DB[idx];
+            currentIp = ip;
             
             log(`----------------------------------`);
-            log(`Iniciando secuencia para: ${name}`);
+            log(`INSPECCIONANDO: ${name}`);
             
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('active-monitor').classList.remove('hidden');
             document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('ssl-warning').classList.add('hidden');
+            document.getElementById('btn-fix-ssl').classList.add('hidden');
 
             document.getElementById('view-name').textContent = name;
-            document.getElementById('view-ip').textContent = ip || 'ERROR: IP_MISSING';
-            document.getElementById('view-model').textContent = model || 'GENERIC_DEVICE';
-            document.getElementById('view-mac').textContent = mac || 'MAC_NOT_FOUND';
+            document.getElementById('view-ip').textContent = `https://${ip}`;
+            document.getElementById('view-model').textContent = model;
 
             const stream = document.getElementById('main-stream');
             
             if (!ip) {
-                log(`FALLO CRÍTICO: La cámara no tiene IP asignada en la base de datos.`, 'error');
-                log(`ACCION REQUERIDA: Actualizar tabla maestra de inventario.`, 'warn');
+                log(`FALLO: Sin dirección IP.`, 'error');
                 handleError();
                 return;
             }
 
-            log(`Protocolo: VAPIX over HTTP`);
-            log(`Host: ${ip}`);
-            log(`Intento de conexión con usuario [admin]...`);
+            log(`Protocolo requerido: HTTPS (Puerto 443)`);
+            log(`Destino: ${ip}`);
 
-            // Construcción del stream MJPEG
-            const streamUrl = `http://admin:Segos.24@${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&fps=15`;
+            // Intentar cargar stream mediante HTTPS
+            const streamUrl = `https://admin:Segos.24@${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&fps=15`;
             
             stream.onload = () => {
-                log(`CONEXIÓN ESTABLECIDA. Recibiendo datos de video.`, 'success');
+                log(`ÉXITO: Transmisión segura establecida.`, 'success');
                 document.getElementById('loader').classList.add('hidden');
             };
 
             stream.onerror = () => {
-                log(`ERROR DE RED: No se pudo alcanzar la dirección http://${ip}`, 'error');
-                log(`CAUSA POSIBLE 1: El equipo no está en la red 10.200.8.x o la VPN está apagada.`, 'warn');
-                log(`CAUSA POSIBLE 2: El navegador bloquea Basic Auth en la URL (user:pass@IP).`, 'warn');
-                log(`CAUSA POSIBLE 3: El protocolo MJPEG está deshabilitado en el nodo Axis.`, 'warn');
-                handleError();
+                log(`FALLO DE SEGURIDAD SSL: El navegador bloqueó la conexión a ${ip}`, 'error');
+                log(`CAUSA: Certificado auto-firmado o no aceptado por el sistema.`, 'warn');
+                log(`SOLUCIÓN: Use el botón 'Autorizar Certificado' para aceptar el riesgo manualmente.`, 'info');
+                
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('ssl-warning').classList.remove('hidden');
+                document.getElementById('btn-fix-ssl').classList.remove('hidden');
+                stream.src = "";
             };
 
             stream.src = streamUrl;
             renderList();
         }
 
+        function openCertTab() {
+            if (!currentIp) return;
+            log(`Abriendo consola Axis en pestaña nueva para autorización SSL...`);
+            window.open(`https://${currentIp}`, '_blank');
+        }
+
         function handleError() {
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('main-stream').src = "";
-            log(`MONITOR: Transmisión abortada.`, 'error');
         }
 
         window.onload = () => {
-            log(`Sistema de Diagnóstico Iniciado.`);
-            log(`Base de datos cargada correctamente.`);
+            log(`Consola de Diagnóstico Iniciada.`);
+            log(`Monitoreo HTTPS Activo.`);
             renderList();
         };
     </script>
