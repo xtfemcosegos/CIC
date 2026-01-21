@@ -37,7 +37,7 @@
             align-items: center; 
         }
 
-        /* --- HEADER PEGADO ARRIBA Y AL 100% --- */
+        /* --- HEADER PEGADO ARRIBA Y AL 100% (SIN ANIMACIÓN) --- */
         .header-card {
             position: relative;
             width: 100%;
@@ -55,6 +55,7 @@
             z-index: 50;
         }
 
+        /* Trama de metal industrial sutil */
         .header-card::before {
             content: "";
             position: absolute;
@@ -154,6 +155,7 @@
 </head>
 <body>
 
+    <!-- Header Pegado RegAs -->
     <header class="header-card">
         <div class="relative z-10 flex items-center justify-between w-full h-full">
             <div class="flex items-center gap-4 h-full">
@@ -171,6 +173,7 @@
                 <nav class="header-tabs">
                     <div onclick="changeMainView('dia')" id="tab-dia" class="header-tab active">Vista Diaria</div>
                     <div onclick="changeMainView('planeacion')" id="tab-planeacion" class="header-tab">Planeación</div>
+                    <div onclick="changeMainView('estadistica')" id="tab-estadistica" class="header-tab">Estadística</div>
                     <div onclick="changeMainView('reportes')" id="tab-reportes" class="header-tab">Reportes</div>
                 </nav>
             </div>
@@ -184,8 +187,10 @@
         </div>
     </header>
 
+    <!-- Herramientas -->
     <div id="tool-ribbon" class="tool-ribbon"></div>
 
+    <!-- Contenido -->
     <div class="content-container">
         <iframe id="main-frame" name="main-frame" src="about:blank"></iframe>
     </div>
@@ -195,17 +200,13 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
-            authDomain: "cic6-pp-web.firebaseapp.com", 
-            projectId: "cic6-pp-web", 
-            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
+        const appId = 'cic.pp';
         let userContext = null;
+
         const viewsBase = "Componentes/RegAs/";
         
         window.setDaySubView = (sub) => {
@@ -260,7 +261,7 @@
 
         window.adjustDate = (days) => {
             const current = document.getElementById('main-date').value;
-            const date = new Date(current + 'T12:00:00'); // Usar mediodía para evitar desfases locales
+            const date = new Date(current + 'T12:00:00'); // Usar mediodía para evitar desfases
             date.setDate(date.getDate() + days);
             window.updateGlobalDate(date.toISOString().split('T')[0]);
         };
@@ -277,18 +278,24 @@
             document.getElementById(`tab-${viewKey}`)?.classList.add('active');
             
             document.getElementById('tool-ribbon').innerHTML = ribbonTools[viewKey] || '';
-            document.getElementById('tool-ribbon').classList.toggle('hidden', viewKey === 'planeacion');
+            
+            // Ocultar ribbon en planeacion y estadistica
+            const shouldHideRibbon = (viewKey === 'planeacion' || viewKey === 'estadistica');
+            document.getElementById('tool-ribbon').classList.toggle('hidden', shouldHideRibbon);
 
             if (viewKey === 'dia') {
                 window.setDaySubView(localStorage.getItem('regas_lastSubView_dia') || 'Proximos');
                 window.syncRibbonDate();
             } else if (viewKey === 'planeacion') {
                 frame.src = `${viewsBase}Tabla.html`;
+                frame.onload = () => { frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); };
+            } else if (viewKey === 'reportes') {
+                window.setReportSubView(localStorage.getItem('regas_lastSubView_reportes') || 'Whatsapp');
+            } else if (viewKey === 'estadistica') {
+                frame.src = `${viewsBase}Estadistica.html`;
                 frame.onload = () => { 
                     frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); 
                 };
-            } else if (viewKey === 'reportes') {
-                window.setReportSubView(localStorage.getItem('regas_lastSubView_reportes') || 'Whatsapp');
             }
             localStorage.setItem('regas_lastView', viewKey);
         };
@@ -298,6 +305,7 @@
             document.getElementById('main-date').value = val;
             
             const dateObj = new Date(val + 'T12:00:00');
+            // Formato de fecha larga
             const headerText = dateObj.toLocaleDateString('es-MX', { 
                 weekday: 'long', 
                 day: 'numeric', 
@@ -309,6 +317,8 @@
             window.syncRibbonDate();
             const frame = document.getElementById('main-frame');
             if (frame && frame.contentWindow) {
+                frame.contentWindow.postMessage({ type: 'DATE_CHANGED', date: val }, '*');
+                // También enviar INIT por si el frame acaba de cargar
                 frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: val }, '*');
             }
         };
@@ -332,6 +342,7 @@
                 const finalUrl = `Apps/${viewsBase}${event.data.url}`;
                 window.parent.postMessage({ type: 'OPEN_SIDE_PANEL', url: finalUrl, title: 'Perfil de Elemento' }, '*');
             }
+            // REENVIAR CAMBIO DE ESTADO DEL PANEL LATERAL AL SUB-MÓDULO
             if (event.data.type === 'SIDE_PANEL_STATE_CHANGED') {
                 const frame = document.getElementById('main-frame');
                 if (frame && frame.contentWindow) {
@@ -344,7 +355,7 @@
             if (user) {
                 window.parent.postMessage({ type: 'REQUEST_USER_CONTEXT' }, '*');
                 
-                // FIX: Obtener fecha local YYYY-MM-DD sin desfase UTC
+                // Obtener fecha local YYYY-MM-DD
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = String(now.getMonth() + 1).padStart(2, '0');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte Diario - RegAs</title>
+    <title>Reporte Diario - CIC6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Librería para captura de pantalla -->
@@ -304,7 +304,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
@@ -329,8 +329,17 @@
         let activeUnsubscribes = [];
 
         const dateInput = document.getElementById('report-date');
-        const now = new Date();
-        dateInput.value = now.toISOString().split('T')[0];
+
+        // Función para obtener fecha local YYYY-MM-DD sin errores de zona horaria (Tomorrow bug fix)
+        function getLocalISODate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        dateInput.value = getLocalISODate();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -367,7 +376,9 @@
             if(!rawDate) return;
 
             const dateD = rawDate;
-            const dateDMinus1 = new Date(new Date(rawDate + "T00:00:00").setDate(new Date(rawDate + "T00:00:00").getDate() - 1)).toISOString().split('T')[0];
+            const dateDMinus1Obj = new Date(rawDate + "T00:00:00");
+            dateDMinus1Obj.setDate(dateDMinus1Obj.getDate() - 1);
+            const dateDMinus1 = dateDMinus1Obj.toISOString().split('T')[0];
             
             const dObj = new Date(rawDate + "T00:00:00");
             document.getElementById('formatted-date').innerText = dObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
@@ -392,32 +403,53 @@
                 ];
             }
 
-            const dataStore = sections.map(s => ({ ...s, list: [] }));
-            let loadedCount = 0;
+            // Identificar meses únicos requeridos
+            const uniqueMonths = [...new Set(sections.map(s => {
+                const parts = s.date.split('-');
+                return `${parts[1]}${parts[0]}`; // MMYYYY
+            }))];
 
-            sections.forEach((sec, index) => {
-                const dateId = getDateId(sec.date);
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, sec.id);
+            const monthsData = {};
+            let loadedMonths = 0;
+
+            uniqueMonths.forEach(mKey => {
+                const mm = mKey.substring(0, 2);
+                const yyyy = mKey.substring(2);
+                const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
                 
-                const unsub = onSnapshot(colRef, (snap) => {
-                    dataStore[index].list = [];
-                    snap.forEach(docSnap => {
-                        const user = userDataCache[docSnap.id] || { nombre: 'Desconocido', id_empleado: '---' };
-                        dataStore[index].list.push({
-                            uid: docSnap.id,
-                            id_empleado: user.id_empleado || '---',
-                            nombre: user.nombre,
-                            ...docSnap.data()
-                        });
-                    });
-                    
-                    loadedCount++;
-                    if (loadedCount >= sections.length) {
-                        renderReport(dataStore);
+                const unsub = onSnapshot(monthRef, (snap) => {
+                    monthsData[mKey] = snap.exists() ? snap.data() : {};
+                    loadedMonths++;
+                    if (loadedMonths >= uniqueMonths.length) {
+                        processAndRender(sections, monthsData);
                     }
                 });
                 activeUnsubscribes.push(unsub);
             });
+        }
+
+        function processAndRender(sections, monthsData) {
+            const dataStore = sections.map(sec => {
+                const parts = sec.date.split('-');
+                const monthKey = `${parts[1]}${parts[0]}`;
+                const dateId = `${parts[2]}${parts[1]}${parts[0]}`;
+                const dayData = monthsData[monthKey]?.[dateId] || {};
+                const listRaw = dayData[sec.id] || {};
+                
+                const list = Object.entries(listRaw).map(([uid, data]) => {
+                    const user = userDataCache[uid] || { nombre: 'Desconocido', id_empleado: '---' };
+                    return {
+                        uid,
+                        id_empleado: user.id_empleado || '---',
+                        nombre: user.nombre,
+                        ...data
+                    };
+                });
+
+                return { ...sec, list };
+            });
+
+            renderReport(dataStore);
         }
 
         function renderReport(dataStore) {
@@ -540,17 +572,16 @@
                 await new Promise(r => setTimeout(r, 200));
 
                 const canvas = await html2canvas(captureArea, {
-                    scale: 1.5, // Aumentado para nitidez
+                    scale: 1.5,
                     backgroundColor: '#ffffff',
                     useCORS: true,
                     logging: false,
-                    windowWidth: 1200, // Fuerza ancho de escritorio para evitar colapsos
+                    windowWidth: 1200,
                     onclone: (clonedDoc) => {
-                        // Estabilizar el clon antes de la foto
                         const content = clonedDoc.getElementById('report-content');
                         content.style.width = "1180px";
                         content.style.margin = "0 auto";
-                        content.style.boxShadow = "none"; // Eliminar sombras para evitar recortes
+                        content.style.boxShadow = "none";
                         content.style.border = "1px solid #e2e8f0";
                     }
                 });
@@ -586,6 +617,14 @@
                 btn.innerText = "ERROR - REINTENTAR";
             }
         };
+
+        // Escuchar mensajes de cambio de fecha global si aplica
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'DATE_CHANGED' && e.data.date) {
+                dateInput.value = e.data.date;
+                loadData();
+            }
+        });
     </script>
 </body>
 </html>

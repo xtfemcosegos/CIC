@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrador de Datos CIC - RegAs2 (Weight & Count)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #020617;
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+        }
+        .console {
+            background: #000000;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #1e293b;
+        }
+        .log-info { color: #94a3b8; }
+        .log-success { color: #10b981; }
+        .log-warn { color: #f59e0b; }
+        .log-error { color: #ef4444; }
+        .log-delete { color: #f87171; font-weight: bold; }
+        
+        .progress-bar {
+            height: 10px;
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .report-table {
+            width: 100%;
+            font-size: 11px;
+            text-align: left;
+            border-collapse: collapse;
+        }
+        .report-table th {
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+        }
+        .report-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .badge-kb {
+            background: #0ea5e9;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+        }
+        .badge-count {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-extrabold tracking-tight mb-3 text-white">Consola de Integridad de Datos</h1>
+            <p class="text-sky-400 text-xs font-black uppercase tracking-[0.4em]">Migración RegAs ➜ RegAs2 (Estructura Mensual)</p>
+        </header>
+
+        <div class="glass-panel p-8">
+            <!-- Controles de Inicio -->
+            <div id="setup-view">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <h3 class="text-xs font-black uppercase text-slate-500 tracking-widest">Base de Datos Origen</h3>
+                        </div>
+                        <p class="text-xl font-bold text-white">Colección: <span class="text-emerald-400">RegAs</span></p>
+                        <p class="text-[10px] text-slate-500 mt-2 uppercase leading-relaxed">Los datos originales <span class="text-white font-bold">no se eliminarán</span>. Solo se leerán para la transferencia.</p>
+                    </div>
+                    <div class="p-6 bg-rose-950/10 rounded-2xl border border-rose-900/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-2 h-2 rounded-full bg-rose-500"></div>
+                            <h3 class="text-xs font-black uppercase text-rose-500 tracking-widest">Base de Datos Destino</h3>
+                        </div>
+                        <p class="text-xl font-bold text-white">Colección: <span class="text-rose-400">RegAs2</span></p>
+                        <p class="text-[10px] text-rose-300 mt-2 uppercase font-bold tracking-tighter">⚠️ Aviso: Se limpiará RegAs2 antes de iniciar la reconstrucción.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <button id="btn-start" onclick="startReconstruction()" class="px-12 py-5 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all transform hover:scale-105 active:scale-95 shadow-2xl shadow-sky-900/20">
+                        Iniciar Reconstrucción Total
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vista de Progreso -->
+            <div id="progress-view" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Consola e Indicadores -->
+                    <div class="lg:col-span-3">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                                <span class="block text-[8px] font-black text-slate-500 uppercase">Días en Origen</span>
+                                <span id="stat-total-days" class="text-lg font-black text-white">0</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                                <span class="block text-[8px] font-black text-slate-500 uppercase">Documentos Extraídos</span>
+                                <span id="stat-total-docs" class="text-lg font-black text-emerald-400">0</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                                <span class="block text-[8px] font-black text-slate-500 uppercase">Meses Creados</span>
+                                <span id="stat-total-months" class="text-lg font-black text-sky-400">0</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                                <span class="block text-[8px] font-black text-slate-500 uppercase">Peso Acumulado</span>
+                                <span id="stat-total-kb" class="text-lg font-black text-indigo-400">0.00 KB</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-end mb-2">
+                            <div>
+                                <h3 id="current-task" class="text-xs font-black uppercase text-sky-400">Preparando motor...</h3>
+                                <p id="stats-label" class="text-[10px] text-slate-500 uppercase mt-1">Sincronizando con Firebase</p>
+                            </div>
+                            <span id="perc-label" class="text-xl font-black font-mono text-white">0%</span>
+                        </div>
+                        <div class="progress-bar"><div id="progress-fill"></div></div>
+                        <div class="console no-scrollbar" id="console"></div>
+                    </div>
+
+                    <!-- Reporte Lateral -->
+                    <div class="bg-black/50 rounded-2xl border border-white/5 overflow-hidden flex flex-col h-[500px]">
+                        <div class="p-4 bg-white/5 border-b border-white/10">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Reporte RegAs2</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto no-scrollbar">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mes/Año</th>
+                                        <th>Docs / Peso</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="completion-actions" class="mt-8 hidden animate-pulse">
+                    <button onclick="window.location.reload()" class="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all">
+                        Migración Completada • Finalizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
+            authDomain: "cic6-pp-web.firebaseapp.com", 
+            projectId: "cic6-pp-web", 
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        let totalSizeKB = 0;
+        let totalDocsFetched = 0;
+
+        function log(msg, type = 'info') {
+            const c = document.getElementById('console');
+            if (!c) return;
+            const line = document.createElement('div');
+            line.className = `mb-1 log-${type}`;
+            const time = new Date().toLocaleTimeString('es-MX', {hour12: false});
+            line.innerHTML = `<span class="opacity-20">[${time}]</span> ${msg}`;
+            c.appendChild(line);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function estimateSize(obj) {
+            const bytes = encodeURI(JSON.stringify(obj)).split(/%..|./).length - 1;
+            return bytes / 1024;
+        }
+
+        window.startReconstruction = async () => {
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('progress-view').classList.remove('hidden');
+            
+            try {
+                if (!auth.currentUser) {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+
+                log("INICIANDO LIMPIEZA RECURSIVA DE REGAS2...", "warn");
+                await deleteRegAs2();
+
+                log("LEYENDO REGISTROS DESDE REGAS (LEGACY)...", "info");
+                const daysSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs'));
+                const dayDocs = daysSnap.docs;
+                document.getElementById('stat-total-days').innerText = dayDocs.length;
+                log(`Se han encontrado ${dayDocs.length} documentos de días principales.`, "success");
+
+                const mesMap = {};
+                let processedDays = 0;
+
+                for (const dayDoc of dayDocs) {
+                    const dateId = dayDoc.id;
+                    log(`Extrayendo sub-documentos de: ${dateId}...`, "info");
+                    
+                    // transformDay ahora cuenta los documentos descargados
+                    const dayData = await transformDay(dateId);
+                    
+                    const monthKey = dateId.substring(2, 4); 
+                    const yearId = dateId.substring(4, 8); 
+                    const monthDocId = monthKey + yearId;
+
+                    if (!mesMap[monthDocId]) {
+                        mesMap[monthDocId] = { year: yearId, month: monthKey, data: {}, count: 0 };
+                    }
+                    mesMap[monthDocId].data[dateId] = dayData;
+                    mesMap[monthDocId].count += dayData._docCount;
+
+                    processedDays++;
+                    updateProgress(processedDays, dayDocs.length, `Procesando: ${processedDays}/${dayDocs.length}`);
+                }
+
+                log("RECONSTRUYENDO ESTRUCTURA MENSUAL EN LA NUBE...", "info");
+                
+                const reportBody = document.getElementById('report-body');
+                const monthIds = Object.keys(mesMap);
+                document.getElementById('stat-total-months').innerText = monthIds.length;
+
+                for (const mId of monthIds) {
+                    const monthObj = mesMap[mId];
+                    const weight = estimateSize(monthObj.data);
+                    totalSizeKB += weight;
+
+                    log(`Creando Mes ${monthObj.month}/${monthObj.year} (${weight.toFixed(2)} KB)`, "success");
+                    
+                    const targetDoc = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', monthObj.year, 'Meses', monthObj.month);
+                    await setDoc(targetDoc, monthObj.data);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="font-bold text-white">${monthObj.month} / ${monthObj.year}</td>
+                        <td class="flex flex-col gap-1">
+                            <span class="badge-count">${monthObj.count} registros</span>
+                            <span class="badge-kb">${weight.toFixed(2)} KB</span>
+                        </td>
+                    `;
+                    reportBody.appendChild(row);
+                    document.getElementById('stat-total-kb').innerText = `${totalSizeKB.toFixed(2)} KB`;
+                }
+
+                log("MIGRACIÓN E INTEGRIDAD FINALIZADA AL 100%.", "success");
+                log("AVISO: La colección RegAs original permanece intacta.", "info");
+                document.getElementById('current-task').innerText = "Proceso Completado";
+                document.getElementById('completion-actions').classList.remove('hidden');
+
+            } catch (err) {
+                log(`ERROR CRÍTICO: ${err.message}`, "error");
+                console.error(err);
+            }
+        };
+
+        async function deleteRegAs2() {
+            const years = ["2024", "2025", "2026"];
+            for (const year of years) {
+                const monthsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs2', year, 'Meses'));
+                for (const monthDoc of monthsSnap.docs) {
+                    const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', year, 'Meses', monthDoc.id);
+                    await deleteDoc(monthRef);
+                    log(`Borrado documento mensual: ${monthDoc.id}/${year}`, "log-delete");
+                }
+            }
+        }
+
+        async function transformDay(dateId) {
+            const data = {
+                matutino: {}, vespertino: {}, nocturno: {}, ausentismo: {},
+                summary: { asistencias: 0, faltas: 0, retardos: 0, extras: 0 },
+                _docCount: 0
+            };
+
+            const sections = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            for (const sId of sections) {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, sId));
+                snap.forEach(dDoc => {
+                    const d = dDoc.data();
+                    data[sId][dDoc.id] = d;
+                    data._docCount++;
+                    totalDocsFetched++;
+                    
+                    if (sId !== 'ausentismo' && d.entrada_real) {
+                        data.summary.asistencias++;
+                        if (d.retardo) data.summary.retardos++;
+                        if (d.es_extra) data.summary.extras++;
+                    } else if (sId === 'ausentismo' && d.motivo === 'Falta') {
+                        data.summary.faltas++;
+                    }
+                });
+            }
+            
+            document.getElementById('stat-total-docs').innerText = totalDocsFetched;
+            return data;
+        }
+
+        function updateProgress(curr, total, taskText) {
+            const p = Math.round((curr / total) * 100);
+            document.getElementById('progress-fill').style.width = `${p}%`;
+            document.getElementById('perc-label').innerText = `${p}%`;
+            document.getElementById('current-task').innerText = taskText;
+        }
+    </script>
+</body>
+</html>

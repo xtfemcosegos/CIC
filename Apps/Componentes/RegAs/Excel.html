@@ -536,7 +536,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
@@ -672,6 +672,7 @@
             }
             document.getElementById('filter-start').value = start.toISOString().split('T')[0];
             document.getElementById('filter-end').value = end.toISOString().split('T')[0];
+            updateLabels();
         };
 
         window.runQuery = async () => {
@@ -700,11 +701,25 @@
             const diffDays = Math.ceil(Math.abs(endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
             rawResults = [];
-            let processed = 0;
+            
+            // --- OPTIMIZACIÓN: Carga por Meses (RegAs2) ---
+            const monthsToLoad = new Set();
+            for (let i = 0; i < diffDays; i++) {
+                const cur = new Date(startDate); cur.setDate(startDate.getDate() + i);
+                monthsToLoad.add(`${cur.getFullYear()}-${(cur.getMonth() + 1).toString().padStart(2, '0')}`);
+            }
 
-            const applyOp = (current, op, condition) => op === 'AND' ? (current && condition) : (current || condition);
+            const dbMemory = {};
+            let fetchedMonths = 0;
+            for (const m of monthsToLoad) {
+                const [y, mm] = m.split('-');
+                const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', y, 'Meses', mm);
+                const monthSnap = await getDoc(monthRef);
+                dbMemory[m] = monthSnap.exists() ? monthSnap.data() : {};
+                fetchedMonths++;
+                progress.innerText = `Cargando datos: ${Math.round((fetchedMonths / monthsToLoad.size) * 50)}%`;
+            }
 
-            // DETECTOR DE FILTRADO ACTIVO POR CATEGORÍA
             const isFilteringMotive = filterLogic.motive === 'AND' && !allMotivesChecked;
             const isFilteringIncidence = filterLogic.incidence === 'AND' && !allIncChecked;
 
@@ -713,30 +728,23 @@
                 currentDateObj.setDate(startDate.getDate() + i);
                 const dateId = currentDateObj.getDate().toString().padStart(2, '0') + (currentDateObj.getMonth() + 1).toString().padStart(2, '0') + currentDateObj.getFullYear();
                 const displayDate = currentDateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+                const monthKey = `${currentDateObj.getFullYear()}-${(currentDateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+                
+                const dayData = dbMemory[monthKey]?.[dateId] || {};
 
-                // Turnos a buscar: Todos los marcados + Ausentismo (si hay motivos seleccionados)
                 let shiftsToSearch = [...selectedShifts];
                 if (selectedMotives.length > 0 || allMotivesChecked) shiftsToSearch.push('ausentismo');
-                
-                if (shiftsToSearch.length === 0) {
-                    processed = diffDays;
-                    break;
-                }
 
                 for (const s of shiftsToSearch) {
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, s));
-                    snap.forEach(docSnap => {
-                        const d = docSnap.data();
-                        const uid = docSnap.id;
+                    const shiftGroup = dayData[s] || {};
+                    Object.entries(shiftGroup).forEach(([uid, d]) => {
                         const user = usersMap[uid] || { nombre: '---', id_empleado: '---', acceso_predeterminado: '---' };
 
                         const isUserMatch = allUsersChecked || selectedUsers.includes(uid);
                         const casetaBase = (d.Caseta || user.acceso_predeterminado || '---');
                         const isCasetaMatch = allCasetasChecked || selectedCasetas.includes(casetaBase);
 
-                        // Filtro de Categoría Inteligente (Solución al conflicto de combinación)
                         let passCategory = true;
-                        
                         const isMotiveMatch = allMotivesChecked || selectedMotives.includes(d.motivo);
                         const isIncMatch = allIncChecked || (
                             (selectedIncidences.includes('retardo') && d.retardo) ||
@@ -746,43 +754,29 @@
                         );
 
                         if (s === 'ausentismo') {
-                            // Si estoy en ausentismo, mi pase depende de si coincido con el motivo buscado
                             if (isFilteringMotive) passCategory = isMotiveMatch;
-                            
-                            // Si SOLO estamos buscando incidencias específicas (AND) y NO estamos buscando motivos,
-                            // entonces este ausentismo debe ocultarse. Pero si buscamos ambos, mostramos los que coincidan con motivo.
                             if (isFilteringIncidence && !isFilteringMotive) passCategory = false;
                         } else {
-                            // Si estoy en un turno normal, mi pase depende de si coincido con la incidencia buscada
                             if (isFilteringIncidence) passCategory = isIncMatch;
-
-                            // Si SOLO estamos buscando motivos específicos (AND) y NO estamos buscando incidencias,
-                            // entonces este registro normal debe ocultarse.
                             if (isFilteringMotive && !isFilteringIncidence) passCategory = false;
                         }
 
-                        // El resultado final requiere que el Usuario y la Caseta coincidan, 
-                        // Y que pase el filtro de su respectiva categoría
-                        const matchesFinal = isUserMatch && isCasetaMatch && passCategory;
+                        if (isUserMatch && isCasetaMatch && passCategory) {
+                            let lugarDisplay = casetaBase.toUpperCase();
+                            if (s === 'ausentismo') {
+                                lugarDisplay = `${lugarDisplay} • ${(d.motivo || 'AUS').toUpperCase()}`;
+                            }
 
-                        if (!matchesFinal) return;
-
-                        let lugarDisplay = casetaBase.toUpperCase();
-                        if (s === 'ausentismo') {
-                            const motivo = (d.motivo || 'AUS').toUpperCase();
-                            lugarDisplay = `${lugarDisplay} • ${motivo}`;
+                            rawResults.push({
+                                fecha: displayDate, id: user.id_empleado || '---', nombre: user.nombre,
+                                turno: s.toUpperCase(), lugar: lugarDisplay,
+                                entrada: d.entrada_real || '--:--', salida: d.salida_real || '--:--',
+                                incidencias: formatIncidences(d, s), nota: d.comentario || ''
+                            });
                         }
-
-                        rawResults.push({
-                            fecha: displayDate, id: user.id_empleado || '---', nombre: user.nombre,
-                            turno: s.toUpperCase(), lugar: lugarDisplay,
-                            entrada: d.entrada_real || '--:--', salida: d.salida_real || '--:--',
-                            incidencias: formatIncidences(d, s), nota: d.comentario || ''
-                        });
                     });
                 }
-                processed++;
-                progress.innerText = Math.round((processed / diffDays) * 100) + "%";
+                progress.innerText = (50 + Math.round(((i+1) / diffDays) * 50)) + "%";
             }
 
             renderTable();

@@ -266,12 +266,11 @@
             position: absolute;
             left: 100%;
             top: 0;
-            padding-left: 12px; /* Puente invisible */
+            padding-left: 12px;
             margin-left: -4px;
             z-index: 1001;
         }
 
-        /* El puente invisible real para el mouse */
         .context-submenu::before {
             content: '';
             position: absolute;
@@ -350,13 +349,11 @@
             </div>
         </div>
 
-        <!-- Opción Patrones -->
         <div onclick="window.openPatrones()" class="context-menu-item p-3 hover:bg-indigo-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex items-center gap-3 transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
             Patrones
         </div>
 
-        <!-- OPCIONES DE ELIMINACIÓN -->
         <div class="h-px bg-slate-100 my-2"></div>
 
         <div onclick="window.quickDelete()" class="p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3 transition-all">
@@ -371,22 +368,18 @@
     </div>
 
     <div class="viewport">
-        <!-- Esquina -->
         <div class="base-cell corner-cell">
             <span class="text-[14px] font-black uppercase tracking-tight leading-none mb-1">Planeación</span>
             <div class="btn-go-today" onclick="window.scrollToToday()">HOY</div>
         </div>
 
-        <!-- Fila de Fechas -->
         <div class="header-nav-container">
             <div class="nav-btn-container">
                 <button class="scroll-nav-btn" onclick="window.handleManualScroll(-1)" title="Semana Anterior">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
             </div>
-            
             <div id="grid-header" class="no-scrollbar"></div>
-            
             <div class="nav-btn-container">
                 <button class="scroll-nav-btn" onclick="window.handleManualScroll(1)" title="Siguiente Semana">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -406,7 +399,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteField, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
@@ -416,11 +409,16 @@
 
         let users = [];
         let userDataMap = {}; 
-        let baseDate = new Date(); baseDate.setDate(baseDate.getDate() - 60); 
+        let baseDate = new Date(); 
+        baseDate.setDate(baseDate.getDate() - 60); 
+        baseDate.setHours(12,0,0,0);
 
         let activeListeners = new Map();
         let currentContext = { uid: null, dateId: null };
         const totalDays = 180; 
+
+        // Memoria de renderizado para evitar flicker
+        let renderedState = new Map(); 
 
         const UI = {
             viewport: document.getElementById('grid-viewport'),
@@ -443,7 +441,6 @@
                 return { uid: doc.id, ...d };
             }).filter(u => (u.status || "").toLowerCase() !== 'baja').sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
             
-            // Poblar submenús de casetas una sola vez
             ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
                 const container = document.getElementById(`sub-${shift}`);
                 container.innerHTML = `<div class="p-2 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center border-b mb-2">Asignar Caseta</div>`;
@@ -505,7 +502,10 @@
                         const cell = document.createElement('div');
                         cell.id = `cell-${user.uid}-${dateId}`;
                         cell.className = `data-cell`;
-                        cell.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${user.uid}&date=${d.toISOString().split('T')[0]}` }, '*');
+                        cell.onclick = () => {
+                            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                            window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${user.uid}&date=${iso}` }, '*');
+                        };
                         cell.oncontextmenu = (e) => {
                             e.preventDefault();
                             currentContext = { uid: user.uid, dateId };
@@ -520,31 +520,75 @@
             });
         }
 
+        // --- OPTIMIZACIÓN: Sincronización Diferencial Estable para RegAs2 ---
         function setupAssignments() {
             activeListeners.forEach(u => u()); activeListeners.clear();
-            for (let i = 30; i < 120; i++) { 
+            renderedState.clear();
+
+            const monthsToListen = new Set();
+            for (let i = 0; i < totalDays; i++) {
                 const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
-                const dateId = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
-                ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
-                    const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t), (snap) => {
-                        snap.forEach(docSnap => updateCellUI(docSnap.id, dateId, docSnap.data(), t));
-                        snap.docChanges().forEach(change => { if (change.type === "removed") clearCellUI(change.doc.id, dateId, t); });
-                    });
-                    activeListeners.set(`${dateId}_${t}`, unsub);
-                });
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yyyy = d.getFullYear();
+                monthsToListen.add(`${mm}${yyyy}`);
             }
+
+            monthsToListen.forEach(mId => {
+                const mm = mId.substring(0, 2);
+                const yyyy = mId.substring(2);
+                const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
+                
+                const unsub = onSnapshot(monthRef, (snap) => {
+                    const monthData = snap.exists() ? snap.data() : {};
+                    const activeInSnap = new Set();
+                    
+                    // 1. Procesar registros presentes en el snapshot
+                    Object.entries(monthData).forEach(([dateId, dayData]) => {
+                        if (dateId.length !== 8) return; 
+
+                        ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(type => {
+                            if (!dayData[type]) return;
+                            Object.entries(dayData[type]).forEach(([userUid, record]) => {
+                                const key = `${userUid}-${dateId}-${type}`;
+                                activeInSnap.add(key);
+                                updateCellUI(userUid, dateId, record, type);
+                            });
+                        });
+                    });
+
+                    // 2. Limpiar llaves que estaban renderizadas pero ya no existen en el snapshot para este mes
+                    for (const key of renderedState.keys()) {
+                        const parts = key.split('-'); // uid-dateId-type
+                        const dateId = parts[1];
+                        if (dateId.substring(2) === mId && !activeInSnap.has(key)) {
+                            clearCellUI(parts[0], dateId, parts[2]);
+                        }
+                    }
+                });
+                activeListeners.set(mId, unsub);
+            });
         }
 
         const contractionMap = { 'matutino': 'Mat', 'vespertino': 'Ves', 'nocturno': 'Noc', 'vacaciones': 'Vac', 'descanso': 'Des', 'falta': 'Fal', 'suspendido': 'Sus', 'incapacidad': 'Inc', 'permiso': 'Per' };
 
         function updateCellUI(uid, dateId, data, type) {
+            const stateKey = `${uid}-${dateId}-${type}`;
+            
+            const stableData = {};
+            Object.keys(data).sort().forEach(k => { stableData[k] = data[k]; });
+            const stateString = JSON.stringify(stableData);
+            
+            if (renderedState.get(stateKey) === stateString) return; 
+            
             const cell = document.getElementById(`cell-${uid}-${dateId}`);
             if (!cell) return;
+
+            // Limpieza robusta del tipo actual antes de redibujar
             let existing = cell.querySelector(`.tag-${type}`);
             if (existing) existing.remove();
 
             const motive = (data.motivo || "").toLowerCase();
-            let specificClass = `tag-${type}`;
+            let specificClass = `tag-${type}`; 
             let label = contractionMap[type] || 'Reg';
             
             if (type === 'ausentismo') {
@@ -558,7 +602,9 @@
             }
 
             const tag = document.createElement('div');
-            tag.className = `shift-tag ${specificClass} animate-in zoom-in-95 duration-200`;
+            // FIX: Se añade siempre la clase base .tag-${type} (ej. .tag-ausentismo) 
+            // además de la clase de estilo (ej. .tag-vacaciones) para asegurar que clearCellUI lo encuentre.
+            tag.className = `shift-tag tag-${type} ${specificClass} animate-in zoom-in-95 duration-200`;
             tag.innerHTML = `<span>${label}</span>`;
 
             if (data.es_extra) tag.innerHTML += `<div class="incident-badge bg-pink-500" style="top: -4px; right: -4px;"></div>`;
@@ -576,13 +622,24 @@
             tag.dataset.order = order[type];
             const children = Array.from(cell.children);
             const nextChild = children.find(child => parseInt(child.dataset.order) > order[type]);
+            
             if (nextChild) cell.insertBefore(tag, nextChild);
             else cell.appendChild(tag);
+
+            renderedState.set(stateKey, stateString);
         }
 
         function clearCellUI(uid, dateId, type) {
+            const stateKey = `${uid}-${dateId}-${type}`;
+            if (!renderedState.has(stateKey)) return; 
+
             const cell = document.getElementById(`cell-${uid}-${dateId}`);
-            if (cell) { const tag = cell.querySelector(`.tag-${type}`); if (tag) tag.remove(); }
+            if (cell) { 
+                // Ahora encuentra el tag aunque tenga clases de estilo personalizadas
+                const tag = cell.querySelector(`.tag-${type}`); 
+                if (tag) tag.remove(); 
+            }
+            renderedState.delete(stateKey);
         }
 
         UI.viewport.onscroll = () => { 
@@ -593,29 +650,36 @@
         window.quickAssignShift = async (turno, caseta) => {
             UI.menu.style.display = 'none';
             const { uid, dateId } = currentContext;
+            const mm = dateId.substring(2, 4);
+            const yyyy = dateId.substring(4, 8);
             const user = userDataMap[uid];
             
             let entryTime = turno === 'matutino' ? "07:00" : (turno === 'vespertino' ? "15:00" : "23:00");
-            if (user && user.Entrada_predetermiada && user.Entrada_predetermiada[turno]) {
-                entryTime = user.Entrada_predetermiada[turno];
-            } else if (user && user.Entrada_predeterminada && user.Entrada_predeterminada[turno]) {
-                entryTime = user.Entrada_predeterminada[turno];
-            }
+            if (user && user.Entrada_predetermiada && user.Entrada_predetermiada[turno]) entryTime = user.Entrada_predetermiada[turno];
+            else if (user && user.Entrada_predeterminada && user.Entrada_predeterminada[turno]) entryTime = user.Entrada_predeterminada[turno];
 
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, turno, uid), { 
-                Caseta: caseta, turno, 
+            const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
+            const updateObj = {};
+            updateObj[`${dateId}.${turno}.${uid}`] = { 
+                Caseta: caseta, 
                 entrada_planificada: entryTime,
                 es_recuperacion: false, es_festivo: false, es_extra: false, entrada_real: null, salida_real: null, retardo: false
-            }, { merge: true });
-            
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid));
+            };
+            updateObj[`${dateId}.ausentismo.${uid}`] = deleteField();
+            await updateDoc(monthRef, updateObj);
         };
 
         window.quickAssignAbsence = async (motivo) => {
             UI.menu.style.display = 'none';
             const { uid, dateId } = currentContext;
-            ['matutino', 'vespertino', 'nocturno'].forEach(async t => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid)));
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', uid), { motivo }, { merge: true });
+            const mm = dateId.substring(2, 4);
+            const yyyy = dateId.substring(4, 8);
+            const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
+
+            const updateObj = {};
+            ['matutino', 'vespertino', 'nocturno'].forEach(t => { updateObj[`${dateId}.${t}.${uid}`] = deleteField(); });
+            updateObj[`${dateId}.ausentismo.${uid}`] = { motivo };
+            await updateDoc(monthRef, updateObj);
         };
 
         window.openPatrones = () => {
@@ -626,42 +690,53 @@
         window.quickDelete = async () => {
             UI.menu.style.display = 'none';
             const { uid, dateId } = currentContext;
-            ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(async t => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid)));
+            const mm = dateId.substring(2, 4);
+            const yyyy = dateId.substring(4, 8);
+            const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
+            
+            const updateObj = {};
+            ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => { updateObj[`${dateId}.${t}.${uid}`] = deleteField(); });
+            await updateDoc(monthRef, updateObj);
         };
 
-        // --- NUEVA LÓGICA: Borrado en cascada desde fecha seleccionada ---
         window.deleteFromHere = async () => {
             if (!confirm("¿Confirma que desea eliminar toda la programación de este elemento desde esta fecha hacia adelante?")) return;
             
             UI.menu.style.display = 'none';
             const { uid, dateId } = currentContext;
             
-            // Reconstruir objeto de fecha inicial
             const day = parseInt(dateId.substring(0, 2));
             const month = parseInt(dateId.substring(2, 4)) - 1;
             const year = parseInt(dateId.substring(4, 8));
             const startDate = new Date(year, month, day);
 
-            // Calcular fecha final del sistema (baseDate + totalDays)
             const endDate = new Date(baseDate);
             endDate.setDate(baseDate.getDate() + totalDays);
 
-            const promises = [];
+            const monthsMap = {};
             let loopDate = new Date(startDate);
 
             while (loopDate <= endDate) {
                 const dId = `${String(loopDate.getDate()).padStart(2, '0')}${String(loopDate.getMonth() + 1).padStart(2, '0')}${loopDate.getFullYear()}`;
+                const mm = String(loopDate.getMonth() + 1).padStart(2, '0');
+                const yyyy = String(loopDate.getFullYear());
+                const mKey = `${mm}${yyyy}`;
+                
+                if(!monthsMap[mKey]) monthsMap[mKey] = { mm, yyyy, updates: {} };
+                
                 ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
-                    promises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dId, t, uid)));
+                    monthsMap[mKey].updates[`${dId}.${t}.${uid}`] = deleteField();
                 });
+                
                 loopDate.setDate(loopDate.getDate() + 1);
             }
 
-            try {
-                await Promise.all(promises);
-            } catch (err) {
-                console.error("Error en borrado masivo:", err);
-            }
+            const promises = Object.values(monthsMap).map(m => {
+                const mRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', m.yyyy, 'Meses', m.mm);
+                return updateDoc(mRef, m.updates);
+            });
+
+            try { await Promise.all(promises); } catch (err) { console.error("Error masivo:", err); }
         };
 
         document.addEventListener('click', (e) => { if (!e.target.closest('#context-menu')) UI.menu.style.display = 'none'; });

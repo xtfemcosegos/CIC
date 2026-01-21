@@ -216,7 +216,7 @@
                 </div>
 
                 <div id="action-zone" class="pt-4">
-                    <button onclick="openCamera()" class="btn-camera">
+                    <button id="btn-camera-trigger" onclick="openCamera()" class="btn-camera">
                         <i class="fa-solid fa-camera"></i> Iniciar Captura
                     </button>
                     <p class="text-[8px] font-bold text-slate-400 mt-4 uppercase tracking-widest italic">Captura biométrica requerida</p>
@@ -237,7 +237,7 @@
 
     <!-- CAPA DE CÁMARA (FULLSCREEN MATERIAL) -->
     <div id="camera-layer">
-        <video id="video-stream" autoplay playsinline muted></video>
+        <video id="video-stream" autoplay playsinline muted class="h-full w-full object-cover"></video>
         <div class="absolute inset-0 border-[20px] border-black/40 pointer-events-none"></div>
         <div class="absolute bottom-12 left-0 w-full flex flex-col items-center gap-6 px-8">
             <div class="text-white text-[9px] font-black uppercase tracking-widest bg-black/50 px-4 py-2 rounded-full backdrop-blur-md">
@@ -255,22 +255,20 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
             authDomain: "cic6-pp-web.firebaseapp.com",
             projectId: "cic6-pp-web",
-            storageBucket: "cic6-pp-web.firebasestorage.app",
-            messagingSenderId: "248659087868",
             appId: "1:248659087868:web:a277ef700d83c7f1d22279"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'cic.pp'; 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic.pp';
 
         let allUsers = [];
         let filteredResults = [];
@@ -278,13 +276,19 @@
         let selectedUid = null;
         let stream = null;
         let operatorUid = null;
+        let monthDocRef = null;
+        let dateId = "";
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 operatorUid = user.uid;
                 await fetchUsers();
             } else {
-                await signInAnonymously(auth);
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
             }
         });
 
@@ -337,7 +341,6 @@
             document.getElementById('status-loading').classList.remove('hidden');
 
             try {
-                // Obtener datos del perfil para la foto y nombre (Uso del campo 'foto')
                 const snapU = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid));
                 if(snapU.exists()) {
                     const userData = snapU.data();
@@ -357,20 +360,29 @@
                     }
                 }
 
-                // Buscar turno
+                // --- BÚSQUEDA EN REGAS2 ---
                 const now = new Date();
-                const dateId = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
-                const shifts = ['matutino', 'vespertino', 'nocturno'];
+                const yyyy = now.getFullYear().toString();
+                const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+                const dd = now.getDate().toString().padStart(2, '0');
+                dateId = `${dd}${mm}${yyyy}`;
+                
+                monthDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', yyyy, 'Meses', mm);
+                const monthSnap = await getDoc(monthDocRef);
+                
                 let found = false;
-
-                for(let s of shifts) {
-                    const path = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, s, uid);
-                    const snap = await getDoc(path);
-                    if(snap.exists()){
-                        activeAssignment = { shiftId: s, dateId, data: snap.data(), path };
-                        displayAssignment();
-                        found = true;
-                        break;
+                if (monthSnap.exists()) {
+                    const monthData = monthSnap.data();
+                    const dayData = monthData[dateId] || {};
+                    const shifts = ['matutino', 'vespertino', 'nocturno'];
+                    
+                    for(let s of shifts) {
+                        if (dayData[s] && dayData[s][uid]) {
+                            activeAssignment = { shiftId: s, data: dayData[s][uid] };
+                            displayAssignment();
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
@@ -389,14 +401,16 @@
             document.getElementById('booth-name').innerText = data.Caseta || "Punto de Control General";
             document.getElementById('time-plan').innerText = `${data.entrada_planificada || '07:00'} hrs`;
             
-            if(data.entrada_real) {
-                document.getElementById('time-real').innerText = `${data.entrada_real} hrs`;
+            const btn = document.getElementById('btn-camera-trigger');
+            if(data.entrada_real && data.salida_real) {
+                document.getElementById('time-real').innerText = `${data.salida_real} hrs`;
                 document.getElementById('action-zone').classList.add('hidden');
                 document.getElementById('success-msg').classList.remove('hidden');
             } else {
-                document.getElementById('time-real').innerText = "Pendiente";
+                document.getElementById('time-real').innerText = data.entrada_real ? `${data.entrada_real} hrs` : "Pendiente";
                 document.getElementById('action-zone').classList.remove('hidden');
                 document.getElementById('success-msg').classList.add('hidden');
+                btn.innerHTML = data.entrada_real ? '<i class="fa-solid fa-camera"></i> Marcar Salida' : '<i class="fa-solid fa-camera"></i> Marcar Entrada';
             }
         }
 
@@ -423,6 +437,7 @@
         window.closeCamera = () => { 
             if(stream) stream.getTracks().forEach(t => t.stop()); 
             document.getElementById('camera-layer').style.display = 'none'; 
+            stream = null;
         };
 
         window.capture = async () => {
@@ -436,45 +451,46 @@
         };
 
         async function saveAttendance(photo) {
-            const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-            let coords = "No disponible";
-            
-            try {
-                const pos = await new Promise((res, rej) => 
-                    navigator.geolocation.getCurrentPosition(res, rej, {timeout: 4000})
-                );
-                coords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-            } catch(e){}
+            const now = new Date();
+            const nowTime = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const updateObj = {};
+            const shiftId = activeAssignment.shiftId;
+            const data = activeAssignment.data;
 
             try {
-                // Registro en Turno
-                await updateDoc(activeAssignment.path, {
-                    entrada_real: nowTime,
-                    foto_evidencia: photo,
-                    ubicacion_checador: coords,
-                    operador_terminal: operatorUid,
-                    timestamp_checada: new Date().toISOString()
-                });
+                if (!data.entrada_real) {
+                    const [pH, pM] = (data.entrada_planificada || "07:00").split(':').map(Number);
+                    const planDate = new Date(); planDate.setHours(pH, pM, 0);
+                    
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.entrada_real`] = nowTime;
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.retardo`] = now > planDate;
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.foto_evidencia`] = photo;
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.operador_terminal`] = operatorUid;
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.timestamp_checada`] = now.toISOString();
+                } else {
+                    updateObj[`${dateId}.${shiftId}.${selectedUid}.salida_real`] = nowTime;
+                }
 
-                // Registro en Historial Fotos (Solicitado)
+                // Guardar en Historial Fotos
                 const fotosRef = collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios', selectedUid, 'Fotos');
-                await addDoc(fotosRef, {
-                    photoData: photo,
-                    timestamp: new Date().toISOString()
+                await addDoc(fotosRef, { photoData: photo, timestamp: now.toISOString(), type: data.entrada_real ? 'exit' : 'entry' });
+
+                // Actualizar Perfil
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', selectedUid), { 
+                    foto: photo, 
+                    ultima_validacion: now.toISOString() 
                 });
 
-                // Actualizar Perfil (Uso del campo 'foto' para consistencia)
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', selectedUid);
-                await updateDoc(userRef, {
-                    foto: photo,
-                    ultima_validacion: new Date().toISOString()
-                });
+                // Actualizar RegAs2
+                await updateDoc(monthDocRef, updateObj);
 
-                document.getElementById('time-real').innerText = `${nowTime} hrs`;
-                document.getElementById('action-zone').classList.add('hidden');
-                document.getElementById('success-msg').classList.remove('hidden');
-                
-                // Actualizar foto en el UI local
+                // Refrescar UI local
+                activeAssignment.data.entrada_real = activeAssignment.data.entrada_real || nowTime;
+                if (updateObj[`${dateId}.${shiftId}.${selectedUid}.salida_real`]) {
+                    activeAssignment.data.salida_real = nowTime;
+                }
+                displayAssignment();
+
                 const img = document.getElementById('profile-photo');
                 img.src = photo;
                 img.classList.remove('hidden');

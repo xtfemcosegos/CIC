@@ -11,18 +11,9 @@
             --md-primary: #4a044e;
             --md-primary-dark: #2d0630;
             --md-surface: #ffffff;
-            --md-background: #f5f3ff;
-            --md-outline: #ddd6fe;
-            
-            /* Colores Metal Fiusha */
-            --metal-fuchsia-dark: #2d0630;
+            --md-background: #f1f5f9;
+            --md-outline: #e2e8f0;
             --metal-fuchsia-mid: #4a044e;
-            --metal-fuchsia-light: #701a75;
-        }
-
-        @keyframes subtle-glow {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
         }
 
         body {
@@ -30,181 +21,197 @@
             background-color: var(--md-background);
             color: #1e293b;
             margin: 0;
-            padding: 16px;
-            padding-top: 76px;
-            overflow-x: hidden;
+            padding: 6px; 
+            padding-top: 80px; 
+            padding-bottom: 60px;
+            overflow-x: auto; /* Permitir scroll horizontal para las columnas */
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
         }
 
-        h1, h2, h3, .font-heading {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+        h1, h2, h3, .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-        /* --- HEADER DE CONTEXTO --- */
-        .date-context-header {
+        /* --- CABECERA FIJA --- */
+        .fixed-header-container {
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 2px solid var(--md-outline);
+            z-index: 100;
+            background: var(--md-background);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .week-selector-bar {
+            background: #ffffff;
+            height: 64px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            padding: 0 6px;
+            border-bottom: 1px solid var(--md-outline);
+            gap: 4px;
         }
 
-        .date-context-header.is-not-today {
-            background: #fffbeb;
-            border-bottom-color: #fde68a;
-        }
-
-        .view-label {
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
+        .nav-arrow-btn {
+            width: 26px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
             color: var(--metal-fuchsia-mid);
-            letter-spacing: 0.15em;
-        }
-
-        .current-date-text {
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--metal-fuchsia-dark);
-            text-transform: uppercase;
-        }
-
-        .btn-today {
-            background: var(--metal-fuchsia-mid);
-            color: white;
-            padding: 6px 16px;
-            border-radius: 12px;
-            font-size: 9px;
-            font-weight: 800;
-            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
             transition: all 0.2s;
+            flex-shrink: 0;
+            border: 1px solid #e2e8f0;
         }
 
-        /* --- GRID DE CASETAS --- */
-        .caseta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            margin-top: 10px;
+        #week-bar { flex: 1; display: flex; gap: 1px; justify-content: space-between; }
+
+        .day-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #94a3b8;
+            background: transparent;
+            border: 2px solid transparent;
+        }
+
+        .day-btn.selected {
+            background: var(--metal-fuchsia-mid);
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(74, 4, 78, 0.15);
+        }
+
+        .day-btn.is-today { 
+            font-weight: 900; 
+            border: 1.5px solid var(--metal-fuchsia-mid);
+            color: var(--metal-fuchsia-mid);
+        }
+
+        .day-name { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; } 
+        .day-number { font-size: 18px; font-weight: 900; line-height: 1; }
+
+        /* --- GRID DE FLUJO VERTICAL (Masonry horizontal) --- */
+        .caseta-container-flow {
+            display: flex;
+            flex-flow: column wrap;
+            align-content: flex-start;
+            height: calc(100vh - 160px); 
+            gap: 8px;
+            width: max-content; 
+            margin-top: 4px;
         }
 
         .caseta-card {
+            width: 340px; 
             background: white;
-            border-radius: 24px;
+            border-radius: 12px;
             border: 1px solid var(--md-outline);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-            min-height: 140px;
-        }
-
-        .caseta-card.drag-over {
-            background: #fdf2f8;
-            border: 2px dashed var(--metal-fuchsia-mid);
-            transform: scale(1.02);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            flex-shrink: 0;
         }
 
         .caseta-header {
-            background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
-            padding: 12px 18px;
+            padding: 4px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .caseta-header::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 70%);
-            animation: subtle-glow 8s infinite ease-in-out;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
         }
 
         .caseta-title {
-            color: white;
-            font-size: 10px;
+            color: #1e293b;
+            font-size: 13px; 
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            position: relative;
-            z-index: 1;
+            letter-spacing: 0.01em;
         }
 
         .btn-header-action {
-            color: rgba(255,255,255,0.8);
-            transition: all 0.2s;
-            padding: 4px;
-            border-radius: 8px;
-            position: relative;
-            z-index: 1;
+            color: rgba(0,0,0,0.3);
+            padding: 1px;
         }
-        .btn-header-action:hover { color: white; background: rgba(255,255,255,0.1); }
 
         .element-list {
-            padding: 12px;
+            padding: 4px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            flex-grow: 1;
+            gap: 4px;
         }
 
         .element-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 14px;
+            padding: 4px 10px;
             background: #f8fafc;
-            border-radius: 16px;
+            border-radius: 10px;
             border: 1px solid #f1f5f9;
             cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
         }
-
-        .element-item:hover { 
-            border-color: var(--md-outline); 
-            background: white; 
-            transform: translateY(-2px); 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
-        }
-        
-        .element-item.is-late { border-left: 4px solid #ef4444; }
+        .element-item:hover { border-color: var(--md-outline); background: white; }
 
         .avatar-mini {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
+            width: 42px; 
+            height: 42px; 
+            border-radius: 10px;
             object-fit: cover;
             background: #e2e8f0;
+            flex-shrink: 0;
         }
 
+        /* --- BOTONES ASISTENCIA --- */
         .btn-quick {
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 8px;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 11px; 
             font-weight: 900;
             text-transform: uppercase;
-            transition: all 0.2s;
             border: none;
+            cursor: pointer;
+        }
+        .btn-entry { background: #10b981; color: white; border: 1px solid #059669; }
+        .btn-exit { background: #ef4444; color: white; border: 1px solid #dc2626; }
+        .btn-absence { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
+
+        /* --- PUNTOS OCULTOS --- */
+        .hidden-points-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--md-outline);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            z-index: 150;
         }
 
-        .btn-entry { background: #1e3a8a; color: white; }
-        .btn-exit { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
-
-        .tag-rec { background: #166534; color: white; font-size: 6px; padding: 2px 5px; border-radius: 5px; font-weight: 900; }
-        .tag-tex { background: #d946ef; color: white; font-size: 6px; padding: 2px 5px; border-radius: 5px; font-weight: 900; }
+        .restore-chip {
+            padding: 3px 10px;
+            background: white;
+            border: 1px solid var(--md-outline);
+            border-radius: 8px;
+            font-size: 10px; 
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
 
         #loading-state { background: var(--md-background); z-index: 2000; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -212,29 +219,35 @@
 </head>
 <body class="no-scrollbar">
 
-    <!-- Pantalla de Carga -->
     <div id="loading-state" class="fixed inset-0 flex flex-col items-center justify-center gap-4">
-        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Nocturno</span>
+        <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <span class="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">Cargando Tablero Nocturno</span>
     </div>
 
-    <!-- Header de Contexto -->
-    <div id="date-header" class="date-context-header">
-        <div class="flex flex-col">
-            <span class="view-label">Planificación Nocturna</span>
-            <span id="display-date-long" class="current-date-text">---</span>
-        </div>
-        <div id="today-action-area" class="hidden">
-            <button onclick="window.goToToday()" class="btn-today">Ir a Hoy</button>
+    <div class="fixed-header-container">
+        <div class="week-selector-bar no-scrollbar">
+            <button onclick="window.shiftWeek(-1)" class="nav-arrow-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div id="week-bar"></div>
+            <button onclick="window.shiftWeek(1)" class="nav-arrow-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
         </div>
     </div>
 
-    <div class="caseta-grid" id="caseta-container"></div>
+    <!-- Contenedor con flujo vertical wrap -->
+    <div class="caseta-container-flow no-scrollbar" id="caseta-container"></div>
+
+    <div id="hidden-points-section" class="hidden-points-bar no-scrollbar">
+        <span class="text-[9px] font-black uppercase text-slate-400 whitespace-nowrap">Ocultos:</span>
+        <div id="hidden-chips-list" class="flex gap-2"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
@@ -243,55 +256,104 @@
         const appId = 'cic.pp';
 
         const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
+        
+        const boothColors = [
+            "#e0f2fe", "#dcfce7", "#fef3c7", "#fce7f3", "#f3e8ff", 
+            "#d1fae5", "#fef9c3", "#fee2e2", "#e0e7ff", "#ccfbf1"
+        ];
+
         let currentAssignments = [];
         let userDataCache = {};
-        
-        // --- CORRECCIÓN DE FECHA LOCAL ---
+        // Persistencia específica para nocturno
+        let hiddenCasetas = new Set(JSON.parse(localStorage.getItem('cic_regas_hidden_nocturno') || '[]')); 
+
         const getLocalToday = () => {
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         };
 
         let selectedDate = getLocalToday();
+        let viewStartDate = ""; 
         let operatorContext = null;
         let unsubListener = null;
 
-        const formatDateToId = (isoStr) => isoStr.split('-').reverse().join('');
+        const getPartsFromIso = (iso) => {
+            const parts = iso.split('-'); 
+            return { yyyy: parts[0], mm: parts[1], dd: parts[2], id: `${parts[2]}${parts[1]}${parts[0]}` };
+        };
+
+        window.shiftWeek = (days) => {
+            const date = new Date(viewStartDate + "T12:00:00");
+            date.setDate(date.getDate() + days);
+            viewStartDate = date.toISOString().split('T')[0];
+            renderWeekBar();
+        };
+
+        window.changeDate = (newDate) => {
+            selectedDate = newDate;
+            window.parent.postMessage({ type: 'updateGlobalDate', date: newDate }, '*');
+            renderWeekBar();
+            loadData();
+        };
+
+        window.toggleCasetaVisibility = (name) => {
+            if (hiddenCasetas.has(name)) hiddenCasetas.delete(name);
+            else {
+                if (currentAssignments.some(a => a.Caseta === name)) return; 
+                hiddenCasetas.add(name);
+            }
+            localStorage.setItem('cic_regas_hidden_nocturno', JSON.stringify([...hiddenCasetas]));
+            renderDashboard();
+        };
+
+        function renderWeekBar() {
+            const container = document.getElementById('week-bar');
+            container.innerHTML = '';
+            const startRange = new Date(viewStartDate + "T12:00:00");
+            const todayStr = getLocalToday();
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startRange); date.setDate(startRange.getDate() + i);
+                const isoDate = date.toISOString().split('T')[0];
+                const btn = document.createElement('div');
+                btn.className = `day-btn ${isoDate === selectedDate ? 'selected' : ''} ${isoDate === todayStr ? 'is-today' : ''}`;
+                btn.onclick = () => window.changeDate(isoDate);
+                btn.innerHTML = `<span class="day-name">${['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][date.getDay()]}</span><span class="day-number">${date.getDate()}</span>`;
+                container.appendChild(btn);
+            }
+        }
 
         onAuthStateChanged(auth, (user) => { if (user) init(); else signInAnonymously(auth); });
 
         async function init() {
             const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
             usersSnap.forEach(d => userDataCache[d.id] = d.data());
-            syncHeader();
-            loadData();
-        }
+            
+            const current = new Date(selectedDate + "T12:00:00");
+            const diff = (current.getDay() === 0 ? -6 : 1) - current.getDay();
+            current.setDate(current.getDate() + diff);
+            viewStartDate = current.toISOString().split('T')[0];
 
-        function syncHeader() {
-            const today = getLocalToday();
-            const isNotToday = selectedDate !== today;
-            const header = document.getElementById('date-header');
-            const dateLabel = document.getElementById('display-date-long');
-            const dateObj = new Date(selectedDate + "T12:00:00");
-            dateLabel.innerText = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            header.classList.toggle('is-not-today', isNotToday);
-            document.getElementById('today-action-area').classList.toggle('hidden', !isNotToday);
+            renderWeekBar();
+            loadData();
         }
 
         function loadData() {
             if (unsubListener) unsubListener();
-            const dateId = formatDateToId(selectedDate);
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno');
-            unsubListener = onSnapshot(colRef, (snap) => {
+            const parts = getPartsFromIso(selectedDate);
+            const monthDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts.yyyy, 'Meses', parts.mm);
+            
+            unsubListener = onSnapshot(monthDocRef, (snap) => {
                 currentAssignments = [];
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const user = userDataCache[docSnap.id] || { nombre: 'Desconocido' };
-                    currentAssignments.push({ uid: docSnap.id, nombre: user.nombre, foto: user.foto, ...data });
-                });
+                if (snap.exists()) {
+                    const monthData = snap.data();
+                    const dayData = monthData[parts.id];
+                    if (dayData && dayData.nocturno) {
+                        Object.entries(dayData.nocturno).forEach(([uid, data]) => {
+                            const user = userDataCache[uid] || { nombre: '...' };
+                            currentAssignments.push({ uid, nombre: user.nombre, foto: user.foto, ...data });
+                        });
+                    }
+                }
                 renderDashboard();
                 document.getElementById('loading-state').style.display = 'none';
             });
@@ -299,141 +361,172 @@
 
         function renderDashboard() {
             const container = document.getElementById('caseta-container');
+            const chipsList = document.getElementById('hidden-chips-list');
             container.innerHTML = '';
-            casetasOrden.forEach(casetaName => {
-                const assigned = currentAssignments.filter(a => a.Caseta === casetaName);
-                const card = document.createElement('div');
-                card.className = "caseta-card animate-in fade-in zoom-in-95 duration-300";
-                card.innerHTML = `
-                    <div class="caseta-header">
-                        <span class="caseta-title">${casetaName}</span>
-                        <button onclick="openPerfiles('${casetaName}')" class="btn-header-action">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                    <div class="element-list" id="list-${normalizeId(casetaName)}"></div>
-                `;
+            chipsList.innerHTML = '';
+            
+            let hasHidden = false;
 
-                card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
-                card.ondragleave = () => card.classList.remove('drag-over');
+            casetasOrden.forEach((casetaName, idx) => {
+                const assigned = currentAssignments.filter(a => a.Caseta === casetaName);
+                const solidColor = boothColors[idx % boothColors.length];
+                
+                if (hiddenCasetas.has(casetaName)) {
+                    hasHidden = true;
+                    const chip = document.createElement('div');
+                    chip.className = "restore-chip";
+                    chip.onclick = () => toggleCasetaVisibility(casetaName);
+                    chip.style.backgroundColor = solidColor;
+                    chip.innerHTML = `<span>${casetaName}</span><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path></svg>`;
+                    chipsList.appendChild(chip);
+                    return; 
+                }
+
+                const card = document.createElement('div');
+                card.className = "caseta-card animate-in fade-in zoom-in-95 duration-200";
+
+                card.innerHTML = `
+                    <div class="caseta-header" style="background-color: ${solidColor}">
+                        <span class="caseta-title">${casetaName}</span>
+                        <div class="flex items-center gap-1">
+                            ${assigned.length === 0 ? `
+                                <button onclick="toggleCasetaVisibility('${casetaName}')" class="btn-header-action" title="Ocultar">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                </button>
+                            ` : ''}
+                            <button onclick="openPerfiles('${casetaName}')" class="btn-header-action">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="element-list"></div>
+                `;
+                card.ondragover = (e) => e.preventDefault();
                 card.ondrop = (e) => handleDrop(e, casetaName);
 
                 container.appendChild(card);
                 const list = card.querySelector('.element-list');
                 if (assigned.length === 0) {
-                    list.innerHTML = `<p class="text-[8px] text-center py-8 text-slate-300 font-bold uppercase tracking-widest">Puesto Disponible</p>`;
+                    list.innerHTML = `<p class="text-[9px] text-center py-4 text-slate-300 font-black uppercase tracking-tighter">Puesto Vacante</p>`;
                 } else {
                     assigned.forEach(el => list.appendChild(createElementRow(el)));
                 }
             });
+
+            document.getElementById('hidden-points-section').style.display = hasHidden ? 'flex' : 'none';
         }
 
         function createElementRow(el) {
             const div = document.createElement('div');
-            div.className = `element-item ${el.retardo ? 'is-late' : ''}`;
-            div.draggable = true;
-            div.ondragstart = (e) => {
-                e.dataTransfer.setData("text/plain", JSON.stringify({ 
-                    uid: el.uid, 
-                    fromCaseta: el.Caseta, 
-                    type: 'nocturno', 
-                    internal: true 
-                }));
-                div.style.opacity = '0.5';
-            };
-            div.ondragend = () => div.style.opacity = '1';
-
+            div.className = `element-item ${el.retardo ? 'border-l-2 border-rose-500' : ''}`;
             div.onclick = (e) => {
                 if (e.target.closest('button')) return;
                 window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${el.uid}&date=${selectedDate}` }, '*');
             };
 
+            const now = new Date();
+            const planStr = el.entrada_planificada || "23:00";
+            const plan = new Date(selectedDate + "T" + planStr + ":00");
+            const diffMin = (plan - now) / 60000;
+
             let actionBtnHtml = '';
             if (!el.entrada_real) {
-                actionBtnHtml = `<button onclick="quickAttendance('${el.uid}', 'entrada')" class="btn-quick btn-entry">In</button>`;
+                const isSelectedToday = selectedDate === getLocalToday();
+                if (isSelectedToday && diffMin <= 60) {
+                    actionBtnHtml = `<div class="flex gap-1">
+                        <button onclick="event.stopPropagation(); quickAttendance('${el.uid}', 'entrada')" class="btn-quick btn-entry shadow-sm">Entrada</button>`;
+                    if (diffMin < 0) {
+                        actionBtnHtml += `<button onclick="event.stopPropagation(); markAbsence('${el.uid}')" class="btn-quick btn-absence shadow-sm">Falta</button>`;
+                    }
+                    actionBtnHtml += `</div>`;
+                }
             } else if (!el.salida_real) {
-                actionBtnHtml = `<button onclick="quickAttendance('${el.uid}', 'salida')" class="btn-quick btn-exit">Out</button>`;
+                actionBtnHtml = `<button onclick="event.stopPropagation(); quickAttendance('${el.uid}', 'salida')" class="btn-quick btn-exit shadow-sm">Salida</button>`;
             }
 
             div.innerHTML = `
-                <div class="absolute -top-2 right-4 flex gap-1">
-                    ${el.es_recuperacion ? '<span class="tag-rec">REC</span>' : ''}
-                    ${el.es_extra ? '<span class="tag-tex">TEx</span>' : ''}
-                </div>
-                <img src="${el.foto || ''}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=${el.nombre}&background=1e3a8a&color=fff'">
+                <img src="${el.foto || ''}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=${el.nombre}&background=4c1d95&color=fff'">
                 <div class="flex-grow min-w-0">
-                    <p class="text-[10px] font-black text-slate-800 truncate uppercase">${el.nombre}</p>
-                    <p class="text-[8px] font-bold text-slate-400 uppercase">${el.entrada_planificada} • ${el.entrada_real || '--:--'}</p>
+                    <p class="text-[14px] font-black text-slate-800 truncate uppercase leading-tight">${el.nombre}</p>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">${el.entrada_planificada} • ${el.entrada_real || '--:--'}</p>
                 </div>
-                <div onclick="event.stopPropagation()">${actionBtnHtml}</div>
+                <div class="flex items-center">${actionBtnHtml}</div>
             `;
             return div;
         }
 
         async function handleDrop(e, targetCaseta) {
             e.preventDefault();
-            e.currentTarget.classList.remove('drag-over');
             try {
+                const parts = getPartsFromIso(selectedDate);
                 const data = JSON.parse(e.dataTransfer.getData("text/plain"));
-                const dateId = formatDateToId(selectedDate);
-                
+                const monthDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts.yyyy, 'Meses', parts.mm);
+                const updateObj = {};
                 if (data.internal) {
-                    if (data.fromCaseta === targetCaseta) return;
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', data.uid), { 
-                        Caseta: targetCaseta 
-                    });
+                    updateObj[`${parts.id}.nocturno.${data.uid}.Caseta`] = targetCaseta;
                 } else {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo', data.uid));
-                    
-                    let planTime = "19:00"; // Hora sugerida para turno nocturno
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', data.uid), { 
-                        Caseta: targetCaseta, 
-                        turno: 'nocturno', 
-                        entrada_planificada: planTime, 
-                        es_recuperacion: false, 
-                        es_festivo: false, 
-                        es_extra: false, 
-                        entrada_real: null, 
-                        salida_real: null, 
-                        retardo: false 
-                    }, { merge: true });
+                    updateObj[`${parts.id}.ausentismo.${data.uid}`] = deleteField();
+                    updateObj[`${parts.id}.nocturno.${data.uid}`] = { 
+                        Caseta: targetCaseta, turno: 'nocturno', entrada_planificada: "23:00", 
+                        es_recuperacion: false, es_festivo: false, es_extra: false, 
+                        entrada_real: null, salida_real: null, retardo: false 
+                    };
                 }
-            } catch (err) { console.error("Error en drop:", err); }
+                await updateDoc(monthDocRef, updateObj);
+            } catch (err) { console.error(err); }
         }
 
         window.quickAttendance = async (uid, type) => {
-            const dateId = formatDateToId(selectedDate);
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'nocturno', uid);
+            const parts = getPartsFromIso(selectedDate);
+            const monthDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts.yyyy, 'Meses', parts.mm);
             const nowTime = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const updateObj = {};
             if (type === 'entrada') {
-                const snap = await getDoc(docRef);
-                const [pH, pM] = (snap.data().entrada_planificada || "19:00").split(':').map(Number);
-                const plan = new Date(); plan.setHours(pH, pM, 0);
-                await updateDoc(docRef, { entrada_real: nowTime, retardo: new Date() > plan, operador_registro: operatorContext?.nombre || 'SISTEMA' });
-            } else await updateDoc(docRef, { salida_real: nowTime });
+                const snap = await getDoc(monthDocRef);
+                const dayData = snap.data()[parts.id] || {};
+                const shiftData = (dayData.nocturno && dayData.nocturno[uid]) ? dayData.nocturno[uid] : {};
+                const plan = new Date(selectedDate + "T" + (shiftData.entrada_planificada || "23:00") + ":00");
+                updateObj[`${parts.id}.nocturno.${uid}.entrada_real`] = nowTime;
+                updateObj[`${parts.id}.nocturno.${uid}.retardo`] = new Date() > plan;
+                updateObj[`${parts.id}.nocturno.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA';
+            } else {
+                updateObj[`${parts.id}.nocturno.${uid}.salida_real`] = nowTime;
+            }
+            await updateDoc(monthDocRef, updateObj);
+        };
+
+        window.markAbsence = async (uid) => {
+            if (!confirm("Marcar FALTA y mover a incidencias?")) return;
+            const parts = getPartsFromIso(selectedDate);
+            const monthDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts.yyyy, 'Meses', parts.mm);
+            const updateObj = {};
+            updateObj[`${parts.id}.nocturno.${uid}`] = deleteField();
+            updateObj[`${parts.id}.ausentismo.${uid}`] = {
+                motivo: 'Falta',
+                comentario: 'Falta automatizada desde tablero nocturno',
+                operador_registro: operatorContext?.nombre || 'SISTEMA'
+            };
+            await updateDoc(monthDocRef, updateObj);
         };
 
         window.openPerfiles = (casetaName) => {
             window.parent.postMessage({ type: 'navigateRight', url: `Perfiles.html?highlight=${encodeURIComponent(casetaName)}` }, '*');
         };
 
-        window.goToToday = () => {
-            const today = getLocalToday();
-            window.parent.postMessage({ type: 'DATE_CHANGED', date: today }, '*');
-        };
-
-        function normalizeId(s) { return s.toLowerCase().replace(/\s+/g, '-'); }
-
         window.addEventListener('message', (e) => {
             if (e.data.type === 'INIT_SUBMODULE') {
                 operatorContext = e.data.user;
                 selectedDate = e.data.date;
-                syncHeader();
+                const current = new Date(selectedDate + "T12:00:00");
+                const diff = (current.getDay() === 0 ? -6 : 1) - current.getDay();
+                current.setDate(current.getDate() + diff);
+                viewStartDate = current.toISOString().split('T')[0];
+                renderWeekBar();
                 loadData();
             }
-            if (e.data.type === 'DATE_CHANGED' || e.data.type === 'regas_date_change') {
+            if (e.data.type === 'DATE_CHANGED') {
                 selectedDate = e.data.date;
-                syncHeader();
+                renderWeekBar();
                 loadData();
             }
         });

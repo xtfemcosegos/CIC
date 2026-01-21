@@ -277,7 +277,7 @@
 
     <div id="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-indigo-600 mb-4"></div>
-        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Procesando Patrón...</p>
+        <p id="loading-text" class="text-[10px] font-black uppercase tracking-widest text-slate-500">Procesando Patrón...</p>
     </div>
 
     <!-- Modal de Edición de Día -->
@@ -384,7 +384,7 @@
                 <button onclick="window.addDayToCycle('ausentismo', 'Descanso')" class="btn-quick-add bg-aus"><span>Desc</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
             </div>
 
-            <div id="cycle-container" class="cycle-builder">
+            <div id="cycle-container" class="cycle-builder no-scrollbar">
                 <!-- Días Inyectados -->
             </div>
         </div>
@@ -393,7 +393,7 @@
             <button id="btn-apply" onclick="window.applyPattern()" class="btn-main shadow-xl">
                 Proyectar Ciclo a Calendario
             </button>
-            <p class="text-center text-[8px] font-bold text-slate-400 mt-4 uppercase tracking-widest">Aviso: Se eliminarán registros previos en el rango seleccionado.</p>
+            <p class="text-center text-[8px] font-bold text-slate-400 mt-4 uppercase tracking-widest">Aviso: Se eliminarán registros previos del elemento en el rango seleccionado.</p>
         </div>
 
     </main>
@@ -401,7 +401,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, writeBatch, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
@@ -435,10 +435,9 @@
                 if (snap.exists()) {
                     userData = snap.data();
                     document.getElementById('user-name').innerText = userData.nombre;
-                    document.getElementById('user-puesto').innerText = userData.puesto;
+                    document.getElementById('user-puesto').innerText = userData.puesto || 'ELEMENTO';
                     if (userData.foto) document.getElementById('user-photo').src = userData.foto;
                     
-                    // Llenar horarios predeterminados
                     const def = userData.Entrada_predeterminada || {};
                     document.getElementById('def-mat').value = def.matutino || "07:00";
                     document.getElementById('def-ves').value = def.vespertino || "15:00";
@@ -454,143 +453,96 @@
             }
         });
 
-        // --- ACTUALIZAR HORARIOS DEL PERFIL ---
         window.updateDefaultTimes = async () => {
             const mat = document.getElementById('def-mat').value;
             const ves = document.getElementById('def-ves').value;
             const noc = document.getElementById('def-noc').value;
-
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', uid), {
                     Entrada_predeterminada: { matutino: mat, vespertino: ves, nocturno: noc }
                 }, { merge: true });
-                
-                // Actualizar cache local
-                if (userData) {
-                    userData.Entrada_predeterminada = { matutino: mat, vespertino: ves, nocturno: noc };
-                }
-                alert("Horarios del perfil actualizados correctamente.");
-            } catch (err) {
-                console.error(err);
-                alert("Error al actualizar horarios del perfil.");
-            }
+                if (userData) userData.Entrada_predeterminada = { matutino: mat, vespertino: ves, nocturno: noc };
+                alert("Perfil actualizado.");
+            } catch (err) { console.error(err); }
         };
 
         async function loadTemplates() {
             const selector = document.getElementById('template-selector');
             selector.innerHTML = '<option value="">Cargar Plantilla...</option>';
-            dbTemplates = {};
-
-            try {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones');
-                const snap = await getDocs(colRef);
-                
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    dbTemplates[docSnap.id] = data;
-                    
-                    const opt = document.createElement('option');
-                    opt.value = docSnap.id;
-                    opt.innerText = data.nombre;
-                    selector.appendChild(opt);
-                });
-            } catch (err) {
-                console.error("Error cargando plantillas:", err);
-            }
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones'));
+            snap.forEach(d => {
+                dbTemplates[d.id] = d.data();
+                const opt = document.createElement('option'); opt.value = d.id; opt.innerText = d.data().nombre;
+                selector.appendChild(opt);
+            });
         }
 
         window.setRangePreset = (days) => {
-            const startDateVal = document.getElementById('start-date').value;
-            if(!startDateVal) return;
-            const start = new Date(startDateVal + "T00:00:00");
-            const end = new Date(start);
-            end.setDate(start.getDate() + days - 1);
-            document.getElementById('end-date').value = end.toISOString().split('T')[0];
+            const startVal = document.getElementById('start-date').value;
+            if(!startVal) return;
+            const s = new Date(startVal + "T12:00:00");
+            const e = new Date(s); e.setDate(s.getDate() + days - 1);
+            document.getElementById('end-date').value = e.toISOString().split('T')[0];
         };
 
         window.addDayToCycle = (shift, motive = '') => {
-            const defTimes = userData?.Entrada_predeterminada || {};
-            let entryTime = "00:00";
-            
-            if (shift === 'matutino') entryTime = defTimes.matutino || "07:00";
-            if (shift === 'vespertino') entryTime = defTimes.vespertino || "15:00";
-            if (shift === 'nocturno') entryTime = defTimes.nocturno || "23:00";
+            const def = userData?.Entrada_predeterminada || {};
+            let t = "07:00";
+            if (shift === 'vespertino') t = def.vespertino || "15:00";
+            if (shift === 'nocturno') t = def.nocturno || "23:00";
+            if (shift === 'matutino') t = def.matutino || "07:00";
 
             cycle.push({ 
                 shift, 
                 caseta: userData?.acceso_predeterminado || 'Centro de control', 
-                motivo: motive,
-                entrada_planificada: entryTime 
+                motivo: motive || (shift === 'ausentismo' ? 'Descanso' : ''),
+                entrada_planificada: t 
             });
             renderCycle();
         };
 
-        window.removeDay = (index, e) => {
-            e.stopPropagation();
-            cycle.splice(index, 1);
-            renderCycle();
-        };
+        window.removeDay = (index, e) => { e.stopPropagation(); cycle.splice(index, 1); renderCycle(); };
 
         window.openEditDay = (index) => {
             editingIndex = index;
             const item = cycle[index];
-            const modal = document.getElementById('edit-modal');
             const content = document.getElementById('edit-form-content');
             const isAus = item.shift === 'ausentismo';
-
             content.innerHTML = `
-                <div>
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Turno Base</label>
-                    <select id="edit-shift" onchange="window.toggleEditFields(this.value)">
-                        <option value="matutino" ${item.shift === 'matutino' ? 'selected' : ''}>Matutino</option>
-                        <option value="vespertino" ${item.shift === 'vespertino' ? 'selected' : ''}>Vespertino</option>
-                        <option value="nocturno" ${item.shift === 'nocturno' ? 'selected' : ''}>Nocturno</option>
-                        <option value="ausentismo" ${item.shift === 'ausentismo' ? 'selected' : ''}>Ausentismo</option>
-                    </select>
-                </div>
-                <div id="field-caseta" class="${isAus ? 'hidden' : ''}">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Caseta Asignada</label>
-                    <select id="edit-caseta">
-                        ${casetasList.map(c => `<option value="${c}" ${item.caseta === c ? 'selected' : ''}>${c}</option>`).join('')}
-                    </select>
-                </div>
-                <div id="field-hora" class="${isAus ? 'hidden' : ''}">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Hora Entrada</label>
-                    <input type="time" id="edit-time" value="${item.entrada_planificada || '07:00'}">
-                </div>
-                <div id="field-motivo" class="${!isAus ? 'hidden' : ''}">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Motivo Ausencia</label>
-                    <select id="edit-motivo">
-                        <option value="Descanso" ${item.motivo === 'Descanso' ? 'selected' : ''}>Descanso</option>
-                        <option value="Vacaciones" ${item.motivo === 'Vacaciones' ? 'selected' : ''}>Vacaciones</option>
-                        <option value="Incapacidad" ${item.motivo === 'Incapacidad' ? 'selected' : ''}>Incapacidad</option>
-                        <option value="Permiso" ${item.motivo === 'Permiso' ? 'selected' : ''}>Permiso</option>
-                        <option value="Falta" ${item.motivo === 'Falta' ? 'selected' : ''}>Falta</option>
-                    </select>
-                </div>
+                <div><label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Turno</label>
+                <select id="edit-shift" onchange="window.toggleEditFields(this.value)">
+                    <option value="matutino" ${item.shift === 'matutino' ? 'selected' : ''}>Matutino</option>
+                    <option value="vespertino" ${item.shift === 'vespertino' ? 'selected' : ''}>Vespertino</option>
+                    <option value="nocturno" ${item.shift === 'nocturno' ? 'selected' : ''}>Nocturno</option>
+                    <option value="ausentismo" ${item.shift === 'ausentismo' ? 'selected' : ''}>Ausentismo</option>
+                </select></div>
+                <div id="field-caseta" class="${isAus ? 'hidden' : ''}"><label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Caseta</label>
+                <select id="edit-caseta">${casetasList.map(c => `<option value="${c}" ${item.caseta === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+                <div id="field-hora" class="${isAus ? 'hidden' : ''}"><label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Entrada</label>
+                <input type="time" id="edit-time" value="${item.entrada_planificada || '07:00'}"></div>
+                <div id="field-motivo" class="${!isAus ? 'hidden' : ''}"><label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Motivo</label>
+                <select id="edit-motivo">${['Descanso', 'Vacaciones', 'Incapacidad', 'Permiso', 'Falta'].map(m => `<option value="${m}" ${item.motivo === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
             `;
-            modal.style.display = 'flex';
+            document.getElementById('edit-modal').style.display = 'flex';
         };
 
-        window.toggleEditFields = (val) => {
-            const isAus = val === 'ausentismo';
+        window.toggleEditFields = (v) => {
+            const isAus = v === 'ausentismo';
             document.getElementById('field-caseta').classList.toggle('hidden', isAus);
             document.getElementById('field-hora').classList.toggle('hidden', isAus);
             document.getElementById('field-motivo').classList.toggle('hidden', !isAus);
         };
 
-        window.closeEditModal = () => { document.getElementById('edit-modal').style.display = 'none'; editingIndex = null; };
-
+        window.closeEditModal = () => { document.getElementById('edit-modal').style.display = 'none'; };
         window.saveDayChanges = () => {
-            const shift = document.getElementById('edit-shift').value;
+            const s = document.getElementById('edit-shift').value;
             cycle[editingIndex] = {
-                shift,
+                shift: s,
                 caseta: document.getElementById('edit-caseta').value,
                 entrada_planificada: document.getElementById('edit-time').value,
                 motivo: document.getElementById('edit-motivo').value
             };
-            window.closeEditModal();
-            renderCycle();
+            window.closeEditModal(); renderCycle();
         };
 
         function renderCycle() {
@@ -598,135 +550,107 @@
             container.innerHTML = '';
             cycle.forEach((item, index) => {
                 const card = document.createElement('div');
-                card.className = 'day-config-card animate-in fade-in zoom-in-95 duration-200';
+                card.className = 'day-config-card';
                 card.onclick = () => window.openEditDay(index);
-                
                 const isAus = item.shift === 'ausentismo';
-                const colorClass = item.shift === 'matutino' ? 'text-mat' : item.shift === 'vespertino' ? 'text-ves' : item.shift === 'nocturno' ? 'text-noc' : 'text-aus';
-
-                card.innerHTML = `
-                    <span class="day-num">DÍA ${index + 1}</span>
-                    <div class="tab-delete" onclick="window.removeDay(${index}, event)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-                    </div>
-                    <span class="shift-indicator ${colorClass}">${isAus ? item.motivo : item.shift}</span>
+                const cClass = item.shift === 'matutino' ? 'text-mat' : item.shift === 'vespertino' ? 'text-ves' : item.shift === 'nocturno' ? 'text-noc' : 'text-aus';
+                card.innerHTML = `<span class="day-num">DÍA ${index + 1}</span><div class="tab-delete" onclick="window.removeDay(${index}, event)">✖</div>
+                    <span class="shift-indicator ${cClass}">${isAus ? item.motivo : item.shift}</span>
                     <span class="caseta-indicator">${isAus ? 'FUERA DE ROL' : item.caseta}</span>
-                    <span class="text-[7px] font-black text-slate-300 mt-1 block">${isAus ? '---' : item.entrada_planificada} HRS</span>
-                `;
+                    <span class="text-[7px] font-black text-slate-300 mt-1 block">${isAus ? '---' : item.entrada_planificada} HRS</span>`;
                 container.appendChild(card);
             });
         }
 
-        window.loadTemplate = (val) => {
-            selectedTemplateId = val || null;
-            document.getElementById('btn-delete-template').classList.toggle('hidden', !val);
-            document.getElementById('btn-update-template').classList.toggle('hidden', !val);
-
-            if(!val) return;
-            if (dbTemplates[val]) {
-                cycle = JSON.parse(JSON.stringify(dbTemplates[val].ciclo));
-                renderCycle();
-            }
+        window.loadTemplate = (v) => {
+            selectedTemplateId = v || null;
+            document.getElementById('btn-delete-template').classList.toggle('hidden', !v);
+            document.getElementById('btn-update-template').classList.toggle('hidden', !v);
+            if(v && dbTemplates[v]) { cycle = JSON.parse(JSON.stringify(dbTemplates[v].ciclo)); renderCycle(); }
         };
 
-        // --- ELIMINAR PLANTILLA ---
         window.deleteTemplate = async () => {
-            if (!selectedTemplateId) return;
-            if (!confirm(`¿Estás seguro de eliminar la plantilla "${dbTemplates[selectedTemplateId].nombre}"?`)) return;
-
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', selectedTemplateId));
-                alert("Plantilla eliminada.");
-                selectedTemplateId = null;
-                loadTemplates();
-            } catch (err) {
-                console.error(err);
-            }
+            if (!confirm("¿Eliminar plantilla?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', selectedTemplateId));
+            selectedTemplateId = null; loadTemplates();
         };
 
-        // --- ACTUALIZAR PLANTILLA EXISTENTE ---
         window.updateExistingTemplate = async () => {
-            if (!selectedTemplateId || cycle.length === 0) return;
-            if (!confirm(`¿Sobrescribir los cambios en "${dbTemplates[selectedTemplateId].nombre}"?`)) return;
-
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', selectedTemplateId), {
-                    ciclo: cycle,
-                    fecha_actualizacion: new Date().toISOString()
-                }, { merge: true });
-                alert("Plantilla actualizada.");
-                loadTemplates();
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        window.applyPattern = async () => {
-            if (cycle.length === 0) return;
-            const startD = new Date(document.getElementById('start-date').value + "T00:00:00");
-            const endD = new Date(document.getElementById('end-date').value + "T00:00:00");
-            if (endD < startD) return;
-
-            document.getElementById('loading-overlay').style.display = 'flex';
-
-            try {
-                let batch = writeBatch(db);
-                let ops = 0;
-                let cur = new Date(startD);
-                let idx = 0;
-
-                while (cur <= endD) {
-                    const dayStr = String(cur.getDate()).padStart(2, '0');
-                    const monthStr = String(cur.getMonth() + 1).padStart(2, '0');
-                    const dateId = `${dayStr}${monthStr}${cur.getFullYear()}`;
-                    const plan = cycle[idx % cycle.length];
-                    
-                    ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
-                        batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, t, uid));
-                    });
-
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, plan.shift, uid);
-                    const payload = plan.shift === 'ausentismo' ? 
-                        { Ausentismo: true, motivo: plan.motivo || 'Descanso' } : 
-                        { 
-                            Caseta: plan.caseta, 
-                            turno: plan.shift, 
-                            entrada_planificada: plan.entrada_planificada,
-                            es_extra: false, es_festivo: false, es_recuperacion: false, retardo: false 
-                        };
-                    
-                    batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId), {}, { merge: true });
-                    batch.set(docRef, payload, { merge: true });
-
-                    ops += 5;
-                    if (ops >= 400) { await batch.commit(); batch = writeBatch(db); ops = 0; }
-                    cur.setDate(cur.getDate() + 1);
-                    idx++;
-                }
-                await batch.commit();
-                window.parent.postMessage({ type: 'detail_closed' }, '*');
-            } catch (err) { console.error(err); } 
-            finally { document.getElementById('loading-overlay').style.display = 'none'; }
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', selectedTemplateId), { ciclo: cycle, fecha_actualizacion: new Date().toISOString() }, { merge: true });
+            alert("Sobrescrito.");
         };
 
         window.saveCurrentAsTemplate = async () => {
-            if (cycle.length === 0) return alert("Define un ciclo antes de guardar.");
-            const name = prompt("Nombre de la nueva plantilla:");
-            if(!name) return;
-            
-            const docId = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '_');
-            
+            const n = prompt("Nombre:"); if(!n) return;
+            const id = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g, '_');
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', id), { nombre: n, ciclo: cycle, fecha_creacion: new Date().toISOString() });
+            loadTemplates();
+        };
+
+        // --- MOTOR DE APLICACIÓN MASIVA (REGAS2 OPTIMIZADO) ---
+        window.applyPattern = async () => {
+            if (cycle.length === 0) return;
+            const startD = new Date(document.getElementById('start-date').value + "T12:00:00");
+            const endD = new Date(document.getElementById('end-date').value + "T12:00:00");
+            if (endD < startD) return;
+
+            document.getElementById('loading-overlay').style.display = 'flex';
+            const label = document.getElementById('loading-text');
+
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Plantillas_Patrones', docId), {
-                    nombre: name,
-                    ciclo: cycle,
-                    uid_creador: auth.currentUser?.uid || 'anonimo',
-                    fecha_creacion: new Date().toISOString()
-                });
-                alert("Plantilla guardada exitosamente.");
-                loadTemplates(); 
+                const monthsMap = {};
+                let cur = new Date(startD);
+                let idx = 0;
+
+                // 1. Calcular todos los cambios agrupados por Mes
+                while (cur <= endD) {
+                    const yyyy = cur.getFullYear().toString();
+                    const mm = (cur.getMonth() + 1).toString().padStart(2, '0');
+                    const mKey = `${yyyy}-${mm}`;
+                    const dateId = `${cur.getDate().toString().padStart(2, '0')}${mm}${yyyy}`;
+                    const plan = cycle[idx % cycle.length];
+
+                    if (!monthsMap[mKey]) monthsMap[mKey] = { yyyy, mm, updates: {} };
+
+                    // Limpieza total del día para el usuario (Atomic)
+                    ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(t => {
+                        monthsMap[mKey].updates[`${dateId}.${t}.${uid}`] = deleteField();
+                    });
+
+                    if (plan.shift === 'ausentismo') {
+                        monthsMap[mKey].updates[`${dateId}.ausentismo.${uid}`] = { 
+                            motivo: plan.motivo || 'Descanso', 
+                            comentario: 'Asignado por Patrón Maestro' 
+                        };
+                    } else {
+                        monthsMap[mKey].updates[`${dateId}.${plan.shift}.${uid}`] = {
+                            Caseta: plan.caseta,
+                            turno: plan.shift,
+                            entrada_planificada: plan.entrada_planificada,
+                            entrada_real: null, salida_real: null, retardo: false, es_extra: false, es_festivo: false
+                        };
+                    }
+
+                    cur.setDate(cur.getDate() + 1);
+                    idx++;
+                }
+
+                // 2. Ejecutar escrituras mensuales masivas
+                const entries = Object.entries(monthsMap);
+                for (let i = 0; i < entries.length; i++) {
+                    const [key, m] = entries[i];
+                    label.innerText = `Actualizando Mes ${m.mm}/${m.yyyy}...`;
+                    const mRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', m.yyyy, 'Meses', m.mm);
+                    await updateDoc(mRef, m.updates);
+                }
+
+                alert("Planificación aplicada exitosamente.");
+                window.parent.postMessage({ type: 'detail_closed' }, '*');
             } catch (err) {
-                console.error("Error guardando plantilla:", err);
+                console.error(err);
+                alert("Error al aplicar cambios.");
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         };
 

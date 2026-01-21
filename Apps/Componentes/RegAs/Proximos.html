@@ -14,16 +14,9 @@
             --md-background: #f5f3ff;
             --md-outline: #ddd6fe;
             --stats-width: 300px;
-            
-            /* Colores Metal Fiusha */
             --metal-fuchsia-dark: #2d0630;
             --metal-fuchsia-mid: #4a044e;
             --metal-fuchsia-light: #701a75;
-        }
-
-        @keyframes subtle-glow {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
         }
 
         body {
@@ -33,10 +26,24 @@
             margin: 0;
             padding: 16px;
             overflow-x: hidden;
+            padding-bottom: 60px;
         }
 
-        h1, h2, h3, h4, .font-heading {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+        /* --- AVISO OFFLINE --- */
+        #offline-notice {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #ef4444;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            z-index: 5000;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 -4px 15px rgba(239, 68, 68, 0.3);
+            display: none;
         }
 
         /* --- LAYOUT PRINCIPAL --- */
@@ -77,160 +84,130 @@
             margin-bottom: 16px;
         }
 
-        /* --- ESTADÍSTICAS TABLA --- */
         .stats-table {
-            width: 100%;
-            font-size: 10px;
-            border-collapse: separate;
-            border-spacing: 0 8px;
+            width: 100%; font-size: 10px; border-collapse: separate; border-spacing: 0 8px;
         }
-        .stats-table td {
-            padding: 8px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .stats-table tr:last-child td { border-bottom: none; }
-        
-        .stat-label-cell {
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #64748b;
-            letter-spacing: 0.05em;
-        }
-        .stat-value-cell {
-            text-align: right;
-            font-weight: 900;
-            color: var(--metal-fuchsia-dark);
-            font-size: 13px;
-        }
+        .stats-table td { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+        .stat-label-cell { font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
+        .stat-value-cell { text-align: right; font-weight: 900; color: var(--metal-fuchsia-dark); font-size: 13px; }
 
-        /* --- BOTÓN HAMBURGUESA --- */
         .toggle-stats-btn {
-            width: 48px; height: 48px;
-            background: var(--metal-fuchsia-dark);
-            color: white;
-            border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 6px 15px rgba(45, 6, 48, 0.3);
-            flex-shrink: 0;
-            z-index: 100;
-            transition: transform 0.2s, background 0.2s;
+            width: 48px; height: 48px; background: var(--metal-fuchsia-dark); color: white;
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 6px 15px rgba(45, 6, 48, 0.3);
+            flex-shrink: 0; z-index: 100; transition: transform 0.2s, background 0.2s;
         }
         .toggle-stats-btn:hover { background: var(--metal-fuchsia-mid); transform: scale(1.05); }
 
-        /* --- CONTENEDORES DINÁMICOS --- */
-        .status-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .status-layout.full-width {
-            grid-template-columns: 1fr;
-        }
+        /* --- SECCIONES DINÁMICAS --- */
+        .status-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .status-layout.full-width { grid-template-columns: 1fr; }
 
         .status-group-box {
-            background: white;
-            border-radius: 24px;
-            border: 1px solid var(--md-outline);
-            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.03);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            height: fit-content;
+            background: white; border-radius: 24px; border: 1px solid var(--md-outline);
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.03); display: flex; flex-direction: column;
+            overflow: hidden; height: fit-content;
+            transition: all 0.3s ease;
         }
 
         .status-header {
             background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
-            padding: 12px 20px;
+            padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .status-title { color: white; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+
+        /* Contenedor de grupos de turnos */
+        .shift-groups-container {
+            padding: 16px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
+            flex-direction: column;
+            gap: 20px;
         }
-
-        .status-header::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05) 0%, transparent 70%);
-            animation: subtle-glow 8s infinite ease-in-out;
-            pointer-events: none;
-        }
-
-        .status-title { color: white; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; position: relative; z-index: 1; }
 
         .elements-grid {
-            padding: 16px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 12px;
-        }
-
-        .absences-grid-compact {
-            padding: 16px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 8px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
         }
 
         .element-row {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px; background: #f8fafc;
-            border-radius: 14px; border: 1px solid #f1f5f9;
-            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc;
+            border-radius: 18px; border: 1px solid #f1f5f9; cursor: pointer; transition: all 0.2s;
+        }
+        .element-row:hover { transform: translateY(-2px); border-color: var(--md-outline); box-shadow: 0 6px 12px rgba(0,0,0,0.04); background: white; }
+
+        /* Separador de turnos visual */
+        .shift-separator {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+        }
+        .shift-separator span {
+            font-size: 8px; font-weight: 900; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.1em;
+        }
+        .shift-separator .line {
+            height: 1px; flex: 1; background: #f1f5f9;
         }
 
-        .element-row:hover { transform: translateY(-1px); border-color: var(--md-outline); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        /* Estilos para Ausentismos */
+        .absences-grid-compact {
+            padding: 0 16px 16px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+        }
 
         .absence-compact-card {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 10px; background: #ffffff;
-            border-radius: 12px; border: 1px solid #f1f5f9;
-            cursor: pointer; transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .absence-compact-card:hover { border-color: var(--md-outline); background: #f8fafc; transform: translateY(-1px); }
+        .absence-compact-card:hover { transform: translateY(-1px); border-color: var(--md-outline); box-shadow: 0 4px 8px rgba(0,0,0,0.03); }
 
-        .avatar-mini { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
-        .avatar-micro { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
-
-        .btn-action { font-size: 8px; font-weight: 900; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; color: white; border: none; cursor: pointer; flex-shrink: 0; }
+        .btn-action { font-size: 9px; font-weight: 900; padding: 8px 16px; border-radius: 10px; text-transform: uppercase; color: white; border: none; cursor: pointer; flex-shrink: 0; transition: transform 0.1s; }
+        .btn-action:active { transform: scale(0.95); }
         .btn-in { background: #10b981; }
         .btn-out { background: #ef4444; }
+        .btn-continue { background: #3b82f6; } /* Color azul para turnos consecutivos */
+
+        .avatar-mini { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+        .avatar-micro { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
 
         .shift-badge { font-size: 7px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .badge-mat { background: #fef9c3; color: #854d0e; }
-        .badge-ves { background: #dbeafe; color: #1e40af; }
-        .badge-noc { background: #1e3a8a; color: white; }
-
-        .uncovered-point { font-size: 8px; font-weight: 800; padding: 4px 8px; background: #fee2e2; color: #991b1b; border-radius: 6px; margin-bottom: 4px; display: block; text-transform: uppercase; }
+        .mat { background: #fef9c3; color: #854d0e; }
+        .ves { background: #dbeafe; color: #1e40af; }
+        .noc { background: #1e3a8a; color: white; }
 
         #loading-state { position: fixed; inset: 0; background: var(--md-background); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .hidden-section { display: none !important; }
     </style>
 </head>
 <body class="no-scrollbar">
 
-    <!-- Pantalla de Carga -->
     <div id="loading-state">
         <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Operaciones</span>
+        <span class="text-[10px] font-black text-slate-400 uppercase mt-4 tracking-widest">Sincronizando Disponibilidad</span>
+    </div>
+
+    <div id="offline-notice">
+        ⚠️ Modo Offline: Los cambios se enviarán cuando se restablezca la conexión.
     </div>
 
     <div id="dashboard-main" class="dashboard-wrapper">
         
-        <!-- PANEL IZQUIERDO -->
         <aside id="stats-aside" class="stats-panel">
             <div class="flex items-center justify-between px-2 w-full mb-2">
                 <div id="stats-title-container" class="flex flex-col">
                     <span class="text-[10px] font-black text-indigo-900 uppercase tracking-tighter leading-none">Panel de</span>
                     <span class="text-[12px] font-black text-indigo-900 uppercase tracking-tight mt-1">Estadísticas</span>
                 </div>
-
-                <div class="toggle-stats-btn" onclick="toggleStats()" title="Alternar Estadísticas">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                <div class="toggle-stats-btn" onclick="toggleStats()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </div>
             </div>
 
@@ -242,7 +219,6 @@
                         <tr><td class="stat-label-cell text-emerald-600">Personal Extra</td><td id="stat-extra" class="stat-value-cell text-emerald-700">0</td></tr>
                         <tr><td class="stat-label-cell text-blue-600">Recuperación</td><td id="stat-recuperacion" class="stat-value-cell text-blue-700">0</td></tr>
                         <tr><td class="stat-label-cell text-red-600">Faltas Hoy</td><td id="stat-faltas" class="stat-value-cell text-red-700">0</td></tr>
-                        <tr><td class="stat-label-cell text-slate-500">Otras Incidencias</td><td id="stat-otras" class="stat-value-cell text-slate-600">0</td></tr>
                         <tr><td class="stat-label-cell text-orange-600">Retardos</td><td id="stat-retardos" class="stat-value-cell text-orange-700">0</td></tr>
                     </table>
                 </div>
@@ -258,40 +234,42 @@
             </div>
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="space-y-6">
             <div id="status-layout" class="status-layout">
                 <div class="flex flex-col gap-6">
+                    <!-- Grupo Elementos en Turno -->
                     <div id="group-active" class="status-group-box">
                         <div class="status-header">
                             <h2 class="status-title">Elementos en Turno</h2>
-                            <span id="count-active" class="text-[9px] font-black text-indigo-300 uppercase">0 Elementos</span>
+                            <span id="count-active" class="text-[9px] font-black text-indigo-200 uppercase">0</span>
                         </div>
-                        <div id="list-active" class="elements-grid"></div>
+                        <div id="list-active" class="shift-groups-container"></div>
                     </div>
-
+                    
+                    <!-- Grupo Recién Llegados -->
                     <div id="group-recent" class="status-group-box" style="border-top: 4px solid #10b981;">
                         <div class="status-header" style="background: #1e293b;">
-                            <h2 class="status-title text-emerald-400">Recién Llegados (Ventana 30 min)</h2>
-                            <span id="count-recent" class="text-[9px] font-black text-emerald-500 uppercase">0 Elementos</span>
+                            <h2 class="status-title text-emerald-400">Recién Llegados</h2>
+                            <span id="count-recent" class="text-[9px] font-black text-emerald-500 uppercase">0</span>
                         </div>
-                        <div id="list-recent" class="elements-grid max-h-80 overflow-y-auto no-scrollbar"></div>
+                        <div id="list-recent" class="shift-groups-container"></div>
                     </div>
                 </div>
 
+                <!-- Grupo Próximos Ingresos -->
                 <div id="group-upcoming" class="status-group-box h-full">
                     <div class="status-header">
                         <h2 class="status-title">Próximos Ingresos</h2>
-                        <span id="count-upcoming" class="text-[9px] font-black text-indigo-300 uppercase">0 Elementos</span>
+                        <span id="count-upcoming" class="text-[9px] font-black text-indigo-200 uppercase">0</span>
                     </div>
-                    <div id="list-upcoming" class="elements-grid"></div>
+                    <div id="list-upcoming" class="shift-groups-container"></div>
                 </div>
             </div>
 
             <div id="group-absences" class="status-group-box w-full">
                 <div class="status-header">
                     <h2 class="status-title">Ausentismos del Día</h2>
-                    <span id="count-absences" class="text-[9px] font-black text-red-300 uppercase">0 Registros</span>
+                    <span id="count-absences" class="text-[9px] font-black text-red-200 uppercase">0</span>
                 </div>
                 <div id="list-absences" class="p-6 space-y-8"></div>
             </div>
@@ -301,275 +279,292 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", 
-            authDomain: "cic6-pp-web.firebaseapp.com", 
-            projectId: "cic6-pp-web", 
-            appId: "1:248659087868:web:a277ef700d83c7f1d22279" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'cic.pp';
 
         const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
-        const motiveColors = { 'Descanso': { bg: '#f1f5f9', text: '#64748b', border: '#e2e8f0' }, 'Falta': { bg: '#fee2e2', text: '#991b1b', border: '#fecdd3' }, 'Incapacidad': { bg: '#fef9c3', text: '#854d0e', border: '#fef08a' }, 'Vacaciones': { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' }, 'Permiso': { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' } };
-
+        const shiftOrder = ['matutino', 'vespertino', 'nocturno'];
+        
         let userDataCache = {};
+        let currentMonthData = {};
         let dataSets = { active: [], recent: [], upcoming: [], absences: [] };
-        let activeUnsubs = [];
+        let selectedDateInfo = { id: "", yyyy: "", mm: "" };
         let operatorContext = null;
-        let isCacheReady = false;
+        let isOnline = navigator.onLine;
+        let activeUnsubs = [];
+        let autoRefreshTimer = null;
 
-        const formatDateToId = (dateStr) => {
-            const parts = dateStr.split('-');
-            return `${parts[2]}${parts[1]}${parts[0]}`; // DDMMYYYY
-        };
-
-        onAuthStateChanged(auth, (user) => { 
-            if (user) {
-                init();
-            } else {
-                signInAnonymously(auth);
-            }
+        // --- INDEXEDDB ---
+        const initDB = () => new Promise((res, rej) => {
+            const req = indexedDB.open("CIC_RegAs_Offline", 1);
+            req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains("months")) e.target.result.createObjectStore("months", { keyPath: "id" }); };
+            req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error);
         });
 
-        // FUNCIÓN CLAVE: Cargar usuarios antes o durante el render
-        async function init() {
-            const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios'));
-            usersSnap.forEach(d => userDataCache[d.id] = d.data());
-            isCacheReady = true;
-            render(); // Redibujar una vez que la caché esté lista
+        const saveLocal = async (mId, data) => { const db = await initDB(); db.transaction("months", "readwrite").objectStore("months").put({ id: mId, data }); };
+        const getLocal = async (mId) => { const db = await initDB(); return new Promise(res => { const req = db.transaction("months", "readonly").objectStore("months").get(mId); req.onsuccess = () => res(req.result ? req.result.data : null); }); };
+
+        // --- NETWORK ---
+        const updateNet = () => { isOnline = navigator.onLine; document.getElementById('offline-notice').style.display = isOnline ? 'none' : 'block'; };
+        window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
+
+        // --- AUTH & INIT ---
+        onAuthStateChanged(auth, u => { if (u) listenUsers(); else signInAnonymously(auth); });
+
+        function listenUsers() {
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios');
+            onSnapshot(q, (snap) => {
+                snap.forEach(d => userDataCache[d.id] = d.data());
+                if (Object.keys(currentMonthData).length > 0) render();
+                document.getElementById('loading-state').style.display = 'none';
+            }, (err) => {
+                console.error("Error cargando usuarios:", err);
+                document.getElementById('loading-state').style.display = 'none';
+            });
         }
 
-        function isRecentlyArrived(entradaReal, dateId) {
-            if (!entradaReal) return false;
-            const now = new Date();
-            const [h, m] = entradaReal.split(':').map(Number);
-            const d = parseInt(dateId.substring(0, 2)), mo = parseInt(dateId.substring(2, 4)) - 1, y = parseInt(dateId.substring(4, 8));
-            const entryDate = new Date(y, mo, d, h, m);
-            const diffMs = now - entryDate;
-            const diffMinutes = diffMs / (1000 * 60);
-            return diffMinutes >= 0 && diffMinutes < 30; 
+        async function startListeners(isoDate) {
+            activeUnsubs.forEach(u => u()); activeUnsubs = [];
+            const parts = isoDate.split('-');
+            selectedDateInfo = { yyyy: parts[0], mm: parts[1], id: `${parts[2]}${parts[1]}${parts[0]}` };
+            const mId = `${parts[1]}${parts[0]}`;
+
+            const local = await getLocal(mId);
+            if (local) { currentMonthData = local; processDailyData(local); }
+
+            const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts[0], 'Meses', parts[1]);
+            activeUnsubs.push(onSnapshot(monthRef, snap => {
+                if (snap.exists()) { 
+                    currentMonthData = snap.data(); 
+                    saveLocal(mId, currentMonthData); 
+                    processDailyData(currentMonthData); 
+                }
+            }));
+
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+            autoRefreshTimer = setInterval(() => processDailyData(currentMonthData), 60000);
         }
 
-        function startListeners(isoDate) {
-            activeUnsubs.forEach(u => u());
-            activeUnsubs = [];
-            
+        function processDailyData(monthData) {
+            if (!selectedDateInfo.id) return;
             dataSets = { active: [], recent: [], upcoming: [], absences: [] };
-            
-            const dateId = formatDateToId(isoDate);
-            const shifts = ['matutino', 'vespertino', 'nocturno'];
-            const now = new Date();
-            const currentHour = now.getHours();
+            const day = monthData[selectedDateInfo.id];
+            if (!day) { render(); return; }
 
-            let targetShift = currentHour >= 5 && currentHour < 12 ? 'matutino' : (currentHour >= 12 && currentHour < 17 ? 'vespertino' : 'nocturno');
+            shiftOrder.forEach((sId, idx) => {
+                if (day[sId]) {
+                    Object.entries(day[sId]).forEach(([uid, d]) => {
+                        // DETECTAR SI TIENE TURNO CONSECUTIVO EN EL MISMO DÍA
+                        const nextShiftId = shiftOrder[idx + 1];
+                        const hasNextShift = nextShiftId && day[nextShiftId] && day[nextShiftId][uid];
 
-            shifts.forEach(sId => {
-                const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, sId), (snap) => {
-                    dataSets.active = dataSets.active.filter(e => !(e.shiftId === sId && e.dateId === dateId));
-                    dataSets.recent = dataSets.recent.filter(e => !(e.shiftId === sId && e.dateId === dateId));
-                    if (sId === targetShift) dataSets.upcoming = dataSets.upcoming.filter(e => !(e.shiftId === sId && e.dateId === dateId));
-                    
-                    snap.forEach(docSnap => {
-                        const d = docSnap.data();
-                        const element = { uid: docSnap.id, shiftId: sId, dateId: dateId, ...d };
+                        const el = { uid, shiftId: sId, dateId: selectedDateInfo.id, hasNextShift, ...d };
                         if (d.entrada_real && !d.salida_real) {
-                            if (isRecentlyArrived(d.entrada_real, dateId)) dataSets.recent.push(element);
-                            else dataSets.active.push(element);
-                        } else if (sId === targetShift && !d.entrada_real && !d.ausencia) {
-                            dataSets.upcoming.push(element);
+                            if (isRecent(d.entrada_real)) dataSets.recent.push(el);
+                            else dataSets.active.push(el);
+                        } else if (!d.entrada_real && !d.ausencia) {
+                            if (isUpcomingInWindow(d.entrada_planificada)) dataSets.upcoming.push(el);
                         }
                     });
-                    render();
-                    document.getElementById('loading-state').style.display = 'none';
-                });
-                activeUnsubs.push(unsub);
+                }
             });
 
-            if (currentHour < 8) {
-                const yesterday = new Date(isoDate + 'T12:00:00');
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().split('T')[0];
-                const yesterdayId = formatDateToId(yesterdayStr);
-                
-                activeUnsubs.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', yesterdayId, 'nocturno'), (snap) => {
-                    dataSets.active = dataSets.active.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
-                    dataSets.recent = dataSets.recent.filter(e => !(e.shiftId === 'nocturno' && e.dateId === yesterdayId));
-                    snap.forEach(docSnap => {
-                        const d = docSnap.data();
-                        if (d.entrada_real && !d.salida_real) {
-                            const element = { uid: docSnap.id, shiftId: 'nocturno', dateId: yesterdayId, ...d };
-                            if (isRecentlyArrived(d.entrada_real, yesterdayId)) dataSets.recent.push(element);
-                            else dataSets.active.push(element);
-                        }
-                    });
-                    render();
-                }));
+            if (day.ausentismo) {
+                Object.entries(day.ausentismo).forEach(([uid, d]) => {
+                    dataSets.absences.push({ uid, dateId: selectedDateInfo.id, ...d });
+                });
             }
+            render();
+        }
 
-            activeUnsubs.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'RegAs', dateId, 'ausentismo'), (snap) => {
-                dataSets.absences = [];
-                snap.forEach(d => dataSets.absences.push({ uid: d.id, dateId: dateId, ...d.data() }));
-                render();
-            }));
+        function isUpcomingInWindow(planTime) {
+            if (!planTime) return false;
+            const [pH, pM] = planTime.split(':').map(Number);
+            const now = new Date();
+            const plan = new Date(); plan.setHours(pH, pM, 0);
+            const diffHours = (plan - now) / (1000 * 60 * 60);
+            return diffHours <= 1 && diffHours >= -4;
+        }
+
+        function isRecent(entrada) {
+            if (!entrada) return false;
+            const [h, m] = entrada.split(':').map(Number);
+            const entry = new Date(); entry.setHours(h, m, 0);
+            return Math.abs((new Date() - entry) / 60000) < 30;
         }
 
         function render() {
-            if (!isCacheReady) return; // Esperar a que los usuarios estén cargados
-
-            const layout = document.getElementById('status-layout');
-            const hasUpcoming = dataSets.upcoming.length > 0;
-            const hasLeftSection = dataSets.active.length > 0 || dataSets.recent.length > 0;
-
-            document.getElementById('group-active').classList.toggle('hidden', dataSets.active.length === 0);
-            document.getElementById('group-recent').classList.toggle('hidden', dataSets.recent.length === 0);
-            document.getElementById('group-upcoming').classList.toggle('hidden', !hasUpcoming);
-            document.getElementById('group-absences').classList.toggle('hidden', dataSets.absences.length === 0);
-
-            layout.classList.toggle('full-width', !hasUpcoming || !hasLeftSection);
-
-            renderList('list-active', 'count-active', dataSets.active);
-            renderList('list-recent', 'count-recent', dataSets.recent);
-            renderList('list-upcoming', 'count-upcoming', dataSets.upcoming);
+            renderGroupedList('list-active', 'count-active', dataSets.active);
+            renderGroupedList('list-recent', 'count-recent', dataSets.recent);
+            renderGroupedList('list-upcoming', 'count-upcoming', dataSets.upcoming);
             renderAbsences();
             calculateStats();
+            
+            document.getElementById('group-active').classList.toggle('hidden', dataSets.active.length === 0);
+            document.getElementById('group-recent').classList.toggle('hidden', dataSets.recent.length === 0);
+            document.getElementById('group-upcoming').classList.toggle('hidden', dataSets.upcoming.length === 0);
+            document.getElementById('group-absences').classList.toggle('hidden', dataSets.absences.length === 0);
+            document.getElementById('status-layout').classList.toggle('full-width', dataSets.upcoming.length === 0);
         }
 
-        function renderList(targetId, countId, dataList) {
+        function renderGroupedList(targetId, countId, dataList) {
             const container = document.getElementById(targetId);
-            document.getElementById(countId).innerText = `${dataList.length} Elementos`;
+            const countEl = document.getElementById(countId);
+            if (countEl) countEl.innerText = dataList.length;
             container.innerHTML = '';
-            if (dataList.length === 0) return;
-            
-            dataList.sort((a,b) => (a.Caseta || '').localeCompare(b.Caseta || ''));
-            dataList.forEach(e => {
-                const u = userDataCache[e.uid] || { nombre: 'Desconocido', foto: '' };
-                const isUpcoming = targetId.includes('upcoming');
-                const badgeClass = e.shiftId.startsWith('mat') ? 'badge-mat' : e.shiftId.startsWith('ves') ? 'badge-ves' : 'badge-noc';
-                const row = document.createElement('div');
-                row.className = "element-row";
-                row.onclick = () => openDetail(e.uid, e.dateId);
-                
-                // Generar URL de avatar si no hay foto
-                const photoSrc = u.foto || `https://ui-avatars.com/api/?name=${u.nombre || 'Elemento'}&background=4c1d95&color=fff`;
 
-                row.innerHTML = `
-                    <img src="${photoSrc}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=User&background=cbd5e1&color=64748b'">
-                    <div class="flex-grow min-w-0">
-                        <p class="text-[10px] font-black uppercase truncate tracking-tight text-slate-800">${u.nombre || 'Desconocido'}</p>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="shift-badge ${badgeClass}">${e.shiftId.substring(0,3)}</span>
-                            <span class="text-[8px] font-bold text-slate-400 uppercase truncate">${e.Caseta || u.acceso_predeterminado || 'General'}</span>
-                        </div>
-                    </div>
-                    <button class="btn-action ${isUpcoming ? 'btn-in' : 'btn-out'}" onclick="event.stopPropagation(); quickAction('${e.uid}','${e.shiftId}','${e.dateId}','${isUpcoming ? 'entry' : 'exit'}')">${isUpcoming ? 'In' : 'Out'}</button>
-                `;
-                container.appendChild(row);
+            shiftOrder.forEach(sId => {
+                const shiftItems = dataList.filter(e => e.shiftId === sId);
+                if (shiftItems.length > 0) {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = "flex flex-col gap-2 w-full";
+                    
+                    const sep = document.createElement('div');
+                    sep.className = "shift-separator";
+                    sep.innerHTML = `<span>${sId}</span><div class="line"></div>`;
+                    groupDiv.appendChild(sep);
+
+                    const grid = document.createElement('div');
+                    grid.className = "elements-grid";
+                    
+                    shiftItems.sort((a,b) => (a.Caseta || '').localeCompare(b.Caseta || '')).forEach(e => {
+                        grid.appendChild(createElementRow(e, targetId.includes('upcoming')));
+                    });
+
+                    groupDiv.appendChild(grid);
+                    container.appendChild(groupDiv);
+                }
             });
+        }
+
+        function createElementRow(e, isUp) {
+            const u = userDataCache[e.uid] || { nombre: 'Cargando...' };
+            const photo = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'E')}&background=4c1d95&color=fff`;
+            
+            const row = document.createElement('div');
+            row.className = "element-row";
+            row.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${e.uid}&date=${selectedDateInfo.id}` }, '*');
+            
+            // LÓGICA DE TEXTO Y COLOR DE BOTÓN SEGÚN TURNO SIGUIENTE
+            let btnText = isUp ? 'Entrada' : (e.hasNextShift ? 'Continuar' : 'Salida');
+            let btnClass = isUp ? 'btn-in' : (e.hasNextShift ? 'btn-continue' : 'btn-out');
+            let actionType = isUp ? 'entry' : (e.hasNextShift ? 'continue' : 'exit');
+
+            row.innerHTML = `
+                <img src="${photo}" class="avatar-mini" onerror="this.src='https://ui-avatars.com/api/?name=User&background=cbd5e1&color=64748b'">
+                <div class="flex-grow min-w-0">
+                    <p class="text-[10px] font-black uppercase truncate text-slate-800">${u.nombre}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="shift-badge ${e.shiftId.substring(0,3)}">${e.shiftId.substring(0,3)}</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase truncate">${e.Caseta || 'General'}</span>
+                    </div>
+                </div>
+                <button class="btn-action ${btnClass}" onclick="event.stopPropagation(); quickAction('${e.uid}','${e.shiftId}','${e.dateId}','${actionType}')">${btnText}</button>
+            `;
+            return row;
         }
 
         function renderAbsences() {
             const container = document.getElementById('list-absences');
-            document.getElementById('count-absences').innerText = `${dataSets.absences.length} Registros`;
             container.innerHTML = '';
-            if (dataSets.absences.length === 0) return;
-            
             const grouped = dataSets.absences.reduce((acc, curr) => {
-                const motive = curr.motivo || 'Otros';
-                if (!acc[motive]) acc[motive] = [];
-                acc[motive].push(curr);
-                return acc;
+                const mot = curr.motivo || 'Otros';
+                if (!acc[mot]) acc[mot] = []; acc[mot].push(curr); return acc;
             }, {});
-
-            Object.keys(grouped).sort().forEach(motive => {
-                const elements = grouped[motive];
-                const style = motiveColors[motive] || { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' };
-                const groupSection = document.createElement('div');
-                groupSection.innerHTML = `
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="h-px flex-1 bg-slate-100"></div>
-                        <span class="text-[9px] font-black uppercase tracking-[0.15em] px-3 py-0.5 rounded-full border" style="background: ${style.bg}; color: ${style.text}; border-color: ${style.border}">${motive} (${elements.length})</span>
-                        <div class="h-px flex-1 bg-slate-100"></div>
-                    </div>
-                    <div class="absences-grid-compact">
-                        ${elements.map(e => {
-                            const u = userDataCache[e.uid] || { nombre: 'Elemento', foto: '' };
-                            const photoSrc = u.foto || `https://ui-avatars.com/api/?name=${u.nombre || 'E'}&background=cbd5e1&color=64748b`;
-                            return `<div class="absence-compact-card" onclick="openDetail('${e.uid}', '${e.dateId}')">
-                                <img src="${photoSrc}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=User&background=cbd5e1&color=64748b'">
-                                <span class="text-[9px] font-bold uppercase truncate text-slate-700">${u.nombre}</span>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                `;
-                container.appendChild(groupSection);
+            
+            Object.entries(grouped).forEach(([mot, items]) => {
+                const sec = document.createElement('div');
+                sec.innerHTML = `<div class="flex items-center gap-3 mb-3"><span class="text-[9px] font-black uppercase px-3 py-1 bg-slate-100 rounded-lg text-slate-500">${mot} (${items.length})</span><div class="h-px flex-1 bg-slate-100"></div></div>`;
+                const grid = document.createElement('div');
+                grid.className = "absences-grid-compact";
+                items.forEach(e => {
+                    const u = userDataCache[e.uid] || { nombre: 'Elemento' };
+                    const photo = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'E')}&background=cbd5e1&color=64748b`;
+                    grid.innerHTML += `
+                        <div class="absence-compact-card" onclick="window.parent.postMessage({ type: 'navigateRight', url: 'Detalle.html?uid=${e.uid}&date=${selectedDateInfo.id}' }, '*')">
+                            <img src="${photo}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=U&background=cbd5e1&color=64748b'">
+                            <span class="text-[10px] font-bold truncate text-slate-600">${u.nombre}</span>
+                        </div>`;
+                });
+                sec.appendChild(grid);
+                container.appendChild(sec);
             });
+            document.getElementById('count-absences').innerText = dataSets.absences.length;
         }
 
         function calculateStats() {
-            const workingNow = [...dataSets.active, ...dataSets.recent];
-            const allAssigned = [...workingNow, ...dataSets.upcoming];
-            
-            document.getElementById('stat-active').innerText = workingNow.length;
-            document.getElementById('stat-extra').innerText = allAssigned.filter(e => e.es_extra).length;
-            document.getElementById('stat-recuperacion').innerText = allAssigned.filter(e => e.es_recuperacion).length;
-            document.getElementById('stat-faltas').innerText = dataSets.absences.filter(e => e.motivo === 'Falta').length;
-            document.getElementById('stat-otras').innerText = dataSets.absences.filter(e => e.motivo !== 'Falta').length;
-            document.getElementById('stat-retardos').innerText = allAssigned.filter(e => e.retardo).length;
-            
-            let coveredCount = 0;
-            const list = document.getElementById('uncovered-list'); 
-            list.innerHTML = '';
+            const working = [...dataSets.active, ...dataSets.recent];
+            document.getElementById('stat-active').innerText = working.length;
+            document.getElementById('stat-extra').innerText = working.filter(e => e.es_extra).length;
+            document.getElementById('stat-recuperacion').innerText = working.filter(e => e.es_recuperacion).length;
+            document.getElementById('stat-faltas').innerText = dataSets.absences.length;
+            document.getElementById('stat-retardos').innerText = working.filter(e => e.retardo).length;
+            let cov = 0; casetasOrden.forEach(c => { if (working.some(e => e.Caseta === c)) cov++; });
+            document.getElementById('stat-coverage').innerText = `${Math.round((cov / casetasOrden.length) * 100)}%`;
+            const list = document.getElementById('uncovered-list'); list.innerHTML = '';
             casetasOrden.forEach(c => {
-                if (workingNow.some(e => e.Caseta === c)) coveredCount++;
-                else {
-                    const span = document.createElement('div');
-                    span.className = 'uncovered-point';
-                    span.innerText = c;
-                    list.appendChild(span);
+                if (!working.some(e => e.Caseta === c)) {
+                    const d = document.createElement('div'); d.className = "p-2 bg-red-50 text-red-700 text-[8px] font-black uppercase rounded-lg mb-1"; d.innerText = c; list.appendChild(d);
                 }
             });
-            if (list.innerHTML === '') list.innerHTML = '<div class="text-[8px] font-black text-emerald-500 uppercase tracking-widest text-center py-2">Cobertura Total</div>';
-            document.getElementById('stat-coverage').innerText = `${Math.round((coveredCount / casetasOrden.length) * 100)}%`;
         }
 
         window.quickAction = async (uid, sId, dId, type) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', dId, sId, uid);
             const now = new Date().toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit' });
-            if (type === 'entry') {
-                const snap = await getDoc(docRef);
-                const data = snap.data() || {};
-                const [pH, pM] = (data.entrada_planificada || "00:00").split(':').map(Number);
-                const planDate = new Date(); planDate.setHours(pH, pM, 0);
-                await updateDoc(docRef, { entrada_real: now, retardo: new Date() > planDate, operador_registro: operatorContext?.nombre || 'SISTEMA' });
-            } else await updateDoc(docRef, { salida_real: now });
-        };
-
-        window.openDetail = (uid, dateId) => {
-            const day = dateId.substring(0,2), month = dateId.substring(2,4), year = dateId.substring(4,8);
-            window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${uid}&date=${year}-${month}-${day}` }, '*');
-        };
-
-        window.toggleStats = (force) => {
-            const dashboard = document.getElementById('dashboard-main');
-            if (typeof force === 'boolean') {
-                force ? dashboard.classList.add('stats-collapsed') : dashboard.classList.remove('stats-collapsed');
-            } else {
-                dashboard.classList.toggle('stats-collapsed');
+            if (isOnline) {
+                try {
+                    const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', selectedDateInfo.yyyy, 'Meses', selectedDateInfo.mm);
+                    const updateObj = {};
+                    
+                    if (type === 'entry') {
+                        const plan = new Date(); 
+                        const dayData = currentMonthData[dId] || {};
+                        const planTime = dayData[sId]?.[uid]?.entrada_planificada || "07:00";
+                        const [pH, pM] = planTime.split(':').map(Number);
+                        plan.setHours(pH, pM, 0);
+                        updateObj[`${dId}.${sId}.${uid}.entrada_real`] = now;
+                        updateObj[`${dId}.${sId}.${uid}.retardo`] = new Date() > plan;
+                        updateObj[`${dId}.${sId}.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA';
+                    } 
+                    else if (type === 'continue') {
+                        // LÓGICA DE CONTINUIDAD: SALIDA DEL ACTUAL Y ENTRADA DEL SIGUIENTE
+                        const idx = shiftOrder.indexOf(sId);
+                        const nextShiftId = shiftOrder[idx + 1];
+                        const dayData = currentMonthData[dId] || {};
+                        const nextShiftPlan = dayData[nextShiftId]?.[uid]?.entrada_planificada || "15:00";
+                        
+                        // Marcar salida del turno actual a la hora de entrada del siguiente
+                        updateObj[`${dId}.${sId}.${uid}.salida_real`] = nextShiftPlan;
+                        // Marcar entrada del turno siguiente a la hora planificada
+                        updateObj[`${dId}.${nextShiftId}.${uid}.entrada_real`] = nextShiftPlan;
+                        updateObj[`${dId}.${nextShiftId}.${uid}.retardo`] = false; // Al ser continuidad, no cuenta como retardo
+                        updateObj[`${dId}.${nextShiftId}.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA (CONTINUIDAD)';
+                    }
+                    else {
+                        updateObj[`${dId}.${sId}.${uid}.salida_real`] = now;
+                    }
+                    
+                    await updateDoc(monthRef, updateObj);
+                } catch (e) { console.error(e); }
             }
         };
 
-        window.addEventListener('message', (e) => {
+        window.toggleStats = () => document.getElementById('dashboard-main').classList.toggle('stats-collapsed');
+
+        window.addEventListener('message', e => {
             if (e.data.type === 'INIT_SUBMODULE') { 
                 operatorContext = e.data.user; 
                 startListeners(e.data.date); 
             }
             if (e.data.type === 'DATE_CHANGED') startListeners(e.data.date); 
         });
+
+        updateNet();
     </script>
 </body>
 </html>
