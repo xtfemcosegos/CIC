@@ -117,7 +117,6 @@
 
         .status-title { color: white; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
 
-        /* Contenedor de grupos de turnos */
         .shift-groups-container {
             padding: 16px;
             display: flex;
@@ -135,7 +134,6 @@
         }
         .element-row:hover { transform: translateY(-2px); border-color: var(--md-outline); box-shadow: 0 6px 12px rgba(0,0,0,0.04); background: white; }
 
-        /* Separador de turnos visual */
         .shift-separator {
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
         }
@@ -146,7 +144,6 @@
             height: 1px; flex: 1; background: #f1f5f9;
         }
 
-        /* Estilos para Ausentismos */
         .absences-grid-compact {
             padding: 0 16px 16px 16px;
             display: grid;
@@ -171,7 +168,7 @@
         .btn-action:active { transform: scale(0.95); }
         .btn-in { background: #10b981; }
         .btn-out { background: #ef4444; }
-        .btn-continue { background: #3b82f6; } /* Color azul para turnos consecutivos */
+        .btn-continue { background: #3b82f6; }
 
         .avatar-mini { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
         .avatar-micro { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
@@ -183,8 +180,7 @@
 
         #loading-state { position: fixed; inset: 0; background: var(--md-background); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        .hidden-section { display: none !important; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="no-scrollbar">
@@ -237,7 +233,6 @@
         <main class="space-y-6">
             <div id="status-layout" class="status-layout">
                 <div class="flex flex-col gap-6">
-                    <!-- Grupo Elementos en Turno -->
                     <div id="group-active" class="status-group-box">
                         <div class="status-header">
                             <h2 class="status-title">Elementos en Turno</h2>
@@ -246,7 +241,6 @@
                         <div id="list-active" class="shift-groups-container"></div>
                     </div>
                     
-                    <!-- Grupo Recién Llegados -->
                     <div id="group-recent" class="status-group-box" style="border-top: 4px solid #10b981;">
                         <div class="status-header" style="background: #1e293b;">
                             <h2 class="status-title text-emerald-400">Recién Llegados</h2>
@@ -256,7 +250,6 @@
                     </div>
                 </div>
 
-                <!-- Grupo Próximos Ingresos -->
                 <div id="group-upcoming" class="status-group-box h-full">
                     <div class="status-header">
                         <h2 class="status-title">Próximos Ingresos</h2>
@@ -279,7 +272,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
         const app = initializeApp(firebaseConfig);
@@ -299,31 +292,18 @@
         let activeUnsubs = [];
         let autoRefreshTimer = null;
 
-        // --- INDEXEDDB ---
-        const initDB = () => new Promise((res, rej) => {
-            const req = indexedDB.open("CIC_RegAs_Offline", 1);
-            req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains("months")) e.target.result.createObjectStore("months", { keyPath: "id" }); };
-            req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error);
-        });
-
-        const saveLocal = async (mId, data) => { const db = await initDB(); db.transaction("months", "readwrite").objectStore("months").put({ id: mId, data }); };
-        const getLocal = async (mId) => { const db = await initDB(); return new Promise(res => { const req = db.transaction("months", "readonly").objectStore("months").get(mId); req.onsuccess = () => res(req.result ? req.result.data : null); }); };
-
         // --- NETWORK ---
         const updateNet = () => { isOnline = navigator.onLine; document.getElementById('offline-notice').style.display = isOnline ? 'none' : 'block'; };
         window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
 
-        // --- AUTH & INIT ---
+        // --- AUTH ---
         onAuthStateChanged(auth, u => { if (u) listenUsers(); else signInAnonymously(auth); });
 
         function listenUsers() {
             const q = collection(db, 'artifacts', appId, 'public', 'data', 'Usuarios');
             onSnapshot(q, (snap) => {
                 snap.forEach(d => userDataCache[d.id] = d.data());
-                if (Object.keys(currentMonthData).length > 0) render();
-                document.getElementById('loading-state').style.display = 'none';
-            }, (err) => {
-                console.error("Error cargando usuarios:", err);
+                if (Object.keys(currentMonthData).length > 0) processDailyData(currentMonthData);
                 document.getElementById('loading-state').style.display = 'none';
             });
         }
@@ -332,16 +312,11 @@
             activeUnsubs.forEach(u => u()); activeUnsubs = [];
             const parts = isoDate.split('-');
             selectedDateInfo = { yyyy: parts[0], mm: parts[1], id: `${parts[2]}${parts[1]}${parts[0]}` };
-            const mId = `${parts[1]}${parts[0]}`;
-
-            const local = await getLocal(mId);
-            if (local) { currentMonthData = local; processDailyData(local); }
-
+            
             const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', parts[0], 'Meses', parts[1]);
             activeUnsubs.push(onSnapshot(monthRef, snap => {
                 if (snap.exists()) { 
                     currentMonthData = snap.data(); 
-                    saveLocal(mId, currentMonthData); 
                     processDailyData(currentMonthData); 
                 }
             }));
@@ -350,34 +325,71 @@
             autoRefreshTimer = setInterval(() => processDailyData(currentMonthData), 60000);
         }
 
+        // --- LÓGICA DE DÍA OPERATIVO Y NOCTURNO ---
         function processDailyData(monthData) {
             if (!selectedDateInfo.id) return;
             dataSets = { active: [], recent: [], upcoming: [], absences: [] };
-            const day = monthData[selectedDateInfo.id];
-            if (!day) { render(); return; }
+            
+            const now = new Date();
+            const hour = now.getHours();
+            const todayId = selectedDateInfo.id;
+            const day = monthData[todayId];
 
-            shiftOrder.forEach((sId, idx) => {
-                if (day[sId]) {
-                    Object.entries(day[sId]).forEach(([uid, d]) => {
-                        // DETECTAR SI TIENE TURNO CONSECUTIVO EN EL MISMO DÍA
-                        const nextShiftId = shiftOrder[idx + 1];
-                        const hasNextShift = nextShiftId && day[nextShiftId] && day[nextShiftId][uid];
-
-                        const el = { uid, shiftId: sId, dateId: selectedDateInfo.id, hasNextShift, ...d };
+            // 1. Manejo de Turno Nocturno (00:00 - 06:00)
+            // Si estamos en la madrugada, los activos vienen de la fecha de ayer
+            if (hour < 6) {
+                const yest = new Date(now);
+                yest.setDate(yest.getDate() - 1);
+                const yestId = `${String(yest.getDate()).padStart(2,'0')}${String(yest.getMonth()+1).padStart(2,'0')}${yest.getFullYear()}`;
+                const yestData = monthData[yestId];
+                if (yestData && yestData['nocturno']) {
+                    Object.entries(yestData['nocturno']).forEach(([uid, d]) => {
                         if (d.entrada_real && !d.salida_real) {
+                            const el = { uid, shiftId: 'nocturno', dateId: yestId, ...d };
                             if (isRecent(d.entrada_real)) dataSets.recent.push(el);
                             else dataSets.active.push(el);
-                        } else if (!d.entrada_real && !d.ausencia) {
-                            if (isUpcomingInWindow(d.entrada_planificada)) dataSets.upcoming.push(el);
                         }
                     });
                 }
-            });
+            }
 
-            if (day.ausentismo) {
-                Object.entries(day.ausentismo).forEach(([uid, d]) => {
-                    dataSets.absences.push({ uid, dateId: selectedDateInfo.id, ...d });
+            // 2. Procesamiento de turnos del día seleccionado
+            if (day) {
+                shiftOrder.forEach((sId, idx) => {
+                    if (day[sId]) {
+                        Object.entries(day[sId]).forEach(([uid, d]) => {
+                            // Detectar continuidad (Mismo día o cruce a mañana)
+                            let hasNextShift = false;
+                            if (sId === 'nocturno') {
+                                // Para nocturno, el siguiente es el matutino del día siguiente
+                                const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+                                const tomId = `${String(tomorrow.getDate()).padStart(2,'0')}${String(tomorrow.getMonth()+1).padStart(2,'0')}${tomorrow.getFullYear()}`;
+                                if (monthData[tomId]?.['matutino']?.[uid]) hasNextShift = true;
+                            } else {
+                                const nextSId = shiftOrder[idx + 1];
+                                if (nextSId && day[nextSId]?.[uid]) hasNextShift = true;
+                            }
+
+                            const el = { uid, shiftId: sId, dateId: todayId, hasNextShift, ...d };
+                            
+                            if (d.entrada_real && !d.salida_real) {
+                                // Evitar duplicados si ya se agregó por lógica de madrugada
+                                if (!dataSets.active.find(x => x.uid === uid) && !dataSets.recent.find(x => x.uid === uid)) {
+                                    if (isRecent(d.entrada_real)) dataSets.recent.push(el);
+                                    else dataSets.active.push(el);
+                                }
+                            } else if (!d.entrada_real && !d.ausencia) {
+                                if (isUpcomingInWindow(d.entrada_planificada)) dataSets.upcoming.push(el);
+                            }
+                        });
+                    }
                 });
+
+                if (day.ausentismo) {
+                    Object.entries(day.ausentismo).forEach(([uid, d]) => {
+                        dataSets.absences.push({ uid, dateId: todayId, ...d });
+                    });
+                }
             }
             render();
         }
@@ -388,14 +400,14 @@
             const now = new Date();
             const plan = new Date(); plan.setHours(pH, pM, 0);
             const diffHours = (plan - now) / (1000 * 60 * 60);
-            return diffHours <= 1 && diffHours >= -4;
+            return diffHours <= 1.5 && diffHours >= -5;
         }
 
         function isRecent(entrada) {
             if (!entrada) return false;
             const [h, m] = entrada.split(':').map(Number);
             const entry = new Date(); entry.setHours(h, m, 0);
-            return Math.abs((new Date() - entry) / 60000) < 30;
+            return Math.abs((new Date() - entry) / 60000) < 45;
         }
 
         function render() {
@@ -423,19 +435,12 @@
                 if (shiftItems.length > 0) {
                     const groupDiv = document.createElement('div');
                     groupDiv.className = "flex flex-col gap-2 w-full";
-                    
-                    const sep = document.createElement('div');
-                    sep.className = "shift-separator";
-                    sep.innerHTML = `<span>${sId}</span><div class="line"></div>`;
-                    groupDiv.appendChild(sep);
-
+                    groupDiv.innerHTML = `<div class="shift-separator"><span>${sId}</span><div class="line"></div></div>`;
                     const grid = document.createElement('div');
                     grid.className = "elements-grid";
-                    
                     shiftItems.sort((a,b) => (a.Caseta || '').localeCompare(b.Caseta || '')).forEach(e => {
                         grid.appendChild(createElementRow(e, targetId.includes('upcoming')));
                     });
-
                     groupDiv.appendChild(grid);
                     container.appendChild(groupDiv);
                 }
@@ -445,12 +450,10 @@
         function createElementRow(e, isUp) {
             const u = userDataCache[e.uid] || { nombre: 'Cargando...' };
             const photo = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'E')}&background=4c1d95&color=fff`;
-            
             const row = document.createElement('div');
             row.className = "element-row";
-            row.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${e.uid}&date=${selectedDateInfo.id}` }, '*');
+            row.onclick = () => window.parent.postMessage({ type: 'navigateRight', url: `Detalle.html?uid=${e.uid}&date=${e.dateId}` }, '*');
             
-            // LÓGICA DE TEXTO Y COLOR DE BOTÓN SEGÚN TURNO SIGUIENTE
             let btnText = isUp ? 'Entrada' : (e.hasNextShift ? 'Continuar' : 'Salida');
             let btnClass = isUp ? 'btn-in' : (e.hasNextShift ? 'btn-continue' : 'btn-out');
             let actionType = isUp ? 'entry' : (e.hasNextShift ? 'continue' : 'exit');
@@ -476,7 +479,6 @@
                 const mot = curr.motivo || 'Otros';
                 if (!acc[mot]) acc[mot] = []; acc[mot].push(curr); return acc;
             }, {});
-            
             Object.entries(grouped).forEach(([mot, items]) => {
                 const sec = document.createElement('div');
                 sec.innerHTML = `<div class="flex items-center gap-3 mb-3"><span class="text-[9px] font-black uppercase px-3 py-1 bg-slate-100 rounded-lg text-slate-500">${mot} (${items.length})</span><div class="h-px flex-1 bg-slate-100"></div></div>`;
@@ -484,15 +486,12 @@
                 grid.className = "absences-grid-compact";
                 items.forEach(e => {
                     const u = userDataCache[e.uid] || { nombre: 'Elemento' };
-                    const photo = u.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'E')}&background=cbd5e1&color=64748b`;
-                    grid.innerHTML += `
-                        <div class="absence-compact-card" onclick="window.parent.postMessage({ type: 'navigateRight', url: 'Detalle.html?uid=${e.uid}&date=${selectedDateInfo.id}' }, '*')">
-                            <img src="${photo}" class="avatar-micro" onerror="this.src='https://ui-avatars.com/api/?name=U&background=cbd5e1&color=64748b'">
-                            <span class="text-[10px] font-bold truncate text-slate-600">${u.nombre}</span>
-                        </div>`;
+                    grid.innerHTML += `<div class="absence-compact-card" onclick="window.parent.postMessage({ type: 'navigateRight', url: 'Detalle.html?uid=${e.uid}&date=${selectedDateInfo.id}' }, '*')">
+                        <img src="${u.foto || 'https://ui-avatars.com/api/?name=U'}" class="avatar-micro">
+                        <span class="text-[10px] font-bold truncate text-slate-600">${u.nombre}</span>
+                    </div>`;
                 });
-                sec.appendChild(grid);
-                container.appendChild(sec);
+                sec.appendChild(grid); container.appendChild(sec);
             });
             document.getElementById('count-absences').innerText = dataSets.absences.length;
         }
@@ -509,58 +508,51 @@
             const list = document.getElementById('uncovered-list'); list.innerHTML = '';
             casetasOrden.forEach(c => {
                 if (!working.some(e => e.Caseta === c)) {
-                    const d = document.createElement('div'); d.className = "p-2 bg-red-50 text-red-700 text-[8px] font-black uppercase rounded-lg mb-1"; d.innerText = c; list.appendChild(d);
+                    list.innerHTML += `<div class="p-2 bg-red-50 text-red-700 text-[8px] font-black uppercase rounded-lg mb-1">${c}</div>`;
                 }
             });
         }
 
         window.quickAction = async (uid, sId, dId, type) => {
-            const now = new Date().toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit' });
-            if (isOnline) {
-                try {
-                    const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', selectedDateInfo.yyyy, 'Meses', selectedDateInfo.mm);
-                    const updateObj = {};
-                    
-                    if (type === 'entry') {
-                        const plan = new Date(); 
-                        const dayData = currentMonthData[dId] || {};
-                        const planTime = dayData[sId]?.[uid]?.entrada_planificada || "07:00";
-                        const [pH, pM] = planTime.split(':').map(Number);
-                        plan.setHours(pH, pM, 0);
-                        updateObj[`${dId}.${sId}.${uid}.entrada_real`] = now;
-                        updateObj[`${dId}.${sId}.${uid}.retardo`] = new Date() > plan;
-                        updateObj[`${dId}.${sId}.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA';
-                    } 
-                    else if (type === 'continue') {
-                        // LÓGICA DE CONTINUIDAD: SALIDA DEL ACTUAL Y ENTRADA DEL SIGUIENTE
-                        const idx = shiftOrder.indexOf(sId);
-                        const nextShiftId = shiftOrder[idx + 1];
-                        const dayData = currentMonthData[dId] || {};
-                        const nextShiftPlan = dayData[nextShiftId]?.[uid]?.entrada_planificada || "15:00";
-                        
-                        // Marcar salida del turno actual a la hora de entrada del siguiente
-                        updateObj[`${dId}.${sId}.${uid}.salida_real`] = nextShiftPlan;
-                        // Marcar entrada del turno siguiente a la hora planificada
-                        updateObj[`${dId}.${nextShiftId}.${uid}.entrada_real`] = nextShiftPlan;
-                        updateObj[`${dId}.${nextShiftId}.${uid}.retardo`] = false; // Al ser continuidad, no cuenta como retardo
-                        updateObj[`${dId}.${nextShiftId}.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA (CONTINUIDAD)';
+            const nowTime = new Date().toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            if (!isOnline) return;
+            try {
+                const monthRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs2', selectedDateInfo.yyyy, 'Meses', selectedDateInfo.mm);
+                const updateObj = {};
+                
+                if (type === 'entry') {
+                    updateObj[`${dId}.${sId}.${uid}.entrada_real`] = nowTime;
+                    updateObj[`${dId}.${sId}.${uid}.operador_registro`] = operatorContext?.nombre || 'SISTEMA';
+                } 
+                else if (type === 'continue') {
+                    let nextDId = dId;
+                    let nextSId = "";
+                    if (sId === 'nocturno') {
+                        const dateParts = dId.match(/(\d{2})(\d{2})(\d{4})/);
+                        const current = new Date(dateParts[3], dateParts[2]-1, dateParts[1]);
+                        current.setDate(current.getDate() + 1);
+                        nextDId = `${String(current.getDate()).padStart(2,'0')}${String(current.getMonth()+1).padStart(2,'0')}${current.getFullYear()}`;
+                        nextSId = "matutino";
+                    } else {
+                        nextSId = shiftOrder[shiftOrder.indexOf(sId) + 1];
                     }
-                    else {
-                        updateObj[`${dId}.${sId}.${uid}.salida_real`] = now;
-                    }
-                    
-                    await updateDoc(monthRef, updateObj);
-                } catch (e) { console.error(e); }
-            }
+                    const nextShiftPlan = currentMonthData[nextDId]?.[nextSId]?.[uid]?.entrada_planificada || "07:00";
+                    updateObj[`${dId}.${sId}.${uid}.salida_real`] = nextShiftPlan;
+                    updateObj[`${nextDId}.${nextSId}.${uid}.entrada_real`] = nextShiftPlan;
+                    updateObj[`${nextDId}.${nextSId}.${uid}.retardo`] = false;
+                    updateObj[`${nextDId}.${nextSId}.${uid}.operador_registro`] = 'CONTINUIDAD';
+                } 
+                else {
+                    updateObj[`${dId}.${sId}.${uid}.salida_real`] = nowTime;
+                }
+                await updateDoc(monthRef, updateObj);
+            } catch (e) { console.error(e); }
         };
 
         window.toggleStats = () => document.getElementById('dashboard-main').classList.toggle('stats-collapsed');
 
         window.addEventListener('message', e => {
-            if (e.data.type === 'INIT_SUBMODULE') { 
-                operatorContext = e.data.user; 
-                startListeners(e.data.date); 
-            }
+            if (e.data.type === 'INIT_SUBMODULE') { operatorContext = e.data.user; startListeners(e.data.date); }
             if (e.data.type === 'DATE_CHANGED') startListeners(e.data.date); 
         });
 
