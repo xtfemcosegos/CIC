@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .metallic-green-gradient { background: linear-gradient(145deg, #10b981, #064e3b); }
+        .metallic-red-gradient { background: linear-gradient(145deg, #ef4444, #991b1b); }
+        .console-box {
+            background: #020617;
+            font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+            height: 200px;
+        }
+        .console-line { border-left: 2px solid #10b981; padding-left: 12px; margin-bottom: 4px; }
+        .console-error { border-color: #ef4444; color: #f87171; }
+        .console-success { border-color: #22c55e; color: #4ade80; }
+        .console-info { border-color: #3b82f6; color: #60a5fa; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+
+        .table-container { height: calc(100vh - 450px); min-height: 250px; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 10; }
+    </style>
+</head>
+<body class="p-6 bg-slate-50 antialiased font-sans flex flex-col h-screen overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl font-black text-emerald-900 uppercase leading-none">Limpieza de Teléfonos</h2>
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Gestión individual y masiva de formatos</p>
+        </div>
+        
+        <div class="flex gap-2 w-full md:w-auto">
+            <button id="btn-scan" class="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-2.5 bg-white border border-emerald-200 text-emerald-700 rounded-xl font-black text-xs uppercase shadow-sm hover:bg-emerald-50 transition-all active:scale-95 disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Escanear
+            </button>
+            <button id="btn-fix-selected" disabled class="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-2.5 metallic-green-gradient text-white rounded-xl font-black text-xs uppercase shadow-lg shadow-emerald-100 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:grayscale">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Corregir
+            </button>
+            <button id="btn-delete-selected" disabled class="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-2.5 metallic-red-gradient text-white rounded-xl font-black text-xs uppercase shadow-lg shadow-red-100 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:grayscale">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Eliminar
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel de Resultados Rápidos -->
+    <div class="flex-shrink-0 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Documentos</span>
+            <span id="stat-docs" class="text-2xl font-black text-slate-700">0</span>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Analizados</span>
+            <span id="stat-names" class="text-2xl font-black text-slate-700">0</span>
+        </div>
+        <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100 shadow-sm">
+            <span class="block text-[9px] font-black text-rose-400 uppercase tracking-widest">Incorrectos</span>
+            <span id="stat-errors" class="text-2xl font-black text-rose-600">0</span>
+        </div>
+        <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+            <span class="block text-[9px] font-black text-emerald-400 uppercase tracking-widest">Seleccionados</span>
+            <span id="stat-selected" class="text-2xl font-black text-emerald-600">0</span>
+        </div>
+    </div>
+
+    <!-- Lista de Errores Detectados -->
+    <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden mb-6 flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 class="text-xs font-black text-slate-600 uppercase tracking-widest">Registros Detectados</h3>
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase group-hover:text-emerald-600 transition-colors">Seleccionar / Deseleccionar Todo</span>
+                </label>
+            </div>
+        </div>
+        <div class="table-container overflow-y-auto custom-scroll">
+            <table class="w-full text-left text-[11px]">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-3 w-10"></th>
+                        <th class="px-6 py-3 font-black text-slate-400 uppercase tracking-tighter">Folio</th>
+                        <th class="px-6 py-3 font-black text-slate-400 uppercase tracking-tighter">Nombre / Titular</th>
+                        <th class="px-6 py-3 font-black text-slate-400 uppercase tracking-tighter">Original</th>
+                        <th class="px-6 py-3 font-black text-slate-400 uppercase tracking-tighter">Propuesta</th>
+                        <th class="px-6 py-3 font-black text-slate-400 uppercase tracking-tighter text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="error-list" class="divide-y divide-slate-50">
+                    <tr>
+                        <td colspan="6" class="px-6 py-20 text-center">
+                            <p class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Inicia un escaneo para ver resultados</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Consola de Proceso -->
+    <div class="flex-shrink-0 bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
+        <div class="px-6 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="ml-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Terminal de Datos</span>
+            </div>
+            <button id="btn-clear" class="text-[9px] font-black text-slate-500 hover:text-white uppercase">Limpiar</button>
+        </div>
+        <div id="console" class="console-box p-6 overflow-y-auto custom-scroll text-[11px] text-emerald-400/90 leading-relaxed">
+            <div class="console-line">Sistema listo...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = 'cic.pp';
+
+        const consoleEl = document.getElementById('console');
+        const btnScan = document.getElementById('btn-scan');
+        const btnFix = document.getElementById('btn-fix-selected');
+        const btnDelete = document.getElementById('btn-delete-selected');
+        const btnClear = document.getElementById('btn-clear');
+        const errorList = document.getElementById('error-list');
+        const selectAll = document.getElementById('select-all');
+
+        let detectedErrors = []; 
+
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `console-line ${type ? 'console-' + type : ''}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function cleanPhone(phone) {
+            if (!phone) return "";
+            return String(phone).replace(/\D/g, '');
+        }
+
+        async function scanData() {
+            log("Iniciando auditoría de teléfonos...", "info");
+            btnScan.disabled = true;
+            detectedErrors = [];
+            errorList.innerHTML = '<tr><td colspan="6" class="p-10 text-center"><div class="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto"></div></td></tr>';
+            
+            let totalAnalyzed = 0;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'));
+                document.getElementById('stat-docs').textContent = querySnapshot.size;
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.items && Array.isArray(data.items)) {
+                        data.items.forEach((item, index) => {
+                            totalAnalyzed++;
+                            const original = String(item.Teléfono || "");
+                            const corrected = cleanPhone(original);
+
+                            if (original !== corrected) {
+                                detectedErrors.push({
+                                    docId: docSnap.id,
+                                    itemIndex: index,
+                                    item: item,
+                                    corrected: corrected,
+                                    selected: true
+                                });
+                            }
+                        });
+                    }
+                });
+
+                document.getElementById('stat-names').textContent = totalAnalyzed;
+                document.getElementById('stat-errors').textContent = detectedErrors.length;
+                renderErrors();
+                log(`Escaneo finalizado. Detectados: ${detectedErrors.length}`, "success");
+
+            } catch (error) {
+                log(`Error: ${error.message}`, "error");
+            } finally {
+                btnScan.disabled = false;
+                updateSelectedCount();
+            }
+        }
+
+        function renderErrors() {
+            if (detectedErrors.length === 0) {
+                errorList.innerHTML = '<tr><td colspan="6" class="px-6 py-20 text-center"><p class="text-emerald-600 font-bold uppercase tracking-widest text-[10px]">No se encontraron errores de formato</p></td></tr>';
+                btnFix.disabled = true;
+                btnDelete.disabled = true;
+                return;
+            }
+
+            errorList.innerHTML = detectedErrors.map((err, idx) => `
+                <tr class="hover:bg-slate-50 transition-all group">
+                    <td class="px-6 py-3">
+                        <input type="checkbox" ${err.selected ? 'checked' : ''} onchange="toggleItem(${idx})" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                    </td>
+                    <td class="px-6 py-3 font-black text-emerald-800">${err.item.Folio || '---'}</td>
+                    <td class="px-6 py-3 font-bold text-slate-700 uppercase">${err.item.Nombre || err.item.Titular || 'SIN NOMBRE'}</td>
+                    <td class="px-6 py-3 text-rose-500 font-mono">${err.item.Teléfono || '(Vacío)'}</td>
+                    <td class="px-6 py-3 text-emerald-600 font-mono font-bold">${err.corrected}</td>
+                    <td class="px-6 py-3 text-right">
+                        <button onclick="viewDetail(${idx})" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg font-black text-[9px] uppercase hover:bg-emerald-600 hover:text-white transition-all">
+                            Ver Detalle
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            btnFix.disabled = false;
+            btnDelete.disabled = false;
+        }
+
+        window.toggleItem = (idx) => {
+            detectedErrors[idx].selected = !detectedErrors[idx].selected;
+            updateSelectedCount();
+        };
+
+        window.viewDetail = (idx) => {
+            const data = detectedErrors[idx].item;
+            window.parent.__CURRENT_MARBETE = data;
+            if (typeof window.parent.Navegar_Marbetes === 'function') {
+                window.parent.Navegar_Marbetes('Detalle_Marbete');
+            } else {
+                window.parent.postMessage({ type: 'OPEN_MARBETE_DETAIL', data: data }, '*');
+            }
+            log(`Abriendo detalle de Folio ${data.Folio}...`, "info");
+        };
+
+        function updateSelectedCount() {
+            const count = detectedErrors.filter(e => e.selected).length;
+            document.getElementById('stat-selected').textContent = count;
+            const hasSelection = count > 0;
+            btnFix.disabled = !hasSelection;
+            btnDelete.disabled = !hasSelection;
+            selectAll.checked = count === detectedErrors.length && count > 0;
+        }
+
+        selectAll.onchange = () => {
+            const state = selectAll.checked;
+            detectedErrors.forEach(e => e.selected = state);
+            renderErrors();
+            updateSelectedCount();
+        };
+
+        async function fixSelected() {
+            const selected = detectedErrors.filter(e => e.selected);
+            if (selected.length === 0) return;
+            if (!confirm(`¿Corregir los ${selected.length} teléfonos seleccionados?`)) return;
+
+            log(`Iniciando corrección de ${selected.length} registros...`, "info");
+            btnFix.disabled = true;
+            btnDelete.disabled = true;
+            btnScan.disabled = true;
+
+            const updatesByDoc = {};
+            selected.forEach(err => {
+                if (!updatesByDoc[err.docId]) updatesByDoc[err.docId] = [];
+                updatesByDoc[err.docId].push(err);
+            });
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const docId in updatesByDoc) {
+                try {
+                    const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'));
+                    const docSnap = querySnapshot.docs.find(d => d.id === docId);
+                    
+                    if (docSnap) {
+                        const items = [...docSnap.data().items];
+                        updatesByDoc[docId].forEach(err => {
+                            items[err.itemIndex].Teléfono = err.corrected;
+                        });
+
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', docId), { items: items });
+                        successCount += updatesByDoc[docId].length;
+                        log(`Documento ${docId} actualizado correctamente.`, "success");
+                    }
+                } catch (error) {
+                    failCount += updatesByDoc[docId].length;
+                    log(`Error en Doc ${docId}: ${error.message}`, "error");
+                }
+            }
+
+            log(`Proceso completado. Éxitos: ${successCount}, Errores: ${failCount}`, "info");
+            if (successCount > 0) scanData(); 
+            else { btnScan.disabled = false; updateSelectedCount(); }
+        }
+
+        async function deleteSelected() {
+            const selected = detectedErrors.filter(e => e.selected);
+            if (selected.length === 0) return;
+            if (!confirm(`¿Estás seguro de ELIMINAR permanentemente los ${selected.length} registros seleccionados de la base de datos? Esta acción no se puede deshacer.`)) return;
+
+            log(`Iniciando eliminación de ${selected.length} registros...`, "error");
+            btnFix.disabled = true;
+            btnDelete.disabled = true;
+            btnScan.disabled = true;
+
+            const deletionsByDoc = {};
+            selected.forEach(err => {
+                if (!deletionsByDoc[err.docId]) deletionsByDoc[err.docId] = [];
+                deletionsByDoc[err.docId].push(err.itemIndex);
+            });
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const docId in deletionsByDoc) {
+                try {
+                    const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'));
+                    const docSnap = querySnapshot.docs.find(d => d.id === docId);
+                    
+                    if (docSnap) {
+                        const originalItems = docSnap.data().items;
+                        const indicesToDelete = deletionsByDoc[docId];
+                        
+                        // Filtrar el arreglo para excluir los índices marcados
+                        const newItems = originalItems.filter((_, index) => !indicesToDelete.includes(index));
+
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', docId), { items: newItems });
+                        successCount += indicesToDelete.length;
+                        log(`Documento ${docId}: Registros eliminados.`, "success");
+                    }
+                } catch (error) {
+                    failCount += deletionsByDoc[docId].length;
+                    log(`Error al eliminar en Doc ${docId}: ${error.message}`, "error");
+                }
+            }
+
+            log(`Eliminación completada. Registros borrados: ${successCount}, Errores: ${failCount}`, "info");
+            scanData(); 
+        }
+
+        btnScan.onclick = scanData;
+        btnFix.onclick = fixSelected;
+        btnDelete.onclick = deleteSelected;
+        btnClear.onclick = () => {
+            consoleEl.innerHTML = '<div class="console-line">Consola limpia.</div>';
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && !user.isAnonymous) {
+                log("Autenticación válida. Mantenimiento listo.", "success");
+            } else {
+                log("Error de permisos.", "error");
+                window.top.location.href = '../../../index.html';
+            }
+        });
+    </script>
+</body>
+</html>

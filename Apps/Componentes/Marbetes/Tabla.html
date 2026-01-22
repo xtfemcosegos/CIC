@@ -1,0 +1,463 @@
+<!-- 
+    IMPORTANTE: Este archivo se carga dentro de un Shell. 
+    Se utiliza un contenedor raíz flex para garantizar que la cabecera sea fija y el scroll sea interno.
+-->
+<div class="flex flex-col h-full w-full bg-white overflow-hidden relative">
+
+    <!-- Pantalla de carga local -->
+    <div id="loading-state" class="absolute inset-0 bg-white z-[1000] flex flex-col items-center justify-center">
+        <div class="relative flex items-center justify-center">
+            <div class="w-12 h-12 border-4 border-emerald-50 border-t-emerald-600 rounded-full animate-spin"></div>
+            <div class="absolute w-4 h-4 bg-emerald-600 rounded-full animate-pulse"></div>
+        </div>
+        <span class="text-[10px] font-black text-emerald-900 uppercase mt-4 tracking-widest text-center px-4">Actualizando Repositorio Local...</span>
+    </div>
+
+    <!-- Modal de Confirmación de Eliminación -->
+    <div id="delete-modal" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+                </div>
+                <h3 class="text-lg font-black text-slate-900 uppercase leading-tight">¿Eliminar Registro?</h3>
+                <p class="text-[11px] text-slate-500 font-medium mt-2 leading-relaxed">Esta acción es irreversible. Para continuar, escriba la palabra <span class="text-rose-600 font-black">ELIMINAR</span> a continuación:</p>
+                
+                <input type="text" id="delete-confirm-input" class="w-full mt-4 h-10 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-center text-xs font-black uppercase tracking-widest focus:border-rose-500 outline-none transition-all" placeholder="...">
+                
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button onclick="closeDeleteModal()" class="h-10 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-black uppercase hover:bg-slate-200 transition-all">Cancelar</button>
+                    <button id="btn-execute-delete" disabled onclick="executeDelete()" class="h-10 rounded-xl bg-rose-500 text-white text-[10px] font-black uppercase shadow-lg shadow-rose-200 disabled:opacity-30 disabled:grayscale transition-all">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Fija Superior: Doble Fila de Herramientas -->
+    <div class="flex-shrink-0 z-[100] bg-white border-b border-emerald-200">
+        
+        <!-- Fila 1: KPIs, Fechas y Filtro Hoy -->
+        <div class="flex items-center p-2 gap-3 overflow-x-auto no-scrollbar border-b border-slate-100">
+            <button id="btn-sync" onclick="fetchFromFirebase(false)" class="w-9 h-9 flex-shrink-0 rounded-xl bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Sincronizar Cloud y Excel">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </button>
+
+            <div class="flex gap-2 flex-shrink-0 border-r border-slate-100 pr-3">
+                <div onclick="setKpiFilter('Todos')" id="kpi-all" class="kpi-chip active">
+                    <span id="count-all" class="text-xs font-black">0</span>
+                    <span class="text-[8px] font-bold uppercase opacity-80">Total General</span>
+                </div>
+                <div onclick="setKpiFilter('Sin folio')" id="kpi-nofolio" class="kpi-chip">
+                    <span id="count-nofolio" class="text-xs font-black">0</span>
+                    <span class="text-[8px] font-bold uppercase opacity-80">Sin Folio</span>
+                </div>
+                <div onclick="setKpiFilter('Pendiente')" id="kpi-pendiente" class="kpi-chip">
+                    <span id="count-pending" class="text-xs font-black">0</span>
+                    <span class="text-[8px] font-bold uppercase opacity-80">Pendientes</span>
+                </div>
+                <div onclick="setKpiFilter('Entregado')" id="kpi-entregado" class="kpi-chip">
+                    <span id="count-delivered" class="text-xs font-black">0</span>
+                    <span class="text-[8px] font-bold uppercase opacity-80">Entregados</span>
+                </div>
+                <div onclick="setKpiFilter('Baja')" id="kpi-baja" class="kpi-chip">
+                    <span id="count-bajas" class="text-xs font-black">0</span>
+                    <span class="text-[8px] font-bold uppercase opacity-80">Bajas</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 flex-shrink-0">
+                <select id="date-type" class="bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase px-2 py-1 text-emerald-800 outline-none" onchange="applyFilters()">
+                    <option value="Fecha de solicitud">Solicitud</option>
+                    <option value="Fecha de asignación">Asignación</option>
+                </select>
+                <input type="date" id="date-start" class="bg-transparent border-none text-[10px] font-bold text-slate-600 outline-none" onchange="applyFilters()">
+                <span class="text-slate-300">/</span>
+                <input type="date" id="date-end" class="bg-transparent border-none text-[10px] font-bold text-slate-600 outline-none" onchange="applyFilters()">
+            </div>
+
+            <div class="flex items-center gap-2 border-l border-slate-100 pl-3">
+                <button onclick="setFilterToday()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                    <span class="text-[10px] font-black uppercase">Solicitados Hoy</span>
+                </button>
+                <button onclick="clearAllFilters()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                    <span class="text-[10px] font-black uppercase">Borrar Filtros</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-2 bg-white flex items-center">
+            <div class="relative w-full">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input type="text" id="search-input" class="w-full h-10 bg-slate-50 border-none rounded-xl pl-10 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all uppercase placeholder-slate-400" placeholder="BUSCAR POR NOMBRE, NO. DE SOCIO, FOLIO O PLACAS..." oninput="applyFilters()">
+            </div>
+        </div>
+
+        <div class="flex metallic-header shadow-md">
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider" style="width: 8%;">Folio</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider" style="width: 8%;">Socio</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider" style="width: 22%;">Nombre del Titular</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider" style="width: 20%;">Vehículo</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider" style="width: 22%;">Puesto (Negocio - Área)</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider text-right" style="width: 12%;">Teléfono</div>
+            <div class="p-3 text-[10px] font-black uppercase text-white tracking-wider text-center" style="width: 8%;">Eliminar</div>
+        </div>
+    </div>
+
+    <!-- Viewport: Área de Scroll -->
+    <div id="viewport" class="flex-1 overflow-y-auto relative bg-white custom-scroll">
+        <div id="v-spacer" style="width: 100%; pointer-events: none;"></div>
+        <div id="v-content" class="absolute top-0 left-0 w-full">
+            <!-- Filas virtuales inyectadas por JS -->
+        </div>
+    </div>
+
+    <div class="flex-shrink-0 px-4 py-2 bg-slate-50 border-t flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">CIC-6 Marbetes v14.1</span>
+            <span id="sync-time" class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest italic leading-none">Iniciando...</span>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .metallic-header { background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); }
+    .kpi-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 90px; padding: 4px 10px; border-radius: 12px; background: white; border: 1.5px solid #e2e8f0; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); line-height: 1.1; }
+    .kpi-chip:hover { border-color: #10b981; transform: translateY(-1px); }
+    .kpi-chip.active { background: linear-gradient(135deg, #064e3b, #059669); color: white; border-color: #064e3b; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
+    .data-row { position: absolute; width: 100%; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.1s; }
+    .data-row:hover { background-color: #f0fdf4; }
+    .cell-content { padding: 0 20px; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    mark.search-highlight { background-color: #fef08a; color: #1e293b; padding: 0 2px; border-radius: 2px; font-weight: 800; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .syncing svg { animation: spin 1s linear infinite; }
+    
+    /* Estilo para distinguir la zona de borrado */
+    .danger-zone { border-left: 1px solid #fee2e2; background-color: #fffafb; height: 100%; display: flex; align-items: center; justify-content: center; }
+</style>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- CREDENCIALES EXPLÍCITAS ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+        authDomain: "cic6-pp-web.firebaseapp.com",
+        projectId: "cic6-pp-web",
+        storageBucket: "cic6-pp-web.firebasestorage.app",
+        messagingSenderId: "248659087868",
+        appId: "1:248659087868:web:a277ef700d83c7f1d22279",
+        measurementId: "G-ZMC7H7710Z"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = 'cic.pp';
+
+    const ROW_HEIGHT = 54;
+    let allData = [];
+    let filteredData = [];
+    let currentKpiFilter = "Todos";
+    let isSyncing = false;
+    let itemToDelete = null;
+
+    const viewport = document.getElementById('viewport');
+    const vSpacer = document.getElementById('v-spacer');
+    const vContent = document.getElementById('v-content');
+    const syncLabel = document.getElementById('sync-time');
+
+    // --- AUTOMATITZACIÓ POWER AUTOMATE (EXCEL) ---
+    const PA_API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fe7a46f4aa314e7a993bc66528b0d03b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mTepaYfQc_U2RF4I-tX0PNhrniM2OgcErzU9gDtA0fw";
+
+    async function syncFromExcelAPI() {
+        console.log("Iniciant sincronització profunda amb Excel...");
+        syncLabel.innerText = "Descarregant Excel...";
+        try {
+            const response = await fetch(PA_API_URL, { method: 'POST' });
+            if (!response.ok) throw new Error("PA error");
+            const data = await response.json();
+            const items = data.result || [];
+            if (items.length === 0) { syncLabel.innerText = "Excel buit"; return; }
+            syncLabel.innerText = "Analitzant dades...";
+            let newRecordsCount = 0;
+            for (const item of items) {
+                const exists = allData.some(d => d.IDFila === item.IDFila);
+                if (!exists && item.Nombre) {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'), { items: [item] });
+                    newRecordsCount++;
+                }
+            }
+            syncLabel.innerText = "Sincronitzat amb Excel";
+            if (newRecordsCount > 0) { await fetchFromFirebase(true); }
+        } catch (e) {
+            console.error("Error en sincronització Excel:", e);
+            syncLabel.innerText = "Error descàrrega Excel";
+        }
+    }
+
+    function setupHourlyScheduler() {
+        setInterval(() => {
+            const now = new Date();
+            const hr = now.getHours();
+            if (hr >= 6 && hr <= 17) { syncFromExcelAPI(); }
+        }, 60 * 60 * 1000);
+    }
+
+    // --- INDEXED DB ENGINE ---
+    const DB_NAME = "CIC_Marbetes_DB_v2";
+    const STORE_NAME = "marbetes_cache";
+    const initDB = () => new Promise((res) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains(STORE_NAME)) e.target.result.createObjectStore(STORE_NAME); };
+        req.onsuccess = e => res(e.target.result);
+    });
+    const saveLocal = async (data) => {
+        const idb = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = idb.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const clearReq = store.clear();
+            clearReq.onsuccess = () => { store.put(data, "current_list"); };
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    };
+    const getLocal = async () => {
+        const idb = await initDB();
+        return new Promise(res => {
+            const req = idb.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get("current_list");
+            req.onsuccess = () => res(req.result || null);
+            req.onerror = () => res(null);
+        });
+    };
+
+    function excelToDate(val) {
+        if (!val || isNaN(val) || typeof val === 'string') return val;
+        try {
+            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+            const adjusted = new Date(date.getTime() + (6 * 60 * 60 * 1000));
+            const dd = String(adjusted.getDate()).padStart(2, '0');
+            const mm = String(adjusted.getMonth() + 1).padStart(2, '0');
+            return `${dd}/${mm}/${adjusted.getFullYear()}`;
+        } catch (e) { return val; }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        const cached = await getLocal();
+        if (cached && cached.length > 0) {
+            allData = cached;
+            updateKPIs();
+            applyFilters();
+            document.getElementById('loading-state').style.display = 'none';
+            syncLabel.innerText = "Carregat de Base Local";
+        }
+        if (user) { fetchFromFirebase(true); setupHourlyScheduler(); }
+        else { signInAnonymously(auth).catch(console.error); }
+    });
+
+    async function fetchFromFirebase(skipPA = false) {
+        if (isSyncing) return;
+        isSyncing = true;
+        document.getElementById('btn-sync').classList.add('syncing');
+        syncLabel.innerText = "Sincronitzant Cloud...";
+        try {
+            const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'));
+            let combined = [];
+            querySnapshot.forEach(doc => {
+                const part = doc.data();
+                if (part.items) {
+                    const formatted = part.items.map(item => {
+                        const dateFields = ["Fecha de solicitud", "Fecha de asignación"];
+                        dateFields.forEach(f => { item[f] = excelToDate(item[f]); });
+                        return { ...item, __partId: doc.id };
+                    });
+                    combined = combined.concat(formatted);
+                }
+            });
+            if (combined.length > 0) {
+                allData = combined.sort((a,b) => {
+                    const p = { "sin folio": 1, "pendiente": 2, "entregado": 3, "baja": 4 };
+                    const sA = normalizeText(a.Estatus || a.Estado);
+                    const sB = normalizeText(b.Estatus || b.Estado);
+                    return (p[sA] || 99) - (p[sB] || 99);
+                });
+                await saveLocal(allData);
+                updateKPIs();
+                applyFilters();
+                document.getElementById('loading-state').style.display = 'none';
+                syncLabel.innerText = `Sincronitzat: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                if (!skipPA) { syncFromExcelAPI(); }
+            }
+        } catch (e) { console.error(e); syncLabel.innerText = "Error de sincronització"; } 
+        finally { isSyncing = false; document.getElementById('btn-sync').classList.remove('syncing'); }
+    }
+
+    const normalizeText = (str) => String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    window.applyFilters = () => {
+        const queryNorm = normalizeText(document.getElementById('search-input').value);
+        const queryParts = queryNorm.split(/\s+/).filter(p => p.length > 0);
+        const dateType = document.getElementById('date-type').value;
+        const startVal = document.getElementById('date-start').value;
+        const endVal = document.getElementById('date-end').value;
+        const startLimit = startVal ? new Date(startVal + "T00:00:00") : null;
+        const endLimit = endVal ? new Date(endVal + "T23:59:59") : null;
+        filteredData = allData.filter(item => {
+            const itemStatus = normalizeText(item.Estatus || item.Estado);
+            if (currentKpiFilter !== "Todos" && itemStatus !== normalizeText(currentKpiFilter)) return false;
+            if (startLimit || endLimit) {
+                const val = item[dateType];
+                if (!val || typeof val !== 'string' || !val.includes('/')) return false;
+                const [d, m, y] = val.split('/').map(Number);
+                const itemDate = new Date(y, m - 1, d);
+                if (startLimit && itemDate < startLimit) return false;
+                if (endLimit && itemDate > endLimit) return false;
+            }
+            if (queryParts.length === 0) return true;
+            const haystack = normalizeText(`${item.Folio} ${item.Nombre} ${item.Titular} ${item.Placas} ${item["No de socio"]} ${item.Socio} ${item.Puesto} ${item.Negocio}`);
+            return queryParts.every(part => haystack.includes(part));
+        });
+        vSpacer.style.height = `${filteredData.length * ROW_HEIGHT}px`;
+        renderVirtual();
+    };
+
+    window.setFilterToday = () => {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('date-type').value = "Fecha de solicitud";
+        document.getElementById('date-start').value = todayStr;
+        document.getElementById('date-end').value = todayStr;
+        fetchFromFirebase(true);
+    };
+
+    window.clearAllFilters = () => {
+        document.getElementById('search-input').value = "";
+        document.getElementById('date-start').value = "";
+        document.getElementById('date-end').value = "";
+        document.getElementById('date-type').value = "Fecha de solicitud";
+        window.setKpiFilter('Todos');
+    };
+
+    function renderVirtual() {
+        const scrollTop = viewport.scrollTop;
+        const viewportHeight = viewport.clientHeight;
+        let startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+        let endIdx = Math.min(startIdx + Math.ceil(viewportHeight / ROW_HEIGHT) + 6, filteredData.length);
+        vContent.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
+        const slice = filteredData.slice(startIdx, endIdx);
+        const queryParts = normalizeText(document.getElementById('search-input').value).split(/\s+/).filter(p => p.length > 0);
+        
+        vContent.innerHTML = slice.map((item, idx) => {
+            const tel = String(item.Teléfono || '');
+            const socio = item["No de socio"] || item.Socio || '---';
+            return `
+                <div class="data-row" style="height: ${ROW_HEIGHT}px; top: ${idx * ROW_HEIGHT}px;" onclick="handleItemClick(${startIdx + idx})">
+                    <div class="cell-content font-mono font-black text-emerald-800" style="width: 8%;">${item.Folio || '---'}</div>
+                    <div class="cell-content font-black text-slate-400" style="width: 8%;">${socio}</div>
+                    <div class="cell-content font-bold text-slate-800 uppercase" style="width: 22%;">${highlightText(item.Nombre || item.Titular || 'SIN NOMBRE', queryParts)}</div>
+                    <div class="cell-content text-slate-500 italic" style="width: 20%;">${item.Marca || ''} ${item.Modelo || ''}</div>
+                    <div class="cell-content text-[11px] text-slate-600 font-medium" style="width: 22%;">${item.Puesto || '---'} (${item.Negocio || '---'})</div>
+                    <div class="cell-content text-right font-mono text-slate-400 font-bold" style="width: 12%;">${tel || '---'}</div>
+                    <div class="cell-content danger-zone" style="width: 8%;">
+                        <button onclick="event.stopPropagation(); requestDelete(${startIdx + idx})" class="flex items-center justify-center w-7 h-7 bg-rose-50 text-rose-500 rounded-lg border border-rose-100 hover:bg-rose-500 hover:text-white hover:border-rose-600 transition-all shadow-sm" title="¡PELIGRO! Borrar registro permanentemente">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- LÒGICA D'ELIMINACIÓ ---
+    window.requestDelete = (index) => {
+        itemToDelete = filteredData[index];
+        if (!itemToDelete) return;
+        document.getElementById('delete-modal').classList.remove('hidden');
+        document.getElementById('delete-confirm-input').value = "";
+        document.getElementById('btn-execute-delete').disabled = true;
+        document.getElementById('delete-confirm-input').focus();
+    };
+
+    window.closeDeleteModal = () => {
+        document.getElementById('delete-modal').classList.add('hidden');
+        itemToDelete = null;
+    };
+
+    document.getElementById('delete-confirm-input').oninput = (e) => {
+        const val = e.target.value.trim().toUpperCase();
+        document.getElementById('btn-execute-delete').disabled = (val !== "ELIMINAR");
+    };
+
+    window.executeDelete = async () => {
+        if (!itemToDelete) return;
+        const btn = document.getElementById('btn-execute-delete');
+        btn.disabled = true;
+        btn.innerText = "Esborrant...";
+
+        try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', itemToDelete.__partId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const currentItems = docSnap.data().items || [];
+                const updatedItems = currentItems.filter(i => i.IDFila !== itemToDelete.IDFila);
+                
+                if (updatedItems.length === 0) {
+                    await updateDoc(docRef, { items: [] });
+                } else {
+                    await updateDoc(docRef, { items: updatedItems });
+                }
+                
+                allData = allData.filter(d => d.IDFila !== itemToDelete.IDFila);
+                await saveLocal(allData);
+                updateKPIs();
+                applyFilters();
+                
+                console.log("Registre eliminat correctament del núvol.");
+            }
+        } catch (e) {
+            console.error("Error al eliminar registre:", e);
+        } finally {
+            closeDeleteModal();
+            btn.innerText = "Eliminar";
+        }
+    };
+
+    const highlightText = (text, queryParts) => {
+        if (!queryParts.length || !text) return text;
+        const regex = new RegExp(`(${queryParts.join('|')})`, 'gi');
+        return String(text).replace(regex, '<mark class="search-highlight">$1</mark>');
+    };
+
+    function updateKPIs() {
+        const getLen = (s) => allData.filter(d => normalizeText(d.Estatus || d.Estado) === s).length;
+        document.getElementById('count-all').innerText = allData.length;
+        document.getElementById('count-nofolio').innerText = getLen('sin folio');
+        document.getElementById('count-pending').innerText = getLen('pendiente');
+        document.getElementById('count-delivered').innerText = getLen('entregado');
+        document.getElementById('count-bajas').innerText = getLen('baja');
+    }
+
+    window.setKpiFilter = (s) => { currentKpiFilter = s; document.querySelectorAll('.kpi-chip').forEach(c => c.classList.remove('active')); const map = { "Todos": "kpi-all", "Sin folio": "kpi-nofolio", "Pendiente": "kpi-pendiente", "Entregado": "kpi-entregado", "Baja": "kpi-baja" }; document.getElementById(map[s])?.classList.add('active'); applyFilters(); };
+    window.handleItemClick = (index) => { 
+        const item = filteredData[index];
+        if (item) {
+            window.parent.__CURRENT_MARBETE = item;
+            if (typeof window.parent.Navegar_Marbetes === 'function') window.parent.Navegar_Marbetes('Detalle_Marbete');
+            else window.parent.postMessage({ type: 'OPEN_MARBETE_DETAIL', data: item }, '*');
+        }
+    };
+    viewport.onscroll = renderVirtual;
+    window.fetchFromFirebase = fetchFromFirebase;
+    window.addEventListener('resize', renderVirtual);
+</script>
