@@ -84,6 +84,14 @@
             margin-bottom: 2px;
         }
 
+        /* Estilo para el nombre a remarcar */
+        #display-name {
+            color: #e2e8f0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
         @media print {
             .no-print { display: none !important; }
             body { background-color: white; padding: 0; }
@@ -91,8 +99,29 @@
                 box-shadow: none; 
                 border: 1px solid #e2e8f0;
                 break-inside: avoid;
+                padding: 10px;
             }
             .box-upper, .box-lower, .box-number { background: none !important; }
+            
+            /* Forzar 5 columnas por fila en la impresión */
+            #grid-container {
+                display: grid !important;
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 8px !important;
+            }
+
+            .letter-display {
+                font-size: 2rem;
+            }
+            
+            .box-upper, .box-number {
+                height: 60px;
+                width: 55px;
+            }
+            .box-lower {
+                height: 40px;
+                width: 45px;
+            }
         }
 
         .calendar-box {
@@ -112,8 +141,8 @@
                 ⚙️ Configuración de la Hoja
             </h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                <!-- Selector de Modo (Combobox) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+                <!-- Selector de Modo -->
                 <div>
                     <label for="mode-select" class="block text-sm font-bold text-gray-600 mb-2">Selecciona qué practicar:</label>
                     <select id="mode-select" onchange="setMode(this.value)" class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 transition-all bg-white font-medium text-gray-700">
@@ -125,6 +154,14 @@
                     </select>
                 </div>
 
+                <!-- Input Nombre del Alumno -->
+                <div>
+                    <label for="name-input" class="block text-sm font-bold text-gray-600 mb-2">Nombre del alumno (para remarcar):</label>
+                    <input type="text" id="name-input" maxlength="25" placeholder="Escribe el nombre aquí" 
+                           class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 transition-all"
+                           oninput="updateStudentName(this.value)">
+                </div>
+
                 <!-- Input de Texto (Solo visible en modo texto) -->
                 <div id="custom-text-container" class="hidden">
                     <label class="block text-sm font-bold text-gray-600 mb-2">Escribe tu texto:</label>
@@ -132,7 +169,7 @@
                            class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 transition-all">
                 </div>
 
-                <div class="flex items-end justify-end md:col-span-2">
+                <div class="flex items-end justify-end lg:col-span-3">
                     <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg flex items-center gap-2 transition-all transform hover:scale-105">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         Imprimir Hoja
@@ -146,7 +183,7 @@
             <div class="md:col-span-2 flex flex-col justify-center">
                 <div class="flex items-center gap-3 border-b-2 border-dashed border-blue-200 pb-2">
                     <span class="text-xl font-bold text-gray-700">Nombre:</span>
-                    <div class="flex-grow"></div>
+                    <div id="display-name" class="flex-grow min-w-[200px]"></div>
                 </div>
             </div>
             
@@ -191,7 +228,6 @@
             'Kk', 'Ll', 'Mm', 'Nn', 'Ññ', 'Oo', 'Pp', 'Qq', 'Rr', 'Ss', 
             'Tt', 'Uu', 'Vv', 'Ww', 'Xx', 'Yy', 'Zz'
         ];
-        // Se incluyen los símbolos solicitados
         const specialChars = ['Áá', 'Éé', 'Íí', 'Óó', 'Úú', 'Üü', '¡!', '¿?', '""', '/', '#'];
         const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
@@ -199,6 +235,11 @@
         const input = document.getElementById('custom-input');
         const containerInput = document.getElementById('custom-text-container');
         const sheetTitle = document.getElementById('sheet-title');
+        const displayName = document.getElementById('display-name');
+
+        function updateStudentName(val) {
+            displayName.textContent = val;
+        }
 
         function setMode(mode) {
             currentMode = mode;
@@ -229,11 +270,9 @@
                 });
             } else if (currentMode === 'especiales') {
                 specialChars.forEach(pair => {
-                    // Para símbolos como # o / que no tienen par natural, usamos el mismo caracter en ambos cuadros
                     const trace1 = pair[0];
                     const trace2 = pair.length > 1 ? pair[1] : pair[0];
                     const isSymbol = !/[a-zA-Záéíóúüñ]/i.test(pair);
-                    
                     createLetterCard(pair, trace1, trace2, true, null, isSymbol);
                 });
             } else if (currentMode === 'numeros') {
@@ -260,7 +299,6 @@
             card.className = `letter-card`;
             const displayTitle = customMainChar ? customMainChar : title;
             
-            // Ajustar etiquetas si es un símbolo
             const label1 = isSymbol ? "Trazo 1" : "Mayúscula";
             const label2 = isSymbol ? "Trazo 2" : "Minúscula";
 
