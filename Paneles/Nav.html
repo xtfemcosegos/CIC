@@ -141,7 +141,7 @@
             <span>Directorio de Socios</span>
         </button>
 
-        <button onclick="openApp('Apps/RegMa.html', 'Marbetes')" class="app-button">
+        <button onclick="openApp('Apps/Marbetes.html', 'Marbetes')" class="app-button">
             <div class="icon-box bg-emerald-500 shadow-sm">
                 <img src="../MM/RegMa.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
                 <span class="text-white text-[10px] font-black hidden">RM</span>
@@ -171,10 +171,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
 
         const userName = document.getElementById('userName');
@@ -182,10 +184,23 @@
         const userRole = document.getElementById('userRole');
         const logoutBtn = document.getElementById('logoutBtn');
 
+        async function resolvePhoto(path) {
+            if (!path) return;
+            try {
+                if (path.startsWith('gs://')) {
+                    const storagePath = path.replace(/gs:\/\/[^\/]+\//, '');
+                    const url = await getDownloadURL(ref(storage, storagePath));
+                    userPhoto.src = url;
+                } else {
+                    userPhoto.src = path;
+                }
+            } catch (e) { console.error("Error al cargar foto:", e); }
+        }
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    // Sincronizar datos reales desde Firestore para compatibilidad
+                    // Sincronizar datos reales desde Firestore
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
                     const snap = await getDoc(docRef);
                     
@@ -210,8 +225,8 @@
                             
                             // Actualizar UI con datos oficiales
                             userName.textContent = socioData.nombre || user.email.split('@')[0];
-                            userRole.textContent = socioData.operativa.puesto || "Personal CIC";
-                            if (socioData.photo) userPhoto.src = socioData.photo;
+                            userRole.textContent = socioData.operativa?.puesto || socioData.puesto || "Personal CIC";
+                            if (socioData.photo) await resolvePhoto(socioData.photo);
                         } else {
                             userName.textContent = user.email.split('@')[0];
                         }

@@ -104,7 +104,7 @@
         /* --- Contenedor Principal --- */
         #timelineContainer {
             padding-top: 80px; 
-            min-height: 101vh; /* Evita que el header se mueva por falta de scroll inicial */
+            min-height: 101vh; 
         }
 
         .day-section {
@@ -240,7 +240,9 @@
         let activeDate = new Date();
         activeDate.setHours(12, 0, 0, 0);
         let activeSnapshots = new Map();
+        let dayDataCache = new Map(); // Cache para guardar la data de cada día y permitir filtrado instantáneo
         let scrollObserver = null;
+        let currentFilter = 'proximos';
 
         const dom = {
             timeline: document.getElementById('timelineContainer'),
@@ -255,10 +257,8 @@
             dom.dateInput.value = date.toISOString().split('T')[0];
         };
 
-        // --- Observer para scroll ---
         const initScrollObserver = () => {
             if (scrollObserver) scrollObserver.disconnect();
-
             scrollObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
@@ -289,12 +289,10 @@
             }
         }
 
-        // --- CORRECCIÓN DE FOTOS: Paso directo del elemento para evitar race conditions ---
         async function resolveImage(path, imgElement) {
             if (!path || !imgElement) return;
             try {
                 if (path.startsWith('gs://')) {
-                    // Limpieza robusta del prefijo gs://bucket-name/
                     const storagePath = path.replace(/gs:\/\/[^\/]+\//, '');
                     const url = await getDownloadURL(ref(storage, storagePath));
                     imgElement.src = url;
@@ -307,6 +305,7 @@
         function startTimeline() {
             activeSnapshots.forEach(unsub => unsub());
             activeSnapshots.clear();
+            dayDataCache.clear();
             
             dom.timeline.innerHTML = '';
             updateMainHeader();
@@ -345,6 +344,7 @@
             const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
             const unsub = onSnapshot(attRef, (snap) => {
                 const dayData = snap.exists() ? (snap.data()[dateId] || {}) : {};
+                dayDataCache.set(dateId, { data: dayData, date: date }); // Guardar en cache
                 updateDayGrid(dateId, dayData, date);
             });
             activeSnapshots.set(dateId, unsub);
@@ -354,9 +354,16 @@
             const grid = document.getElementById(`grid-${dateId}`);
             if (!grid) return;
 
-            const filtered = allPersonnel.filter(u => dayData[u.socioId]);
+            // Filtrar según el filtro activo (RegAs Signal)
+            let filtered = [];
+            if (currentFilter === 'proximos') {
+                filtered = allPersonnel.filter(u => dayData[u.socioId]);
+            } else {
+                filtered = allPersonnel.filter(u => dayData[u.socioId] && dayData[u.socioId][currentFilter]);
+            }
+
             if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-8 text-center text-[10px] font-bold text-slate-200 uppercase tracking-widest">Sin registros registrados</div>`;
+                grid.innerHTML = `<div class="col-span-full py-8 text-center text-[10px] font-bold text-slate-200 uppercase tracking-widest">Sin registros encontrados</div>`;
                 return;
             }
 
@@ -414,7 +421,6 @@
                 content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${person.uid}&date=${iso}&tab=gestion" class="w-full h-full border-none"></iframe>` 
             }, '*');
 
-            // Llamada directa al elemento IMG contenido en el DIV
             if (person.photo) resolveImage(person.photo, div.querySelector('img'));
             return div;
         }
@@ -426,7 +432,7 @@
         };
 
         window.loadMoreDays = () => {
-            const offset = activeSnapshots.size;
+            const offset = dayDataCache.size;
             const lastDate = new Date(activeDate);
             lastDate.setDate(lastDate.getDate() + offset);
             for(let i=0; i < 5; i++) {
@@ -440,6 +446,17 @@
             activeDate = new Date(e.target.value + "T12:00:00");
             startTimeline();
         };
+
+        // --- Escuchar filtros del ribbon superior ---
+        window.addEventListener('message', (e) => {
+            if (e.data?.action === 'filter') {
+                currentFilter = e.data.type;
+                // Refrescar todas las secciones cargadas con el nuevo filtro
+                dayDataCache.forEach((cache, dateId) => {
+                    updateDayGrid(dateId, cache.data, cache.date);
+                });
+            }
+        });
 
         onAuthStateChanged(auth, async (u) => { 
             if (u) { await fetchPersonnel(); startTimeline(); } 
