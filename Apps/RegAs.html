@@ -9,8 +9,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
         
         :root {
-            --accent-fiusha: #d946ef; /* Fuchsia 500 */
-            --accent-fiusha-dark: #a21caf; /* Fuchsia 700 */
+            --accent-fiusha: #d946ef; 
+            --accent-fiusha-dark: #a21caf; 
             --metal-border: #e2e8f0;
         }
 
@@ -38,12 +38,11 @@
             padding: 0 1.5rem;
             color: #0f172a;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-bottom: 4px solid var(--accent-fiusha); /* Borde fiusha notable */
+            border-bottom: 4px solid var(--accent-fiusha);
             position: relative;
             z-index: 60;
         }
 
-        /* Textura de metal cepillado sutil */
         .app-header::before {
             content: "";
             position: absolute;
@@ -73,7 +72,6 @@
         }
         .apps-header-btn:hover { background: rgba(217, 70, 239, 0.1); border-color: var(--accent-fiusha); }
 
-        /* Selector de Vista Estilo Moderno */
         .view-selector {
             background: rgba(0, 0, 0, 0.05);
             padding: 3px;
@@ -108,7 +106,6 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
-        /* Cinta de Herramientas (Tool Ribbon) */
         .tool-ribbon {
             height: 32px;
             background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
@@ -140,10 +137,8 @@
         }
 
         .tool-item:hover { color: var(--accent-fiusha); background: rgba(217, 70, 239, 0.05); }
-
         .tool-item svg { width: 12px; height: 12px; }
 
-        /* Área de Contenido */
         #contentArea { 
             height: calc(100vh - 87px); 
             width: 100%; 
@@ -251,7 +246,7 @@
             } else {
                 ribbon.classList.remove('hidden');
                 content.classList.remove('full-view');
-                frame.src = 'about:blank'; // O carga la vista correspondiente
+                frame.src = 'about:blank'; 
 
                 const tools = TOOL_CONFIG[view] || [];
                 tools.forEach(tool => {
@@ -271,6 +266,36 @@
         function toggleMenu() {
             window.parent.postMessage({ action: 'toggleMenu' }, '*');
         }
+
+        /**
+         * CORRECCIÓN CRÍTICA: Puente de Comunicación (Relay)
+         * Este bloque escucha los mensajes del iframe hijo (Planeación) 
+         * y los reenvía al contenedor padre (Administración).
+         */
+        window.addEventListener('message', (e) => {
+            const { action } = e.data || {};
+            
+            // Acciones que deben subir a Administración.html
+            const relayActions = [
+                'openRightPanel', 
+                'closeRightPanel', 
+                'toggleRightPanel', 
+                'toggleMenu',
+                'openApp'
+            ];
+
+            if (relayActions.includes(action)) {
+                window.parent.postMessage(e.data, '*');
+            }
+            
+            // Acciones que deben bajar a Planeación.html (si las hay)
+            if (action === 'refreshList') {
+                const frame = document.getElementById('moduleFrame');
+                if (frame && frame.contentWindow) {
+                    frame.contentWindow.postMessage({ action: 'refreshList' }, '*');
+                }
+            }
+        });
 
         window.onload = () => {
             const defaultBtn = document.querySelector('.view-btn.active');
