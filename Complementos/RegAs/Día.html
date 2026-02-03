@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista Diaria - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            margin: 0;
+            padding: 1.5rem;
+        }
+
+        .user-card {
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+        .user-card:hover {
+            border-color: #d946ef;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .status-tag {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.05em;
+        }
+
+        .tag-matutino { background: #fef3c7; color: #92400e; }
+        .tag-vespertino { background: #dbeafe; color: #1e40af; }
+        .tag-nocturno { background: #ede9fe; color: #5b21b6; }
+        .tag-ausentismo { background: #fee2e2; color: #991b1b; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-7xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 id="currentDayLabel" class="text-2xl font-black text-slate-900 uppercase tracking-tight">Cargando...</h2>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Estado Operativo en Tiempo Real</p>
+            </div>
+            <div id="statsCounter" class="flex gap-4"></div>
+        </div>
+
+        <div id="loader" class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-4"></div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sincronizando registros...</p>
+        </div>
+
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+            </div>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Sin registros para el filtro seleccionado</p>
+        </div>
+
+        <div id="gridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let allPersonnel = [];
+        let attendanceData = {};
+        let currentFilter = 'proximos';
+        const today = new Date();
+        const dateId = `${String(today.getDate()).padStart(2, '0')}${String(today.getMonth() + 1).padStart(2, '0')}${today.getFullYear()}`;
+        const isoDate = today.toISOString().split('T')[0];
+
+        const gridContainer = document.getElementById('gridContainer');
+        const loader = document.getElementById('loader');
+        const emptyState = document.getElementById('emptyState');
+        const currentDayLabel = document.getElementById('currentDayLabel');
+        const statsCounter = document.getElementById('statsCounter');
+
+        currentDayLabel.textContent = today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        async function resolveImage(gsPath, imgId) {
+            if (!gsPath) return;
+            try {
+                const el = document.getElementById(imgId);
+                if (!el) return;
+                
+                if (gsPath.startsWith('gs://')) {
+                    const cleanPath = gsPath.replace(/gs:\/\/[^\/]+\//, '');
+                    const url = await getDownloadURL(ref(storage, cleanPath));
+                    el.src = url;
+                } else {
+                    el.src = gsPath;
+                }
+            } catch (err) {
+                console.warn("Error resolving image:", gsPath);
+            }
+        }
+
+        async function initData() {
+            try {
+                const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const usersSnap = await getDoc(usersRef);
+                if (usersSnap.exists()) {
+                    const data = usersSnap.data();
+                    allPersonnel = Object.entries(data).map(([uid, d]) => ({
+                        uid, socioId: String(d.socioId || ''), nombre: d.nombre || 'S/N',
+                        photo: d.photo || null,
+                        puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
+                        status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase()
+                    })).filter(u => u.status !== 'baja' && u.socioId);
+                }
+
+                const trim = Math.ceil((today.getMonth() + 1) / 3);
+                const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', `Trim${trim}-${today.getFullYear()}`);
+
+                onSnapshot(attRef, (snap) => {
+                    attendanceData = snap.exists() ? (snap.data()[dateId] || {}) : {};
+                    render();
+                    loader.classList.add('hidden');
+                }, (err) => {
+                    console.error("Firestore error:", err);
+                    loader.classList.add('hidden');
+                });
+            } catch (err) { console.error("Init data error:", err); }
+        }
+
+        function render() {
+            gridContainer.innerHTML = '';
+            let filtered = [];
+            if (currentFilter === 'proximos') filtered = allPersonnel.filter(u => attendanceData[u.socioId]);
+            else filtered = allPersonnel.filter(u => attendanceData[u.socioId]?.[currentFilter]);
+
+            if (filtered.length === 0) emptyState.classList.remove('hidden');
+            else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(person => gridContainer.appendChild(createCard(person, attendanceData[person.socioId])));
+            }
+            updateStats();
+        }
+
+        function createCard(person, entry) {
+            const div = document.createElement('div');
+            div.className = 'user-card bg-white p-4 rounded-2xl flex flex-col cursor-pointer';
+            let activeShift = '', shiftColor = '', caseta = 'No asignada';
+            if (entry.matutino) { activeShift = 'Matutino'; shiftColor = 'tag-matutino'; caseta = entry.matutino.Caseta; }
+            else if (entry.vespertino) { activeShift = 'Vespertino'; shiftColor = 'tag-vespertino'; caseta = entry.vespertino.Caseta; }
+            else if (entry.nocturno) { activeShift = 'Nocturno'; shiftColor = 'tag-nocturno'; caseta = entry.nocturno.Caseta; }
+            else if (entry.ausentismo) { activeShift = entry.ausentismo.motivo || 'Ausente'; shiftColor = 'tag-ausentismo'; caseta = 'N/A'; }
+
+            const imgId = `img-v-dia-${person.socioId}`;
+            const avatarPlaceholder = `https://ui-avatars.com/api/?name=${person.nombre}&background=f1f5f9&color=64748b`;
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <img id="${imgId}" src="${avatarPlaceholder}" class="w-12 h-12 rounded-xl object-cover bg-slate-100">
+                    <div class="overflow-hidden leading-tight">
+                        <h4 class="text-[11px] font-black uppercase truncate text-slate-800">${person.nombre}</h4>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${person.puesto}</p>
+                    </div>
+                </div>
+                <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                    <div class="flex flex-col"><span class="text-[8px] font-black text-slate-300 uppercase">Caseta</span>
+                    <span class="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">${caseta}</span></div>
+                    <span class="status-tag ${shiftColor}">${activeShift}</span>
+                </div>`;
+            
+            div.onclick = () => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${person.uid}&date=${isoDate}&tab=gestion" class="w-full h-full border-none"></iframe>` }, '*');
+            
+            // Resolver imagen de forma asíncrona
+            if (person.photo) {
+                setTimeout(() => resolveImage(person.photo, imgId), 0);
+            }
+            
+            return div;
+        }
+
+        function updateStats() {
+            let m=0, v=0, n=0, a=0;
+            Object.values(attendanceData).forEach(e => { if(e.matutino) m++; if(e.vespertino) v++; if(e.nocturno) n++; if(e.ausentismo) a++; });
+            statsCounter.innerHTML = `
+                <div class="bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-amber-600">${m}</span><span class="text-[7px] font-black text-amber-400 uppercase tracking-widest">MAT</span></div>
+                <div class="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-blue-600">${v}</span><span class="text-[7px] font-black text-blue-400 uppercase tracking-widest">VES</span></div>
+                <div class="bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-purple-600">${n}</span><span class="text-[7px] font-black text-purple-400 uppercase tracking-widest">NOC</span></div>
+                <div class="bg-red-50 px-3 py-1.5 rounded-xl border border-red-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-red-600">${a}</span><span class="text-[7px] font-black text-red-400 uppercase tracking-widest">AUS</span></div>`;
+        }
+
+        window.addEventListener('message', (e) => {
+            const { action, type } = e.data || {};
+            if (action === 'filter') { currentFilter = type; render(); }
+        });
+
+        initAuth();
+        onAuthStateChanged(auth, (user) => { if (user) initData(); });
+    </script>
+</body>
+</html>

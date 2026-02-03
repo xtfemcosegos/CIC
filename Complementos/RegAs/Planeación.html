@@ -19,6 +19,7 @@
             --header-height: 60px;
             --left-col-width: 260px;
             --nav-btn-width: 44px;
+            --group-header-height: 36px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,18 +79,34 @@
 
         .header-cell.is-today { background: #fdf4ff; color: var(--accent-fiusha); box-shadow: inset 0 -4px 0 var(--accent-fiusha); }
 
-        .left-col { grid-row: 2; grid-column: 1; overflow-y: hidden; z-index: 90; background: white; border-right: 2px solid var(--md-outline); }
+        .left-col { 
+            grid-row: 2; grid-column: 1; 
+            overflow-y: hidden; z-index: 90; 
+            background: white; border-right: 2px solid var(--md-outline); 
+        }
 
         .user-row-info {
-            height: var(--row-height); display: flex; align-items: center;
+            height: var(--row-height); 
+            min-height: var(--row-height);
+            max-height: var(--row-height);
+            display: flex; align-items: center;
             gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--md-outline);
             cursor: pointer; transition: all 0.2s ease;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         .user-row-info:hover { background: #fdf2f8; padding-left: 20px; }
 
         .grid-viewport { grid-row: 2; grid-column: 2; overflow: auto; background: #f8fafc; scroll-behavior: smooth; }
-        .grid-body-container { display: inline-block; padding: 0 var(--nav-btn-width); }
-        .row-container { display: flex; height: var(--row-height); }
+        .grid-body-container { display: flex; flex-direction: column; padding: 0 var(--nav-btn-width); }
+        
+        .row-container { 
+            display: flex; 
+            height: var(--row-height); 
+            min-height: var(--row-height);
+            max-height: var(--row-height);
+            flex-shrink: 0;
+        }
 
         .data-cell {
             width: var(--cell-width); min-width: var(--cell-width); max-width: var(--cell-width);
@@ -128,11 +145,17 @@
         }
 
         .group-header {
-            background: #f8fafc; height: 36px; display: flex; 
+            background: #f8fafc; 
+            height: var(--group-header-height); 
+            min-height: var(--group-header-height);
+            max-height: var(--group-header-height);
+            display: flex; 
             align-items: center; padding: 0 16px; font-weight: 900; font-size: 10px; 
             color: var(--accent-fiusha-dark); text-transform: uppercase; letter-spacing: 0.12em;
-            border-bottom: 1px solid var(--md-outline); border-right: 1px solid var(--md-outline);
+            border-bottom: 1px solid var(--md-outline); 
             background-image: linear-gradient(to right, #f8fafc, #ffffff);
+            flex-shrink: 0;
+            white-space: nowrap;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
@@ -183,7 +206,6 @@
 
         <div class="h-px bg-slate-100 my-2"></div>
 
-        <!-- OPCIONES ADICIONALES -->
         <div onclick="window.openPatrones()" class="context-menu-item group relative p-3 hover:bg-indigo-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex items-center gap-3 transition-all">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
             Asignar Patrón
@@ -223,7 +245,7 @@
     <script type="module">
         import { firebaseConfig } from '../../script.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteField, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -268,13 +290,19 @@
             const usersSnap = await getDoc(usersRef);
             if(usersSnap.exists()) {
                 const data = usersSnap.data();
-                users = Object.entries(data).map(([uid, d]) => {
-                    const sId = String(d.socioId || '');
-                    userDataMap[sId] = { uid, ...d };
-                    const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
-                    const estatusVal = (d.operativa?.estatus || d.status || 'Activo').toLowerCase();
-                    return { uid, socioId: sId, ...d, displayPuesto: puestoVal, displayStatus: estatusVal };
-                }).filter(u => u.displayStatus !== 'baja' && u.socioId).sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                users = Object.entries(data)
+                    .filter(([uid, d]) => d && typeof d === 'object') // Asegurar objeto válido
+                    .map(([uid, d]) => {
+                        // CORRECCIÓN: Manejar ID 0 o nulo de forma segura
+                        const sId = (d.socioId !== undefined && d.socioId !== null) ? String(d.socioId) : '';
+                        userDataMap[sId] = { uid, ...d };
+                        const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
+                        const estatusVal = String(d.operativa?.estatus || d.status || 'Activo').toLowerCase();
+                        return { uid, socioId: sId, ...d, displayPuesto: puestoVal, displayStatus: estatusVal };
+                    })
+                    // CORRECCIÓN: Filtro de estatus más flexible
+                    .filter(u => u.displayStatus !== 'baja' && u.socioId !== '')
+                    .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
             }
 
             ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
@@ -297,7 +325,7 @@
 
         function renderStructure() {
             const grouped = users.reduce((acc, el) => {
-                const g = el.acceso_predeterminado || "GENERAL";
+                const g = el.operativa?.caseta || "GENERAL";
                 if (!acc[g]) acc[g] = [];
                 acc[g].push(el);
                 return acc;
@@ -317,10 +345,21 @@
                 UI.header.appendChild(cell);
             }
 
-            [...new Set([...casetasOrden, ...Object.keys(grouped)])].forEach(groupName => {
+            // CORRECCIÓN: Asegurar que todos los grupos detectados se incluyan
+            const allGroups = [...new Set([...casetasOrden, ...Object.keys(grouped)])];
+
+            allGroups.forEach(groupName => {
                 if(!grouped[groupName] || grouped[groupName].length === 0) return;
-                const ghL = document.createElement('div'); ghL.className = 'group-header'; ghL.innerText = groupName; document.getElementById('left-col').appendChild(ghL);
-                const ghR = document.createElement('div'); ghR.className = 'group-header'; ghR.style.width = `${totalDays * 62}px`; UI.gridBody.appendChild(ghR);
+                
+                const ghL = document.createElement('div'); 
+                ghL.className = 'group-header'; 
+                ghL.innerText = groupName; 
+                document.getElementById('left-col').appendChild(ghL);
+                
+                const ghR = document.createElement('div'); 
+                ghR.className = 'group-header'; 
+                ghR.style.width = `${totalDays * 62}px`; 
+                UI.gridBody.appendChild(ghR);
 
                 grouped[groupName].forEach(user => {
                     const uRow = document.createElement('div');
@@ -338,6 +377,14 @@
                             <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">${user.displayPuesto}</span>
                         </div>
                     `;
+
+                    uRow.onclick = () => {
+                        window.parent.postMessage({ 
+                            action: 'openRightPanel', 
+                            content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${user.uid}&tab=operacion" class="w-full h-full border-none"></iframe>` 
+                        }, '*');
+                    };
+
                     document.getElementById('left-col').appendChild(uRow);
                     if (isGs) resolveStorageImage(photoSrc, imgId);
 
@@ -551,46 +598,30 @@
             } catch (e) {}
         };
 
-        // FUNCIÓN: LIMPIAR DESDE AQUÍ HACIA ADELANTE
         window.deleteFromHere = async () => {
             if (!confirm("¿Confirma que desea eliminar toda la programación de este elemento desde esta fecha hacia adelante?")) return;
             UI.menu.style.display = 'none';
-            
             const { socioId, dateId } = currentContext;
-            
-            // Parsear fecha actual
             const day = parseInt(dateId.substring(0, 2));
             const month = parseInt(dateId.substring(2, 4)) - 1;
             const year = parseInt(dateId.substring(4, 8));
             let loopDate = new Date(year, month, day, 12, 0, 0);
-
-            // Fecha final (fin de los 180 días cargados o similar)
             const endDate = new Date(baseDate);
             endDate.setDate(baseDate.getDate() + totalDays);
-
             const updatesByTrim = {};
-
-            // Recorrer los días restantes
             while (loopDate <= endDate) {
                 const currentDocId = getTrimestreDocId(loopDate);
                 const currentDateId = String(loopDate.getDate()).padStart(2, '0') +
                                      String(loopDate.getMonth() + 1).padStart(2, '0') +
                                      loopDate.getFullYear();
-
                 if (!updatesByTrim[currentDocId]) updatesByTrim[currentDocId] = {};
-                
-                // Usar dot notation para eliminar el objeto del socio en esa fecha
                 updatesByTrim[currentDocId][`${currentDateId}.${socioId}`] = deleteField();
-
                 loopDate.setDate(loopDate.getDate() + 1);
             }
-
-            // Ejecutar actualizaciones masivas por documento
             const promises = Object.entries(updatesByTrim).map(([docId, updateObj]) => {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docId);
                 return updateDoc(docRef, updateObj).catch(() => {});
             });
-
             UI.overlay.style.display = 'flex';
             await Promise.all(promises);
             UI.overlay.style.display = 'none';
@@ -606,11 +637,17 @@
         };
 
         document.addEventListener('click', (e) => { if (!e.target.closest('#context-menu')) UI.menu.style.display = 'none'; });
+        
         const initSession = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token).catch(()=>{}); }
-            onAuthStateChanged(auth, (user) => { if (user) startSystem(); });
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
         };
+        
         initSession();
+        onAuthStateChanged(auth, (user) => { if (user) startSystem(); });
     </script>
 </body>
 </html>
