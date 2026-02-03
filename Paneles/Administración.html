@@ -19,7 +19,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Barra de Pestañas (28px) */
         .tab-bar {
             height: 28px;
             background: #f9fafb;
@@ -36,11 +35,7 @@
         }
         .tab-bar::-webkit-scrollbar { display: none; }
 
-        .tab-container {
-            display: flex;
-            align-items: flex-end;
-            height: 100%;
-        }
+        .tab-container { display: flex; align-items: flex-end; height: 100%; }
 
         .tab-item {
             height: 22px;
@@ -85,7 +80,6 @@
             transition: background 0.2s;
         }
 
-        /* Shell Header (55px) */
         .shell-header {
             height: 55px;
             background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
@@ -118,9 +112,7 @@
             transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #mainLayout.with-shell {
-            padding-top: 83px; 
-        }
+        #mainLayout.with-shell { padding-top: 83px; }
 
         .sidebar-transition {
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -163,12 +155,14 @@
     </header>
 
     <main id="mainLayout" class="flex h-screen w-full with-shell bg-gray-100">
+        <!-- Sidebar Izquierda -->
         <aside id="leftSidebar" class="h-full w-0 overflow-hidden glass-sidebar sidebar-transition absolute left-0 z-[120] shadow-2xl border-r" style="top: 83px;">
             <div class="w-[280px] h-full">
                 <iframe src="Nav.html" class="w-full h-full border-none" id="navFrame"></iframe>
             </div>
         </aside>
 
+        <!-- Contenido Central -->
         <section id="mainContent" class="flex-1 h-full relative overflow-hidden bg-white shadow-inner">
             <iframe src="about:blank" class="w-full h-full border-none" id="appFrame"></iframe>
             <div id="noApp" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-0">
@@ -177,6 +171,7 @@
             </div>
         </section>
 
+        <!-- Panel Derecho -->
         <aside id="rightSidebar" class="h-full w-0 overflow-hidden bg-white sidebar-transition border-l relative z-[100]">
             <div id="rightContent" class="w-full h-full overflow-hidden"></div>
         </aside>
@@ -216,6 +211,8 @@
             state.leftSidebarOpen = dom.leftSidebar.style.width === '280px';
             state.rightSidebarOpen = dom.rightSidebar.style.width === '35%';
             state.rightContentHtml = dom.rightContent.innerHTML;
+            state.openTabs = openTabs;
+            state.activeTabIndex = activeTabIndex;
             localStorage.setItem('cic_shell_state', JSON.stringify(state));
         };
 
@@ -237,8 +234,15 @@
         };
 
         const toggleRightSidebar = (forceOpen = null) => {
+            // Detección robusta de si está abierto o cerrado
             const currentWidth = dom.rightSidebar.style.width;
-            const targetWidth = (forceOpen === true || (forceOpen === null && currentWidth === '0px')) ? '35%' : '0px';
+            const isCurrentlyClosed = !currentWidth || currentWidth === '0px' || currentWidth === '0';
+            
+            let targetWidth;
+            if (forceOpen === true) targetWidth = '35%';
+            else if (forceOpen === false) targetWidth = '0px';
+            else targetWidth = isCurrentlyClosed ? '35%' : '0px';
+
             dom.rightSidebar.style.width = targetWidth;
             saveUIState();
         };
@@ -256,13 +260,14 @@
             });
         };
 
-        window.addEventListener('closeTab', (e) => closeTab(e.detail));
-
         const switchApp = (index) => {
             activeTabIndex = index;
             const tab = openTabs[index];
             if (tab) {
-                if (dom.appFrame.src !== new URL(tab.url, window.location.href).href) dom.appFrame.src = tab.url;
+                // Asegurar que la URL sea absoluta para el iframe principal
+                const targetUrl = new URL(tab.url, window.location.href).href;
+                if (dom.appFrame.src !== targetUrl) dom.appFrame.src = tab.url;
+                
                 dom.noApp.classList.add('hidden');
                 dom.shellHeader.classList.add('hidden-header');
                 dom.mainLayout.classList.remove('with-shell');
@@ -273,10 +278,7 @@
                 dom.mainLayout.classList.add('with-shell');
             }
             renderTabs();
-            const state = JSON.parse(localStorage.getItem('cic_shell_state') || '{}');
-            state.openTabs = openTabs;
-            state.activeTabIndex = activeTabIndex;
-            localStorage.setItem('cic_shell_state', JSON.stringify(state));
+            saveUIState();
         };
 
         const openApp = (url, name, color) => {
@@ -298,17 +300,24 @@
             else switchApp(activeTabIndex);
         };
 
+        // Listener de mensajes mejorado
         window.addEventListener('message', (e) => {
             const { action, url, name, color, content } = e.data || {};
+            
             if (action === 'openApp') openApp(url, name, color);
             if (action === 'toggleMenu') toggleLeftSidebar();
+            
             if (action === 'openRightPanel' || action === 'toggleRightPanel') {
-                if (content) dom.rightContent.innerHTML = content;
+                if (content) {
+                    dom.rightContent.innerHTML = content;
+                }
                 toggleRightSidebar(action === 'openRightPanel' ? true : null);
             }
+            
             if (action === 'closeRightPanel') toggleRightSidebar(false);
         });
 
+        window.addEventListener('closeTab', (e) => closeTab(e.detail));
         dom.appsBtn.addEventListener('click', () => toggleLeftSidebar());
         dom.overlay.addEventListener('click', () => toggleLeftSidebar(true));
 
@@ -321,7 +330,6 @@
             openTabs = data.openTabs || [];
             activeTabIndex = data.activeTabIndex ?? -1;
             
-            // Restaurar paneles
             if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
             if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
             if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
