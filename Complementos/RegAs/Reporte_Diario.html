@@ -83,9 +83,9 @@
 
         .col-id { width: 80px; }
         .col-nombre { width: 300px; } 
-        .col-estado { width: 180px; }
+        .col-estado { width: auto; }
         .col-tiempo { width: 100px; }
-        .col-comentario { width: auto; }
+        .col-comentario { width: 250px; }
 
         /* --- Badges --- */
         .badge {
@@ -97,10 +97,7 @@
         .bg-finished { background: #f1f5f9; color: #64748b; }
         .bg-late { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
         .bg-special { background: #ede9fe; color: #4c1d95; }
-
-        .abs-vacaciones { background: #dcfce7; color: #166534; }
-        .abs-falta { background: #fee2e2; color: #991b1b; }
-        .abs-descanso { background: #f1f5f9; color: #64748b; }
+        .bg-holiday { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 
         /* --- Controles --- */
         .input-date {
@@ -229,7 +226,6 @@
             emailModal: document.getElementById('email-modal')
         };
 
-        // Inicializar fecha
         const today = new Date();
         today.setHours(12,0,0,0);
         dom.dateInput.value = today.toISOString().split('T')[0];
@@ -275,7 +271,6 @@
             dom.loading.classList.remove('hidden');
             dom.container.innerHTML = '';
 
-            // Definir fechas necesarias (N y N-1 para modo nocturno)
             const dateN = rawDate;
             const dateNMinus1Obj = new Date(dObj);
             dateNMinus1Obj.setDate(dateNMinus1Obj.getDate() - 1);
@@ -286,19 +281,15 @@
                 sections = [
                     { id: 'matutino', label: 'Turno Matutino', date: dateN },
                     { id: 'vespertino', label: 'Turno Vespertino', date: dateN },
-                    { id: 'nocturno', label: 'Turno Nocturno', date: dateN },
-                    { id: 'ausentismo', label: 'Ausentismos e Incidencias', date: dateN }
+                    { id: 'nocturno', label: 'Turno Nocturno', date: dateN }
                 ];
             } else {
                 sections = [
                     { id: 'nocturno', label: 'Turno Nocturno Anterior', date: dateNMinus1 },
-                    { id: 'matutino', label: 'Turno Matutino Hoy', date: dateN },
-                    { id: 'ausentismo', label: 'Ausentismos (Ayer)', date: dateNMinus1 },
-                    { id: 'ausentismo', label: 'Ausentismos (Hoy)', date: dateN }
+                    { id: 'matutino', label: 'Turno Matutino Hoy', date: dateN }
                 ];
             }
 
-            // Identificar Trimestres requeridos
             const trimKeys = [...new Set(sections.map(s => {
                 const parts = s.date.split('-');
                 return `Trim${Math.ceil(parseInt(parts[1])/3)}-${parts[0]}`;
@@ -335,20 +326,11 @@
                         return { sid, nombre: user.nombre, id_empleado: user.socioId, ...shifts[sec.id] };
                     });
 
-                // --- FILTRO: Omitir descansos en inasistencias ---
-                if (sec.id === 'ausentismo') {
-                    list = list.filter(item => {
-                        const motive = (item.motivo || "").toLowerCase().trim();
-                        return motive !== 'descanso';
-                    });
-                }
-
                 if (list.length > 0) renderSection(sec.label, list, sec.id, sec.date);
             });
         }
 
         function renderSection(label, list, type, date) {
-            // Ordenar por Caseta -> Nombre
             list.sort((a, b) => {
                 const idxA = casetaOrder.findIndex(c => (a.Caseta || "").toLowerCase().includes(c.toLowerCase()));
                 const idxB = casetaOrder.findIndex(c => (b.Caseta || "").toLowerCase().includes(c.toLowerCase()));
@@ -365,16 +347,17 @@
                 <div class="shift-divider"><span>${label}</span><span class="opacity-40">${headerDate}</span></div>
                 <div class="table-container"><div class="table-responsive"><table>
                     <thead><tr>
-                        <th class="col-id">ID</th><th class="col-nombre">Nombre</th><th class="col-estado">Estado</th>
-                        ${type === 'ausentismo' ? '<th colspan="2">Motivo</th>' : '<th class="col-tiempo">Entrada</th><th class="col-tiempo">Salida</th>'}
+                        <th class="col-id">ID</th><th class="col-nombre">Nombre</th><th class="col-estado">Estado / Incidencias</th>
+                        <th class="col-tiempo">Entrada</th><th class="col-tiempo">Salida</th>
                         <th class="col-comentario">Observaciones</th>
                     </tr></thead>
                     <tbody>${list.map(item => `
                         <tr>
                             <td class="font-mono text-[11px] text-slate-400">${item.id_empleado}</td>
                             <td class="font-bold text-indigo-950">${item.nombre}</td>
-                            <td><div class="flex flex-wrap gap-1">${renderStatus(item, type)}</div></td>
-                            ${renderTiming(item, type)}
+                            <td><div class="flex flex-wrap gap-1">${renderStatus(item)}</div></td>
+                            <td class="font-bold text-slate-500 font-mono text-[11px]">${item.entrada_real || '--:--'}</td>
+                            <td class="font-bold text-slate-400 font-mono text-[11px]">${item.salida_real || '--:--'}</td>
                             <td class="italic text-slate-400 text-[11px]">${item.comentario || ''}</td>
                         </tr>
                     `).join('')}</tbody>
@@ -383,29 +366,20 @@
             dom.container.appendChild(div);
         }
 
-        function renderStatus(item, type) {
-            if (type === 'ausentismo') return '<span class="badge bg-finished">Inasistencia</span>';
+        function renderStatus(item) {
+            // Estado base de asistencia
             let html = item.salida_real ? '<span class="badge bg-finished">Finalizado</span>' : 
                        (item.entrada_real ? '<span class="badge bg-in-turn">En Turno</span>' : '<span class="badge bg-finished opacity-40">Pendiente</span>');
+            
+            // --- INCIDENCIAS SOLICITADAS ---
             if (item.retardo) html += '<span class="badge bg-late ml-1">Retardo</span>';
-            if (item.es_festivo) html += '<span class="badge bg-late ml-1">Festivo</span>';
-            if (item.es_extra) html += '<span class="badge bg-special ml-1">Extra</span>';
+            if (item.es_festivo) html += '<span class="badge bg-holiday ml-1">Festivo</span>';
+            if (item.es_extra) html += '<span class="badge bg-special ml-1">Horas Extra</span>';
+            if (item.es_recuperacion) html += '<span class="badge bg-special ml-1">Recuperación</span>';
+            
             return html;
         }
 
-        function renderTiming(item, type) {
-            if (type === 'ausentismo') {
-                const motive = (item.motivo || 'Falta').toLowerCase();
-                let badgeClass = 'bg-finished';
-                if (motive.includes('vacaciones')) badgeClass = 'abs-vacaciones';
-                if (motive.includes('falta')) badgeClass = 'abs-falta';
-                
-                return `<td colspan="2"><span class="badge ${badgeClass}">${motive.toUpperCase()}</span></td>`;
-            }
-            return `<td class="font-bold text-slate-500 font-mono text-[11px]">${item.entrada_real || '--:--'}</td><td class="font-bold text-slate-400 font-mono text-[11px]">${item.salida_real || '--:--'}</td>`;
-        }
-
-        // --- FUNCIONALIDADES DE ENVÍO ---
         window.openEmailModal = () => dom.emailModal.style.display = 'flex';
         window.closeEmailModal = () => dom.emailModal.style.display = 'none';
 
