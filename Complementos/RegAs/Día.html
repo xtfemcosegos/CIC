@@ -9,36 +9,107 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
+            background-color: #f8fafc;
             color: #1e293b;
             margin: 0;
             padding: 1.5rem;
+            min-height: 100vh;
         }
 
-        .user-card {
-            transition: all 0.2s ease;
+        /* --- Header Operativo --- */
+        .op-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
             border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        /* --- Tarjetas de Usuario --- */
+        .user-card {
+            background: white;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
+            border-radius: 1.25rem;
+            position: relative;
+            overflow: hidden;
         }
         .user-card:hover {
             border-color: #d946ef;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(217, 70, 239, 0.05);
+            transform: translateY(-4px);
         }
 
         .status-tag {
-            font-size: 10px;
-            font-weight: 800;
+            font-size: 9px;
+            font-weight: 900;
             text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 3px 10px;
+            border-radius: 99px;
             letter-spacing: 0.05em;
         }
 
-        .tag-matutino { background: #fef3c7; color: #92400e; }
-        .tag-vespertino { background: #dbeafe; color: #1e40af; }
-        .tag-nocturno { background: #ede9fe; color: #5b21b6; }
-        .tag-ausentismo { background: #fee2e2; color: #991b1b; }
+        .tag-matutino { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .tag-vespertino { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .tag-nocturno { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+        .tag-ausentismo { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         
+        /* --- Navegador de Fecha --- */
+        .date-nav-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .date-nav-btn:hover {
+            background: #d946ef;
+            color: white;
+            border-color: #d946ef;
+            box-shadow: 0 4px 12px rgba(217, 70, 239, 0.2);
+        }
+
+        .date-picker-wrapper {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+        .date-picker-wrapper:focus-within { border-color: #d946ef; }
+        
+        #dateSelector {
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 11px;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        /* --- Stats --- */
+        .stat-pill {
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
@@ -46,27 +117,53 @@
 <body>
 
     <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <h2 id="currentDayLabel" class="text-2xl font-black text-slate-900 uppercase tracking-tight">Cargando...</h2>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Estado Operativo en Tiempo Real</p>
+        <!-- Encabezado con Navegador de Fecha -->
+        <div class="op-header">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div class="space-y-1">
+                    <h2 id="currentDayLabel" class="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Cargando...</h2>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Estado de Fuerza • CIC 7.1</p>
+                </div>
+
+                <div class="flex items-center gap-4 w-full lg:w-auto">
+                    <!-- Flecha Ayer -->
+                    <button class="date-nav-btn" onclick="changeDay(-1)" title="Ayer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+
+                    <div class="date-picker-wrapper shadow-sm">
+                        <input type="date" id="dateSelector">
+                    </div>
+
+                    <!-- Flecha Mañana -->
+                    <button class="date-nav-btn" onclick="changeDay(1)" title="Mañana">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+
+                    <div class="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
+
+                    <div id="statsCounter" class="flex gap-2"></div>
+                </div>
             </div>
-            <div id="statsCounter" class="flex gap-4"></div>
         </div>
 
-        <div id="loader" class="flex flex-col items-center justify-center py-20">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-4"></div>
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sincronizando registros...</p>
+        <!-- Loader -->
+        <div id="loader" class="flex flex-col items-center justify-center py-24">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600 mb-4"></div>
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Sincronizando Terminal...</p>
         </div>
 
-        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
-            <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+        <!-- Estado Vacío -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-24 text-center">
+            <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
             </div>
-            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Sin registros para el filtro seleccionado</p>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Sin registros encontrados</p>
+            <p class="text-[10px] text-slate-300 uppercase mt-2">Pruebe cambiando la fecha o el filtro superior</p>
         </div>
 
-        <div id="gridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <!-- Grid -->
+        <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-500"></div>
     </div>
 
     <script type="module">
@@ -85,17 +182,21 @@
         let allPersonnel = [];
         let attendanceData = {};
         let currentFilter = 'proximos';
-        const today = new Date();
-        const dateId = `${String(today.getDate()).padStart(2, '0')}${String(today.getMonth() + 1).padStart(2, '0')}${today.getFullYear()}`;
-        const isoDate = today.toISOString().split('T')[0];
+        let activeDate = new Date();
+        let unsubscribeSnap = null;
 
-        const gridContainer = document.getElementById('gridContainer');
-        const loader = document.getElementById('loader');
-        const emptyState = document.getElementById('emptyState');
-        const currentDayLabel = document.getElementById('currentDayLabel');
-        const statsCounter = document.getElementById('statsCounter');
+        const dom = {
+            grid: document.getElementById('gridContainer'),
+            loader: document.getElementById('loader'),
+            empty: document.getElementById('emptyState'),
+            label: document.getElementById('currentDayLabel'),
+            stats: document.getElementById('statsCounter'),
+            dateInput: document.getElementById('dateSelector')
+        };
 
-        currentDayLabel.textContent = today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+        // Forzar hoy a las 12:00 para evitar desajustes de zona horaria
+        activeDate.setHours(12, 0, 0, 0);
+        dom.dateInput.value = activeDate.toISOString().split('T')[0];
 
         const initAuth = async () => {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -110,65 +211,73 @@
             try {
                 const el = document.getElementById(imgId);
                 if (!el) return;
-                
                 if (gsPath.startsWith('gs://')) {
-                    const cleanPath = gsPath.replace(/gs:\/\/[^\/]+\//, '');
-                    const url = await getDownloadURL(ref(storage, cleanPath));
+                    const url = await getDownloadURL(ref(storage, gsPath.replace(/gs:\/\/[^\/]+\//, '')));
                     el.src = url;
-                } else {
-                    el.src = gsPath;
-                }
-            } catch (err) {
-                console.warn("Error resolving image:", gsPath);
+                } else el.src = gsPath;
+            } catch (err) {}
+        }
+
+        async function fetchPersonnel() {
+            const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            const snap = await getDoc(usersRef);
+            if (snap.exists()) {
+                allPersonnel = Object.entries(snap.data()).map(([uid, d]) => ({
+                    uid, socioId: String(d.socioId || ''), nombre: d.nombre || 'S/N',
+                    photo: d.photo || null,
+                    puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
+                    status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase()
+                })).filter(u => u.status !== 'baja' && u.socioId);
             }
         }
 
-        async function initData() {
-            try {
-                const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
-                const usersSnap = await getDoc(usersRef);
-                if (usersSnap.exists()) {
-                    const data = usersSnap.data();
-                    allPersonnel = Object.entries(data).map(([uid, d]) => ({
-                        uid, socioId: String(d.socioId || ''), nombre: d.nombre || 'S/N',
-                        photo: d.photo || null,
-                        puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
-                        status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase()
-                    })).filter(u => u.status !== 'baja' && u.socioId);
-                }
+        function startDataSync() {
+            if (unsubscribeSnap) unsubscribeSnap();
+            dom.loader.classList.remove('hidden');
+            dom.empty.classList.add('hidden');
+            dom.grid.innerHTML = '';
+            
+            const day = String(activeDate.getDate()).padStart(2, '0');
+            const month = String(activeDate.getMonth() + 1).padStart(2, '0');
+            const year = activeDate.getFullYear();
+            const dateId = `${day}${month}${year}`;
+            
+            dom.label.textContent = activeDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                const trim = Math.ceil((today.getMonth() + 1) / 3);
-                const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', `Trim${trim}-${today.getFullYear()}`);
+            const trim = Math.ceil((activeDate.getMonth() + 1) / 3);
+            const trimId = `Trim${trim}-${year}`;
+            const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
 
-                onSnapshot(attRef, (snap) => {
-                    attendanceData = snap.exists() ? (snap.data()[dateId] || {}) : {};
-                    render();
-                    loader.classList.add('hidden');
-                }, (err) => {
-                    console.error("Firestore error:", err);
-                    loader.classList.add('hidden');
-                });
-            } catch (err) { console.error("Init data error:", err); }
+            unsubscribeSnap = onSnapshot(attRef, (snap) => {
+                attendanceData = snap.exists() ? (snap.data()[dateId] || {}) : {};
+                render();
+                dom.loader.classList.add('hidden');
+            }, (err) => {
+                console.error("Sync Error:", err);
+                dom.loader.classList.add('hidden');
+            });
         }
 
         function render() {
-            gridContainer.innerHTML = '';
+            dom.grid.innerHTML = '';
             let filtered = [];
             if (currentFilter === 'proximos') filtered = allPersonnel.filter(u => attendanceData[u.socioId]);
             else filtered = allPersonnel.filter(u => attendanceData[u.socioId]?.[currentFilter]);
 
-            if (filtered.length === 0) emptyState.classList.remove('hidden');
-            else {
-                emptyState.classList.add('hidden');
-                filtered.forEach(person => gridContainer.appendChild(createCard(person, attendanceData[person.socioId])));
+            if (filtered.length === 0) {
+                dom.empty.classList.remove('hidden');
+            } else {
+                dom.empty.classList.add('hidden');
+                filtered.forEach(person => dom.grid.appendChild(createCard(person, attendanceData[person.socioId])));
             }
             updateStats();
         }
 
         function createCard(person, entry) {
             const div = document.createElement('div');
-            div.className = 'user-card bg-white p-4 rounded-2xl flex flex-col cursor-pointer';
+            div.className = 'user-card p-5 flex flex-col cursor-pointer';
             let activeShift = '', shiftColor = '', caseta = 'No asignada';
+            
             if (entry.matutino) { activeShift = 'Matutino'; shiftColor = 'tag-matutino'; caseta = entry.matutino.Caseta; }
             else if (entry.vespertino) { activeShift = 'Vespertino'; shiftColor = 'tag-vespertino'; caseta = entry.vespertino.Caseta; }
             else if (entry.nocturno) { activeShift = 'Nocturno'; shiftColor = 'tag-nocturno'; caseta = entry.nocturno.Caseta; }
@@ -176,48 +285,67 @@
 
             const imgId = `img-v-dia-${person.socioId}`;
             const avatarPlaceholder = `https://ui-avatars.com/api/?name=${person.nombre}&background=f1f5f9&color=64748b`;
-            
+            const isoDate = activeDate.toISOString().split('T')[0];
+
             div.innerHTML = `
-                <div class="flex items-center gap-3 mb-4">
-                    <img id="${imgId}" src="${avatarPlaceholder}" class="w-12 h-12 rounded-xl object-cover bg-slate-100">
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="relative">
+                        <img id="${imgId}" src="${avatarPlaceholder}" class="w-14 h-14 rounded-2xl object-cover bg-slate-100 border border-slate-100 shadow-sm">
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
+                    </div>
                     <div class="overflow-hidden leading-tight">
-                        <h4 class="text-[11px] font-black uppercase truncate text-slate-800">${person.nombre}</h4>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${person.puesto}</p>
+                        <h4 class="text-[12px] font-black uppercase truncate text-slate-800 tracking-tight">${person.nombre}</h4>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">${person.puesto}</p>
                     </div>
                 </div>
-                <div class="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-                    <div class="flex flex-col"><span class="text-[8px] font-black text-slate-300 uppercase">Caseta</span>
-                    <span class="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">${caseta}</span></div>
+                <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Ubicación Actual</span>
+                        <span class="text-[11px] font-bold text-slate-600 truncate max-w-[140px] tracking-tight">${caseta}</span>
+                    </div>
                     <span class="status-tag ${shiftColor}">${activeShift}</span>
                 </div>`;
             
             div.onclick = () => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${person.uid}&date=${isoDate}&tab=gestion" class="w-full h-full border-none"></iframe>` }, '*');
-            
-            // Resolver imagen de forma asíncrona
-            if (person.photo) {
-                setTimeout(() => resolveImage(person.photo, imgId), 0);
-            }
-            
+            if (person.photo) setTimeout(() => resolveImage(person.photo, imgId), 0);
             return div;
         }
 
         function updateStats() {
             let m=0, v=0, n=0, a=0;
             Object.values(attendanceData).forEach(e => { if(e.matutino) m++; if(e.vespertino) v++; if(e.nocturno) n++; if(e.ausentismo) a++; });
-            statsCounter.innerHTML = `
-                <div class="bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-amber-600">${m}</span><span class="text-[7px] font-black text-amber-400 uppercase tracking-widest">MAT</span></div>
-                <div class="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-blue-600">${v}</span><span class="text-[7px] font-black text-blue-400 uppercase tracking-widest">VES</span></div>
-                <div class="bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-purple-600">${n}</span><span class="text-[7px] font-black text-purple-400 uppercase tracking-widest">NOC</span></div>
-                <div class="bg-red-50 px-3 py-1.5 rounded-xl border border-red-100 flex flex-col items-center min-w-[50px]"><span class="text-[14px] font-black text-red-600">${a}</span><span class="text-[7px] font-black text-red-400 uppercase tracking-widest">AUS</span></div>`;
+            dom.stats.innerHTML = `
+                <div class="stat-pill"><span class="text-[15px] font-black text-amber-600 leading-none">${m}</span><span class="text-[7px] font-black text-amber-300 uppercase mt-1">MAT</span></div>
+                <div class="stat-pill"><span class="text-[15px] font-black text-blue-600 leading-none">${v}</span><span class="text-[7px] font-black text-blue-300 uppercase mt-1">VES</span></div>
+                <div class="stat-pill"><span class="text-[15px] font-black text-purple-600 leading-none">${n}</span><span class="text-[7px] font-black text-purple-300 uppercase mt-1">NOC</span></div>
+                <div class="stat-pill"><span class="text-[15px] font-black text-red-600 leading-none">${a}</span><span class="text-[7px] font-black text-red-300 uppercase mt-1">AUS</span></div>`;
         }
 
+        // Navegación por flechas
+        window.changeDay = (offset) => {
+            activeDate.setDate(activeDate.getDate() + offset);
+            dom.dateInput.value = activeDate.toISOString().split('T')[0];
+            startDataSync();
+        };
+
+        dom.dateInput.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (!val) return;
+            activeDate = new Date(val + "T12:00:00");
+            startDataSync();
+        });
+
         window.addEventListener('message', (e) => {
-            const { action, type } = e.data || {};
-            if (action === 'filter') { currentFilter = type; render(); }
+            if (e.data?.action === 'filter') { currentFilter = e.data.type; render(); }
         });
 
         initAuth();
-        onAuthStateChanged(auth, (user) => { if (user) initData(); });
+        onAuthStateChanged(auth, async (user) => { 
+            if (user) {
+                await fetchPersonnel();
+                startDataSync();
+            }
+        });
     </script>
 </body>
 </html>
