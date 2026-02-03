@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        :root {
+            --md-primary: #3b82f6;
+            --metal-border: #334155;
+            --accent-fiusha: #d946ef;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            margin: 0; padding: 0; overflow: hidden;
+            width: 100%; height: 100vh; display: flex; flex-direction: column;
+        }
+
+        /* --- CABECERA METALIZADA OSCURA 100PX --- */
+        #header-container {
+            position: relative; width: 100%; height: 100px; 
+            background: linear-gradient(180deg, #ffffff 0%, #475569 40%, #0f172a 100% );
+            border-bottom: 2px solid var(--metal-border);
+            padding: 0 2rem; display: flex; align-items: center; gap: 1.5rem; flex-shrink: 0; z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden;
+        }
+
+        #header-container::before {
+            content: ""; position: absolute; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 0, 0, 0.1) 1px, rgba(0, 0, 0, 0.1) 2px);
+            pointer-events: none; z-index: 1; opacity: 0.3;
+        }
+
+        .btn-close-panel {
+            position: absolute; top: 1rem; right: 1rem; width: 28px; height: 28px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; cursor: pointer; transition: all 0.2s; z-index: 200;
+        }
+        .btn-close-panel:hover { background: #ef4444; border-color: #ef4444; }
+
+        #photo-wrapper { 
+            position: relative; width: 70px; height: 70px; border-radius: 1rem; overflow: hidden; 
+            border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0; cursor: pointer; background: #1e293b; z-index: 10;
+        }
+
+        #main-photo { width: 100%; height: 100%; object-fit: cover; }
+
+        .socio-info { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; position: relative; z-index: 10; }
+
+        #header-nombre-disp { 
+            border: none; background: transparent; color: white; font-weight: 900; font-size: 1.25rem; 
+            outline: none; text-transform: uppercase; letter-spacing: -0.01em; margin: 0; line-height: 1;
+            width: 100%; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .meta-tags { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
+        .id-badge { display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.1); padding: 1px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        #header-id-disp { color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; }
+
+        .puesto-label {
+            color: #93c5fd; font-size: 9px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.05em; background: rgba(59, 130, 246, 0.2); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* --- NAVEGACIÓN --- */
+        .nav-ribbon {
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            width: 100%; padding: 0 2rem; display: flex; gap: 1.5rem; flex-shrink: 0; z-index: 90;
+            height: 38px; align-items: center; border-bottom: 1px solid #cbd5e1; box-shadow: inset 0 1px 0 white;
+        }
+
+        .nav-tab {
+            height: 100%; display: flex; align-items: center; padding: 0 2px; font-size: 9px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; cursor: pointer; transition: all 0.2s;
+            border-bottom: 3px solid transparent; background: transparent; border-top: none; border-left: none; border-right: none;
+        }
+        .nav-tab.active { color: var(--md-primary); border-bottom-color: var(--md-primary); }
+
+        #shell-content { flex: 1; width: 100%; background: #ffffff; position: relative; overflow: hidden; }
+        #component-iframe { width: 100%; height: 100%; border: none; }
+
+        .footer-actions { 
+            background: #ffffff; 
+            border-top: 1.5px solid #f1f5f9; 
+            padding: 0.75rem 2rem; 
+            display: flex; 
+            justify-content: flex-end; 
+            align-items: center; 
+            gap: 0.75rem; 
+            z-index: 110; 
+            flex-shrink: 0; 
+            min-height: 60px;
+        }
+        .btn-action-footer { padding: 6px 16px; border-radius: 8px; font-size: 9px; font-weight: 900; text-transform: uppercase; transition: all 0.2s; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        
+        .btn-terminate { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+        .btn-terminate:hover { background: #dc2626; color: white; }
+        .btn-access-grant { background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe; }
+        .btn-access-grant:hover { background: #0369a1; color: white; }
+        .btn-access-revoke { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+        .btn-access-revoke:hover { background: #c2410c; color: white; }
+
+        /* --- BOTONES OPERATIVOS DINÁMICOS --- */
+        .btn-op-entry { background: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
+        .btn-op-exit { background: #ef4444; color: white; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2); }
+        .btn-op-late { background: #f59e0b; color: white; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); }
+        .btn-op-assign { background: #f8fafc; color: #64748b; border: 1.5px solid #e2e8f0; }
+        .btn-op-assign:hover { background: #f1f5f9; color: #1e293b; }
+
+        /* --- MODALES --- */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-card { background: white; border-radius: 24px; width: 100%; max-width: 400px; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; }
+        .input-premium { width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; font-size: 12px; font-weight: 600; margin-bottom: 1rem; outline: none; }
+
+        .loading-overlay { display: flex; position: fixed; inset: 0; background: #ffffff; z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Expediente...</p>
+    </div>
+
+    <!-- MODAL DE FOTO Y ACCIONES -->
+    <div id="modalPhoto" class="modal-overlay">
+        <div class="modal-card">
+            <button onclick="closePhotoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-900"><i data-lucide="x"></i></button>
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 text-center">Gestión de Fotografía</h3>
+            <img id="photo-large-view" src="" class="w-full aspect-square rounded-2xl object-cover mb-4 border border-slate-100 shadow-sm">
+            <div id="camera-box" class="hidden w-full aspect-square rounded-2xl overflow-hidden bg-black relative mb-4">
+                <video id="video-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+                <button onclick="capturePhoto()" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center border-4 border-blue-100"><i data-lucide="camera" class="text-blue-600"></i></button>
+            </div>
+            <div id="photo-actions" class="grid grid-cols-2 gap-3">
+                <button onclick="triggerUpload()" class="p-3 bg-slate-100 rounded-xl text-[10px] font-black uppercase hover:bg-slate-200 transition-colors"><i data-lucide="upload" class="inline w-3 h-3 mr-1"></i> Archivo</button>
+                <button onclick="startCamera()" class="p-3 bg-blue-50 rounded-xl text-[10px] font-black uppercase text-blue-700 hover:bg-blue-100 transition-colors"><i data-lucide="camera" class="inline w-3 h-3 mr-1"></i> Cámara</button>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFileUpload(event)">
+        </div>
+    </div>
+
+    <!-- MODAL PARA CREACIÓN DE CUENTA -->
+    <div id="modalAccess" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="text-sm font-black uppercase mb-1">Configurar Acceso</h3>
+            <label class="text-[8px] font-black uppercase text-slate-500 mb-1 block">Correo</label>
+            <input type="email" id="accessEmail" class="input-premium">
+            <label class="text-[8px] font-black uppercase text-slate-500 mb-1 block">Contraseña</label>
+            <input type="password" id="accessPass" class="input-premium">
+            <div class="flex gap-2">
+                <button onclick="closeAccessModal()" class="flex-1 text-[10px] font-black text-slate-400 uppercase">Cancelar</button>
+                <button id="btnConfirmCreate" class="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase">Habilitar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE INCIDENCIAS -->
+    <div id="modalIncidents" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 text-center">Tipo de Ausencia</h3>
+            <div class="grid grid-cols-1 gap-2">
+                <button onclick="setQuickAusentismo('Descanso')" class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-[10px] font-bold uppercase text-slate-600 border border-slate-200">Descanso</button>
+                <button onclick="setQuickAusentismo('Vacaciones')" class="p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl text-[10px] font-bold uppercase text-emerald-700 border border-emerald-200">Vacaciones</button>
+                <button onclick="setQuickAusentismo('Permiso')" class="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl text-[10px] font-bold uppercase text-blue-700 border border-blue-200">Permiso</button>
+                <button onclick="setQuickAusentismo('Incapacidad')" class="p-3 bg-yellow-50 hover:bg-yellow-100 rounded-xl text-[10px] font-bold uppercase text-yellow-700 border border-yellow-200">Incapacidad</button>
+                <button onclick="setQuickAusentismo('Suspensión')" class="p-3 bg-rose-50 hover:bg-rose-100 rounded-xl text-[10px] font-bold uppercase text-rose-700 border border-rose-200">Suspensión</button>
+                <button onclick="document.getElementById('modalIncidents').style.display='none'" class="mt-2 text-[9px] font-black text-slate-400 uppercase">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <header id="header-container">
+        <button onclick="closePanel()" class="btn-close-panel"><i data-lucide="x" class="w-3 h-3"></i></button>
+        <div id="photo-wrapper" onclick="openPhotoModal()"><img id="main-photo" src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/placeholder.png"></div>
+        <div class="socio-info">
+            <input type="text" id="header-nombre-disp" readonly value="Cargando...">
+            <div class="meta-tags">
+                <div class="id-badge"><span id="header-id-disp">ID: ---</span></div>
+                <span id="header-puesto-disp" class="puesto-label">CARGANDO...</span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-ribbon">
+        <button onclick="switchView('expediente')" id="tab-expediente" class="nav-tab active">Expediente</button>
+        <button onclick="switchView('operacion')" id="tab-operacion" class="nav-tab">Función Operativa</button>
+        <button onclick="switchView('gestion')" id="tab-gestion" class="nav-tab">Gestión de Turno</button>
+        <button onclick="switchView('patrones')" id="tab-patrones" class="nav-tab">Patrones</button>
+    </nav>
+
+    <main id="shell-content"><iframe id="component-iframe" src="about:blank"></iframe></main>
+
+    <footer class="footer-actions">
+        <!-- ÁREA DINÁMICA DE ACCIONES OPERATIVAS -->
+        <div id="op-action-container" class="flex items-center gap-2 mr-auto"></div>
+
+        <button id="btnToggleAccess" onclick="handleAccessToggle()" class="btn-action-footer">
+            <span id="accessIconContainer" class="mr-1"></span>
+            <span id="accessBtnLabel">Habilitar Acceso</span>
+        </button>
+        <button id="btnTerminateSocio" onclick="requestTermination()" class="btn-action-footer btn-terminate">
+            <i data-lucide="user-minus" class="w-4 h-4 mr-1"></i>
+            <span>Dar de Baja</span>
+        </button>
+    </footer>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, updateDoc, setDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const dom = {
+            nombreDisp: document.getElementById('header-nombre-disp'),
+            idDisp: document.getElementById('header-id-disp'),
+            puestoDisp: document.getElementById('header-puesto-disp'),
+            iframe: document.getElementById('component-iframe'),
+            overlay: document.getElementById('loadingOverlay'),
+            photo: document.getElementById('main-photo'),
+            btnToggleAccess: document.getElementById('btnToggleAccess'),
+            accessIcon: document.getElementById('accessIconContainer'),
+            accessLabel: document.getElementById('accessBtnLabel'),
+            modalAccess: document.getElementById('modalAccess'),
+            emailInput: document.getElementById('accessEmail'),
+            passInput: document.getElementById('accessPass'),
+            btnConfirmCreate: document.getElementById('btnConfirmCreate'),
+            modalPhoto: document.getElementById('modalPhoto'),
+            largePhoto: document.getElementById('photo-large-view'),
+            cameraBox: document.getElementById('camera-box'),
+            video: document.getElementById('video-stream'),
+            opContainer: document.getElementById('op-action-container')
+        };
+
+        const components = {
+            expediente: 'SubComponente_Detalle/Expediente.html',
+            operacion: 'SubComponente_Detalle/Funcion_Operativa.html',
+            gestion: 'SubComponente_Detalle/Gestion_Turno.html',
+            patrones: 'SubComponente_Detalle/Patrones.html'
+        };
+
+        let currentSocioId = null;
+        let userData = null;
+        let memberKey = null;
+        let realSocioNumber = null;
+        let selectedDateIso = null;
+        let stream = null;
+
+        window.closePanel = () => window.parent.postMessage({ action: 'closeRightPanel' }, '*');
+        window.closeAccessModal = () => dom.modalAccess.style.display = 'none';
+
+        // --- GESTIÓN DE FOTOGRAFÍA ---
+        window.openPhotoModal = () => {
+            dom.largePhoto.src = dom.photo.src;
+            dom.largePhoto.classList.remove('hidden');
+            dom.cameraBox.classList.add('hidden');
+            dom.modalPhoto.style.display = 'flex';
+        };
+
+        window.closePhotoModal = () => {
+            stopCamera();
+            dom.modalPhoto.style.display = 'none';
+        };
+
+        window.triggerUpload = () => document.getElementById('fileInput').click();
+
+        window.startCamera = async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                dom.video.srcObject = stream;
+                dom.largePhoto.classList.add('hidden');
+                dom.cameraBox.classList.remove('hidden');
+            } catch (err) { 
+                console.error("Error cámara:", err);
+                alert("No se pudo acceder a la cámara."); 
+            }
+        };
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        window.capturePhoto = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = dom.video.videoWidth;
+            canvas.height = dom.video.videoHeight;
+            canvas.getContext('2d').drawImage(dom.video, 0, 0);
+            canvas.toBlob(blob => uploadPhoto(blob), 'image/jpeg', 0.8);
+            stopCamera();
+        };
+
+        window.handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) uploadPhoto(file);
+        };
+
+        async function uploadPhoto(blob) {
+            dom.overlay.style.display = 'flex';
+            try {
+                const storagePath = `RegUs_Fotos/${currentSocioId}_${Date.now()}.jpg`;
+                const storageRef = ref(storage, storagePath);
+                await uploadBytes(storageRef, blob);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                data[memberKey].photo = downloadURL;
+                await updateDoc(docRef, data);
+                
+                closePhotoModal();
+            } catch (err) { alert("Error al subir foto: " + err.message); }
+            dom.overlay.style.display = 'none';
+        }
+
+        // --- LÓGICA OPERATIVA DINÁMICA ---
+        function updateOpActions(attendanceData) {
+            dom.opContainer.innerHTML = '';
+            const now = new Date();
+            const dateId = getDateId(selectedDateIso ? new Date(selectedDateIso + "T12:00:00") : now);
+            const socioShifts = attendanceData?.[dateId]?.[realSocioNumber] || {};
+            
+            const activeShiftType = ['matutino', 'vespertino', 'nocturno'].find(t => socioShifts[t]);
+            const shiftInfo = activeShiftType ? socioShifts[activeShiftType] : null;
+            const hasAusentismo = socioShifts.ausentismo;
+
+            if (hasAusentismo) {
+                dom.opContainer.innerHTML = `
+                    <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest mr-2">Reasignar:</span>
+                    <button onclick="quickAddShift('matutino')" class="btn-action-footer btn-op-assign">MAT</button>
+                    <button onclick="quickAddShift('vespertino')" class="btn-action-footer btn-op-assign">VES</button>
+                    <button onclick="quickAddShift('nocturno')" class="btn-action-footer btn-op-assign">NOC</button>
+                `;
+            } else if (shiftInfo) {
+                const [pH, pM] = (shiftInfo.entrada_planificada || "00:00").split(':').map(Number);
+                const planDate = new Date(now); planDate.setHours(pH, pM, 0, 0);
+                const diffMin = (now - planDate) / 60000;
+
+                if (shiftInfo.salida_real) {
+                    dom.opContainer.innerHTML = `<span class="px-3 py-1.5 bg-slate-100 rounded-lg text-[9px] font-black text-slate-400 uppercase">Terminado</span>`;
+                } else if (shiftInfo.entrada_real) {
+                    dom.opContainer.innerHTML = `<button onclick="quickRegisterTime('salida_real', '${activeShiftType}')" class="btn-action-footer btn-op-exit"><i data-lucide="log-out" class="w-3 h-3"></i> Salida</button>`;
+                } else {
+                    if (diffMin >= -60 && diffMin <= 10) {
+                        dom.opContainer.innerHTML = `<button onclick="quickRegisterTime('entrada_real', '${activeShiftType}')" class="btn-action-footer btn-op-entry"><i data-lucide="log-in" class="w-3 h-3"></i> Entrada</button>`;
+                    } else if (diffMin > 10) {
+                        dom.opContainer.innerHTML = `
+                            <button onclick="quickRegisterTime('entrada_real', '${activeShiftType}', true)" class="btn-action-footer btn-op-late">Retardo</button>
+                            <button onclick="setQuickAusentismo('Falta')" class="btn-action-footer btn-terminate">Falta</button>
+                            <button onclick="document.getElementById('modalIncidents').style.display='flex'" class="btn-action-footer btn-op-assign">Ausencia</button>
+                        `;
+                    } else {
+                        dom.opContainer.innerHTML = `<span class="px-3 py-1.5 bg-indigo-50 rounded-lg text-[9px] font-black text-indigo-400 uppercase">Próximo</span>`;
+                    }
+                }
+            } else {
+                dom.opContainer.innerHTML = `
+                    <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest mr-2">Programar:</span>
+                    <button onclick="quickAddShift('matutino')" class="btn-action-footer btn-op-assign">MAT</button>
+                    <button onclick="quickAddShift('vespertino')" class="btn-action-footer btn-op-assign">VES</button>
+                    <button onclick="quickAddShift('nocturno')" class="btn-action-footer btn-op-assign">NOC</button>
+                    <button onclick="document.getElementById('modalIncidents').style.display='flex'" class="btn-action-footer btn-op-assign">AUS</button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        window.quickRegisterTime = async (field, type, isLate = false) => {
+            const time = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const dateObj = selectedDateIso ? new Date(selectedDateIso + "T12:00:00") : new Date();
+            const tid = getTrimId(dateObj);
+            const did = getDateId(dateObj);
+            const updateObj = {};
+            updateObj[`${did}.${realSocioNumber}.${type}.${field}`] = time;
+            if (isLate) updateObj[`${did}.${realSocioNumber}.${type}.retardo`] = true;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), updateObj);
+        };
+
+        window.quickAddShift = async (type) => {
+            const dateObj = selectedDateIso ? new Date(selectedDateIso + "T12:00:00") : new Date();
+            const tid = getTrimId(dateObj);
+            const did = getDateId(dateObj);
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid);
+            
+            const defs = userData?.operativa?.Entrada_Predeterminada || "[Mat:07:00,Ves:15:00,Noc:23:00]";
+            const pKey = type === 'matutino' ? 'Mat' : (type === 'vespertino' ? 'Ves' : 'Noc');
+            const plan = defs.match(new RegExp(`${pKey}:([^,\\]]+)`))?.[1] || "07:00";
+
+            const updateObj = {};
+            updateObj[`${did}.${realSocioNumber}.ausentismo`] = deleteField();
+            updateObj[`${did}.${realSocioNumber}.${type}`] = { 
+                Caseta: userData.operativa?.caseta || 'Centro de Control', 
+                entrada_planificada: plan, es_extra: false, es_recuperacion: false, retardo: false 
+            };
+            
+            await updateDoc(ref, updateObj).catch(async () => {
+                await setDoc(ref, { [did]: { [realSocioNumber]: { [type]: updateObj[`${did}.${realSocioNumber}.${type}`] } } }, { merge: true });
+            });
+        };
+
+        window.setQuickAusentismo = async (motivo) => {
+            const dateObj = selectedDateIso ? new Date(selectedDateIso + "T12:00:00") : new Date();
+            const tid = getTrimId(dateObj);
+            const did = getDateId(dateObj);
+            const updateObj = {};
+            ['matutino', 'vespertino', 'nocturno'].forEach(t => updateObj[`${did}.${realSocioNumber}.${t}`] = deleteField());
+            updateObj[`${did}.${realSocioNumber}.ausentismo`] = { motivo };
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), updateObj);
+            document.getElementById('modalIncidents').style.display = 'none';
+        };
+
+        const getTrimId = (d) => `Trim${Math.ceil((d.getMonth() + 1) / 3)}-${d.getFullYear()}`;
+        const getDateId = (d) => `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}`;
+
+        // --- CORE SHELL ---
+        window.switchView = (view) => {
+            if (!currentSocioId) return;
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            const tabEl = document.getElementById(`tab-${view}`);
+            if (tabEl) tabEl.classList.add('active');
+
+            const params = new URLSearchParams(window.location.search);
+            let url = `${components[view]}?socioId=${currentSocioId}`;
+            if (params.get('date')) url += `&date=${params.get('date')}`;
+            if (params.get('shift')) url += `&shift=${params.get('shift')}`; 
+            dom.iframe.src = url;
+        };
+
+        const initShell = async (socioId) => {
+            currentSocioId = socioId;
+            memberKey = socioId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            
+            onSnapshot(docRef, async (snap) => {
+                if (snap.exists() && snap.data()[memberKey]) {
+                    userData = snap.data()[memberKey];
+                    realSocioNumber = String(userData.socioId);
+                    dom.photo.src = await resolvePhotoUrl(userData.photo);
+                    dom.nombreDisp.value = userData.nombre || "SIN NOMBRE";
+                    dom.idDisp.innerText = `ID: ${userData.socioId || '---'}`;
+                    dom.puestoDisp.innerText = userData.puesto || (userData.operativa && userData.operativa.puesto) || "PERSONAL";
+
+                    // Actualización segura de botones para evitar conflictos con Lucide
+                    if (userData.hasAuth) {
+                        dom.btnToggleAccess.className = "btn-action-footer btn-access-revoke";
+                        dom.accessLabel.innerText = "Revocar Acceso";
+                        dom.accessIcon.innerHTML = '<i data-lucide="shield-off" class="w-4 h-4"></i>';
+                    } else {
+                        dom.btnToggleAccess.className = "btn-action-footer btn-access-grant";
+                        dom.accessLabel.innerText = "Habilitar Acceso";
+                        dom.accessIcon.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4"></i>';
+                    }
+
+                    const dateToTrack = selectedDateIso ? new Date(selectedDateIso + "T12:00:00") : new Date();
+                    const trimRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', getTrimId(dateToTrack));
+                    onSnapshot(trimRef, (tSnap) => updateOpActions(tSnap.exists() ? tSnap.data() : {}));
+                    
+                    dom.overlay.style.display = 'none';
+                    lucide.createIcons();
+                }
+            });
+
+            const params = new URLSearchParams(window.location.search);
+            selectedDateIso = params.get('date');
+            switchView(params.get('tab') || 'expediente');
+        };
+
+        window.handleAccessToggle = async () => {
+            if (!userData) return;
+            if (userData.hasAuth) {
+                if (confirm(`¿Revocar acceso al sistema para ${userData.nombre}?`)) {
+                    dom.overlay.style.display = 'flex';
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                        const snap = await getDoc(docRef);
+                        const data = snap.data();
+                        data[memberKey].hasAuth = false;
+                        await updateDoc(docRef, data);
+                    } catch (err) { alert("Error: " + err.message); }
+                    dom.overlay.style.display = 'none';
+                }
+            } else {
+                if (userData.uid) {
+                    dom.overlay.style.display = 'flex';
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                        const snap = await getDoc(docRef);
+                        const data = snap.data();
+                        data[memberKey].hasAuth = true;
+                        await updateDoc(docRef, data);
+                    } catch (err) { alert("Error: " + err.message); }
+                    dom.overlay.style.display = 'none';
+                } else {
+                    dom.emailInput.value = userData.contacto?.email || "";
+                    dom.passInput.value = "";
+                    dom.modalAccess.style.display = 'flex';
+                    dom.btnConfirmCreate.onclick = createAuthAccount;
+                }
+            }
+        };
+
+        async function createAuthAccount() {
+            const email = dom.emailInput.value.trim();
+            const pass = dom.passInput.value.trim();
+            if (!email || pass.length < 6) return alert("Datos inválidos.");
+
+            dom.overlay.style.display = 'flex';
+            try {
+                const res = await createUserWithEmailAndPassword(auth, email, pass);
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                data[memberKey].hasAuth = true;
+                data[memberKey].uid = res.user.uid;
+                if (!data[memberKey].contacto) data[memberKey].contacto = {};
+                data[memberKey].contacto.email = email;
+                await updateDoc(docRef, data);
+                closeAccessModal();
+            } catch (err) { alert("Error en Auth: " + err.message); }
+            dom.overlay.style.display = 'none';
+        }
+
+        async function resolvePhotoUrl(path) {
+            const placeholder = 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/placeholder.png';
+            if (!path) return placeholder;
+            if (path.startsWith('http')) return path;
+            if (path.startsWith('gs://')) {
+                try { return await getDownloadURL(ref(storage, path.replace(/gs:\/\/[^\/]+\//, ''))); } 
+                catch (e) { return placeholder; }
+            }
+            return path;
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const sId = new URLSearchParams(window.location.search).get('socioId');
+                if (sId) initShell(sId);
+            } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(()=>{});
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

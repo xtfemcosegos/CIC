@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperación Firestore - Flujo Paso a Paso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .step-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .step-number {
+            background: #ef4444;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        #statusLog::-webkit-scrollbar, #storesList::-webkit-scrollbar, #dbList::-webkit-scrollbar {
+            width: 6px;
+        }
+        #statusLog::-webkit-scrollbar-thumb, #storesList::-webkit-scrollbar-thumb, #dbList::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-900">
+    <div class="max-w-4xl mx-auto py-12 px-6">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-black text-slate-900 mb-3 tracking-tight">
+                Firestore <span class="text-red-600">Recovery</span> Wizard
+            </h1>
+            <p class="text-slate-500 max-w-lg mx-auto">Sigue los pasos secuenciales para restaurar tu base de datos desde un respaldo local.</p>
+        </header>
+
+        <div class="space-y-8">
+            <!-- PASO 1: GESTIÓN DE INDEXEDDB -->
+            <section class="step-card p-8">
+                <div class="flex gap-4 mb-6">
+                    <div class="step-number">1</div>
+                    <div>
+                        <h2 class="text-xl font-bold">Explorador de IndexedDB</h2>
+                        <p class="text-sm text-slate-500">Detecta automáticamente las DBs del navegador y descarga sus almacenes.</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <button id="btnRefreshDBs" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            Escanear Bases de Datos
+                        </button>
+                        <div id="dbList" class="h-32 overflow-y-auto border rounded-xl p-2 bg-slate-50 space-y-1">
+                            <p class="text-[10px] text-slate-400 text-center py-10 italic">Haz clic en Escanear para buscar DBs</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Almacenes en la DB seleccionada</label>
+                        <div id="storesList" class="h-44 overflow-y-auto border rounded-xl p-2 bg-slate-50 space-y-2">
+                            <p class="text-xs text-slate-400 text-center py-12 italic">Selecciona una base de datos para ver sus contenidos</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PASO 2: FIREBASE & AUTH -->
+            <section class="step-card p-8">
+                <div class="flex gap-4 mb-6">
+                    <div class="step-number">2</div>
+                    <div>
+                        <h2 class="text-xl font-bold">Conexión con Firebase</h2>
+                        <p class="text-sm text-slate-500">Configuración y acceso administrativo para la restauración.</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Firebase Config (JSON)</label>
+                        <textarea id="fbConfig" class="w-full h-44 p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-red-500 outline-none" placeholder='{ "apiKey": "...", "projectId": "...", ... }'></textarea>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</label>
+                            <input type="email" id="email" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Contraseña</label>
+                            <input type="password" id="password" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500">
+                        </div>
+                        <button id="btnConnect" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-100 transition-all uppercase tracking-wider text-sm">
+                            Inicializar y Conectar
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PASO 3: ARCHIVO & SUBIDA -->
+            <section class="step-card p-8">
+                <div class="flex gap-4 mb-6">
+                    <div class="step-number">3</div>
+                    <div>
+                        <h2 class="text-xl font-bold">Restauración Final</h2>
+                        <p class="text-sm text-slate-500">Sube el JSON descargado en el Paso 1 a la nube.</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Colección Destino</label>
+                                <input type="text" id="targetCollection" placeholder="ej: usuarios" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Doc ID (Opcional)</label>
+                                <input type="text" id="targetDoc" placeholder="Auto" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <input type="file" id="jsonFile" accept=".json" class="hidden">
+                            <label for="jsonFile" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50 cursor-pointer group-hover:border-emerald-500 transition-all">
+                                <span class="text-emerald-600 font-bold mb-1">Cargar JSON descargado</span>
+                                <span id="fileNameDisplay" class="text-xs text-slate-400 text-center">Selecciona el archivo del Paso 1</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <button id="btnUpload" disabled class="h-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 transition-all uppercase text-lg">
+                            Ejecutar Restauración
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MONITOR -->
+            <section class="bg-slate-900 rounded-2xl p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Monitor de Sistema</h3>
+                    <button onclick="document.getElementById('statusLog').innerHTML = ''" class="text-[10px] text-slate-500 hover:text-white">Limpiar Log</button>
+                </div>
+                <div id="statusLog" class="h-48 overflow-y-auto font-mono text-xs text-emerald-400 space-y-1">
+                    <div>[SISTEMA] Listo.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        let db, auth;
+
+        const log = (msg, isError = false) => {
+            const div = document.createElement('div');
+            div.className = isError ? 'text-red-400' : 'text-emerald-400';
+            div.textContent = `> ${new Date().toLocaleTimeString()}: ${msg}`;
+            const consoleBox = document.getElementById('statusLog');
+            consoleBox.appendChild(div);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        };
+
+        // --- Paso 1: Escaneo automático de DBs ---
+        document.getElementById('btnRefreshDBs').addEventListener('click', async () => {
+            const dbListContainer = document.getElementById('dbList');
+            dbListContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-10 animate-pulse italic">Escaneando...</p>';
+            
+            try {
+                // indexedDB.databases() es compatible con Chrome/Edge
+                const dbs = await indexedDB.databases();
+                
+                if (dbs.length === 0) {
+                    log("No se encontraron bases de datos IndexedDB accesibles.", true);
+                    dbListContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-10 italic">No se hallaron bases de datos</p>';
+                    return;
+                }
+
+                dbListContainer.innerHTML = '';
+                dbs.forEach(dbInfo => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-2 hover:bg-blue-100 rounded text-xs transition-colors border-b border-slate-100 flex justify-between items-center';
+                    btn.innerHTML = `<span>${dbInfo.name}</span> <span class="text-[9px] text-slate-400">v${dbInfo.version}</span>`;
+                    btn.onclick = () => scanStores(dbInfo.name);
+                    dbListContainer.appendChild(btn);
+                });
+                log(`Se encontraron ${dbs.length} bases de datos.`);
+            } catch (err) {
+                log("Error al listar DBs. Intenta escribir el nombre manualmente en consola si esto falla.", true);
+            }
+        });
+
+        const scanStores = (dbName) => {
+            const listContainer = document.getElementById('storesList');
+            listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-12 animate-pulse italic">Abriendo almacenes...</p>';
+            
+            const request = indexedDB.open(dbName);
+            request.onsuccess = (event) => {
+                const idb = event.target.result;
+                const names = Array.from(idb.objectStoreNames);
+                listContainer.innerHTML = '';
+                
+                if (names.length === 0) {
+                    listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-12 italic">DB vacía</p>';
+                    return;
+                }
+
+                names.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg';
+                    div.innerHTML = `
+                        <span class="text-xs font-bold text-slate-700 truncate">${name}</span>
+                        <button class="bg-slate-800 hover:bg-black text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
+                            Descargar
+                        </button>
+                    `;
+                    div.querySelector('button').onclick = () => downloadStore(idb, name);
+                    listContainer.appendChild(div);
+                });
+                log(`Explorando almacenes de "${dbName}".`);
+            };
+        };
+
+        const downloadStore = (idb, storeName) => {
+            try {
+                const tx = idb.transaction(storeName, "readonly");
+                const store = tx.objectStore(storeName);
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    const data = req.result;
+                    const blob = new Blob([JSON.stringify(data, null, 4)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `indexeddb_${idb.name}_${storeName}.json`;
+                    a.click();
+                    log(`Descargado: ${storeName}`);
+                };
+            } catch (e) { log(`Error: ${e.message}`, true); }
+        };
+
+        // --- Firebase ---
+        document.getElementById('btnConnect').addEventListener('click', async () => {
+            try {
+                const config = JSON.parse(document.getElementById('fbConfig').value);
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                log("Conectando...");
+                await signInWithEmailAndPassword(auth, email, password);
+                log("CONECTADO ✅");
+                document.getElementById('btnUpload').disabled = false;
+                document.getElementById('btnConnect').textContent = "SESIÓN ACTIVA";
+            } catch (err) { log(err.message, true); }
+        });
+
+        // --- Restauración ---
+        document.getElementById('jsonFile').addEventListener('change', (e) => {
+            document.getElementById('fileNameDisplay').textContent = e.target.files[0]?.name;
+        });
+
+        document.getElementById('btnUpload').addEventListener('click', () => {
+            const file = document.getElementById('jsonFile').files[0];
+            const collectionPath = document.getElementById('targetCollection').value;
+            const docId = document.getElementById('targetDoc').value;
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    log(`Subiendo a /${collectionPath}...`);
+                    if (Array.isArray(data)) {
+                        for (let i = 0; i < data.length; i++) {
+                            await addDoc(collection(db, collectionPath), data[i]);
+                            if ((i+1) % 5 === 0) log(`Subidos ${i+1}/${data.length}...`);
+                        }
+                    } else {
+                        docId ? await setDoc(doc(db, collectionPath, docId), data) : await addDoc(collection(db, collectionPath), data);
+                    }
+                    log("✅ RESTAURACIÓN COMPLETADA.");
+                } catch (err) { log(err.message, true); }
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>

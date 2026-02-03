@@ -3,369 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIC6 - RegAs</title>
+    <title>Asistencias - CIC 7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
+        
         :root {
-            /* Paleta Fiusha Muy Oscuro Metálico */
-            --metal-fuchsia-dark: #2d0630;
-            --metal-fuchsia-mid: #4a044e;
-            --metal-fuchsia-light: #701a75;
-            
-            --md-primary: #4a044e;
-            --md-surface: #ffffff;
-            --md-background: #e2e8f0;
-            --md-outline: #cbd5e1;
-            --ribbon-height: 44px;
-        }
-
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: var(--md-background);
-            overflow: hidden;
+            --accent-fiusha: #d946ef; /* Fuchsia 500 */
+            --accent-fiusha-dark: #a21caf; /* Fuchsia 700 */
+            --metal-border: #e2e8f0;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: #1f1a1a;
-            display: flex;
-            flex-direction: column;
-            align-items: center; 
+            background: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
         }
 
-        /* --- HEADER PEGADO ARRIBA Y AL 100% (SIN ANIMACIÓN) --- */
-        .header-card {
-            position: relative;
-            width: 100%;
-            height: 52px;
-            margin-top: 0;
-            background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 50%, var(--metal-fuchsia-light) 100%);
-            background-size: 100% 100%;
-            border-radius: 0; 
+        /* --- ENCABEZADO METAL BLANCO CON BORDE FIUSHA --- */
+        .app-header {
+            height: 55px;
+            background: linear-gradient(180deg, 
+                #ffffff 0%, 
+                #f8fafc 48%, 
+                #f1f5f9 52%, 
+                #f8fafc 100%
+            );
             display: flex;
             align-items: center;
-            padding: 0 24px;
-            color: white;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            z-index: 50;
+            padding: 0 1.5rem;
+            color: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-bottom: 4px solid var(--accent-fiusha); /* Borde fiusha notable */
+            position: relative;
+            z-index: 60;
         }
 
-        /* Trama de metal industrial sutil */
-        .header-card::before {
+        /* Textura de metal cepillado sutil */
+        .app-header::before {
             content: "";
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                radial-gradient(circle, rgba(255,255,255,0.03) 0.5px, transparent 0.5px),
-                linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px);
-            background-size: 4px 4px, 12px 12px;
-            opacity: 0.5;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                rgba(0, 0, 0, 0.01) 1px,
+                rgba(0, 0, 0, 0.01) 2px
+            );
             pointer-events: none;
         }
 
-        .header-tabs {
-            display: flex;
-            height: 100%;
-            margin-left: 20px;
-        }
-
-        .header-tab {
-            padding: 0 20px;
+        .apps-header-btn {
             display: flex;
             align-items: center;
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: rgba(255,255,255,0.4);
-            transition: all 0.3s;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-        .header-tab:hover { color: white; background: rgba(255,255,255,0.05); }
-        .header-tab.active {
-            color: white;
-            border-bottom-color: #f472b6;
-            background: rgba(255,255,255,0.08);
-        }
-
-        /* --- TOOL RIBBON --- */
-        .tool-ribbon {
-            width: 100%;
-            height: var(--ribbon-height);
-            background: #ffffff;
-            border-bottom: 1px solid var(--md-outline);
-            display: flex;
-            align-items: center;
-            padding: 0 24px;
-            gap: 12px;
-            z-index: 40;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        }
-
-        .ribbon-btn {
-            height: 32px;
-            padding: 0 14px;
-            border-radius: 8px;
-            font-size: 9.5px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            gap: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
             transition: all 0.2s;
-            border: 1px solid transparent;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            z-index: 10;
         }
-        .ribbon-btn:hover { background: #fdf2f8; color: var(--metal-fuchsia-mid); }
-        .ribbon-btn.active {
-            background: var(--metal-fuchsia-mid);
+        .apps-header-btn:hover { background: rgba(217, 70, 239, 0.1); border-color: var(--accent-fiusha); }
+
+        /* Selector de Vista Estilo Moderno */
+        .view-selector {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 3px;
+            border-radius: 10px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            z-index: 10;
+        }
+
+        .view-btn {
+            padding: 5px 16px;
+            border-radius: 7px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .view-btn:hover { color: var(--accent-fiusha); }
+
+        .view-btn.active {
             color: white;
-            box-shadow: 0 4px 10px rgba(74, 4, 78, 0.2);
+            background: linear-gradient(180deg, var(--accent-fiusha) 0%, var(--accent-fiusha-dark) 100%);
+            box-shadow: 0 4px 8px rgba(217, 70, 239, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
-        .btn-refresh-pro {
-            width: 30px; height: 30px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--metal-fuchsia-light) 0%, var(--metal-fuchsia-dark) 100%);
-            color: white; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.3s; border: none;
+        /* Cinta de Herramientas (Tool Ribbon) */
+        .tool-ribbon {
+            height: 32px;
+            background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--metal-border);
+            box-shadow: inset 0 1px 0 white;
+            position: relative;
+            z-index: 50;
         }
 
-        .ribbon-date-nav {
-            display: flex; align-items: center; gap: 6px; background: white;
-            border: 2px solid var(--md-outline); border-radius: 12px; padding: 2px 10px; height: 34px;
+        .tool-ribbon.hidden { display: none; }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 8.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            cursor: pointer;
+            height: 100%;
+            padding: 0 16px;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s;
         }
 
-        .ribbon-date-text { font-size: 11px; font-weight: 800; color: var(--metal-fuchsia-dark); cursor: pointer; padding: 0 6px; white-space: nowrap; }
+        .tool-item:hover { color: var(--accent-fiusha); background: rgba(217, 70, 239, 0.05); }
 
-        .content-container { width: 100%; flex: 1; display: flex; flex-direction: column; }
-        iframe { flex: 1; width: 100%; border: none; background: white; }
+        .tool-item svg { width: 12px; height: 12px; }
 
-        .header-date-tag {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px; padding: 6px 14px; display: flex; align-items: center;
+        /* Área de Contenido */
+        #contentArea { 
+            height: calc(100vh - 87px); 
+            width: 100%; 
+            background: white; 
+            transition: all 0.3s;
         }
-        .header-date-tag span { font-size: 11px; font-weight: 700; color: white; }
+        #contentArea.full-view { height: calc(100vh - 55px); }
+        
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .text-glow {
+            text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+        }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <!-- Header Pegado RegAs -->
-    <header class="header-card">
-        <div class="relative z-10 flex items-center justify-between w-full h-full">
-            <div class="flex items-center gap-4 h-full">
-                <div class="flex items-center opacity-80 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <circle cx="18" cy="12" r="5"></circle>
-                        <polyline points="18 10 18 12 19 13"></polyline>
-                    </svg>
-                </div>
-
-                <h1 class="text-[10px] font-black uppercase tracking-tight">RegAs</h1>
-
-                <nav class="header-tabs">
-                    <div onclick="changeMainView('dia')" id="tab-dia" class="header-tab active">Vista Diaria</div>
-                    <div onclick="changeMainView('planeacion')" id="tab-planeacion" class="header-tab">Planeación</div>
-                    <div onclick="changeMainView('estadistica')" id="tab-estadistica" class="header-tab">Estadística</div>
-                    <div onclick="changeMainView('reportes')" id="tab-reportes" class="header-tab">Reportes</div>
-                </nav>
+    <!-- Encabezado Principal Metal Blanco -->
+    <header class="app-header">
+        <div class="w-1/3 flex items-center gap-3 relative z-10">
+            <div class="apps-header-btn" onclick="toggleMenu()">
+                <img src="../MM/Apps.png" alt="Apps" class="h-5 w-5 object-contain">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-700">Menú</span>
             </div>
             
-            <div class="flex items-center gap-4">
-                <div class="header-date-tag">
-                    <span id="date-display">...</span>
-                </div>
-                <input type="hidden" id="main-date">
+            <div class="h-6 w-px bg-slate-300"></div>
+
+            <div class="flex items-center gap-2.5">
+                <img src="../MM/RegAs.png" alt="Icono" class="h-6 w-6 object-contain opacity-90">
+                <h1 class="text-[11px] font-black uppercase tracking-[0.25em] text-slate-900 text-glow">Asistencias</h1>
+            </div>
+        </div>
+
+        <div class="flex-1 flex justify-center relative z-10">
+            <nav class="view-selector">
+                <button id="btn-diaria" onclick="changeView('diaria', this)" class="view-btn active">Vista Diaria</button>
+                <button id="btn-planeacion" onclick="changeView('planeacion', this)" class="view-btn">Planeación</button>
+                <button id="btn-reportes" onclick="changeView('reportes', this)" class="view-btn">Reportes</button>
+                <button id="btn-estadisticas" onclick="changeView('estadisticas', this)" class="view-btn">Estadísticas</button>
+            </nav>
+        </div>
+
+        <div class="w-1/3 flex items-center justify-end gap-5 relative z-10">
+            <div class="text-right leading-tight">
+                <div id="clock" class="text-base font-black font-mono text-slate-900 tracking-tighter">00:00:00</div>
+                <div id="date" class="text-[8px] text-slate-500 font-black uppercase tracking-widest">-- --- ----</div>
             </div>
         </div>
     </header>
 
-    <!-- Herramientas -->
-    <div id="tool-ribbon" class="tool-ribbon"></div>
+    <!-- Cinta de Herramientas -->
+    <nav id="toolRibbon" class="tool-ribbon"></nav>
 
-    <!-- Contenido -->
-    <div class="content-container">
-        <iframe id="main-frame" name="main-frame" src="about:blank"></iframe>
-    </div>
+    <!-- Área de Trabajo con Iframe -->
+    <main id="contentArea">
+        <iframe src="about:blank" id="moduleFrame"></iframe>
+    </main>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        function updateClock() {
+            const clockEl = document.getElementById('clock');
+            const dateEl = document.getElementById('date');
+            if (!clockEl || !dateEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+            dateEl.textContent = now.toLocaleDateString('es-ES', { 
+                day: '2-digit', month: 'short', year: 'numeric' 
+            }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        const firebaseConfig = { apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU", authDomain: "cic6-pp-web.firebaseapp.com", projectId: "cic6-pp-web", appId: "1:248659087868:web:a277ef700d83c7f1d22279" };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = 'cic.pp';
-        let userContext = null;
-
-        const viewsBase = "Componentes/RegAs/";
-        
-        window.setDaySubView = (sub) => {
-            const frame = document.getElementById('main-frame');
-            frame.src = `${viewsBase}${sub}.html`;
-            localStorage.setItem('regas_lastSubView_dia', sub);
-            updateRibbonActiveState(sub);
-            
-            frame.onload = () => {
-                const date = document.getElementById('main-date').value;
-                frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: date }, '*');
-            };
+        const TOOL_CONFIG = {
+            'diaria': [
+                { name: 'Próximos', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { name: 'Matutino', icon: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M6.343 6.343l.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z' },
+                { name: 'Vespertino', icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 4 4 0 10-7.9 2A4 4 0 003 15z' },
+                { name: 'Nocturno', icon: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z' },
+                { name: 'Ausentismos', icon: 'M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6' }
+            ],
+            'reportes': [
+                { name: 'Whatsapp', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
+                { name: 'Excel', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' }
+            ],
+            'estadisticas': [
+                { name: 'Gráficas', icon: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z' },
+                { name: 'Tendencias', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' }
+            ]
         };
 
-        window.setReportSubView = (sub) => {
-            const frame = document.getElementById('main-frame');
-            frame.src = `${viewsBase}${sub}.html`;
-            localStorage.setItem('regas_lastSubView_reportes', sub);
-            updateRibbonActiveState(sub);
-            frame.onload = () => {
-                const date = document.getElementById('main-date').value;
-                frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: date }, '*');
-            };
-        };
+        function changeView(view, btn) {
+            document.querySelectorAll('.view-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
 
-        const ribbonTools = {
-            dia: `
-                <button class="btn-refresh-pro" onclick="document.getElementById('main-frame').contentWindow.location.reload()" title="Refrescar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                </button>
-                <div class="ribbon-date-nav">
-                    <button onclick="window.adjustDate(-1)" class="p-1 hover:bg-slate-100 rounded-lg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                    <div class="flex items-center">
-                        <span id="ribbon-date-display" class="ribbon-date-text" onclick="document.getElementById('ribbon-picker').showPicker()">...</span>
-                        <input type="date" id="ribbon-picker" class="absolute opacity-0 w-0 h-0" onchange="window.updateGlobalDate(this.value)">
-                    </div>
-                    <button onclick="window.adjustDate(1)" class="p-1 hover:bg-slate-100 rounded-lg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-                </div>
-                <button id="sub-Proximos" class="ribbon-btn" onclick="window.setDaySubView('Proximos')">Próximos</button>
-                <button id="sub-Matutino" class="ribbon-btn" onclick="window.setDaySubView('Matutino')">Matutino</button>
-                <button id="sub-Vespertino" class="ribbon-btn" onclick="window.setDaySubView('Vespertino')">Vespertino</button>
-                <button id="sub-Nocturno" class="ribbon-btn" onclick="window.setDaySubView('Nocturno')">Nocturno</button>
-                <button id="sub-Ausentismos" class="ribbon-btn text-red-600 border-red-50 hover:bg-red-50" onclick="window.setDaySubView('Ausentismos')">Ausentismos</button>
-                <div class="flex-1"></div>
-            `,
-            reportes: `
-                <button id="sub-Whatsapp" class="ribbon-btn" onclick="window.setReportSubView('Whatsapp')">WhatsApp</button>
-                <button id="sub-Diario" class="ribbon-btn" onclick="window.setReportSubView('Diario')">Diario</button>
-                <button id="sub-Excel" class="ribbon-btn" onclick="window.setReportSubView('Excel')">Excel</button>
-            `
-        };
+            const ribbon = document.getElementById('toolRibbon');
+            const content = document.getElementById('contentArea');
+            const frame = document.getElementById('moduleFrame');
 
-        window.adjustDate = (days) => {
-            const current = document.getElementById('main-date').value;
-            const date = new Date(current + 'T12:00:00'); // Usar mediodía para evitar desfases
-            date.setDate(date.getDate() + days);
-            window.updateGlobalDate(date.toISOString().split('T')[0]);
-        };
+            ribbon.innerHTML = '';
 
-        function updateRibbonActiveState(activeId) {
-            document.querySelectorAll('.ribbon-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.getElementById(`sub-${activeId}`);
-            if (activeBtn) activeBtn.classList.add('active');
+            if (view === 'planeacion') {
+                ribbon.classList.add('hidden');
+                content.classList.add('full-view');
+                frame.src = '../Complementos/RegAs/Planeación.html';
+            } else {
+                ribbon.classList.remove('hidden');
+                content.classList.remove('full-view');
+                frame.src = 'about:blank'; // O carga la vista correspondiente
+
+                const tools = TOOL_CONFIG[view] || [];
+                tools.forEach(tool => {
+                    const item = document.createElement('div');
+                    item.className = 'tool-item';
+                    item.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${tool.icon}" />
+                        </svg>
+                        <span>${tool.name}</span>
+                    `;
+                    ribbon.appendChild(item);
+                });
+            }
         }
 
-        window.changeMainView = (viewKey) => {
-            const frame = document.getElementById('main-frame');
-            document.querySelectorAll('.header-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(`tab-${viewKey}`)?.classList.add('active');
-            
-            document.getElementById('tool-ribbon').innerHTML = ribbonTools[viewKey] || '';
-            
-            // Ocultar ribbon en planeacion y estadistica
-            const shouldHideRibbon = (viewKey === 'planeacion' || viewKey === 'estadistica');
-            document.getElementById('tool-ribbon').classList.toggle('hidden', shouldHideRibbon);
+        function toggleMenu() {
+            window.parent.postMessage({ action: 'toggleMenu' }, '*');
+        }
 
-            if (viewKey === 'dia') {
-                window.setDaySubView(localStorage.getItem('regas_lastSubView_dia') || 'Proximos');
-                window.syncRibbonDate();
-            } else if (viewKey === 'planeacion') {
-                frame.src = `${viewsBase}Tabla.html`;
-                frame.onload = () => { frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); };
-            } else if (viewKey === 'reportes') {
-                window.setReportSubView(localStorage.getItem('regas_lastSubView_reportes') || 'Whatsapp');
-            } else if (viewKey === 'estadistica') {
-                frame.src = `${viewsBase}Estadistica.html`;
-                frame.onload = () => { 
-                    frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: document.getElementById('main-date').value }, '*'); 
-                };
-            }
-            localStorage.setItem('regas_lastView', viewKey);
+        window.onload = () => {
+            const defaultBtn = document.querySelector('.view-btn.active');
+            if (defaultBtn) changeView('diaria', defaultBtn);
         };
-
-        window.updateGlobalDate = (val) => {
-            localStorage.setItem('regas_selectedDate', val);
-            document.getElementById('main-date').value = val;
-            
-            const dateObj = new Date(val + 'T12:00:00');
-            // Formato de fecha larga
-            const headerText = dateObj.toLocaleDateString('es-MX', { 
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-            }).toUpperCase();
-            document.getElementById('date-display').innerText = headerText;
-            
-            window.syncRibbonDate();
-            const frame = document.getElementById('main-frame');
-            if (frame && frame.contentWindow) {
-                frame.contentWindow.postMessage({ type: 'DATE_CHANGED', date: val }, '*');
-                // También enviar INIT por si el frame acaba de cargar
-                frame.contentWindow.postMessage({ type: 'INIT_SUBMODULE', user: userContext, date: val }, '*');
-            }
-        };
-
-        window.syncRibbonDate = () => {
-            const val = document.getElementById('main-date').value;
-            const rDate = document.getElementById('ribbon-date-display');
-            if (rDate) {
-                const dateObj = new Date(val + 'T12:00:00');
-                rDate.innerText = dateObj.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
-            }
-            const rPicker = document.getElementById('ribbon-picker');
-            if (rPicker) rPicker.value = val;
-        };
-
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'USER_CONTEXT_RESPONSE') {
-                userContext = event.data.user;
-            }
-            if (event.data.type === 'navigateRight') {
-                const finalUrl = `Apps/${viewsBase}${event.data.url}`;
-                window.parent.postMessage({ type: 'OPEN_SIDE_PANEL', url: finalUrl, title: 'Perfil de Elemento' }, '*');
-            }
-            // REENVIAR CAMBIO DE ESTADO DEL PANEL LATERAL AL SUB-MÓDULO
-            if (event.data.type === 'SIDE_PANEL_STATE_CHANGED') {
-                const frame = document.getElementById('main-frame');
-                if (frame && frame.contentWindow) {
-                    frame.contentWindow.postMessage(event.data, '*');
-                }
-            }
-        });
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.parent.postMessage({ type: 'REQUEST_USER_CONTEXT' }, '*');
-                
-                // Obtener fecha local YYYY-MM-DD
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const systemToday = `${year}-${month}-${day}`;
-                
-                window.updateGlobalDate(systemToday);
-                window.changeMainView(localStorage.getItem('regas_lastView') || 'dia');
-            } else { window.location.href = "../index.html"; }
-        });
     </script>
 </body>
 </html>

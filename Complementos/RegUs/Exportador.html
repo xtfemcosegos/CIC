@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exportador - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Librería para Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: transparent; 
+            color: #1e293b; 
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .glass-panel {
+            background: white;
+            border: 1.5px solid #f1f5f9;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .action-card {
+            background: #f8fafc;
+            border: 1.5px solid #f1f5f9;
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            border-color: #0d9488;
+            background: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.1);
+        }
+
+        .btn-premium {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.5rem;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-teal { background: #0d9488; color: white; }
+        .btn-teal:hover { background: #14b8a6; transform: translateY(-2px); }
+        
+        .btn-outline { 
+            background: white; 
+            border: 1.5px solid #e2e8f0; 
+            color: #64748b; 
+        }
+        .btn-outline:hover { 
+            background: #f8fafc; 
+            color: #0d9488; 
+            border-color: #0d9488;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .status-msg {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            display: none;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-5xl mx-auto">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="p-3 bg-teal-50 rounded-2xl border border-teal-100 text-teal-600">
+                <i data-lucide="database"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-tight text-slate-800">Gestión de Portabilidad</h1>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Sincronización y Respaldo de Base ElementosPP</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- EXPORTAR -->
+            <div class="glass-panel space-y-6">
+                <div class="flex items-center gap-3 text-teal-600">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <h2 class="text-xs font-black uppercase tracking-widest">Exportar Datos</h2>
+                </div>
+                <p class="text-slate-500 text-xs leading-relaxed">Descargue una copia de seguridad completa con todos los campos y categorías del expediente de socio.</p>
+                
+                <div class="space-y-4 pt-4">
+                    <div class="action-card">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Formato Excel Full</span>
+                            <span class="px-2 py-0.5 bg-teal-50 text-teal-600 text-[8px] font-black rounded uppercase border border-teal-100">Recomendado</span>
+                        </div>
+                        <button onclick="exportToExcel()" class="btn-premium btn-teal shadow-lg shadow-teal-600/20">
+                            <i data-lucide="file-spreadsheet"></i> Descargar .XLSX
+                        </button>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Formato JSON Puro</span>
+                        </div>
+                        <button onclick="exportToJSON()" class="btn-premium btn-outline">
+                            <i data-lucide="code-2"></i> Descargar .JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IMPORTAR -->
+            <div class="glass-panel space-y-6">
+                <div class="flex items-center gap-3 text-orange-500">
+                    <i data-lucide="upload" class="w-5 h-5"></i>
+                    <h2 class="text-xs font-black uppercase tracking-widest">Importar Datos</h2>
+                </div>
+                <p class="text-slate-500 text-xs leading-relaxed">Actualice masivamente los registros cargando un archivo estructurado. Los registros existentes se actualizarán.</p>
+
+                <div class="action-card mt-4">
+                    <div class="file-input-wrapper">
+                        <button class="btn-premium btn-outline w-full">
+                            <i data-lucide="file-up"></i> <span id="fileNameLabel">Seleccionar Archivo</span>
+                        </button>
+                        <input type="file" id="importInput" accept=".json, .xlsx, .xls" onchange="handleFileSelect(this)">
+                    </div>
+                    
+                    <div id="importActions" class="hidden mt-6 space-y-3">
+                        <div class="h-px bg-slate-200 w-full my-4"></div>
+                        <button onclick="processImport()" class="btn-premium btn-teal w-full shadow-lg shadow-teal-600/20">
+                            Procesar Importación Masiva
+                        </button>
+                        <p class="text-[9px] text-center text-slate-400 font-bold uppercase tracking-tighter">Se requiere autorización de administrador</p>
+                    </div>
+                </div>
+
+                <div id="statusBox" class="status-msg"></div>
+            </div>
+
+        </div>
+
+        <div class="mt-12 p-6 rounded-2xl bg-teal-50 border border-teal-100 flex items-start gap-4">
+            <i data-lucide="info" class="w-5 h-5 text-teal-600 shrink-0"></i>
+            <p class="text-[10px] text-teal-800 leading-relaxed uppercase font-bold tracking-tight">
+                Nota Técnica: La exportación a Excel incluye todas las categorías del expediente (Identidad, Salud, Educación, Dotación). Los campos de lista (Familiares, Contactos, Cursos) se exportan como texto JSON estructurado. No modifique el formato interno de esas celdas para asegurar la re-importación exitosa.
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let selectedFileData = null;
+
+        const showStatus = (msg, type = 'info') => {
+            const box = document.getElementById('statusBox');
+            box.textContent = msg;
+            box.style.display = 'block';
+            box.className = `status-msg ${type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`;
+        };
+
+        // --- EXPORTACIÓN ---
+        window.exportToJSON = async () => {
+            const data = await getFreshData();
+            if (!data) return;
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            downloadFile(blob, `Backup_ElementosPP_${Date.now()}.json`);
+        };
+
+        window.exportToExcel = async () => {
+            const data = await getFreshData();
+            if (!data) return;
+
+            // MAPEO EXHAUSTIVO DE TODOS LOS CAMPOS
+            const rows = Object.values(data).map(u => ({
+                ID_Socio: u.socioId || '',
+                Nombre_Completo: u.nombre || '',
+                Puesto: u.puesto || u.operativa?.puesto || '',
+                Genero: u.identidad?.sexo || 'M',
+                Estado_Civil: u.identidad?.estadoCivil || 'S',
+                Fecha_Nacimiento: u.identidad?.fechaNac || '',
+                Lugar_Origen: u.identidad?.origen || '',
+                Domicilio: u.identidad?.domicilio || '',
+                Email: u.contacto?.email || '',
+                Telefono: u.contacto?.telefono || '',
+                Acceso_Sistema: u.hasAuth ? 'ACTIVO' : 'INACTIVO',
+                NSS: u.salud?.nss || '',
+                Tipo_Sangre: u.salud?.sangre || 'O+',
+                Alergias: u.salud?.alergias || '',
+                Contactos_Emergencia: u.salud?.emergencias ? JSON.stringify(u.salud.emergencias) : '[]',
+                Grado_Estudios: u.educacion?.grado || 'Primaria',
+                Escuela: u.educacion?.escuela || '',
+                Cursos_Certificaciones: u.educacion?.cursos ? JSON.stringify(u.educacion.cursos) : '[]',
+                Talla_Calzado: u.dotacion?.zapatos || '',
+                Talla_Camisa: u.dotacion?.camisa || '',
+                Talla_Pantalon: u.dotacion?.pantalon || '',
+                Gorra_Reglamentaria: u.dotacion?.gorra ? 'SÍ' : 'NO',
+                Carga_Familiar: u.familia ? JSON.stringify(u.familia) : '[]',
+                Ultima_Actualizacion: u.updatedAt || ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = [
+                {wch: 12}, {wch: 35}, {wch: 25}, {wch: 8}, {wch: 12}, {wch: 15}, {wch: 25}, {wch: 40},
+                {wch: 30}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 10}, {wch: 30}, {wch: 40}, {wch: 15},
+                {wch: 30}, {wch: 40}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 8}, {wch: 40}, {wch: 25}
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Socios_CIC71");
+            XLSX.writeFile(wb, `Base_ElementosPP_${Date.now()}.xlsx`);
+        };
+
+        const getFreshData = async () => {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                return snap.exists() ? snap.data() : null;
+            } catch (e) {
+                showStatus("Acceso denegado a la base de datos.", 'error');
+                return null;
+            }
+        };
+
+        const downloadFile = (blob, name) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.click();
+        };
+
+        // --- IMPORTACIÓN ---
+        window.handleFileSelect = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+
+            document.getElementById('fileNameLabel').textContent = file.name;
+            const reader = new FileReader();
+
+            if (file.name.endsWith('.json')) {
+                reader.onload = (e) => {
+                    try {
+                        selectedFileData = JSON.parse(e.target.result);
+                        document.getElementById('importActions').classList.remove('hidden');
+                    } catch (err) { showStatus("Archivo JSON corrupto o inválido.", 'error'); }
+                };
+                reader.readAsText(file);
+            } else {
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        
+                        const convertedMap = {};
+                        jsonData.forEach(row => {
+                            const sid = (row.ID_Socio || '').toString().trim();
+                            if (sid) {
+                                const key = sid.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                                convertedMap[key] = {
+                                    socioId: sid,
+                                    nombre: row.Nombre_Completo || '',
+                                    identidad: {
+                                        sexo: row.Genero || 'M',
+                                        estadoCivil: row.Estado_Civil || 'S',
+                                        fechaNac: row.Fecha_Nacimiento || '',
+                                        origen: row.Lugar_Origen || '',
+                                        domicilio: row.Domicilio || ''
+                                    },
+                                    contacto: {
+                                        email: row.Email || '',
+                                        telefono: row.Telefono || ''
+                                    },
+                                    hasAuth: row.Acceso_Sistema === 'ACTIVO',
+                                    salud: {
+                                        nss: row.NSS || '',
+                                        sangre: row.Tipo_Sangre || 'O+',
+                                        alergias: row.Alergias || '',
+                                        emergencias: row.Contactos_Emergencia ? JSON.parse(row.Contactos_Emergencia) : []
+                                    },
+                                    educacion: {
+                                        grado: row.Grado_Estudios || 'Primaria',
+                                        escuela: row.Escuela || '',
+                                        cursos: row.Cursos_Certificaciones ? JSON.parse(row.Cursos_Certificaciones) : []
+                                    },
+                                    dotacion: {
+                                        zapatos: row.Talla_Calzado || '',
+                                        camisa: row.Talla_Camisa || '',
+                                        pantalon: row.Talla_Pantalon || '',
+                                        gorra: row.Gorra_Reglamentaria === 'SÍ'
+                                    },
+                                    familia: row.Carga_Familiar ? JSON.parse(row.Carga_Familiar) : [],
+                                    updatedAt: new Date().toISOString()
+                                };
+                            }
+                        });
+                        selectedFileData = convertedMap;
+                        document.getElementById('importActions').classList.remove('hidden');
+                    } catch (err) { 
+                        showStatus("Error al procesar Excel. Verifique el formato de las columnas.", 'error'); 
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        };
+
+        window.processImport = async () => {
+            if (!selectedFileData) return;
+            const count = Object.keys(selectedFileData).length;
+            if (!confirm(`ADVERTENCIA: Se actualizarán o crearán ${count} registros. Esta acción sobreescribe datos existentes. ¿Continuar?`)) return;
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const currentData = snap.exists() ? snap.data() : {};
+
+                // Merge masivo: Los datos importados tienen prioridad sobre los locales
+                const mergedData = { ...currentData, ...selectedFileData };
+                
+                await updateDoc(docRef, mergedData);
+                showStatus(`Sincronización masiva finalizada: ${count} socios actualizados.`, 'success');
+                document.getElementById('importActions').classList.add('hidden');
+                window.parent.postMessage({ action: 'refreshList' }, '*');
+            } catch (e) {
+                showStatus("Error de escritura en Firebase: " + e.message, 'error');
+            }
+        };
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) window.parent.location.href = "../../index.html";
+        });
+
+        const start = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            }
+            lucide.createIcons();
+        };
+        start();
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siniestros - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            background: #f3f4f6;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Encabezado Metálico Azul (Color Identidad RegSin) */
+        .app-header {
+            height: 50px;
+            background: linear-gradient(180deg, 
+                #1e3a8a 0%, 
+                #2563eb 40%, 
+                #3b82f6 50%, 
+                #2563eb 60%, 
+                #1e3a8a 100%
+            );
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #172554;
+            position: relative;
+            z-index: 60;
+        }
+
+        .apps-header-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .apps-header-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Selector de Vista en Encabezado */
+        .view-selector {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px;
+            border-radius: 8px;
+            display: flex;
+            gap: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .view-btn {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .view-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .view-btn.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Cinta de Herramientas (Tool Ribbon) Color Plata Compacta y Degradada */
+        .tool-ribbon {
+            height: 26px;
+            background: linear-gradient(180deg, 
+                #f9fafb 0%, 
+                #ffffff 20%, 
+                #e5e7eb 45%, 
+                #d1d5db 50%, 
+                #9ca3af 95%,
+                #6b7280 100%
+            );
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            gap: 1.5rem;
+            border-bottom: 1px solid #9ca3af;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        .tool-ribbon.hidden {
+            display: none;
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 100%;
+            padding: 0 4px;
+        }
+
+        .tool-item:hover {
+            color: #2563eb;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tool-item svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Área de Contenido */
+        #contentArea {
+            padding: 1.5rem;
+            min-height: calc(100vh - 76px);
+            transition: padding 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado Principal -->
+    <header class="app-header">
+        <!-- Parte 1: Acceso Apps + Branding -->
+        <div class="w-1/3 flex items-center gap-3">
+            <div id="appsBtn" class="apps-header-btn" onclick="toggleMenu()">
+                <img src="../MM/Apps.png" alt="Apps" class="h-5 w-5 object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/17/17704.png'">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-white">Apps</span>
+            </div>
+            
+            <div class="h-6 w-px bg-white/20"></div>
+
+            <div class="flex items-center gap-2">
+                <img src="../MM/RegSin.png" alt="Icono Siniestros" class="h-6 w-6 object-contain filter brightness-0 invert" onerror="this.style.display='none'">
+                <h1 class="text-[11px] font-black uppercase tracking-[0.2em] text-white">Siniestros</h1>
+            </div>
+        </div>
+
+        <!-- Parte 2: Selector de Vistas -->
+        <div class="flex-1 flex justify-center">
+            <nav class="view-selector">
+                <button onclick="changeView('historial', this)" class="view-btn active">Historial</button>
+                <button onclick="changeView('nuevo_reporte', this)" class="view-btn">Nuevo reporte</button>
+            </nav>
+        </div>
+
+        <!-- Parte 3: Reloj y Fecha -->
+        <div class="w-1/3 flex items-center justify-end gap-4">
+            <div class="text-right leading-none">
+                <div id="clock" class="text-base font-bold font-mono text-white">00:00:00</div>
+                <div id="date" class="text-[8px] text-blue-100 uppercase tracking-tighter">-- --- ----</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cinta de Herramientas Dinámica -->
+    <nav id="toolRibbon" class="tool-ribbon">
+        <!-- Contenido inyectado dinámicamente -->
+    </nav>
+
+    <!-- Área de Contenido Principal -->
+    <main id="contentArea">
+        <!-- El contenido se construirá modularmente -->
+    </main>
+
+    <script>
+        // Sincronización de Reloj y Fecha
+        function updateClock() {
+            const clockEl = document.getElementById('clock');
+            const dateEl = document.getElementById('date');
+            if (!clockEl || !dateEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+            dateEl.textContent = now.toLocaleDateString('es-ES', { 
+                day: '2-digit', month: 'short', year: 'numeric' 
+            }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Configuración de herramientas por vista para Reportes y Siniestros
+        const TOOL_CONFIG = {
+            'historial': [
+                { name: 'Todos los reportes', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+                { name: 'Siniestros', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+                { name: 'Reportes de casetas', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+                { name: 'Notificaciones legales', icon: 'M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3' }
+            ],
+            'nuevo_reporte': [
+                { name: 'Reporte de siniestro', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+                { name: 'Notificaciones legales', icon: 'M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3' },
+                { name: 'Reporte de asistencia', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }
+            ]
+        };
+
+        // Lógica de cambio de vista
+        function changeView(view, btn) {
+            document.querySelectorAll('.view-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+
+            const ribbon = document.getElementById('toolRibbon');
+            const content = document.getElementById('contentArea');
+
+            ribbon.innerHTML = '';
+
+            const tools = TOOL_CONFIG[view] || [];
+            tools.forEach(tool => {
+                const item = document.createElement('div');
+                item.className = 'tool-item';
+                item.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${tool.icon}" />
+                    </svg>
+                    <span>${tool.name}</span>
+                `;
+                ribbon.appendChild(item);
+            });
+
+            console.log("RegSin: Vista cambiada a", view);
+        }
+
+        // Comunicación Shell
+        function toggleMenu() {
+            window.parent.postMessage({ action: 'toggleMenu' }, '*');
+        }
+
+        window.onload = () => {
+            const defaultBtn = document.querySelector('.view-btn.active');
+            if (defaultBtn) changeView('historial', defaultBtn);
+        };
+    </script>
+</body>
+</html>

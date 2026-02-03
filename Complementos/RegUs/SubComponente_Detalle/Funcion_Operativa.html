@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Librería para convertir HTML a Imagen -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff; 
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        .input-premium {
+            width: 100%;
+            font-size: 0.75rem;
+            border: 1.5px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            background-color: #f8fafc;
+            transition: all 0.3s;
+            color: #334155;
+            font-weight: 600;
+        }
+        .input-premium:focus {
+            background-color: #ffffff; border-color: #2563eb; outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .section-title {
+            display: flex; align-items: center; gap: 0.4rem; color: #1e40af;
+            margin-bottom: 0.75rem; width: 100%;
+        }
+        .section-title h5 { font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+        .section-title div { flex: 1; height: 1px; background: #f1f5f9; }
+        
+        .label-premium { font-size: 7.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem; display: block; }
+
+        /* --- Tarjeta de Estado de Fuerza --- */
+        .force-card {
+            background: white;
+            border: 1.5px solid #000;
+            padding: 15px;
+            width: 100%;
+            max-width: 650px;
+            margin: 1rem auto;
+            display: flex;
+            gap: 15px;
+            font-family: Arial, sans-serif;
+            color: #000;
+        }
+        .force-card table { border-collapse: collapse; width: 100%; }
+        .force-card th, .force-card td { border: 1.5px solid #000; padding: 4px 8px; font-size: 11px; text-align: left; }
+        .force-card .header-cell { background: #334155; color: white; font-weight: bold; width: 35%; }
+        .force-card .status-header { background: #dc2626; color: white; text-align: center; font-weight: bolder; text-transform: uppercase; font-size: 12px; }
+        .force-card .status-header.active { background: #10b981; }
+
+        /* Estilo Toggle */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* Toast Discreto */
+        #toast {
+            position: fixed; top: 15px; right: 15px;
+            background: #0f172a; color: white; padding: 8px 16px; border-radius: 10px;
+            font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+            display: none; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            align-items: center; gap: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Notificación discreta de guardado -->
+    <div id="toast">
+        <i data-lucide="cloud-check" class="w-3.5 h-3.5 text-blue-400"></i>
+        <span>Cambios guardados</span>
+    </div>
+
+    <div class="w-full px-4 py-4">
+        <form id="operativaForm" class="max-w-full mx-auto space-y-6" onchange="autoSave()">
+            
+            <!-- 1. GESTIÓN DE ESTATUS -->
+            <section>
+                <div class="section-title">
+                    <i data-lucide="user-check"></i><h5>1. Estatus y Gestión de Personal</h5><div></div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="label-premium">Estatus Actual</label>
+                        <select id="input_op_estatus" name="op_estatus" class="input-premium font-bold">
+                            <option value="Activo">ACTIVO</option>
+                            <option value="Baja">BAJA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-premium">Puesto</label>
+                        <select id="input_op_puesto" name="op_puesto" class="input-premium">
+                            <option value="Coordinador">COORDINADOR</option>
+                            <option value="Responsable de CCO">RESPONSABLE DE CCO</option>
+                            <option value="Analista CCO">ANALISTA CCO</option>
+                            <option value="Encargado">ENCARGADO</option>
+                            <option value="Elemento Seguridad">ELEMENTO SEGURIDAD</option>
+                            <option value="Externo">EXTERNO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-premium">Fecha de Ingreso</label>
+                        <input type="date" id="input_op_alta" name="op_alta" class="input-premium">
+                    </div>
+                    <div id="box-fecha-baja" class="hidden">
+                        <label class="label-premium">Fecha de Baja</label>
+                        <input type="date" id="input_op_baja" name="op_baja" class="input-premium border-red-100 bg-red-50/30">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. VISTA ESTADO DE FUERZA (VISTA PREVIA) -->
+            <section>
+                <div class="section-title">
+                    <i data-lucide="layout"></i><h5>2. Vista de Estado de Fuerza</h5><div></div>
+                    <button type="button" id="btnCopyImage" onclick="copyForceCardAsImage()" class="flex items-center gap-2 px-3 py-1 bg-slate-900 text-white rounded-lg text-[8px] font-black uppercase hover:bg-blue-600 transition-all">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Copiar Tarjeta
+                    </button>
+                </div>
+                
+                <div id="forceCardWrapper" class="w-full flex justify-center p-2 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                    <div id="forceCardContainer" class="force-card">
+                        <div class="flex flex-col items-center justify-center w-2/5">
+                            <div style="border: 1.5px solid #000; width: 100%; aspect-ratio: 1/1.1; overflow: hidden; background: #f8fafc;">
+                                <img id="card_photo" src="" class="w-full h-full object-cover" crossorigin="anonymous">
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col">
+                            <div class="text-center font-bold text-[10px] mb-2" style="letter-spacing: 0.5px;">ESTADO DE FUERZA PROTECCIÓN OS</div>
+                            <table>
+                                <tr>
+                                    <td class="header-cell">Información</td>
+                                    <td id="card_status_header" class="status-header">ACTIVO</td>
+                                </tr>
+                                <tr><td class="header-cell">NOMBRE</td><td id="card_nombre" style="font-weight: bold; font-size: 11px;">---</td></tr>
+                                <tr><td class="header-cell">FECHA DE ALTA</td><td id="card_alta">---</td></tr>
+                                <tr><td class="header-cell">EDAD</td><td id="card_edad">---</td></tr>
+                                <tr><td class="header-cell">COMPAÑÍA</td><td>CSCP</td></tr>
+                                <tr><td class="header-cell">PUESTO</td><td id="card_puesto" style="text-transform: uppercase;">---</td></tr>
+                                <tr><td class="header-cell"># EMPLEADO</td><td id="card_id" style="font-family: monospace; font-weight: bold;">---</td></tr>
+                                <tr><td class="header-cell">FECHA DE BAJA</td><td id="card_baja">---</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. CONFIGURACIÓN DE TURNO -->
+            <section>
+                <div class="section-title">
+                    <i data-lucide="clock"></i><h5>3. Configuración de Turno</h5><div></div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="col-span-2">
+                        <label class="label-premium">Ubicación / Caseta</label>
+                        <select id="input_op_caseta" name="op_caseta" class="input-premium font-bold text-blue-700">
+                            <option value="Centro de Control">Centro de Control</option>
+                            <option value="Encargado">Encargado</option>
+                            <option value="Edison">Edison</option>
+                            <option value="Recepción Edison">Recepción Edison</option>
+                            <option value="Impulso">Impulso</option>
+                            <option value="Michelena">Michelena</option>
+                            <option value="Simón Bolívar">Simón Bolívar</option>
+                            <option value="Carranza">Carranza</option>
+                            <option value="Universidad">Universidad</option>
+                            <option value="Rondinero">Rondinero</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Tipo de Turno</label>
+                        <select id="input_op_tipo_turno" name="op_tipo_turno" class="input-premium">
+                            <option value="Fijo">Fijo</option>
+                            <option value="2 x 2 x 2">2 x 2 x 2</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Duración</label>
+                        <input type="text" id="input_op_duracion" name="op_duracion" class="input-premium" placeholder="12Hrs">
+                    </div>
+
+                    <div class="col-span-1">
+                        <label class="label-premium">Matutino</label>
+                        <input type="time" id="input_op_mat" name="op_mat" class="input-premium font-mono">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Vespertino</label>
+                        <input type="time" id="input_op_ves" name="op_ves" class="input-premium font-mono">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Nocturno</label>
+                        <input type="time" id="input_op_noc" name="op_noc" class="input-premium font-mono">
+                    </div>
+                    
+                    <div class="col-span-1 flex items-end pb-1">
+                        <div class="w-full p-2 bg-slate-50 rounded-lg border flex items-center justify-between">
+                            <span class="text-[8px] font-bold text-slate-500 uppercase">Descanso Fijo</span>
+                            <label class="switch">
+                                <input type="checkbox" id="input_op_descanso_fijo" name="op_descanso_fijo">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="box-dia-descanso" class="col-span-2 hidden">
+                        <label class="label-premium">Día de Descanso</label>
+                        <select id="input_op_descanso_dia" name="op_descanso_dia" class="input-premium">
+                            <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
+                            <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
+                            <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option>
+                            <option value="Domingo">Domingo</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const params = new URLSearchParams(window.location.search);
+        const socioId = params.get('socioId');
+        const memberKey = socioId ? socioId.toLowerCase().replace(/[^a-z0-9]/g, '_') : null;
+
+        let currentData = null;
+        let unsubscribe = null;
+        let saveTimeout = null;
+
+        async function getSafePhotoUrl(path) {
+            if (!path || path === '') return 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/placeholder.png';
+            if (path.startsWith('http')) return path;
+            if (path.startsWith('gs://')) {
+                try {
+                    const storagePath = path.replace(/gs:\/\/[^\/]+\//, '');
+                    return await getDownloadURL(ref(storage, storagePath));
+                } catch (e) { return 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/placeholder.png'; }
+            }
+            return path;
+        }
+
+        const formatToDDMMYYYY = (dateStr) => {
+            if (!dateStr || dateStr === '---') return '---';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        };
+
+        const calculateAgePrecise = (birthDateStr) => {
+            if (!birthDateStr) return '---';
+            const today = new Date();
+            const birthDate = new Date(birthDateStr);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age >= 0 ? age : '---';
+        };
+
+        const showToast = (text = "Cambios guardados") => {
+            const t = document.getElementById('toast');
+            t.querySelector('span').innerText = text;
+            t.style.display = 'flex';
+            setTimeout(() => t.style.display = 'none', 3000);
+        };
+
+        const initDataListener = () => {
+            if (!memberKey) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            if (unsubscribe) unsubscribe();
+            unsubscribe = onSnapshot(docRef, (snap) => {
+                if (snap.exists() && snap.data()[memberKey]) {
+                    currentData = snap.data()[memberKey];
+                    // Solo renderizamos si no estamos activamente editando para evitar saltos en el cursor
+                    if (!document.activeElement.classList.contains('input-premium')) {
+                        renderOperativa(currentData);
+                    } else {
+                        // Actualizamos solo la tarjeta visual
+                        renderForceCard(currentData);
+                    }
+                }
+            });
+        };
+
+        const renderOperativa = async (u) => {
+            const op = u.operativa || {};
+            const estatus = op.estatus || 'Activo';
+            
+            document.getElementById('input_op_estatus').value = estatus;
+            document.getElementById('input_op_puesto').value = op.puesto || 'Elemento Seguridad';
+            document.getElementById('input_op_alta').value = op.alta || '';
+            document.getElementById('input_op_baja').value = op.baja || '';
+            document.getElementById('box-fecha-baja').classList.toggle('hidden', estatus !== 'Baja');
+
+            document.getElementById('input_op_caseta').value = op.caseta || 'Centro de Control';
+            document.getElementById('input_op_tipo_turno').value = op.tipoTurno || 'Fijo';
+            document.getElementById('input_op_duracion').value = op.duracion || '';
+
+            const entradaStr = op.Entrada_Predeterminada || "[Mat:--,Ves:--,Noc:--]";
+            document.getElementById('input_op_mat').value = entradaStr.match(/Mat:([^,\]]+)/)?.[1] || "";
+            document.getElementById('input_op_ves').value = entradaStr.match(/Ves:([^,\]]+)/)?.[1] || "";
+            document.getElementById('input_op_noc').value = entradaStr.match(/Noc:([^,\]]+)/)?.[1] || "";
+
+            const esFijo = !!op.descansoFijo;
+            document.getElementById('input_op_descanso_fijo').checked = esFijo;
+            document.getElementById('box-dia-descanso').classList.toggle('hidden', !esFijo);
+            document.getElementById('input_op_descanso_dia').value = op.descansoDia || 'Lunes';
+
+            renderForceCard(u);
+            lucide.createIcons();
+        };
+
+        const renderForceCard = async (u) => {
+            const op = u.operativa || {};
+            const estatus = op.estatus || 'Activo';
+            
+            document.getElementById('card_photo').src = await getSafePhotoUrl(u.photo);
+            document.getElementById('card_nombre').textContent = u.nombre || '---';
+            document.getElementById('card_alta').textContent = formatToDDMMYYYY(op.alta);
+            document.getElementById('card_puesto').textContent = op.puesto || 'ELEMENTO SEGURIDAD';
+            document.getElementById('card_id').textContent = u.socioId || '---';
+            document.getElementById('card_baja').textContent = formatToDDMMYYYY(op.baja);
+            
+            const statusHeader = document.getElementById('card_status_header');
+            statusHeader.textContent = estatus;
+            statusHeader.className = `status-header ${estatus === 'Activo' ? 'active' : ''}`;
+
+            document.getElementById('card_edad').textContent = calculateAgePrecise(u.identidad?.fechaNac);
+        };
+
+        window.autoSave = () => {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            // Debounce de 1 segundo para no saturar Firebase mientras se escribe
+            saveTimeout = setTimeout(saveOperativa, 1000);
+            
+            // Actualización visual inmediata de la tarjeta y visibilidad de campos dependientes
+            const estatus = document.getElementById('input_op_estatus').value;
+            const esFijo = document.getElementById('input_op_descanso_fijo').checked;
+            document.getElementById('box-fecha-baja').classList.toggle('hidden', estatus !== 'Baja');
+            document.getElementById('box-dia-descanso').classList.toggle('hidden', !esFijo);
+            
+            if (currentData) {
+                const tempData = {
+                    ...currentData,
+                    operativa: {
+                        ...currentData.operativa,
+                        estatus: estatus,
+                        puesto: document.getElementById('input_op_puesto').value,
+                        alta: document.getElementById('input_op_alta').value,
+                        baja: document.getElementById('input_op_baja').value
+                    }
+                };
+                renderForceCard(tempData);
+            }
+        };
+
+        const saveOperativa = async () => {
+            if (!memberKey || !currentData) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const fullMap = snap.data();
+
+                const mat = document.getElementById('input_op_mat').value || "--:--";
+                const ves = document.getElementById('input_op_ves').value || "--:--";
+                const noc = document.getElementById('input_op_noc').value || "--:--";
+
+                const updated = {
+                    ...currentData,
+                    operativa: {
+                        ...currentData.operativa,
+                        estatus: document.getElementById('input_op_estatus').value,
+                        puesto: document.getElementById('input_op_puesto').value,
+                        alta: document.getElementById('input_op_alta').value,
+                        baja: document.getElementById('input_op_baja').value,
+                        caseta: document.getElementById('input_op_caseta').value,
+                        tipoTurno: document.getElementById('input_op_tipo_turno').value,
+                        duracion: document.getElementById('input_op_duracion').value,
+                        Entrada_Predeterminada: `[Mat:${mat},Ves:${ves},Noc:${noc}]`,
+                        descansoFijo: document.getElementById('input_op_descanso_fijo').checked,
+                        descansoDia: document.getElementById('input_op_descanso_dia').value,
+                    },
+                    updatedAt: new Date().toISOString()
+                };
+
+                fullMap[memberKey] = updated;
+                await updateDoc(docRef, fullMap);
+                showToast();
+                window.parent.postMessage({ action: 'dataUpdated', data: updated }, '*');
+            } catch (err) { 
+                console.error("Auto-save error:", err);
+            }
+        };
+
+        window.copyForceCardAsImage = async () => {
+            const card = document.getElementById('forceCardContainer');
+            const btn = document.getElementById('btnCopyImage');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>...`;
+            lucide.createIcons();
+
+            try {
+                const canvas = await html2canvas(card, { useCORS: true, backgroundColor: "#ffffff", scale: 2 });
+                canvas.toBlob(async (blob) => {
+                    if (!blob) throw new Error("Generación fallida");
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        showToast("Imagen copiada");
+                    } catch (err) {
+                        const link = document.createElement('a');
+                        link.download = `Socio_${currentData.socioId}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        showToast("Descargando imagen");
+                    }
+                }, "image/png");
+            } catch (err) {
+                alert("Error al capturar tarjeta.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="copy" class="w-3 h-3"></i> Copiar Tarjeta`;
+                lucide.createIcons();
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => { if (user) initDataListener(); });
+        lucide.createIcons();
+    </script>
+</body>
+</html>

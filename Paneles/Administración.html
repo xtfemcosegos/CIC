@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Administración - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@700&display=swap');
+
+        body {
+            background: #f3f4f6;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Barra de Pestañas (28px) */
+        .tab-bar {
+            height: 28px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: flex-end;
+            padding-left: 0.5rem;
+            z-index: 100;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+
+        .tab-container {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+        }
+
+        .tab-item {
+            height: 22px;
+            padding: 0 12px;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #6b7280;
+            background: #e5e7eb;
+            border: 1px solid #d1d5db;
+            border-bottom: none;
+            margin-right: 3px;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab-active {
+            color: white !important;
+            height: 25px;
+            margin-bottom: -1px;
+            z-index: 10;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            border-color: transparent;
+        }
+
+        .close-tab {
+            margin-left: 8px;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 12px;
+            background: rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+
+        /* Shell Header (55px) */
+        .shell-header {
+            height: 55px;
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            color: white;
+            position: fixed;
+            top: 28px; 
+            width: 100%;
+            z-index: 50;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        }
+
+        .shell-header.hidden-header {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 110;
+        }
+
+        #mainLayout {
+            padding-top: 28px;
+            transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #mainLayout.with-shell {
+            padding-top: 83px; 
+        }
+
+        .sidebar-transition {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (max-width: 640px) {
+            .header-title { font-size: 9px !important; letter-spacing: 0.2em !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="tab-bar">
+        <div id="tabBar" class="tab-container"></div>
+    </nav>
+
+    <header id="shellHeader" class="shell-header">
+        <div class="flex-1 flex items-center">
+            <button id="appsBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all active:scale-95 group">
+                <i data-lucide="layout-grid" class="w-5 h-5 text-blue-400 group-hover:rotate-90 transition-transform"></i>
+                <span class="text-[10px] font-extrabold uppercase tracking-widest text-gray-200 hidden sm:block">Menú</span>
+            </button>
+        </div>
+
+        <div class="flex-[2] text-center">
+            <h2 class="header-title text-[11px] uppercase tracking-[0.4em] font-black text-white/90">
+                <span class="text-blue-500">CIC</span> Protección Patrimonial
+            </h2>
+        </div>
+
+        <div class="flex-1 flex items-center justify-end gap-3">
+            <div class="text-right hidden xs:block">
+                <div id="clock" class="text-base font-bold font-mono text-white leading-none">00:00:00</div>
+                <div id="date" class="text-[8px] text-gray-500 uppercase tracking-widest font-bold">-- --- ----</div>
+            </div>
+            <button id="configBtn" class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <main id="mainLayout" class="flex h-screen w-full with-shell bg-gray-100">
+        <aside id="leftSidebar" class="h-full w-0 overflow-hidden glass-sidebar sidebar-transition absolute left-0 z-[120] shadow-2xl border-r" style="top: 83px;">
+            <div class="w-[280px] h-full">
+                <iframe src="Nav.html" class="w-full h-full border-none" id="navFrame"></iframe>
+            </div>
+        </aside>
+
+        <section id="mainContent" class="flex-1 h-full relative overflow-hidden bg-white shadow-inner">
+            <iframe src="about:blank" class="w-full h-full border-none" id="appFrame"></iframe>
+            <div id="noApp" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-0">
+                <i data-lucide="shield-check" class="w-16 h-16 text-gray-200 mb-4"></i>
+                <p class="text-[9px] uppercase tracking-[0.6em] font-bold text-gray-400 animate-pulse">Inicie una aplicación</p>
+            </div>
+        </section>
+
+        <aside id="rightSidebar" class="h-full w-0 overflow-hidden bg-white sidebar-transition border-l relative z-[100]">
+            <div id="rightContent" class="w-full h-full overflow-hidden"></div>
+        </aside>
+    </main>
+
+    <div id="overlay" class="fixed inset-0 bg-black/50 hidden z-[115] backdrop-blur-sm opacity-0 transition-opacity"></div>
+
+    <script type="module">
+        const dom = {
+            appsBtn: document.getElementById('appsBtn'),
+            leftSidebar: document.getElementById('leftSidebar'),
+            rightSidebar: document.getElementById('rightSidebar'),
+            shellHeader: document.getElementById('shellHeader'),
+            mainLayout: document.getElementById('mainLayout'),
+            overlay: document.getElementById('overlay'),
+            tabBar: document.getElementById('tabBar'),
+            appFrame: document.getElementById('appFrame'),
+            noApp: document.getElementById('noApp'),
+            clock: document.getElementById('clock'),
+            date: document.getElementById('date'),
+            rightContent: document.getElementById('rightContent')
+        };
+
+        let openTabs = [];
+        let activeTabIndex = -1;
+
+        lucide.createIcons();
+
+        function updateClock() {
+            const now = new Date();
+            dom.clock.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+            dom.date.textContent = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+        }
+
+        const saveUIState = () => {
+            const state = JSON.parse(localStorage.getItem('cic_shell_state') || '{}');
+            state.leftSidebarOpen = dom.leftSidebar.style.width === '280px';
+            state.rightSidebarOpen = dom.rightSidebar.style.width === '35%';
+            state.rightContentHtml = dom.rightContent.innerHTML;
+            localStorage.setItem('cic_shell_state', JSON.stringify(state));
+        };
+
+        const toggleLeftSidebar = (forceClose = false) => {
+            const isClosing = forceClose || dom.leftSidebar.style.width === '280px';
+            const headerHidden = dom.shellHeader.classList.contains('hidden-header');
+            dom.leftSidebar.style.top = headerHidden ? '28px' : '83px';
+            dom.leftSidebar.style.width = isClosing ? '0' : '280px';
+            dom.leftSidebar.style.transform = isClosing ? 'translateX(-100%)' : 'translateX(0)';
+            
+            if (isClosing) {
+                dom.overlay.classList.add('opacity-0');
+                setTimeout(() => dom.overlay.classList.add('hidden'), 300);
+            } else {
+                dom.overlay.classList.remove('hidden');
+                setTimeout(() => dom.overlay.classList.remove('opacity-0'), 10);
+            }
+            saveUIState();
+        };
+
+        const toggleRightSidebar = (forceOpen = null) => {
+            const currentWidth = dom.rightSidebar.style.width;
+            const targetWidth = (forceOpen === true || (forceOpen === null && currentWidth === '0px')) ? '35%' : '0px';
+            dom.rightSidebar.style.width = targetWidth;
+            saveUIState();
+        };
+
+        const renderTabs = () => {
+            dom.tabBar.innerHTML = '';
+            openTabs.forEach((tab, index) => {
+                const isActive = index === activeTabIndex;
+                const tabEl = document.createElement('div');
+                tabEl.className = `tab-item ${isActive ? 'tab-active' : ''}`;
+                if (isActive) tabEl.style.background = tab.color || '#3b82f6';
+                tabEl.innerHTML = `<span>${tab.name}</span><span class="close-tab" onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('closeTab', {detail: ${index}}))">&times;</span>`;
+                tabEl.onclick = () => switchApp(index);
+                dom.tabBar.appendChild(tabEl);
+            });
+        };
+
+        window.addEventListener('closeTab', (e) => closeTab(e.detail));
+
+        const switchApp = (index) => {
+            activeTabIndex = index;
+            const tab = openTabs[index];
+            if (tab) {
+                if (dom.appFrame.src !== new URL(tab.url, window.location.href).href) dom.appFrame.src = tab.url;
+                dom.noApp.classList.add('hidden');
+                dom.shellHeader.classList.add('hidden-header');
+                dom.mainLayout.classList.remove('with-shell');
+            } else {
+                dom.appFrame.src = 'about:blank';
+                dom.noApp.classList.remove('hidden');
+                dom.shellHeader.classList.remove('hidden-header');
+                dom.mainLayout.classList.add('with-shell');
+            }
+            renderTabs();
+            const state = JSON.parse(localStorage.getItem('cic_shell_state') || '{}');
+            state.openTabs = openTabs;
+            state.activeTabIndex = activeTabIndex;
+            localStorage.setItem('cic_shell_state', JSON.stringify(state));
+        };
+
+        const openApp = (url, name, color) => {
+            let normalizedUrl = url.startsWith('http') ? url : (url.startsWith('../') ? url : '../' + url);
+            const existingIndex = openTabs.findIndex(t => t.url === normalizedUrl);
+            if (existingIndex !== -1) {
+                switchApp(existingIndex);
+            } else {
+                openTabs.push({ url: normalizedUrl, name: name || 'Aplicación', color: color });
+                switchApp(openTabs.length - 1);
+            }
+            toggleLeftSidebar(true);
+        };
+
+        const closeTab = (index) => {
+            openTabs.splice(index, 1);
+            activeTabIndex = openTabs.length > 0 ? (activeTabIndex >= index ? Math.max(0, activeTabIndex - 1) : activeTabIndex) : -1;
+            if (openTabs.length === 0) openApp('home.html', 'Dashboard', '#0f172a');
+            else switchApp(activeTabIndex);
+        };
+
+        window.addEventListener('message', (e) => {
+            const { action, url, name, color, content } = e.data || {};
+            if (action === 'openApp') openApp(url, name, color);
+            if (action === 'toggleMenu') toggleLeftSidebar();
+            if (action === 'openRightPanel' || action === 'toggleRightPanel') {
+                if (content) dom.rightContent.innerHTML = content;
+                toggleRightSidebar(action === 'openRightPanel' ? true : null);
+            }
+            if (action === 'closeRightPanel') toggleRightSidebar(false);
+        });
+
+        dom.appsBtn.addEventListener('click', () => toggleLeftSidebar());
+        dom.overlay.addEventListener('click', () => toggleLeftSidebar(true));
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const saved = localStorage.getItem('cic_shell_state');
+        if (saved) {
+            const data = JSON.parse(saved);
+            openTabs = data.openTabs || [];
+            activeTabIndex = data.activeTabIndex ?? -1;
+            
+            // Restaurar paneles
+            if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
+            if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
+            if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
+
+            if (openTabs.length > 0) switchApp(activeTabIndex);
+            else openApp('home.html', 'Dashboard', '#0f172a');
+        } else {
+            openApp('home.html', 'Dashboard', '#0f172a');
+        }
+    </script>
+</body>
+</html>

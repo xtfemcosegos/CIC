@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+        
+        :root {
+            --md-primary: #2563eb;
+            --accent-fiusha: #d946ef;
+            --metal-border: #e2e8f0;
+            
+            --color-mat: #fef3c7;
+            --color-ves: #dbeafe;
+            --color-noc: #ede9fe;
+            --color-aus: #f1f5f9;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #ffffff; 
+            color: #1e293b; 
+            margin: 0; padding: 1.5rem;
+            overflow-x: hidden;
+            padding-bottom: 5rem;
+        }
+
+        .config-card {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid var(--metal-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .label-premium {
+            font-size: 9px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.5rem; display: block;
+        }
+
+        /* --- POOL DE TURNOS --- */
+        .shift-pool-item {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 14px; cursor: pointer;
+            transition: all 0.2s; border: 2px solid transparent;
+        }
+        .shift-pool-item:hover { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        .m-item { background: #fef3c7; color: #92400e; }
+        .v-item { background: #dbeafe; color: #1e40af; }
+        .n-item { background: #ede9fe; color: #5b21b6; }
+        .d-item { background: #f1f5f9; color: #475569; }
+
+        /* --- TRACK DEL PATRON --- */
+        .pattern-track {
+            min-height: 55px; border: 2px dashed #e2e8f0; border-radius: 16px;
+            display: flex; gap: 6px; padding: 8px; overflow-x: auto;
+            background: white; align-items: center;
+        }
+        .pattern-unit {
+            width: 34px; height: 34px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 11px; cursor: pointer;
+            flex-shrink: 0; animation: popIn 0.2s ease-out;
+        }
+        .pattern-unit:hover { filter: brightness(0.9); transform: translateY(-2px); }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- CALENDARIO PROYECCIÓN --- */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .preview-day {
+            aspect-ratio: 1/1; border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 800; border: 1px solid #f1f5f9;
+            line-height: 1;
+            position: relative;
+        }
+        .preview-day-num { font-size: 7px; color: #94a3b8; margin-bottom: 2px; text-transform: uppercase; }
+        .preview-day-date { font-size: 11px; margin-bottom: 2px; }
+
+        /* Indicador de Festivo Ley México */
+        .holiday-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 5px;
+            height: 5px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+        .is-mexican-holiday {
+            border: 1.5px solid #f472b6 !important;
+        }
+
+        .btn-apply {
+            width: 100%; padding: 1rem; border-radius: 14px; background: var(--accent-fiusha);
+            color: white; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;
+            box-shadow: 0 8px 20px rgba(217, 70, 239, 0.25); transition: all 0.3s;
+        }
+
+        .loading-overlay { 
+            display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); 
+            z-index: 5000; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="w-10 h-10 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Procesando y Guardando...</p>
+    </div>
+
+    <div class="max-w-md mx-auto space-y-4">
+        
+        <!-- CONFIGURACIÓN BÁSICA -->
+        <div class="config-card">
+            <label class="label-premium">1. Fecha de Inicio y Alcance</label>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <input type="date" id="startDate" class="p-3 border rounded-xl font-bold text-xs outline-none focus:border-fuchsia-400">
+                <select id="rangeSelect" class="p-3 border rounded-xl font-bold text-xs outline-none focus:border-fuchsia-400">
+                    <option value="7">PROYECTAR SEMANA</option>
+                    <option value="30" selected>PROYECTAR MES</option>
+                    <option value="365">PROYECTAR AÑO</option>
+                </select>
+            </div>
+
+            <label class="label-premium">2. Caseta / Ubicación de Trabajo</label>
+            <select id="casetaSelect" class="w-full p-3 border rounded-xl font-bold text-xs outline-none focus:border-fuchsia-400 mb-2">
+                <option value="Centro de Control">CENTRO DE CONTROL</option>
+                <option value="Encargado">ENCARGADO</option>
+                <option value="Edison">EDISON</option>
+                <option value="Recepción Edison">RECEPCIÓN EDISON</option>
+                <option value="Impulso">IMPULSO</option>
+                <option value="Michelena">MICHELENA</option>
+                <option value="Simón Bolívar">SIMÓN BOLÍVAR</option>
+                <option value="Carranza">CARRANZA</option>
+                <option value="Universidad">UNIVERSIDAD</option>
+                <option value="Rondinero">RONDINERO</option>
+            </select>
+            <p class="text-[7px] text-slate-400 font-bold uppercase mt-1 italic">* Valor pre-seleccionado según expediente operativo del socio.</p>
+        </div>
+
+        <!-- CONSTRUCTOR DE PATRON -->
+        <div class="config-card">
+            <label class="label-premium">3. Constructor de Patrón (Click para agregar)</label>
+            <div class="flex justify-between mb-4 px-2">
+                <div onclick="addToPattern('M')" class="shift-pool-item m-item" title="Matutino">M</div>
+                <div onclick="addToPattern('V')" class="shift-pool-item v-item" title="Vespertino">V</div>
+                <div onclick="addToPattern('N')" class="shift-pool-item n-item" title="Nocturno">N</div>
+                <div onclick="addToPattern('D')" class="shift-pool-item d-item" title="Descanso">D</div>
+            </div>
+
+            <label class="label-premium">Patrón Actual (Click para quitar)</label>
+            <div id="patternTrack" class="pattern-track no-scrollbar">
+                <p class="text-[9px] text-slate-300 font-bold uppercase w-full text-center">Inicia tu patrón seleccionando turnos</p>
+            </div>
+        </div>
+
+        <!-- VISTA MENSUAL PREVIA -->
+        <div class="config-card">
+            <div class="flex justify-between items-center mb-4">
+                <label class="label-premium m-0">4. Vista Previa Mensual</label>
+                <span id="previewMonthName" class="text-[10px] font-black text-fuchsia-600 uppercase">---</span>
+            </div>
+            <div id="previewCalendar" class="preview-grid">
+                <!-- Dinámico -->
+            </div>
+            <p class="text-[7px] text-slate-400 font-bold uppercase mt-3 italic">* Días con borde rosa son festivos oficiales en México.</p>
+        </div>
+
+        <button onclick="applyPattern()" id="btnApply" class="btn-apply flex items-center justify-center gap-3">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+            Aplicar Programación
+        </button>
+
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const params = new URLSearchParams(window.location.search);
+        const socioIdAuth = params.get('socioId'); 
+
+        let userData = null;
+        let realSocioNumber = null;
+        let currentPattern = []; 
+
+        const dom = {
+            start: document.getElementById('startDate'),
+            caseta: document.getElementById('casetaSelect'),
+            range: document.getElementById('rangeSelect'),
+            track: document.getElementById('patternTrack'),
+            calendar: document.getElementById('previewCalendar'),
+            monthLabel: document.getElementById('previewMonthName'),
+            overlay: document.getElementById('loadingOverlay'),
+            btn: document.getElementById('btnApply')
+        };
+
+        const shiftMap = {
+            'M': { type: 'matutino', class: 'm-item', label: 'M' },
+            'V': { type: 'vespertino', class: 'v-item', label: 'V' },
+            'N': { type: 'nocturno', class: 'n-item', label: 'N' },
+            'D': { type: 'ausentismo', class: 'd-item', label: 'D' }
+        };
+
+        // --- LÓGICA DE FESTIVOS MÉXICO (LEY FEDERAL DEL TRABAJO) ---
+        function getMexicanHoliday(date) {
+            const y = date.getFullYear();
+            const m = date.getMonth(); 
+            const d = date.getDate();
+
+            if (m === 0 && d === 1) return "Año Nuevo";
+            if (m === 4 && d === 1) return "Día del Trabajo";
+            if (m === 8 && d === 16) return "Independencia";
+            if (m === 11 && d === 25) return "Navidad";
+            if (m === 9 && d === 1 && (y - 2024) % 6 === 0) return "Transmisión Poder";
+            if (m === 1 && d === getNthDay(y, 1, 1, 1)) return "Constitución";
+            if (m === 2 && d === getNthDay(y, 2, 1, 3)) return "Juárez";
+            if (m === 10 && d === getNthDay(y, 10, 1, 3)) return "Revolución";
+
+            return null;
+        }
+
+        function getNthDay(year, month, dayOfWeek, occurrence) {
+            let count = 0;
+            let date = new Date(year, month, 1);
+            while (date.getMonth() === month) {
+                if (date.getDay() === dayOfWeek) {
+                    count++;
+                    if (count === occurrence) return date.getDate();
+                }
+                date.setDate(date.getDate() + 1);
+            }
+            return -1;
+        }
+
+        dom.start.value = new Date().toISOString().split('T')[0];
+        dom.start.onchange = () => updateUI();
+
+        window.addToPattern = (initial) => {
+            currentPattern.push(initial);
+            updateUI();
+        };
+
+        window.removeFromPattern = (index) => {
+            currentPattern.splice(index, 1);
+            updateUI();
+        };
+
+        function updateUI() {
+            renderTrack();
+            renderPreview();
+        }
+
+        function renderTrack() {
+            if (currentPattern.length === 0) {
+                dom.track.innerHTML = '<p class="text-[9px] text-slate-300 font-bold uppercase w-full text-center">Inicia tu patrón seleccionando turnos</p>';
+                return;
+            }
+            dom.track.innerHTML = currentPattern.map((char, i) => `
+                <div onclick="removeFromPattern(${i})" class="pattern-unit ${shiftMap[char].class}">${char}</div>
+            `).join('');
+        }
+
+        function renderPreview() {
+            dom.calendar.innerHTML = '';
+            const startDate = new Date(dom.start.value + "T12:00:00");
+            dom.monthLabel.innerText = startDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            for (let i = 0; i < 31; i++) {
+                const loopDate = new Date(startDate);
+                loopDate.setDate(startDate.getDate() + i);
+                
+                const dayName = loopDate.toLocaleDateString('es-ES', { weekday: 'short' });
+                const holidayName = getMexicanHoliday(loopDate);
+                
+                let initial = '-';
+                let colorClass = 'bg-white text-slate-200';
+
+                if (currentPattern.length > 0) {
+                    const patternIndex = i % currentPattern.length;
+                    initial = currentPattern[patternIndex];
+                    colorClass = shiftMap[initial].class;
+                }
+
+                const dayEl = document.createElement('div');
+                dayEl.className = `preview-day ${colorClass} ${holidayName ? 'is-mexican-holiday' : ''}`;
+                if(holidayName) dayEl.title = `Día Festivo Ley: ${holidayName}`;
+                
+                dayEl.innerHTML = `
+                    <span class="preview-day-num">${dayName.replace('.', '')}</span>
+                    <span class="preview-day-date">${loopDate.getDate()}</span>
+                    <span class="text-[9px] opacity-70">${initial}</span>
+                    ${holidayName ? '<div class="holiday-badge"></div>' : ''}
+                `;
+                dom.calendar.appendChild(dayEl);
+            }
+        }
+
+        const getTrimId = (date) => `Trim${Math.ceil((date.getMonth() + 1) / 3)}-${date.getFullYear()}`;
+        const getDateId = (date) => {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}${m}${y}`;
+        };
+
+        window.applyPattern = async () => {
+            if (!realSocioNumber || currentPattern.length === 0) {
+                alert("Debes crear un patrón primero");
+                return;
+            }
+            
+            if (!confirm(`¿Confirmas la proyección de este patrón por el tiempo seleccionado?`)) return;
+
+            dom.overlay.style.display = 'flex';
+            
+            const start = new Date(dom.start.value + "T12:00:00");
+            const daysToProject = parseInt(dom.range.value);
+            const caseta = dom.caseta.value;
+            const updatesByTrim = {};
+
+            const defs = userData?.operativa?.Entrada_Predeterminada || "[Mat:07:00,Ves:15:00,Noc:23:00]";
+            const getPlan = (type) => {
+                const key = type === 'matutino' ? 'Mat' : (type === 'vespertino' ? 'Ves' : 'Noc');
+                return defs.match(new RegExp(`${key}:([^,\\]]+)`))?.[1] || "07:00";
+            };
+
+            for (let i = 0; i < daysToProject; i++) {
+                const loopDate = new Date(start);
+                loopDate.setDate(start.getDate() + i);
+                
+                const char = currentPattern[i % currentPattern.length];
+                const trimId = getTrimId(loopDate);
+                const dateId = getDateId(loopDate);
+
+                if (!updatesByTrim[trimId]) updatesByTrim[trimId] = {};
+                if (!updatesByTrim[trimId][dateId]) updatesByTrim[trimId][dateId] = {};
+                if (!updatesByTrim[trimId][dateId][realSocioNumber]) updatesByTrim[trimId][dateId][realSocioNumber] = {};
+
+                const targetSocio = updatesByTrim[trimId][dateId][realSocioNumber];
+
+                if (char === 'D') {
+                    targetSocio['ausentismo'] = { motivo: 'Descanso' };
+                    ['matutino', 'vespertino', 'nocturno'].forEach(t => targetSocio[t] = deleteField());
+                } else {
+                    const shiftType = shiftMap[char].type;
+                    targetSocio[shiftType] = {
+                        Caseta: caseta,
+                        entrada_planificada: getPlan(shiftType),
+                        es_festivo: !!getMexicanHoliday(loopDate), 
+                        es_extra: false, es_recuperacion: false, retardo: false
+                    };
+                    targetSocio['ausentismo'] = deleteField();
+                    ['matutino', 'vespertino', 'nocturno'].filter(t => t !== shiftType).forEach(t => targetSocio[t] = deleteField());
+                }
+            }
+
+            try {
+                const promises = Object.entries(updatesByTrim).map(([tid, data]) => {
+                    return setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), data, { merge: true });
+                });
+                await Promise.all(promises);
+                alert("Programación aplicada correctamente.");
+            } catch (err) {
+                console.error(err);
+                alert("Error al guardar la proyección.");
+            } finally {
+                dom.overlay.style.display = 'none';
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const uSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP'));
+                const memberKey = socioIdAuth.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                userData = uSnap.data()[memberKey];
+                
+                if (userData) {
+                    realSocioNumber = String(userData.socioId);
+                    
+                    // SELECCIONAR CASETA PREDETERMINADA DEL PERFIL
+                    if (userData.operativa?.caseta) {
+                        dom.caseta.value = userData.operativa.caseta;
+                    }
+                    
+                    updateUI();
+                } else {
+                    dom.btn.disabled = true;
+                }
+            } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(() => {});
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

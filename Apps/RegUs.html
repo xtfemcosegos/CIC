@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Fuerza OS - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        :root {
+            --accent-blue: #2563eb;
+        }
+
+        body {
+            background: #f1f5f9;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- EFECTO METAL PULIDO CON GRADIENTE DE 6 COLORES --- */
+        .brushed-metal {
+            position: relative;
+            /* Gradiente de 6 paradas: Blanco -> Gris Claro -> Acero -> Acero Oscuro -> Gris Claro -> Blanco */
+            background: linear-gradient(180deg, 
+                #ffffff 0%,    /* 1. Blanco arriba */
+                #f1f5f9 20%,   /* 2. Desvanecimiento suave */
+                #94a3b8 48%,   /* 3. Acero centro superior */
+                #64748b 52%,   /* 4. Acero centro inferior (sombra) */
+                #cbd5e1 80%,   /* 5. Desvanecimiento inferior */
+                #ffffff 100%   /* 6. Blanco abajo */
+            );
+            overflow: hidden;
+        }
+
+        /* Capa de líneas de cepillado (Metal Pulido) */
+        .brushed-metal::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                rgba(0, 0, 0, 0.04) 1px,
+                rgba(0, 0, 0, 0.04) 2px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Reflejo de luz vertical */
+        .brushed-metal::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255,255,255,0.4) 50%, 
+                transparent 100%
+            );
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Encabezado Principal */
+        .app-header {
+            height: 55px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            color: #0f172a;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            border-bottom: 2px solid #94a3b8;
+            z-index: 60;
+        }
+
+        .apps-header-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .apps-header-btn:hover { background: rgba(255, 255, 255, 0.8); }
+
+        /* Selector de Vista Grabado */
+        .view-selector {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 3px;
+            border-radius: 10px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .view-btn {
+            padding: 5px 18px;
+            border-radius: 7px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #475569;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .view-btn:hover { color: #0f172a; }
+
+        .view-btn.active {
+            color: white;
+            background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Tool Ribbon Metalizado Claro */
+        .tool-ribbon {
+            height: 32px;
+            background: linear-gradient(180deg, #f1f5f9 0%, #cbd5e1 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid #94a3b8;
+            box-shadow: inset 0 1px 0 white;
+            position: relative;
+            z-index: 50;
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 8.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #334155;
+            cursor: pointer;
+            height: 100%;
+            padding: 0 16px;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .tool-item:hover { color: var(--accent-blue); background: rgba(255,255,255,0.4); }
+
+        .tool-item.active-tool {
+            background: white;
+            color: var(--accent-blue);
+            box-shadow: inset 0 -2px 0 var(--accent-blue);
+        }
+
+        .ribbon-search-container {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            height: 22px;
+            background: white;
+            border: 1px solid #94a3b8;
+            border-radius: 6px;
+            padding: 0 10px;
+            width: 280px;
+        }
+
+        .ribbon-search-input {
+            border: none; outline: none; background: transparent;
+            font-size: 9px; font-weight: 700; width: 100%;
+            padding: 0 6px; color: #0f172a;
+        }
+
+        /* Área de Contenido */
+        #contentArea { height: calc(100vh - 87px); width: 100%; background: white; }
+        #contentArea.full-view { height: calc(100vh - 55px); }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .text-glow {
+            text-shadow: 0 0 1px rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Encabezado Principal con Gradiente de 6 Paradas -->
+    <header class="app-header brushed-metal">
+        <div class="w-1/3 flex items-center gap-3 relative z-10">
+            <div class="apps-header-btn" onclick="toggleMenu()">
+                <img src="../MM/Apps.png" alt="Apps" class="h-5 w-5 object-contain">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-800">Menú</span>
+            </div>
+            
+            <div class="h-6 w-px bg-black/10"></div>
+
+            <div class="flex items-center gap-2.5">
+                <img src="../MM/RegUs.png" alt="Icono" class="h-6 w-6 object-contain opacity-90">
+                <h1 class="text-[12px] font-black uppercase tracking-[0.25em] text-slate-900 text-glow">Estado de Fuerza</h1>
+            </div>
+        </div>
+
+        <div class="flex-1 flex justify-center relative z-10">
+            <nav class="view-selector">
+                <button id="btn-listado" onclick="changeView('listado', this)" class="view-btn active">Listado</button>
+                <button id="btn-nuevo" onclick="changeView('nuevo', this)" class="view-btn">Alta de Socio</button>
+            </nav>
+        </div>
+
+        <div class="w-1/3 flex items-center justify-end gap-5 relative z-10">
+            <div class="text-right leading-tight">
+                <div id="clock" class="text-base font-black font-mono text-slate-900 tracking-tighter">00:00:00</div>
+                <div id="date" class="text-[8px] text-slate-500 font-black uppercase tracking-widest">-- --- ----</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cinta de Herramientas (Ribbon) -->
+    <nav id="toolRibbon" class="tool-ribbon"></nav>
+
+    <!-- Área de Trabajo -->
+    <main id="contentArea">
+        <iframe src="about:blank" id="moduleFrame"></iframe>
+    </main>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+            document.getElementById('date').textContent = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        let currentStatusFilter = 'altas';
+
+        const TOOL_CONFIG = {
+            'listado': [
+                { id: 'tool-all', name: 'Todos', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', action: (el) => filterByStatus('all', el) },
+                { id: 'tool-altas', name: 'Activos', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', action: (el) => filterByStatus('altas', el) },
+                { id: 'tool-bajas', name: 'Bajas', icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', action: (el) => filterByStatus('bajas', el) },
+                { id: 'tool-export', name: 'Portabilidad', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12', action: (el) => loadModule('../Complementos/RegUs/Portabilidad.html', el) }
+            ]
+        };
+
+        function loadModule(url, element) {
+            const frame = document.getElementById('moduleFrame');
+            frame.src = url;
+            if (element) updateActiveTool(element);
+        }
+
+        function filterByStatus(status, element) {
+            currentStatusFilter = status;
+            const frame = document.getElementById('moduleFrame');
+            const listadoUrl = new URL('../Complementos/RegUs/Listado.html', window.location.href).href;
+            if (frame.src !== listadoUrl) {
+                frame.src = '../Complementos/RegUs/Listado.html';
+                frame.onload = () => frame.contentWindow.postMessage({ action: 'filterStatus', status: status }, '*');
+            } else {
+                frame.contentWindow.postMessage({ action: 'filterStatus', status: status }, '*');
+            }
+            if (element) updateActiveTool(element);
+        }
+
+        function updateActiveTool(element) {
+            element.parentElement.querySelectorAll('.tool-item').forEach(s => s.classList.remove('active-tool'));
+            element.classList.add('active-tool');
+        }
+
+        function changeView(view, btn) {
+            document.querySelectorAll('.view-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            const ribbon = document.getElementById('toolRibbon');
+            const content = document.getElementById('contentArea');
+            ribbon.innerHTML = '';
+
+            if (view === 'nuevo') {
+                ribbon.style.display = 'none';
+                content.classList.add('full-view');
+                loadModule('../Complementos/RegUs/Nuevo.html');
+            } else {
+                ribbon.style.display = 'flex';
+                content.classList.remove('full-view');
+                const tools = TOOL_CONFIG[view] || [];
+                tools.forEach(tool => {
+                    const item = document.createElement('div');
+                    item.className = 'tool-item';
+                    if (view === 'listado' && tool.id === 'tool-altas') item.classList.add('active-tool');
+                    item.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${tool.icon}" /></svg><span>${tool.name}</span>`;
+                    item.onclick = () => tool.action(item);
+                    ribbon.appendChild(item);
+                });
+
+                if (view === 'listado') {
+                    const searchBox = document.createElement('div');
+                    searchBox.className = 'ribbon-search-container';
+                    searchBox.innerHTML = `<svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input type="text" id="ribbonSearch" class="ribbon-search-input" placeholder="BUSCAR POR NOMBRE O ID..." onkeyup="filterUsers(this.value)">`;
+                    ribbon.appendChild(searchBox);
+                    filterByStatus(currentStatusFilter);
+                }
+            }
+        }
+
+        function filterUsers(val) {
+            const frame = document.getElementById('moduleFrame');
+            if (frame?.contentWindow) frame.contentWindow.postMessage({ action: 'filter', query: val }, '*');
+        }
+
+        function toggleMenu() { window.parent.postMessage({ action: 'toggleMenu' }, '*'); }
+
+        window.addEventListener('message', (e) => {
+            const { action } = e.data || {};
+            if (['openRightPanel', 'closeRightPanel', 'refreshList', 'toggleMenu'].includes(action)) {
+                window.parent.postMessage(e.data, '*');
+            }
+            if (action === 'closeTab') document.getElementById('btn-listado').click();
+        });
+
+        window.onload = () => changeView('listado', document.getElementById('btn-listado'));
+    </script>
+</body>
+</html>

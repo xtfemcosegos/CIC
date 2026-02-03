@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planeación Maestro - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+        
+        :root {
+            --accent-fiusha: #d946ef;
+            --accent-fiusha-dark: #701a75;
+            --md-primary: var(--accent-fiusha);
+            --md-outline: #e2e8f0;
+            --cell-width: 62px; 
+            --row-height: 61px; 
+            --header-height: 60px;
+            --left-col-width: 260px;
+            --nav-btn-width: 44px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100vh; overflow: hidden; background-color: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
+
+        #auth-overlay {
+            position: fixed; inset: 0; background: #ffffff;
+            z-index: 2000; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+        }
+
+        .viewport {
+            display: grid;
+            grid-template-columns: var(--left-col-width) 1fr;
+            grid-template-rows: var(--header-height) 1fr;
+            height: 100vh; width: 100vw;
+        }
+
+        .corner-cell {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            color: #0f172a; z-index: 150; position: sticky; top: 0; left: 0;
+            border-bottom: 4px solid var(--accent-fiusha);
+            display: flex; flex-direction: column; justify-content: center;
+            padding-left: 24px; box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+        }
+
+        .header-nav-container {
+            grid-column: 2; grid-row: 1; display: flex; background: #ffffff;
+            border-bottom: 4px solid var(--accent-fiusha); z-index: 110; overflow: hidden;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.01) 10px, rgba(0,0,0,0.01) 11px);
+        }
+
+        .nav-btn-container {
+            width: var(--nav-btn-width); height: 100%; display: flex;
+            align-items: center; justify-content: center; background: white;
+            z-index: 120; flex-shrink: 0;
+        }
+
+        .scroll-nav-btn {
+            width: 32px; height: 32px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--accent-fiusha);
+            border: 1px solid var(--md-outline); background: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .scroll-nav-btn:hover { background: var(--accent-fiusha); color: white; transform: translateY(-1px); }
+
+        #grid-header { flex: 1; display: flex; overflow: hidden; }
+
+        .header-cell {
+            width: var(--cell-width); min-width: var(--cell-width); max-width: var(--cell-width);
+            height: 100%; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; background: white; border-right: 1px solid var(--md-outline);
+            flex-shrink: 0;
+        }
+
+        .header-cell.is-today { background: #fdf4ff; color: var(--accent-fiusha); box-shadow: inset 0 -4px 0 var(--accent-fiusha); }
+
+        .left-col { grid-row: 2; grid-column: 1; overflow-y: hidden; z-index: 90; background: white; border-right: 2px solid var(--md-outline); }
+
+        .user-row-info {
+            height: var(--row-height); display: flex; align-items: center;
+            gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--md-outline);
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .user-row-info:hover { background: #fdf2f8; padding-left: 20px; }
+
+        .grid-viewport { grid-row: 2; grid-column: 2; overflow: auto; background: #f8fafc; scroll-behavior: smooth; }
+        .grid-body-container { display: inline-block; padding: 0 var(--nav-btn-width); }
+        .row-container { display: flex; height: var(--row-height); }
+
+        .data-cell {
+            width: var(--cell-width); min-width: var(--cell-width); max-width: var(--cell-width);
+            height: var(--row-height); flex-shrink: 0; 
+            display: flex; flex-direction: column; 
+            border-right: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            background: white; position: relative;
+            cursor: pointer; overflow: hidden;
+            padding: 0;
+        }
+        .data-cell:hover { background-color: #fdf4ff; }
+
+        .shift-tag {
+            font-size: 8px; font-weight: 900; 
+            width: 100%; flex: 1 1 0%; 
+            text-transform: uppercase; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            position: relative; transition: all 0.2s;
+            user-select: none; letter-spacing: 0.05em;
+            border: none;
+        }
+        .shift-tag:hover { filter: brightness(0.95); z-index: 10; }
+
+        .tag-matutino { background-color: #fef3c7; color: #92400e; }
+        .tag-vespertino { background-color: #dbeafe; color: #1e40af; }
+        .tag-nocturno { background-color: #ede9fe; color: #5b21b6; }
+        .tag-vacaciones { background-color: #d1fae5; color: #065f46; }
+        .tag-descanso { background-color: #f1f5f9; color: #475569; }
+        .tag-falta { background-color: #fee2e2; color: #991b1b; }
+
+        .btn-go-today {
+            margin-top: 8px; background: var(--accent-fiusha); padding: 4px 16px; border-radius: 20px;
+            font-size: 9px; font-weight: 900; text-transform: uppercase; cursor: pointer;
+            color: white; border: none; width: fit-content; box-shadow: 0 4px 8px rgba(217, 70, 239, 0.2);
+        }
+
+        .group-header {
+            background: #f8fafc; height: 36px; display: flex; 
+            align-items: center; padding: 0 16px; font-weight: 900; font-size: 10px; 
+            color: var(--accent-fiusha-dark); text-transform: uppercase; letter-spacing: 0.12em;
+            border-bottom: 1px solid var(--md-outline); border-right: 1px solid var(--md-outline);
+            background-image: linear-gradient(to right, #f8fafc, #ffffff);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .context-submenu { display: none; position: absolute; left: 100%; top: 0; padding-left: 12px; margin-left: -4px; z-index: 1001; }
+        .context-menu-item:hover > .context-submenu { display: block; }
+        .submenu-content { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); padding: 6px; min-width: 180px; backdrop-filter: blur(8px); }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <div id="auth-overlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Terminal Maestro...</p>
+    </div>
+
+    <div id="context-menu" class="fixed z-[1000] bg-white/95 rounded-2xl shadow-2xl p-2 border border-slate-200 hidden min-w-[220px] backdrop-blur-md">
+        <div class="p-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 mb-2 text-center">Operaciones Rápidas</div>
+        
+        <div class="context-menu-item group relative p-3 hover:bg-yellow-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-amber-400"></div> Matutino</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu"><div class="submenu-content" id="sub-matutino"></div></div>
+        </div>
+
+        <div class="context-menu-item group relative p-3 hover:bg-blue-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Vespertino</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu"><div class="submenu-content" id="sub-vespertino"></div></div>
+        </div>
+
+        <div class="context-menu-item group relative p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-900"></div> Nocturno</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu"><div class="submenu-content" id="sub-nocturno"></div></div>
+        </div>
+
+        <div class="context-menu-item group relative p-3 hover:bg-fuchsia-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+            <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-400"></div> Ausentismo</div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="context-submenu">
+                <div class="submenu-content">
+                    <div onclick="window.quickAssignAbsence('Descanso')" class="p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Descanso</div>
+                    <div onclick="window.quickAssignAbsence('Vacaciones')" class="p-2 hover:bg-emerald-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Vacaciones</div>
+                    <div onclick="window.quickAssignAbsence('Falta')" class="p-2 hover:bg-yellow-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Falta</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-px bg-slate-100 my-2"></div>
+
+        <!-- OPCIONES ADICIONALES -->
+        <div onclick="window.openPatrones()" class="context-menu-item group relative p-3 hover:bg-indigo-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex items-center gap-3 transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Asignar Patrón
+        </div>
+
+        <div onclick="window.deleteFromHere()" class="p-3 hover:bg-rose-50 text-rose-700 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3 transition-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 5H19V11M19 5L5 19M5 19H11M5 19V13"></path></svg>
+            Limpiar desde aquí
+        </div>
+
+        <div onclick="window.quickDelete()" class="p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg> Limpiar Celda
+        </div>
+    </div>
+
+    <div class="viewport">
+        <div class="corner-cell">
+            <span class="text-[14px] font-black uppercase tracking-tight leading-none mb-1">Planeación</span>
+            <div class="btn-go-today" onclick="window.scrollToToday()">HOY</div>
+        </div>
+
+        <div class="header-nav-container">
+            <div class="nav-btn-container"><button class="scroll-nav-btn" onclick="window.handleManualScroll(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+            <div id="grid-header" class="no-scrollbar"></div>
+            <div class="nav-btn-container"><button class="scroll-nav-btn" onclick="window.handleManualScroll(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
+        </div>
+        
+        <div id="left-col" class="left-col no-scrollbar"></div>
+        
+        <div id="grid-viewport" class="grid-viewport">
+            <div id="grid-body-container" class="grid-body-container">
+                <div id="grid-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteField, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let users = [];
+        let userDataMap = {}; 
+        let baseDate = new Date(); baseDate.setDate(baseDate.getDate() - 60); baseDate.setHours(12,0,0,0);
+        let activeListeners = new Map();
+        let currentContext = { uid: null, socioId: null, dateId: null };
+        const totalDays = 180; 
+        let renderedState = new Map(); 
+
+        const UI = {
+            viewport: document.getElementById('grid-viewport'),
+            gridBody: document.getElementById('grid-body'),
+            header: document.getElementById('grid-header'),
+            overlay: document.getElementById('auth-overlay'),
+            menu: document.getElementById('context-menu')
+        };
+
+        const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
+
+        window.handleManualScroll = (dir) => { UI.viewport.scrollLeft += (dir * 62 * 7); };
+        window.scrollToToday = () => { UI.viewport.scrollTo({ left: (60 * 62), behavior: 'smooth' }); };
+
+        async function resolveStorageImage(gsPath, imgElementId) {
+            try {
+                if (!gsPath || !gsPath.startsWith('gs://')) return;
+                const url = await getDownloadURL(ref(storage, gsPath.replace(/gs:\/\/[^\/]+\//, '')));
+                const img = document.getElementById(imgElementId);
+                if (img) { img.src = url; img.classList.remove('hidden'); }
+            } catch (err) {}
+        }
+
+        async function startSystem() {
+            const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            const usersSnap = await getDoc(usersRef);
+            if(usersSnap.exists()) {
+                const data = usersSnap.data();
+                users = Object.entries(data).map(([uid, d]) => {
+                    const sId = String(d.socioId || '');
+                    userDataMap[sId] = { uid, ...d };
+                    const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
+                    const estatusVal = (d.operativa?.estatus || d.status || 'Activo').toLowerCase();
+                    return { uid, socioId: sId, ...d, displayPuesto: puestoVal, displayStatus: estatusVal };
+                }).filter(u => u.displayStatus !== 'baja' && u.socioId).sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            }
+
+            ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
+                const container = document.getElementById(`sub-${shift}`);
+                container.innerHTML = `<div class="p-2 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center border-b mb-2">Asignar Caseta</div>`;
+                casetasOrden.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = "p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3 text-[9px] font-bold";
+                    div.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> ${c}`;
+                    div.onclick = () => window.quickAssignShift(shift, c);
+                    container.appendChild(div);
+                });
+            });
+
+            renderStructure();
+            setupAssignments();
+            UI.overlay.style.display = 'none';
+            setTimeout(window.scrollToToday, 500);
+        }
+
+        function renderStructure() {
+            const grouped = users.reduce((acc, el) => {
+                const g = el.acceso_predeterminado || "GENERAL";
+                if (!acc[g]) acc[g] = [];
+                acc[g].push(el);
+                return acc;
+            }, {});
+
+            UI.header.innerHTML = ''; 
+            document.getElementById('left-col').innerHTML = ''; 
+            UI.gridBody.innerHTML = '';
+            const realTodayStr = new Date().toISOString().split('T')[0];
+
+            for(let i=0; i<totalDays; i++) {
+                const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                const isoStr = d.toISOString().split('T')[0];
+                const cell = document.createElement('div');
+                cell.className = `header-cell ${isoStr === realTodayStr ? 'is-today' : ''}`;
+                cell.innerHTML = `<span class="opacity-40 text-[7px] font-black uppercase mb-1">${d.toLocaleDateString('es-ES', { weekday: 'short' })}</span><span class="text-xs font-black">${d.getDate()}</span>`;
+                UI.header.appendChild(cell);
+            }
+
+            [...new Set([...casetasOrden, ...Object.keys(grouped)])].forEach(groupName => {
+                if(!grouped[groupName] || grouped[groupName].length === 0) return;
+                const ghL = document.createElement('div'); ghL.className = 'group-header'; ghL.innerText = groupName; document.getElementById('left-col').appendChild(ghL);
+                const ghR = document.createElement('div'); ghR.className = 'group-header'; ghR.style.width = `${totalDays * 62}px`; UI.gridBody.appendChild(ghR);
+
+                grouped[groupName].forEach(user => {
+                    const uRow = document.createElement('div');
+                    uRow.className = 'user-row-info';
+                    const avatarPlaceholder = `https://ui-avatars.com/api/?name=${user.nombre}&background=d946ef&color=fff`;
+                    const photoSrc = user.photo || avatarPlaceholder;
+                    const isGs = photoSrc.startsWith('gs://');
+                    const imgId = `img-user-${user.socioId}`;
+
+                    uRow.innerHTML = `
+                        <img id="${imgId}" src="${isGs ? 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' : photoSrc}" 
+                             class="w-9 h-9 rounded-xl object-cover shadow-sm ${isGs ? 'hidden' : ''}" onerror="this.src='${avatarPlaceholder}'">
+                        <div class="flex flex-col leading-none overflow-hidden">
+                            <span class="text-[10px] font-black uppercase truncate mb-1 text-slate-800">${user.nombre}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">${user.displayPuesto}</span>
+                        </div>
+                    `;
+                    document.getElementById('left-col').appendChild(uRow);
+                    if (isGs) resolveStorageImage(photoSrc, imgId);
+
+                    const gRow = document.createElement('div');
+                    gRow.className = 'row-container';
+                    for(let i=0; i<totalDays; i++) {
+                        const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                        const dateId = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${d.getFullYear()}`;
+                        const cell = document.createElement('div');
+                        cell.id = `cell-${user.socioId}-${dateId}`;
+                        cell.className = `data-cell`;
+                        
+                        cell.onclick = () => {
+                            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                            window.parent.postMessage({ 
+                                action: 'openRightPanel', 
+                                content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${user.uid}&date=${iso}&tab=gestion" class="w-full h-full border-none"></iframe>` 
+                            }, '*');
+                        };
+
+                        cell.oncontextmenu = (e) => {
+                            e.preventDefault(); 
+                            currentContext = { uid: user.uid, socioId: user.socioId, dateId };
+                            UI.menu.style.display = 'block'; 
+                            UI.menu.style.left = `${Math.min(e.clientX, window.innerWidth - 240)}px`; 
+                            UI.menu.style.top = `${Math.min(e.clientY, window.innerHeight - 300)}px`;
+                        };
+                        gRow.appendChild(cell);
+                    }
+                    UI.gridBody.appendChild(gRow);
+                });
+            });
+        }
+
+        function getTrimestreDocId(date) {
+            const yyyy = date.getFullYear();
+            const trim = Math.ceil((date.getMonth() + 1) / 3);
+            return `Trim${trim}-${yyyy}`; 
+        }
+
+        function setupAssignments() {
+            activeListeners.forEach(u => u()); activeListeners.clear();
+            renderedState.clear();
+            const docIdsToListen = new Set();
+            for (let i = 0; i < totalDays; i++) {
+                const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+                docIdsToListen.add(getTrimestreDocId(d));
+            }
+            docIdsToListen.forEach(docId => {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docId);
+                const unsub = onSnapshot(docRef, (snap) => {
+                    const data = snap.exists() ? snap.data() : {};
+                    const activeInSnap = new Set();
+                    
+                    Object.entries(data).forEach(([dateId, socioEntries]) => {
+                        if (dateId.length !== 8) return; 
+                        Object.entries(socioEntries).forEach(([idSocio, turns]) => {
+                            ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(type => {
+                                const turnData = turns[type];
+                                if (turnData && Object.keys(turnData).length > 0) {
+                                    const key = `${idSocio}|${dateId}|${type}`;
+                                    activeInSnap.add(key); 
+                                    updateCellUI(idSocio, dateId, turnData, type);
+                                }
+                            });
+                        });
+                    });
+                    
+                    for (const key of renderedState.keys()) {
+                        const parts = key.split('|'); 
+                        const dateId = parts[1];
+                        const d = new Date(parseInt(dateId.substring(4)), parseInt(dateId.substring(2,4))-1, parseInt(dateId.substring(0,2)));
+                        if (getTrimestreDocId(d) === docId && !activeInSnap.has(key)) {
+                            clearCellUI(parts[0], dateId, parts[2]);
+                        }
+                    }
+                }, (error) => console.error("Firebase Snapshot Error:", error));
+                activeListeners.set(docId, unsub);
+            });
+        }
+
+        const contractionMap = { 'matutino': 'Mat', 'vespertino': 'Ves', 'nocturno': 'Noc', 'vacaciones': 'Vac', 'descanso': 'Des', 'falta': 'Fal' };
+
+        function updateCellUI(socioId, dateId, data, type) {
+            const stateKey = `${socioId}|${dateId}|${type}`;
+            const stateString = JSON.stringify(data);
+            if (renderedState.get(stateKey) === stateString) return; 
+            
+            const cell = document.getElementById(`cell-${socioId}-${dateId}`);
+            if (!cell) return;
+
+            let existing = cell.querySelector(`.tag-${type}`);
+            if (existing) existing.remove();
+
+            const motive = (data.motivo || "").toLowerCase();
+            let specificClass = `tag-${type}`; 
+            let label = contractionMap[type] || 'Reg';
+            
+            if (type === 'ausentismo') {
+                label = 'Aus'; 
+                if (motive.includes('vacaciones')) { specificClass = 'tag-vacaciones'; label = 'Vac'; }
+                else if (motive.includes('descanso')) { specificClass = 'tag-descanso'; label = 'Des'; }
+                else if (motive.includes('falta')) { specificClass = 'tag-falta'; label = 'Fal'; }
+            }
+
+            const tag = document.createElement('div');
+            tag.className = `shift-tag tag-${type} ${specificClass}`;
+            tag.innerHTML = `<span>${label}</span>`;
+
+            tag.onclick = (e) => {
+                e.stopPropagation();
+                const iso = `${dateId.substring(4)}-${dateId.substring(2,4)}-${dateId.substring(0,2)}`;
+                const userUid = userDataMap[socioId]?.uid;
+                window.parent.postMessage({ 
+                    action: 'openRightPanel', 
+                    content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${userUid}&date=${iso}&tab=gestion&shift=${type}" class="w-full h-full border-none"></iframe>` 
+                }, '*');
+            };
+
+            const order = { 'matutino': 0, 'vespertino': 1, 'nocturno': 2, 'ausentismo': 3 };
+            tag.dataset.order = order[type];
+            const children = Array.from(cell.children);
+            const nextChild = children.find(child => parseInt(child.dataset.order) > order[type]);
+            if (nextChild) cell.insertBefore(tag, nextChild);
+            else cell.appendChild(tag);
+
+            renderedState.set(stateKey, stateString);
+        }
+
+        function clearCellUI(socioId, dateId, type) {
+            const stateKey = `${socioId}|${dateId}|${type}`;
+            if (!renderedState.has(stateKey)) return; 
+            const cell = document.getElementById(`cell-${socioId}-${dateId}`);
+            if (cell) { 
+                const tag = cell.querySelector(`.tag-${type}`); 
+                if (tag) tag.remove(); 
+            }
+            renderedState.delete(stateKey);
+        }
+
+        UI.viewport.onscroll = () => { document.getElementById('left-col').scrollTop = UI.viewport.scrollTop; UI.header.scrollLeft = UI.viewport.scrollLeft; };
+        
+        const buildNestedObject = (dateId, socioId, turno, data) => {
+            const obj = {};
+            obj[dateId] = {};
+            obj[dateId][socioId] = {};
+            obj[dateId][socioId][turno] = data; 
+            return obj;
+        };
+
+        window.quickAssignShift = async (turno, caseta) => {
+            UI.menu.style.display = 'none';
+            const { socioId, dateId } = currentContext;
+            const user = userDataMap[socioId];
+            const d = new Date(parseInt(dateId.substring(4)), parseInt(dateId.substring(2,4))-1, parseInt(dateId.substring(0,2)));
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', getTrimestreDocId(d));
+            
+            let plannedEntry = turno === 'matutino' ? '07:00' : (turno === 'vespertino' ? '15:00' : '23:00');
+            if (user?.operativa?.Entrada_Predeterminada) {
+                const pKey = turno === 'matutino' ? 'Mat' : (turno === 'vespertino' ? 'Ves' : 'Noc');
+                const match = user.operativa.Entrada_Predeterminada.match(new RegExp(`${pKey}:([^,\\]]+)`));
+                if (match) plannedEntry = match[1];
+            }
+
+            const shiftData = { 
+                Caseta: caseta, 
+                es_recuperacion: false, 
+                es_festivo: false, 
+                es_extra: false, 
+                retardo: false,
+                entrada_planificada: plannedEntry
+            };
+
+            const updateObj = buildNestedObject(dateId, socioId, turno, shiftData);
+            const pathAus = `${dateId}.${socioId}.ausentismo`;
+            const cleanObj = {};
+            cleanObj[pathAus] = deleteField();
+
+            await setDoc(docRef, updateObj, { merge: true });
+            await updateDoc(docRef, cleanObj).catch(() => {}); 
+        };
+
+        window.quickAssignAbsence = async (motivo) => {
+            UI.menu.style.display = 'none';
+            const { socioId, dateId } = currentContext;
+            const d = new Date(parseInt(dateId.substring(4)), parseInt(dateId.substring(2,4))-1, parseInt(dateId.substring(0,2)));
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', getTrimestreDocId(d));
+            
+            const absenceData = { motivo };
+            const updateObj = buildNestedObject(dateId, socioId, 'ausentismo', absenceData);
+            const cleanObj = {};
+            ['matutino', 'vespertino', 'nocturno'].forEach(t => {
+                cleanObj[`${dateId}.${socioId}.${t}`] = deleteField();
+            });
+
+            await setDoc(docRef, updateObj, { merge: true });
+            await updateDoc(docRef, cleanObj).catch(() => {});
+        };
+
+        window.quickDelete = async () => {
+            UI.menu.style.display = 'none';
+            const { socioId, dateId } = currentContext;
+            const d = new Date(parseInt(dateId.substring(4)), parseInt(dateId.substring(2,4))-1, parseInt(dateId.substring(0,2)));
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', getTrimestreDocId(d));
+            
+            try {
+                const path = `${dateId}.${socioId}`;
+                const delObj = {};
+                delObj[path] = deleteField();
+                await updateDoc(docRef, delObj);
+            } catch (e) {}
+        };
+
+        // FUNCIÓN: LIMPIAR DESDE AQUÍ HACIA ADELANTE
+        window.deleteFromHere = async () => {
+            if (!confirm("¿Confirma que desea eliminar toda la programación de este elemento desde esta fecha hacia adelante?")) return;
+            UI.menu.style.display = 'none';
+            
+            const { socioId, dateId } = currentContext;
+            
+            // Parsear fecha actual
+            const day = parseInt(dateId.substring(0, 2));
+            const month = parseInt(dateId.substring(2, 4)) - 1;
+            const year = parseInt(dateId.substring(4, 8));
+            let loopDate = new Date(year, month, day, 12, 0, 0);
+
+            // Fecha final (fin de los 180 días cargados o similar)
+            const endDate = new Date(baseDate);
+            endDate.setDate(baseDate.getDate() + totalDays);
+
+            const updatesByTrim = {};
+
+            // Recorrer los días restantes
+            while (loopDate <= endDate) {
+                const currentDocId = getTrimestreDocId(loopDate);
+                const currentDateId = String(loopDate.getDate()).padStart(2, '0') +
+                                     String(loopDate.getMonth() + 1).padStart(2, '0') +
+                                     loopDate.getFullYear();
+
+                if (!updatesByTrim[currentDocId]) updatesByTrim[currentDocId] = {};
+                
+                // Usar dot notation para eliminar el objeto del socio en esa fecha
+                updatesByTrim[currentDocId][`${currentDateId}.${socioId}`] = deleteField();
+
+                loopDate.setDate(loopDate.getDate() + 1);
+            }
+
+            // Ejecutar actualizaciones masivas por documento
+            const promises = Object.entries(updatesByTrim).map(([docId, updateObj]) => {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', docId);
+                return updateDoc(docRef, updateObj).catch(() => {});
+            });
+
+            UI.overlay.style.display = 'flex';
+            await Promise.all(promises);
+            UI.overlay.style.display = 'none';
+        };
+
+        window.openPatrones = () => {
+            UI.menu.style.display = 'none';
+            const { uid } = currentContext;
+            window.parent.postMessage({ 
+                action: 'openRightPanel', 
+                content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&tab=patrones" class="w-full h-full border-none"></iframe>` 
+            }, '*');
+        };
+
+        document.addEventListener('click', (e) => { if (!e.target.closest('#context-menu')) UI.menu.style.display = 'none'; });
+        const initSession = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token).catch(()=>{}); }
+            onAuthStateChanged(auth, (user) => { if (user) startSystem(); });
+        };
+        initSession();
+    </script>
+</body>
+</html>

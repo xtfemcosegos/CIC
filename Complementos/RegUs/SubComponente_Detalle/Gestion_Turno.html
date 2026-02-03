@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+        
+        :root {
+            --md-primary: #d946ef;
+            --md-primary-dark: #701a75;
+            --md-outline: #e2e8f0;
+            
+            --color-mat: #fef3c7;
+            --color-ves: #dbeafe;
+            --color-noc: #ede9fe;
+            --color-aus: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            margin: 0; padding: 0;
+            padding-top: 125px; 
+            padding-bottom: 40px; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        h1, h2, h3, .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        .fixed-top-container {
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 100; background: white; border-bottom: 1px solid #f1f5f9;
+        }
+
+        .week-bar {
+            display: flex; padding: 6px; gap: 4px; background: #f8fafc;
+            border-bottom: 1px solid var(--md-outline);
+        }
+
+        .day-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            padding: 6px 2px; 
+            border-radius: 10px; cursor: pointer; transition: all 0.2s; color: #94a3b8;
+        }
+
+        .day-item.active { background: var(--md-primary); color: white; box-shadow: 0 4px 10px rgba(217, 70, 239, 0.2); }
+        .day-item.is-today { font-weight: 900; border: 1px solid var(--md-outline); }
+        .day-name { font-size: 7px; font-weight: 900; text-transform: uppercase; }
+        .day-num { font-size: 14px; font-weight: 900; }
+
+        .defaults-banner { background: white; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; display: flex; gap: 8px; width: 100%; }
+        
+        .default-input-box { 
+            flex: 1; display: flex; align-items: center; justify-content: center; 
+            gap: 6px; padding: 4px 8px; border-radius: 12px; border: 1.5px solid transparent;
+            min-width: 0;
+            height: 38px; /* Altura aumentada para evitar que el contenido quede debajo */
+        }
+        .default-input-box label { font-size: 8px; font-weight: 900; opacity: 0.7; flex-shrink: 0; }
+        .default-input-box input { 
+            background: transparent; border: none; font-size: 11px; font-weight: 800; 
+            width: 78px; /* Ancho ampliado para evitar recortes del selector nativo en móviles/escritorio */
+            height: 100%;
+            outline: none; text-align: center; color: currentColor;
+            display: flex;
+            align-items: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .bg-mat-pastel { background-color: #fef3c7; border-color: #fcd34d; color: #92400e; }
+        .bg-ves-pastel { background-color: #dbeafe; border-color: #bfdbfe; color: #1e40af; }
+        .bg-noc-pastel { background-color: #ede9fe; border-color: #ddd6fe; color: #5b21b6; }
+
+        .shifts-tabs { 
+            display: flex; 
+            padding: 4px 12px 0; 
+            gap: 4px; 
+            background: white; 
+            border-bottom: 1px solid #f1f5f9; 
+            overflow-x: auto;
+            align-items: flex-end;
+        }
+        
+        .shift-tab {
+            flex: 0 0 auto; 
+            padding: 8px 16px;
+            font-size: 8px; font-weight: 900; text-transform: uppercase;
+            border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+            opacity: 0.4; border: 1px solid transparent; border-bottom: none;
+        }
+        .shift-tab.active { opacity: 1; transform: translateY(1px); border-color: #f1f5f9; }
+
+        .tab-matutino { background: #fef3c7; color: #92400e; }
+        .tab-vespertino { background: #dbeafe; color: #1e40af; }
+        .tab-nocturno { background: #ede9fe; color: #5b21b6; }
+        .tab-ausentismo { background: #f1f5f9; color: #64748b; }
+        
+        /* Botón de añadir turno pegado a la derecha */
+        .tab-add { 
+            margin-left: auto; 
+            border: 1.5px dashed #cbd5e1; 
+            background: transparent; 
+            color: #94a3b8; 
+            opacity: 1; 
+            min-width: auto;
+        }
+        .tab-add:hover { border-color: var(--md-primary); color: var(--md-primary); background: #fdf4ff; }
+
+        .btn-tab-delete { width: 14px; height: 14px; border-radius: 4px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 9px; margin-left: 4px; }
+
+        .timeline-container { position: relative; padding-left: 24px; margin-top: 10px; }
+        .timeline-line { position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: #f1f5f9; }
+        .timeline-item { position: relative; margin-bottom: 20px; }
+        .timeline-dot { position: absolute; left: -21px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: white; border: 2px solid #cbd5e1; z-index: 1; }
+        .timeline-item.active .timeline-dot { border-color: var(--md-primary); background: var(--md-primary); }
+
+        .input-premium { width: 100%; font-size: 0.8rem; border: 1.5px solid #f1f5f9; border-radius: 12px; padding: 0.75rem; background-color: #f8fafc; transition: all 0.3s; font-weight: 600; }
+        .input-premium:focus { border-color: var(--md-primary); background: white; outline: none; }
+        .label-premium { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 0.05em; }
+
+        .fixed-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; padding: 0; z-index: 100; }
+
+        /* Estilos de Check-Pills Personalizados */
+        .check-pill { 
+            display: flex; align-items: center; justify-content: center; border-radius: 8px; 
+            font-size: 7px; font-weight: 900; text-transform: uppercase; cursor: pointer; 
+            background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; padding: 10px 4px;
+            transition: all 0.2s;
+        }
+        .check-pill input { display: none; }
+
+        /* Festivo: Morado Pastel */
+        .cp-festivo:has(input:checked) { background: #f3e8ff; color: #7e22ce; border-color: #c084fc; }
+        /* Extra: Fiusha */
+        .cp-extra:has(input:checked) { background: #fdf2f8; color: #be185d; border-color: #f472b6; }
+        /* Recuperación: Verde */
+        .cp-recu:has(input:checked) { background: #f0fdf4; color: #15803d; border-color: #4ade80; }
+        /* Retardo: Verde Pastel letras Rojas */
+        .cp-retardo:has(input:checked) { background: #f0fdf4; color: #dc2626; border-color: #bbf7d0; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-card { background: white; padding: 24px; border-radius: 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .btn-modal-option { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; text-align: left; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+        .btn-modal-option:hover { transform: translateX(4px); }
+
+        /* Botón fantasma para estado vacío */
+        .btn-ghost-assign {
+            padding: 10px 20px; border: 2px dashed #cbd5e1; border-radius: 14px;
+            color: #94a3b8; font-size: 9px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.1em; transition: all 0.2s; cursor: pointer;
+        }
+        .btn-ghost-assign:hover { border-color: var(--md-primary); color: var(--md-primary); background: #fdf4ff; }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <div class="fixed-top-container">
+        <nav class="week-bar">
+            <button onclick="shiftDate(-1)" class="p-2 text-slate-400 hover:text-fuchsia-600 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <div id="weekDays" class="flex-1 flex gap-1"></div>
+            <button onclick="shiftDate(1)" class="p-2 text-slate-400 hover:text-fuchsia-600 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </nav>
+
+        <div class="defaults-banner">
+            <div class="default-input-box bg-mat-pastel"><label>MAT</label><input type="time" id="def-mat" onchange="updateDefaultHours()"></div>
+            <div class="default-input-box bg-ves-pastel"><label>VES</label><input type="time" id="def-ves" onchange="updateDefaultHours()"></div>
+            <div class="default-input-box bg-noc-pastel"><label>NOC</label><input type="time" id="def-noc" onchange="updateDefaultHours()"></div>
+        </div>
+
+        <div id="shiftTabs" class="shifts-tabs no-scrollbar"></div>
+    </div>
+
+    <main id="main-content" class="flex-1 overflow-y-auto p-6">
+        <div id="emptyState" class="flex flex-col items-center justify-center h-full opacity-60 py-20">
+            <i data-lucide="calendar-plus" class="w-10 h-10 mb-3 text-slate-300"></i>
+            <p class="text-[10px] font-black uppercase text-center text-slate-400 mb-6">Sin registros para esta fecha</p>
+            <!-- Botón fantasma solicitado -->
+            <button onclick="window.openAddShiftModal()" class="btn-ghost-assign">
+                <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i> Asignar Turno
+            </button>
+        </div>
+
+        <form id="turnoForm" class="hidden space-y-6" onchange="autoSaveCurrentShift()">
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                <div id="timelineItems"></div>
+            </div>
+
+            <div id="incidentGrid" class="grid grid-cols-4 gap-2 pt-4 border-t border-slate-100">
+                <label class="check-pill cp-festivo"><input type="checkbox" name="es_festivo"><span>Festivo</span></label>
+                <label class="check-pill cp-extra"><input type="checkbox" name="es_extra"><span>Extra</span></label>
+                <label class="check-pill cp-recu"><input type="checkbox" name="es_recuperacion"><span>Recu.</span></label>
+                <label class="check-pill cp-retardo"><input type="checkbox" name="retardo"><span>Retardo</span></label>
+            </div>
+
+            <div>
+                <label class="label-premium">Notas y Observaciones</label>
+                <textarea name="comentario" class="input-premium h-24 resize-none text-[11px]" placeholder="Reporte de turno..."></textarea>
+            </div>
+        </form>
+    </main>
+
+    <footer class="fixed-footer"></footer>
+
+    <!-- MODAL PARA ELIMINAR -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="trash-2"></i></div>
+            <h3 class="text-sm font-black uppercase text-slate-800 mb-2">¿Eliminar Turno?</h3>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 h-10 bg-slate-100 text-slate-500 rounded-xl text-[9px] font-black uppercase">Cancelar</button>
+                <button id="confirmDeleteBtn" class="flex-1 h-10 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA AÑADIR SEGUNDO TURNO -->
+    <div id="addShiftModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 text-center">Asignar Turno Adicional</h3>
+            <div id="addShiftOptions" class="space-y-2">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <button onclick="closeAddModal()" class="mt-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Cancelar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, setDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const params = new URLSearchParams(window.location.search);
+        const socioIdAuth = params.get('socioId'); 
+        const dateFromUrl = params.get('date'); 
+        const shiftFromUrl = params.get('shift'); 
+
+        let selectedDate = dateFromUrl ? new Date(dateFromUrl + "T12:00:00") : new Date();
+        let viewDate = new Date(selectedDate);
+        let currentTrimData = {};
+        let activeShiftType = shiftFromUrl || null; 
+        let userData = null;
+        let realSocioNumber = null; 
+        let unsubscribeTrim = null;
+        let shiftToDelete = null;
+
+        const casetasList = ["Centro de Control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
+
+        const getTrimId = (date) => `Trim${Math.ceil((date.getMonth() + 1) / 3)}-${date.getFullYear()}`;
+        const getDateId = (date) => {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}${m}${y}`;
+        };
+
+        window.shiftDate = (days) => { 
+            viewDate.setDate(viewDate.getDate() + days); 
+            renderWeek(); 
+        };
+
+        window.selectDay = (iso) => {
+            const oldTrim = getTrimId(selectedDate);
+            selectedDate = new Date(iso + "T12:00:00");
+            const newTrim = getTrimId(selectedDate);
+            renderWeek();
+            if (oldTrim !== newTrim) initTrimListener();
+            else renderDayDetails();
+        };
+
+        const renderWeek = () => {
+            const container = document.getElementById('weekDays');
+            container.innerHTML = '';
+            const temp = new Date(viewDate);
+            const day = temp.getDay();
+            const diff = temp.getDate() - day + (day === 0 ? -6 : 1);
+            temp.setDate(diff);
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(temp); d.setDate(temp.getDate() + i);
+                const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const isActive = getDateId(d) === getDateId(selectedDate);
+                const isToday = getDateId(d) === getDateId(new Date());
+                
+                const btn = document.createElement('div');
+                btn.className = `day-item ${isActive ? 'active' : ''} ${isToday ? 'is-today' : ''}`;
+                btn.onclick = () => window.selectDay(iso);
+                btn.innerHTML = `<span class="day-name">${['Dom','Lun','Mar','Mie','Jue','Vie','Sab'][d.getDay()]}</span><span class="day-num">${d.getDate()}</span>`;
+                container.appendChild(btn);
+            }
+        };
+
+        const initTrimListener = () => {
+            if (unsubscribeTrim) unsubscribeTrim();
+            const tid = getTrimId(selectedDate);
+            unsubscribeTrim = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), (snap) => {
+                currentTrimData = snap.exists() ? snap.data() : {};
+                renderDayDetails();
+            });
+        };
+
+        const renderDayDetails = () => {
+            if (!realSocioNumber) return;
+            const dateId = getDateId(selectedDate);
+            const socioShifts = currentTrimData[dateId]?.[realSocioNumber] || {};
+            const available = Object.keys(socioShifts).sort((a,b) => {
+                const order = { 'matutino': 1, 'vespertino': 2, 'nocturno': 3, 'ausentismo': 4 };
+                return order[a] - order[b];
+            });
+
+            const tabs = document.getElementById('shiftTabs');
+            const form = document.getElementById('turnoForm');
+            const empty = document.getElementById('emptyState');
+            const incidentGrid = document.getElementById('incidentGrid');
+
+            if (available.length === 0) {
+                tabs.innerHTML = ''; 
+                form.classList.add('hidden'); 
+                empty.classList.remove('hidden');
+                activeShiftType = null;
+                lucide.createIcons();
+                return;
+            }
+
+            empty.classList.add('hidden'); form.classList.remove('hidden');
+            
+            if (activeShiftType && !socioShifts[activeShiftType]) {
+                activeShiftType = available[0];
+            } else if (!activeShiftType) {
+                activeShiftType = available[0];
+            }
+
+            let tabsHtml = available.map(s => {
+                const info = socioShifts[s];
+                return `<div class="shift-tab tab-${s} ${activeShiftType === s ? 'active' : ''}" onclick="window.setActiveTab('${s}')">
+                    <span>${s === 'ausentismo' ? (info.motivo || 'Pokã') : s}</span>
+                    <button onclick="event.stopPropagation(); window.requestRemoveShift('${s}')" class="btn-tab-delete">×</button>
+                </div>`;
+            }).join('');
+
+            // BOTÓN DE AÑADIR TURNO ADICIONAL SIEMPRE AL FINAL (DERECHA)
+            if (available.length < 4) {
+                tabsHtml += `
+                    <div class="shift-tab tab-add" onclick="window.openAddShiftModal()">
+                        <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> <span>Añadir</span>
+                    </div>
+                `;
+            }
+            tabs.innerHTML = tabsHtml;
+
+            const info = socioShifts[activeShiftType];
+            const isAus = activeShiftType === 'ausentismo';
+            const timeline = document.getElementById('timelineItems');
+
+            // OCULTAR BOTONES DE INCIDENCIAS EN CASO DE AUSENTISMO
+            if (isAus) {
+                incidentGrid.classList.add('hidden');
+                timeline.innerHTML = `<div class="timeline-item active"><div class="timeline-dot"></div><label class="label-premium">Causa de Incidencia</label><select name="motivo" class="input-premium">${['Descanso','Vacaciones','Permiso','Falta','Incapacidad'].map(m => `<option value="${m}" ${info.motivo === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>`;
+            } else {
+                incidentGrid.classList.remove('hidden');
+                timeline.innerHTML = `
+                    <div class="timeline-item active">
+                        <div class="timeline-dot"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="label-premium">Caseta</label>
+                                <select name="Caseta" class="input-premium">${casetasList.map(c => `<option value="${c}" ${info.Caseta === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+                            </div>
+                            <div>
+                                <label class="label-premium">Programada</label>
+                                <input type="time" name="entrada_planificada" class="input-premium" value="${info.entrada_planificada || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="timeline-item active"><div class="timeline-dot"></div><label class="label-premium">E. Real</label><input type="time" name="entrada_real" class="input-premium text-teal-600 font-bold" value="${info.entrada_real || ''}"></div>
+                        <div class="timeline-item active"><div class="timeline-dot"></div><label class="label-premium">S. Real</label><input type="time" name="salida_real" class="input-premium text-rose-600 font-bold" value="${info.salida_real || ''}"></div>
+                    </div>
+                `;
+            }
+
+            document.querySelectorAll('input[type="checkbox"]').forEach(ck => ck.checked = !!info[ck.name]);
+            document.querySelector('textarea[name="comentario"]').value = info.comentario || '';
+            
+            lucide.createIcons();
+        };
+
+        window.setActiveTab = (t) => { activeShiftType = t; renderDayDetails(); };
+
+        const buildNestedUpdate = (dateId, socioNumber, shiftType, fields) => {
+            const obj = {};
+            obj[dateId] = {};
+            obj[dateId][socioNumber] = {};
+            obj[dateId][socioNumber][shiftType] = fields;
+            return obj;
+        };
+
+        window.autoSaveCurrentShift = async () => {
+            if (!activeShiftType || !realSocioNumber) return;
+            const tid = getTrimId(selectedDate);
+            const did = getDateId(selectedDate);
+            const form = document.getElementById('turnoForm');
+            const formData = new FormData(form);
+            
+            const socioShifts = currentTrimData[did]?.[realSocioNumber] || {};
+            const currentShiftData = socioShifts[activeShiftType] || {};
+
+            const updatedShift = { ...currentShiftData };
+            for (let [k, v] of formData.entries()) {
+                if (!['es_festivo','es_extra','es_recuperacion','retardo'].includes(k)) {
+                    updatedShift[k] = v;
+                }
+            }
+            ['es_festivo','es_extra','es_recuperacion','retardo'].forEach(k => {
+                const ck = form.querySelector(`input[name="${k}"]`);
+                updatedShift[k] = ck ? ck.checked : false;
+            });
+
+            const updateObj = buildNestedUpdate(did, realSocioNumber, activeShiftType, updatedShift);
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), updateObj, { merge: true });
+        };
+
+        window.addShift = async (type, forcedMotivo = null) => {
+            if (!realSocioNumber) return;
+            const tid = getTrimId(selectedDate);
+            const did = getDateId(selectedDate);
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid);
+            
+            let plannedEntry = type === 'matutino' ? '07:00' : (type === 'vespertino' ? '15:00' : '23:00');
+            if (userData?.operativa?.Entrada_Predeterminada) {
+                const pKey = type === 'matutino' ? 'Mat' : (type === 'vespertino' ? 'Ves' : 'Noc');
+                const match = userData.operativa.Entrada_Predeterminada.match(new RegExp(`${pKey}:([^,\\]]+)`));
+                if (match) plannedEntry = match[1];
+            }
+
+            const newShift = type === 'ausentismo' 
+                ? { motivo: forcedMotivo || 'Descanso', comentario: '' }
+                : { 
+                    Caseta: userData?.operativa?.caseta || 'Centro de Control', 
+                    entrada_planificada: plannedEntry,
+                    es_recuperacion: false,
+                    es_festivo: false,
+                    es_extra: false,
+                    retardo: false
+                  };
+
+            const updateObj = buildNestedUpdate(did, realSocioNumber, type, newShift);
+            
+            const currentObj = currentTrimData[did]?.[realSocioNumber] || {};
+            if (type === 'ausentismo') { 
+                ['matutino','vespertino','nocturno'].forEach(s => { if(currentObj[s]) updateObj[did][realSocioNumber][s] = deleteField(); });
+            } else { 
+                if(currentObj.ausentismo) updateObj[did][realSocioNumber].ausentismo = deleteField(); 
+            }
+            
+            activeShiftType = type;
+            await setDoc(ref, updateObj, { merge: true });
+            closeAddModal();
+        };
+
+        window.openAddShiftModal = () => {
+            const dateId = getDateId(selectedDate);
+            const socioShifts = currentTrimData[dateId]?.[realSocioNumber] || {};
+            const types = [
+                { id: 'matutino', label: 'Matutino', class: 'bg-mat-pastel text-[#92400e]' },
+                { id: 'vespertino', label: 'Vespertino', class: 'bg-ves-pastel text-[#1e40af]' },
+                { id: 'nocturno', label: 'Nocturno', class: 'bg-noc-pastel text-[#5b21b6]' },
+                { id: 'ausentismo', label: 'Ausentismo', class: 'bg-slate-100 text-slate-600' }
+            ];
+
+            const missing = types.filter(t => !socioShifts[t.id]);
+            const container = document.getElementById('addShiftOptions');
+            container.innerHTML = missing.map(t => `
+                <button onclick="addShift('${t.id}')" class="btn-modal-option ${t.class}">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> ${t.label}
+                </button>
+            `).join('');
+            
+            document.getElementById('addShiftModal').style.display = 'flex';
+            lucide.createIcons();
+        };
+
+        window.closeAddModal = () => document.getElementById('addShiftModal').style.display = 'none';
+        window.requestRemoveShift = (s) => { shiftToDelete = s; document.getElementById('deleteModal').style.display = 'flex'; };
+        window.closeDeleteModal = () => { document.getElementById('deleteModal').style.display = 'none'; };
+
+        document.getElementById('confirmDeleteBtn').onclick = async () => {
+            const tid = getTrimId(selectedDate);
+            const did = getDateId(selectedDate);
+            const updateObj = {};
+            const path = `${did}.${realSocioNumber}.${shiftToDelete}`;
+            updateObj[path] = deleteField();
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', tid), updateObj);
+            closeDeleteModal(); activeShiftType = null;
+        };
+
+        window.updateDefaultHours = async () => {
+            const m = document.getElementById('def-mat').value, v = document.getElementById('def-ves').value, n = document.getElementById('def-noc').value;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            const snap = await getDoc(docRef);
+            const full = snap.data();
+            const mk = socioIdAuth.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            if (!full[mk].operativa) full[mk].operativa = {};
+            full[mk].operativa.Entrada_Predeterminada = `[Mat:${m},Ves:${v},Noc:${n}]`;
+            await setDoc(docRef, full); 
+            userData = full[mk];
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const uSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP'));
+                const memberKey = socioIdAuth.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                userData = uSnap.data()[memberKey];
+                
+                if (userData) {
+                    realSocioNumber = String(userData.socioId); 
+                    if (userData.operativa?.Entrada_Predeterminada) {
+                        const def = userData.operativa.Entrada_Predeterminada;
+                        document.getElementById('def-mat').value = def.match(/Mat:([^,\]]+)/)?.[1] || "07:00";
+                        document.getElementById('def-ves').value = def.match(/Ves:([^,\]]+)/)?.[1] || "15:00";
+                        document.getElementById('def-noc').value = def.match(/Noc:([^,\]]+)/)?.[1] || "23:00";
+                    }
+                    renderWeek(); initTrimListener();
+                }
+            } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(() => {});
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

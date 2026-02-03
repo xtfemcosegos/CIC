@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploader CIC - Firebase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .input-field { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.2); color: white; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <!-- Pantalla de Login -->
+    <div id="auth-container" class="glass p-8 rounded-3xl w-full max-w-md shadow-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-center tracking-tight">Acceso Administrativo</h1>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Correo</label>
+                <input type="email" id="login-email" required class="input-field w-full px-4 py-3 rounded-xl focus:outline-none focus:border-sky-500" placeholder="admin@cic.com">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Contraseña</label>
+                <input type="password" id="login-password" required class="input-field w-full px-4 py-3 rounded-xl focus:outline-none focus:border-sky-500" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 py-3 rounded-xl font-bold transition-all active:scale-95">Ingresar al Cargador</button>
+        </form>
+        <div id="auth-error" class="hidden mt-4 p-3 bg-red-500/20 border border-red-500/50 text-red-300 text-sm rounded-lg text-center"></div>
+    </div>
+
+    <!-- Herramienta de Carga -->
+    <div id="uploader-container" class="hidden glass p-8 rounded-3xl w-full max-w-2xl shadow-2xl animate-in fade-in duration-500">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Cargador de Datos CIC</h1>
+                <p id="user-display" class="text-xs text-sky-400 font-mono"></p>
+            </div>
+            <button id="btn-logout" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-lg border border-red-500/30 transition-all">Cerrar Sesión</button>
+        </div>
+
+        <form id="upload-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Colección de Destino</label>
+                    <select id="col-name" class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                        <option value="Usuarios">Usuarios</option>
+                        <option value="Marbetes">Marbetes</option>
+                        <option value="Eventos">Eventos</option>
+                        <option value="Asistencias">Asistencias</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">ID del Documento (Opcional)</label>
+                    <input type="text" id="doc-id" class="input-field w-full px-4 py-3 rounded-xl focus:outline-none" placeholder="Autogenerado si está vacío">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Contenido del Documento (JSON)</label>
+                <textarea id="json-content" rows="8" class="input-field w-full px-4 py-3 rounded-xl focus:outline-none font-mono text-sm" placeholder='{ "nombre": "Ejemplo", "puesto": "Operador" }'></textarea>
+            </div>
+
+            <button type="submit" id="btn-upload" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black text-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                <span>SUBIR DOCUMENTO</span>
+            </button>
+        </form>
+
+        <div id="status-msg" class="hidden mt-6 p-4 rounded-xl text-center font-bold text-sm"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de tu proyecto
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
+            authDomain: "cic6-pp-web.firebaseapp.com",
+            projectId: "cic6-pp-web",
+            storageBucket: "cic6-pp-web.firebasestorage.app",
+            messagingSenderId: "248659087868",
+            appId: "1:248659087868:web:a277ef700d83c7f1d22279"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cic.pp';
+
+        const authUI = document.getElementById('auth-container');
+        const uploaderUI = document.getElementById('uploader-container');
+        const userDisplay = document.getElementById('user-display');
+        const statusMsg = document.getElementById('status-msg');
+
+        // Monitoreo de Sesión
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authUI.classList.add('hidden');
+                uploaderUI.classList.remove('hidden');
+                userDisplay.textContent = user.email;
+            } else {
+                authUI.classList.remove('hidden');
+                uploaderUI.classList.add('hidden');
+            }
+        });
+
+        // Manejo de Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            
+            errorDiv.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (err) {
+                errorDiv.textContent = "Error: " + err.message;
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        // Logout
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+        // Herramienta de Carga
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const colName = document.getElementById('col-name').value;
+            const docId = document.getElementById('doc-id').value.trim();
+            const contentRaw = document.getElementById('json-content').value;
+            const btn = document.getElementById('btn-upload');
+
+            showStatus("Procesando...", "bg-sky-500/20 text-sky-300");
+            btn.disabled = true;
+
+            try {
+                const data = JSON.parse(contentRaw);
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
+
+                if (docId) {
+                    // Subir con ID manual
+                    await setDoc(doc(colRef, docId), data);
+                } else {
+                    // Subir con ID autogenerado
+                    await addDoc(colRef, data);
+                }
+
+                showStatus("¡Documento subido con éxito!", "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50");
+                document.getElementById('json-content').value = "";
+                document.getElementById('doc-id').value = "";
+            } catch (err) {
+                showStatus("Error: " + (err.name === 'SyntaxError' ? "JSON Inválido" : err.message), "bg-red-500/20 text-red-300 border border-red-500/50");
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        function showStatus(text, classes) {
+            statusMsg.textContent = text;
+            statusMsg.className = "mt-6 p-4 rounded-xl text-center font-bold text-sm " + classes;
+            statusMsg.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

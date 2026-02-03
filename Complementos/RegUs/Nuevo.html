@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Elemento - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        :root {
+            --md-primary: #2563eb;
+            --md-primary-dark: #1e40af;
+            --md-accent: #60a5fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .elevation-premium { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+
+        .form-section { display: none; }
+        .form-section.active {
+            display: block;
+            animation: sectionEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes sectionEnter {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-item { position: relative; padding-bottom: 2rem; }
+        .step-item::after {
+            content: ''; position: absolute; left: 20px; top: 44px; bottom: 0;
+            width: 2px; background-color: #f1f5f9;
+        }
+        .step-item:last-child::after { display: none; }
+
+        .step-circle {
+            width: 40px; height: 40px; border-radius: 50%;
+            background-color: #f8fafc; color: #94a3b8;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; z-index: 10; border: 2px solid #f1f5f9;
+        }
+
+        .step-item.active .step-circle {
+            background-color: var(--md-primary); color: white; border-color: var(--md-primary);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .input-field {
+            width: 100%; background: #f8fafc; border: 1.5px solid #f1f5f9;
+            border-radius: 12px; padding: 12px 16px; font-size: 14px;
+            transition: all 0.3s;
+        }
+        .input-field:focus { 
+            border-color: var(--md-primary); outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+            background: white;
+        }
+
+        .input-label { font-size: 10px; font-weight: 800; color: #64748b; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .btn-md {
+            border-radius: 14px; padding: 12px 28px; font-weight: 700;
+            text-transform: uppercase; font-size: 12px; transition: all 0.3s;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+
+        .table-container { border: 1.5px solid #f1f5f9; border-radius: 16px; overflow: hidden; background: white; }
+        .dynamic-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .dynamic-table th { font-size: 9px; font-weight: 800; color: #94a3b8; padding: 10px 16px; text-transform: uppercase; background: #f8fafc; text-align: left; }
+        .dynamic-table td { padding: 6px 16px; border-top: 1px solid #f1f5f9; }
+        
+        .session-lock {
+            pointer-events: none;
+            filter: grayscale(1);
+            opacity: 0.4;
+            user-select: none;
+        }
+
+        #authBanner {
+            background: linear-gradient(90deg, #000000 0%, #111827 100%);
+            border-bottom: 1px solid var(--md-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="msgBox" class="hidden elevation-premium font-bold text-sm"></div>
+
+    <div id="authBanner" class="fixed top-0 left-0 w-full text-white p-3 text-center text-[11px] font-bold uppercase tracking-widest z-[5000]">
+        <span id="authStatusText">Validando Acceso al Estado de Fuerza...</span>
+    </div>
+
+    <div class="flex min-h-screen pt-10">
+        <!-- Barra Lateral del Stepper -->
+        <aside class="w-80 bg-white border-r border-slate-100 p-10 sticky top-10 h-[calc(100vh-40px)] hidden lg:flex flex-col">
+            <div class="mb-10">
+                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Estado de Fuerza OS</p>
+                <h2 class="text-2xl font-black text-slate-800">Alta de Socio</h2>
+            </div>
+            <nav id="stepper" class="flex-1">
+                <div class="step-item active" id="stepIndicator-1"><div class="flex items-center gap-5"><div class="step-circle">1</div><span class="text-sm font-bold text-slate-500">Identidad</span></div></div>
+                <div class="step-item" id="stepIndicator-2"><div class="flex items-center gap-5"><div class="step-circle">2</div><span class="text-sm font-bold text-slate-500">Contacto</span></div></div>
+                <div class="step-item" id="stepIndicator-3"><div class="flex items-center gap-5"><div class="step-circle">3</div><span class="text-sm font-bold text-slate-500">Familia</span></div></div>
+                <div class="step-item" id="stepIndicator-4"><div class="flex items-center gap-5"><div class="step-circle">4</div><span class="text-sm font-bold text-slate-500">Salud</span></div></div>
+                <div class="step-item" id="stepIndicator-5"><div class="flex items-center gap-5"><div class="step-circle">5</div><span class="text-sm font-bold text-slate-500">Académico</span></div></div>
+                <div class="step-item" id="stepIndicator-6"><div class="flex items-center gap-5"><div class="step-circle">6</div><span class="text-sm font-bold text-slate-500">Dotación</span></div></div>
+                <div class="step-item" id="stepIndicator-7"><div class="flex items-center gap-5"><div class="step-circle">7</div><span class="text-sm font-bold text-slate-500">Finalizar</span></div></div>
+            </nav>
+        </aside>
+
+        <!-- Área de Formulario -->
+        <main id="mainFormArea" class="flex-1 p-8 md:p-16 lg:p-24 overflow-y-auto bg-[#fafafa] session-lock">
+            <form id="expedienteForm" class="max-w-3xl mx-auto pb-32">
+                
+                <!-- SECCIONES -->
+                <section id="section-1" class="form-section active">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">1. Identidad del Socio</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-1"><label class="input-label">ID de Socio / Nómina</label><input type="text" id="socioId" class="input-field font-mono font-bold text-blue-700" placeholder="000000" required></div>
+                        <div class="md:col-span-2"><label class="input-label">Nombre Completo</label><input type="text" id="nombre" class="input-field uppercase" required></div>
+                        <div><label class="input-label">Género</label><select id="sexo" class="input-field"><option value="M">Masculino</option><option value="F">Femenino</option><option value="O">Otro</option></select></div>
+                        <div><label class="input-label">Estado Civil</label><select id="estadoCivil" class="input-field"><option value="S">Soltero(a)</option><option value="C">Casado(a)</option><option value="D">Divorciado(a)</option><option value="V">Viudo(a)</option><option value="UL">Unión Libre</option></select></div>
+                        <div><label class="input-label">Fecha de Nacimiento</label><input type="date" id="fechaNac" class="input-field"></div>
+                        <div><label class="input-label">Lugar de Origen</label><input type="text" id="ciudadOrigen" class="input-field" placeholder="Ciudad, Estado"></div>
+                        <div class="md:col-span-2"><label class="input-label">Domicilio Completo</label><textarea id="domicilio" class="input-field h-24 resize-none" placeholder="Calle, Número, Colonia, Municipio, CP"></textarea></div>
+                    </div>
+                </section>
+
+                <section id="section-2" class="form-section">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">2. Información de Contacto</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div><label class="input-label">Teléfono Móvil</label><input type="tel" id="telefono" class="input-field" placeholder="10 dígitos"></div>
+                        <div><label class="input-label">Correo Institucional / Personal</label><input type="email" id="authEmail" class="input-field" placeholder="ejemplo@dominio.com" required></div>
+                    </div>
+
+                    <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <span class="text-sm font-black text-blue-900 uppercase">Habilitar Acceso al Sistema</span>
+                                <p class="text-[11px] text-blue-600/70 italic">Permitir que este socio inicie sesión en la plataforma.</p>
+                            </div>
+                            <input type="checkbox" id="enableAuth" class="w-10 h-5 accent-blue-600 cursor-pointer">
+                        </div>
+                        <div id="authBox" class="hidden pt-4 border-t border-blue-200/30">
+                            <label class="input-label">Contraseña Temporal</label>
+                            <input type="password" id="authPass" class="input-field" placeholder="Mínimo 6 caracteres">
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-3" class="form-section">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">3. Carga Familiar</h3></div>
+                    <div class="table-container"><table class="dynamic-table"><thead><tr><th>Nombre</th><th>Fecha Nac.</th><th class="w-10"></th></tr></thead><tbody id="hijosContainer"></tbody></table>
+                    <button type="button" onclick="addRow('hijosContainer')" class="p-4 text-blue-600 font-bold text-[10px] uppercase w-full hover:bg-blue-50">+ Agregar Familiar</button></div>
+                </section>
+
+                <section id="section-4" class="form-section">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">4. Salud y Emergencias</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                        <div><label class="input-label">NSS</label><input type="text" id="nss" class="input-field" placeholder="00-00-00-0000-0"></div>
+                        <div><label class="input-label">Sangre</label><select id="sangre" class="input-field"><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></div>
+                        <div class="md:col-span-2"><label class="input-label">Alergias Detectadas</label><input type="text" id="alergias" class="input-field" placeholder="Describir"></div>
+                    </div>
+                    <div class="table-container"><table class="dynamic-table"><thead><tr><th>Emergencia</th><th>Parentesco</th><th>Teléfono</th><th class="w-10"></th></tr></thead><tbody id="emergenciaContainer"></tbody></table>
+                    <button type="button" onclick="addRow('emergenciaContainer')" class="p-4 text-blue-600 font-bold text-[10px] uppercase w-full hover:bg-blue-50">+ Agregar Contacto</button></div>
+                </section>
+
+                <section id="section-5" class="form-section">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">5. Perfil Académico</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                        <div><label class="input-label">Grado de Estudios</label><select id="grado" class="input-field"><option>Primaria</option><option>Secundaria</option><option>Preparatoria</option><option>Licenciatura</option></select></div>
+                        <div><label class="input-label">Institución</label><input type="text" id="institucion" class="input-field" placeholder="Nombre de la Escuela"></div>
+                    </div>
+                    <div class="table-container"><table class="dynamic-table"><thead><tr><th>Curso / Certificación</th><th>Año</th><th>Estatus</th><th class="w-10"></th></tr></thead><tbody id="cursosContainer"></tbody></table>
+                    <button type="button" onclick="addRow('cursosContainer')" class="p-4 text-blue-600 font-bold text-[10px] uppercase w-full hover:bg-blue-50">+ Agregar Registro</button></div>
+                </section>
+
+                <section id="section-6" class="form-section">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">6. Tallas y Equipamiento</h3></div>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div><label class="input-label">Calzado</label><input type="number" step="0.5" id="zapatos" class="input-field" placeholder="27.0"></div>
+                        <div><label class="input-label">Camisa</label><input type="text" id="camisa" class="input-field" placeholder="M"></div>
+                        <div><label class="input-label">Pantalón</label><input type="text" id="pantalon" class="input-field" placeholder="32"></div>
+                        <label class="col-span-3 p-5 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-4 cursor-pointer hover:bg-blue-100/50 transition-all">
+                            <input type="checkbox" id="gorra" class="w-5 h-5 accent-blue-600"> 
+                            <span class="text-xs font-bold text-blue-900 uppercase tracking-wide">Equipado con Gorra Reglamentaria</span>
+                        </label>
+                    </div>
+                </section>
+
+                <section id="section-7" class="form-section text-center">
+                    <div class="mb-10"><h3 class="text-3xl font-black text-slate-900 tracking-tight">7. Identificación Visual</h3></div>
+                    <div class="flex flex-col items-center gap-8">
+                        <div class="relative">
+                            <div class="w-64 h-64 rounded-full bg-white elevation-premium border-[8px] border-white overflow-hidden relative">
+                                <img id="photoFinal" class="hidden w-full h-full object-cover">
+                                <div id="photoDefault" class="flex h-full items-center justify-center opacity-10"><svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+                                <video id="camView" class="hidden absolute inset-0 w-full h-full object-cover scale-x-[-1]" autoplay playsinline></video>
+                            </div>
+                            <button type="button" id="snapBtn" class="hidden absolute bottom-2 right-2 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm10-5h-3.17L17 2H7L5.17 4H2v16h20V4zm-10 15c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></button>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <button type="button" id="camBtn" class="btn-md bg-slate-900 text-white hover:bg-black gap-2">Activar Cámara</button>
+                            <label for="fileInput" class="btn-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer gap-2">Elegir Archivo</label>
+                            <input type="file" id="fileInput" class="hidden" accept="image/*">
+                            <button type="button" id="camStop" class="hidden btn-md bg-red-100 text-red-600">Cancelar</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Barra de Navegación del Formulario -->
+                <div class="fixed bottom-0 left-0 lg:left-80 right-0 p-8 bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-between items-center z-40">
+                    <button type="button" id="prev" class="text-slate-400 font-black text-[10px] tracking-widest hover:text-slate-900 disabled:opacity-0 transition-all uppercase px-4">ATRÁS</button>
+                    <div id="dots" class="flex gap-2"></div>
+                    <button type="button" id="next" class="btn-md bg-blue-600 text-white shadow-xl hover:shadow-blue-100 active:scale-95 transition-all min-w-[180px]">SIGUIENTE</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let step = 1, stream = null, currentPhotoData = null;
+
+        onAuthStateChanged(auth, (user) => {
+            const banner = document.getElementById('authBanner');
+            const statusText = document.getElementById('authStatusText');
+            const main = document.getElementById('mainFormArea');
+            if (user) {
+                statusText.textContent = `Operador Autorizado: ${user.email}`;
+                banner.classList.remove('bg-slate-900', 'bg-red-600'); 
+                banner.style.background = 'linear-gradient(90deg, #000 0%, #1e3a8a 100%)';
+                main.classList.remove('session-lock');
+            } else {
+                statusText.textContent = "Acceso Restringido: Inicie sesión para registrar socios.";
+                banner.classList.add('bg-red-600');
+                main.classList.add('session-lock');
+            }
+        });
+
+        document.getElementById('enableAuth').addEventListener('change', (e) => {
+            document.getElementById('authBox').classList.toggle('hidden', !e.target.checked);
+        });
+
+        async function nav(dir) {
+            if (step === 7 && dir === 1) { await finalSave(); return; }
+            const nextStep = step + dir; if (nextStep < 1 || nextStep > 7) return;
+            document.getElementById(`section-${step}`).classList.remove('active');
+            document.getElementById(`section-${nextStep}`).classList.add('active');
+            document.getElementById(`stepIndicator-${step}`).classList.remove('active');
+            document.getElementById(`stepIndicator-${nextStep}`).classList.add('active');
+            step = nextStep; document.getElementById('prev').disabled = step === 1;
+            document.getElementById('next').textContent = step === 7 ? 'FINALIZAR REGISTRO' : 'SIGUIENTE';
+            renderDots(); stopCam();
+            document.getElementById('mainFormArea').scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        document.getElementById('prev').addEventListener('click', () => nav(-1));
+        document.getElementById('next').addEventListener('click', () => nav(1));
+
+        function renderDots() {
+            const c = document.getElementById('dots'); c.innerHTML = '';
+            for(let i=1; i<=7; i++) {
+                const d = document.createElement('div');
+                d.className = `w-1.5 h-1.5 rounded-full transition-all duration-300 ${i <= step ? 'bg-blue-600 w-4' : 'bg-slate-200'}`;
+                c.appendChild(d);
+            }
+        }
+
+        async function finalSave() {
+            if (!auth.currentUser) { msg("Sesión no detectada.", "bg-red-600 text-white"); return; }
+            const socioIdRaw = document.getElementById('socioId').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            if (!socioIdRaw || !email) { msg("ID de Socio y Correo son obligatorios", "bg-red-600 text-white"); return; }
+            const btn = document.getElementById('next'); btn.disabled = true; btn.textContent = 'REGISTRANDO...';
+            try {
+                const memberKey = socioIdRaw.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const enableAuth = document.getElementById('enableAuth').checked;
+                let authUid = ""; 
+
+                if (enableAuth) {
+                    const pass = document.getElementById('authPass').value.trim();
+                    if (pass.length < 6) throw new Error("Mínimo 6 caracteres en la contraseña.");
+                    try {
+                        const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+                        authUid = userCred.user.uid;
+                    } catch (err) {
+                        if (err.code !== 'auth/email-already-in-use') throw err;
+                    }
+                }
+                
+                let photoUrl = "";
+                if (currentPhotoData) {
+                    const filePath = `artifacts/${appId}/Usuarios/${socioIdRaw}.jpg`;
+                    const storageRef = ref(storage, filePath);
+                    if (currentPhotoData.type === 'camera') await uploadString(storageRef, currentPhotoData.data, 'data_url');
+                    else await uploadBytes(storageRef, currentPhotoData.data);
+                    photoUrl = `gs://cic7-1.firebasestorage.app/${filePath}`;
+                }
+
+                const userData = {
+                    socioId: socioIdRaw,
+                    uid: authUid,
+                    nombre: document.getElementById('nombre').value,
+                    identidad: { sexo: document.getElementById('sexo').value, estadoCivil: document.getElementById('estadoCivil').value, fechaNac: document.getElementById('fechaNac').value, origen: document.getElementById('ciudadOrigen').value, domicilio: document.getElementById('domicilio').value },
+                    contacto: { email: email, telefono: document.getElementById('telefono').value },
+                    familia: Array.from(document.querySelectorAll('#hijosContainer tr')).map(tr => ({ nombre: tr.cells[0].querySelector('input').value, fecha: tr.cells[1].querySelector('input').value })),
+                    salud: { nss: document.getElementById('nss').value, sangre: document.getElementById('sangre').value, alergias: document.getElementById('alergias').value, emergencies: Array.from(document.querySelectorAll('#emergenciaContainer tr')).map(tr => ({ nombre: tr.cells[0].querySelector('input').value, parentesco: tr.cells[1].querySelector('input').value, tel: tr.cells[2].querySelector('input').value })) },
+                    educacion: { grado: document.getElementById('grado').value, escuela: document.getElementById('institucion').value, cursos: Array.from(document.querySelectorAll('#cursosContainer tr')).map(tr => ({ curso: tr.cells[0].querySelector('input').value, año: tr.cells[1].querySelector('input').value, estatus: tr.cells[2].querySelector('input').value })) },
+                    dotacion: { zapatos: document.getElementById('zapatos').value, camisa: document.getElementById('camisa').value, pantalon: document.getElementById('pantalon').value, gorra: document.getElementById('gorra').checked },
+                    photo: photoUrl,
+                    hasAuth: enableAuth,
+                    updatedAt: new Date().toISOString()
+                };
+
+                const listadoRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const docSnap = await getDoc(listadoRef);
+                let listadoGlobal = docSnap.exists() ? docSnap.data() : {};
+                listadoGlobal[memberKey] = userData;
+                
+                await setDoc(listadoRef, listadoGlobal);
+                msg("Socio registrado con éxito en el Estado de Fuerza.", "bg-blue-600 text-white");
+                setTimeout(() => window.parent.postMessage({action:'closeTab'}, '*'), 2000);
+            } catch (e) {
+                console.error("Save error:", e); msg(e.message, "bg-red-600 text-white");
+                btn.disabled = false; btn.textContent = 'REINTENTAR';
+            }
+        }
+
+        // --- Lógica de Cámara ---
+        const startCam = async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user', width:480, height:480}});
+                const v = document.getElementById('camView'); v.srcObject = stream; v.classList.remove('hidden');
+                document.getElementById('photoDefault').classList.add('hidden');
+                document.getElementById('photoFinal').classList.add('hidden');
+                document.getElementById('camBtn').classList.add('hidden');
+                document.getElementById('camStop').classList.remove('hidden');
+                document.getElementById('snapBtn').classList.remove('hidden');
+            } catch (e) { msg("Error al acceder a la cámara.", "bg-red-500 text-white"); }
+        };
+
+        const stopCam = () => {
+            if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
+            document.getElementById('camView').classList.add('hidden');
+            document.getElementById('snapBtn').classList.add('hidden');
+            document.getElementById('camStop').classList.add('hidden');
+            document.getElementById('camBtn').classList.remove('hidden');
+            if (currentPhotoData) document.getElementById('photoFinal').classList.remove('hidden');
+            else document.getElementById('photoDefault').classList.remove('hidden');
+        };
+
+        document.getElementById('snapBtn').addEventListener('click', () => {
+            const v = document.getElementById('camView'); const c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            const ctx = c.getContext('2d'); ctx.translate(c.width, 0); ctx.scale(-1, 1); ctx.drawImage(v, 0, 0); 
+            const data = c.toDataURL('image/jpeg', 0.85); document.getElementById('photoFinal').src = data;
+            document.getElementById('photoFinal').classList.remove('hidden');
+            currentPhotoData = { type: 'camera', data: data }; stopCam();
+        });
+
+        document.getElementById('camBtn').addEventListener('click', startCam);
+        document.getElementById('camStop').addEventListener('click', stopCam);
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('photoFinal').src = event.target.result;
+                document.getElementById('photoFinal').classList.remove('hidden');
+                document.getElementById('photoDefault').classList.add('hidden');
+                currentPhotoData = { type: 'file', data: file };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        window.addRow = (id) => {
+            const tr = document.createElement('tr');
+            if (id === 'cursosContainer') tr.innerHTML = `<td><input type="text" class="input-field py-1"></td><td><input type="text" class="input-field py-1"></td><td><input type="text" class="input-field py-1"></td><td class="text-center"><button type="button" class="text-red-400 font-bold" onclick="this.closest('tr').remove()">×</button></td>`;
+            else if (id === 'emergenciaContainer') tr.innerHTML = `<td><input type="text" class="input-field py-1"></td><td><input type="text" class="input-field py-1"></td><td><input type="tel" class="input-field py-1"></td><td class="text-center"><button type="button" class="text-red-400 font-bold" onclick="this.closest('tr').remove()">×</button></td>`;
+            else tr.innerHTML = `<td><input type="text" class="input-field py-1"></td><td><input type="date" class="input-field py-1"></td><td class="text-center"><button type="button" class="text-red-400 font-bold" onclick="this.closest('tr').remove()">×</button></td>`;
+            document.getElementById(id).appendChild(tr);
+        };
+
+        function msg(t, c) {
+            const b = document.getElementById('msgBox'); 
+            b.textContent = t; b.className = `block elevation-premium font-bold p-5 fixed top-12 right-12 z-[6000] rounded-2xl shadow-2xl ${c}`;
+            b.classList.remove('hidden'); setTimeout(() => b.classList.add('hidden'), 5000);
+        }
+        renderDots();
+    </script>
+</body>
+</html>

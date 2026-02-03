@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Socios - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        :root {
+            --md-primary: #2563eb;
+            --metal-border: #e2e8f0;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #ffffff; 
+            color: #1e293b; 
+            padding: 10px;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+        }
+
+        /* --- TARJETA METAL PULIDO BLANCO --- */
+        .member-card {
+            position: relative;
+            width: 300px; 
+            height: 75px;
+            padding: 8px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, 
+                #ffffff 0%,    
+                #fcfdfe 20%,   
+                #f8fafc 48%,   
+                #f1f5f9 52%,   
+                #fcfdfe 80%,   
+                #ffffff 100%   
+            );
+            border: 1px solid var(--metal-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .member-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                rgba(0, 0, 0, 0.02) 1px,
+                rgba(0, 0, 0, 0.02) 2px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .member-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--md-primary);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
+        }
+
+        .avatar-container {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            background: #f8fafc;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative;
+            z-index: 2;
+        }
+
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-img.hidden { display: none; }
+
+        .info-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0; 
+            position: relative;
+            z-index: 2;
+        }
+
+        .member-name {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+
+        .member-puesto {
+            font-size: 8px;
+            font-weight: 800;
+            color: #2563eb;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .member-id {
+            font-size: 7.5px;
+            font-weight: 700;
+            color: #64748b;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* --- ACCIONES DE TARJETA --- */
+        .actions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .btn-card-action {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 1px solid #f1f5f9;
+            background: white;
+        }
+
+        .btn-card-action:hover { transform: scale(1.15); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .btn-wa { color: #15803d; }
+        .btn-wa:hover { background: #15803d; color: white; }
+
+        .btn-auth-grant { color: #0369a1; }
+        .btn-auth-grant:hover { background: #0369a1; color: white; }
+
+        .btn-auth-revoke { color: #c2410c; background: #fff7ed; border-color: #ffedd5; }
+        .btn-auth-revoke:hover { background: #c2410c; color: white; }
+
+        .btn-terminate-card { color: #dc2626; }
+        .btn-terminate-card:hover { background: #dc2626; color: white; }
+
+        .status-dot {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: 1.5px solid white;
+            z-index: 10;
+        }
+
+        .status-active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
+        .status-baja { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+        /* Modales */
+        .modal-base { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-card { background: white; border-radius: 20px; width: 100%; max-width: 340px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        
+        .input-modal {
+            width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
+            padding: 8px 12px; font-size: 12px; font-weight: 600; margin-bottom: 0.75rem; outline: none;
+        }
+
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; color: white; padding: 6px 14px; border-radius: 99px;
+            font-size: 9px; font-weight: 800; text-transform: uppercase; z-index: 5000; display: none;
+        }
+
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 4000; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Procesando...</p>
+    </div>
+
+    <div id="toast">Operación exitosa</div>
+
+    <!-- MODAL CONFIGURACIÓN ACCESO -->
+    <div id="modalAccess" class="modal-base">
+        <div class="modal-card">
+            <h3 class="text-sm font-black uppercase tracking-tight mb-1">Habilitar Acceso</h3>
+            <p class="text-[9px] text-slate-400 font-bold uppercase mb-4">Configure las credenciales</p>
+            
+            <div id="emailBox">
+                <label class="text-[8px] font-black uppercase text-slate-500 mb-1 block">Correo</label>
+                <input type="email" id="accessEmailInput" class="input-modal" placeholder="correo@ejemplo.com">
+            </div>
+
+            <label class="text-[8px] font-black uppercase text-slate-500 mb-1 block">Contraseña Temporal</label>
+            <input type="password" id="accessPassInput" class="input-modal" placeholder="Mínimo 6 caracteres">
+            
+            <div class="flex gap-2 mt-2">
+                <button onclick="closeModal('modalAccess')" class="flex-1 py-2 text-[9px] font-black uppercase text-slate-400">Cancelar</button>
+                <button id="btnConfirmAccess" class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cardsGrid" class="grid-container">
+        <div class="col-span-full py-20 text-center">
+            <div class="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">Cargando Estado de Fuerza...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let allMembers = [];
+        let currentStatusFilter = 'altas';
+        let currentSearchQuery = '';
+
+        const dom = {
+            grid: document.getElementById('cardsGrid'),
+            overlay: document.getElementById('loadingOverlay'),
+            toast: document.getElementById('toast'),
+            modalAccess: document.getElementById('modalAccess'),
+            emailInput: document.getElementById('accessEmailInput'),
+            passInput: document.getElementById('accessPassInput'),
+            btnConfirmAccess: document.getElementById('btnConfirmAccess')
+        };
+
+        const showToast = (txt) => { dom.toast.innerText = txt; dom.toast.style.display = 'block'; setTimeout(() => dom.toast.style.display='none', 3000); };
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        // --- RESOLVER IMÁGENES DE STORAGE ---
+        async function resolveStorageImage(gsPath, imgElementId) {
+            try {
+                if (!gsPath || !gsPath.startsWith('gs://')) return;
+                const storagePath = gsPath.replace(/gs:\/\/[^\/]+\//, '');
+                const url = await getDownloadURL(ref(storage, storagePath));
+                const img = document.getElementById(imgElementId);
+                if (img) {
+                    img.src = url;
+                    img.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.warn("Error cargando foto:", gsPath, err);
+            }
+        }
+
+        // --- LÓGICA DE ACCESO ---
+        window.toggleAccessDirect = async (e, socioId, memberData) => {
+            e.stopPropagation();
+            const memberKey = socioId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            if (memberData.hasAuth) {
+                if (confirm(`¿Revocar acceso al sistema para ${memberData.nombre}?`)) {
+                    dom.overlay.style.display = 'flex';
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                        const snap = await getDoc(docRef);
+                        const data = snap.data();
+                        data[memberKey].hasAuth = false;
+                        await updateDoc(docRef, data);
+                        showToast("Acceso revocado");
+                    } catch (err) { alert(err.message); }
+                    dom.overlay.style.display = 'none';
+                }
+            } else {
+                dom.emailInput.value = memberData.contacto?.email || "";
+                dom.passInput.value = "";
+                dom.btnConfirmAccess.onclick = () => confirmGrant(memberKey, memberData.nombre);
+                dom.modalAccess.style.display = 'flex';
+            }
+        };
+
+        async function confirmGrant(key, name) {
+            const email = dom.emailInput.value.trim();
+            const pass = dom.passInput.value.trim();
+            if (!email || pass.length < 6) return alert("Datos inválidos");
+            
+            dom.overlay.style.display = 'flex';
+            try {
+                let uid = "";
+                try {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    uid = res.user.uid;
+                } catch (e) { if (e.code !== 'auth/email-already-in-use') throw e; }
+
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                data[key].hasAuth = true;
+                data[key].uid = uid || data[key].uid;
+                if (!data[key].contacto) data[key].contacto = {};
+                data[key].contacto.email = email;
+                await updateDoc(docRef, data);
+                closeModal('modalAccess');
+                showToast("Acceso habilitado");
+            } catch (err) { alert(err.message); }
+            dom.overlay.style.display = 'none';
+        }
+
+        // --- LÓGICA DE BAJA ---
+        window.terminateDirect = async (e, socioId, name) => {
+            e.stopPropagation();
+            if (!confirm(`¿Dar de baja definitiva al socio ${name}?`)) return;
+            dom.overlay.style.display = 'flex';
+            try {
+                const key = socioId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const data = snap.data();
+                if (!data[key].operativa) data[key].operativa = {};
+                data[key].operativa.estatus = 'Baja';
+                data[key].operativa.baja = new Date().toISOString().split('T')[0];
+                await updateDoc(docRef, data);
+                showToast("Socio dado de baja");
+            } catch (err) { alert(err.message); }
+            dom.overlay.style.display = 'none';
+        };
+
+        window.viewDetail = (m) => {
+            window.top.postMessage({
+                action: 'openRightPanel',
+                content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${m.socioId}" class="w-full h-full border-none"></iframe>`
+            }, '*');
+        };
+
+        const initSession = async () => {
+            onAuthStateChanged(auth, (user) => { if (user) startUpdates(); });
+        };
+
+        function startUpdates() {
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP'), (snap) => {
+                if (!snap.exists()) return;
+                allMembers = Object.values(snap.data()).sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+                renderGrid();
+            });
+        }
+
+        function renderGrid() {
+            dom.grid.innerHTML = "";
+            const placeholder = 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/placeholder.png';
+            
+            allMembers.forEach((m, idx) => {
+                const estatus = m.operativa?.estatus || 'Activo';
+                const search = `${m.nombre} ${m.socioId} ${m.puesto}`.toLowerCase();
+                if (currentStatusFilter === 'altas' && estatus !== 'Activo') return;
+                if (currentStatusFilter === 'bajas' && estatus !== 'Baja') return;
+                if (currentSearchQuery && !search.includes(currentSearchQuery)) return;
+
+                const card = document.createElement('div');
+                card.className = "member-card";
+                card.onclick = () => window.viewDetail(m);
+                
+                const hasAuth = m.hasAuth;
+                const authIcon = hasAuth ? 'shield-off' : 'shield-check';
+                const authClass = hasAuth ? 'btn-auth-revoke' : 'btn-auth-grant';
+                const authTitle = hasAuth ? 'Quitar Acceso' : 'Dar Acceso';
+                
+                const imgId = `img-socio-${m.socioId || idx}`;
+                const photoSrc = m.photo || placeholder;
+                const isGs = photoSrc.startsWith('gs://');
+
+                card.innerHTML = `
+                    <div class="status-dot ${estatus === 'Activo' ? 'status-active' : 'status-baja'}"></div>
+                    <div class="avatar-container">
+                        <img id="${imgId}" src="${isGs ? 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' : photoSrc}" 
+                             class="avatar-img ${isGs ? 'hidden' : ''}" 
+                             onerror="this.src='${placeholder}'">
+                    </div>
+                    <div class="info-container">
+                        <h3 class="member-name">${m.nombre || 'SIN NOMBRE'}</h3>
+                        <p class="member-puesto">${m.puesto || 'PERSONAL'}</p>
+                        <span class="member-id">ID: ${m.socioId || '---'}</span>
+                    </div>
+                    <div class="actions-stack">
+                        <button onclick="window.toggleAccessDirect(event, '${m.socioId}', ${JSON.stringify(m).replace(/"/g, '&quot;')})" class="btn-card-action ${authClass}" title="${authTitle}">
+                            <i data-lucide="${authIcon}" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="window.terminateDirect(event, '${m.socioId}', '${m.nombre}')" class="btn-card-action btn-terminate-card" title="Dar de Baja" ${estatus === 'Baja' ? 'disabled style="opacity:0.3"' : ''}>
+                            <i data-lucide="user-minus" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); window.location.href='whatsapp://send?phone=${m.contacto?.telefono}'" class="btn-card-action btn-wa" title="WhatsApp">
+                            <i data-lucide="message-circle" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+                dom.grid.appendChild(card);
+                
+                if (isGs) resolveStorageImage(photoSrc, imgId);
+            });
+            lucide.createIcons();
+        }
+
+        window.addEventListener('message', (e) => {
+            const { action, status, query } = e.data || {};
+            if (action === 'filterStatus') { currentStatusFilter = status; renderGrid(); }
+            if (action === 'filter') { currentSearchQuery = (query || '').toLowerCase().trim(); renderGrid(); }
+        });
+
+        window.onload = initSession;
+    </script>
+</body>
+</html>

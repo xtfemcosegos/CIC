@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #ffffff;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            height: 50px;
+            background: linear-gradient(180deg, #374151 0%, #1f2937 50%, #111827 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #000000;
+            flex-shrink: 0;
+        }
+
+        .apps-header-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .apps-header-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .logo-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #ffffff;
+        }
+
+        .main-logo {
+            width: 80%;
+            max-width: 800px;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
+            transition: transform 0.5s ease;
+        }
+
+        .main-logo:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="w-1/4 flex items-center">
+            <div id="appsBtn" class="apps-header-btn" onclick="toggleMenu()">
+                <img src="MM/Apps.png" alt="Apps" class="h-5 w-5 object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/17/17704.png'">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-200">Apps</span>
+            </div>
+        </div>
+        <div class="flex-1 text-center">
+            <h2 class="text-xs uppercase tracking-[0.5em] font-black text-blue-400">Protección Patrimonial</h2>
+        </div>
+        <div class="w-1/4 flex items-center justify-end gap-4">
+            <div class="text-right leading-none">
+                <div id="clock" class="text-base font-bold font-mono text-gray-100">00:00:00</div>
+                <div id="date" class="text-[8px] text-gray-400 uppercase tracking-tighter">-- --- ----</div>
+            </div>
+        </div>
+    </header>
+    <main class="logo-container">
+        <img src="MM/Logo.png" alt="Logotipo CIC 7.1" class="main-logo" onerror="this.src='https://via.placeholder.com/800x400?text=CIC+7.1+CENTRO+DE+INFORMACION+Y+COMUNICACION';">
+    </main>
+    <script>
+        function updateClock() {
+            const clockEl = document.getElementById('clock');
+            const dateEl = document.getElementById('date');
+            if (!clockEl || !dateEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+            dateEl.textContent = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+        function toggleMenu() { window.parent.postMessage({ action: 'toggleMenu' }, '*'); }
+    </script>
+</body>
+</html>

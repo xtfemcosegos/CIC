@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC Header Architect Pro - Diseñador de Estilos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style id="dynamic-font-loader"></style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap');
+        
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preview-container {
+            height: 120px;
+            width: 100%;
+            border-radius: 1rem;
+            display: block;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            margin: 0 auto;
+        }
+
+        .texture-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+
+        /* Mock Elements in Preview */
+        .mock-app-btn {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 20;
+        }
+
+        .mock-title {
+            position: absolute;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .mock-view-selector {
+            position: absolute;
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 12px;
+            z-index: 20;
+        }
+
+        .mock-view-btn {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        .input-accent {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .input-accent:focus { border-color: #3b82f6; }
+
+        .color-stop {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        /* Tab Styles */
+        .tab-btn {
+            padding: 10px 4px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+        }
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter uppercase text-blue-500">Header Architect <span class="text-white">Pro</span></h1>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Editor Integral de Interfaz para CIC 7.1</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="btnSaveDB" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-900/40">
+                    <i data-lucide="save" class="w-4 h-4"></i> Guardar Estilo
+                </button>
+                <button onclick="copyCSS()" class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copiar Código CSS
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- PANEL DE CONTROL IZQUIERDO CON PESTAÑAS -->
+            <aside class="lg:col-span-4 glass-panel rounded-3xl overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+                
+                <!-- Navegación de Pestañas -->
+                <nav class="flex border-bottom border-slate-800 bg-slate-900/50">
+                    <button onclick="switchTab('tab-base')" class="tab-btn active" id="btn-tab-base">Base</button>
+                    <button onclick="switchTab('tab-comps')" class="tab-btn" id="btn-tab-comps">UI</button>
+                    <button onclick="switchTab('tab-text')" class="tab-btn" id="btn-tab-text">Texto</button>
+                    <button onclick="switchTab('tab-finish')" class="tab-btn" id="btn-tab-finish">Acabado</button>
+                </nav>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    
+                    <!-- PESTAÑA BASE: Biblioteca + Gradiente + Dimensiones -->
+                    <div id="tab-base" class="tab-content space-y-6">
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2"><i data-lucide="library" class="w-3 h-3"></i> Biblioteca</h2>
+                            <select id="savedStylesCombo" class="w-full input-accent">
+                                <option value="">-- Cargar Estilo Guardado --</option>
+                            </select>
+                        </section>
+
+                        <hr class="border-slate-800">
+
+                        <!-- Dimensiones del Contenedor -->
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4">Dimensiones del Contenedor</h2>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Ancho (%)</label>
+                                    <input type="number" id="headerWidth" value="100" min="1" max="100" class="w-full input-accent" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Alto</label>
+                                    <div class="flex gap-1">
+                                        <input type="number" id="headerHeight" value="120" min="1" class="w-full input-accent" oninput="updatePreview()">
+                                        <select id="headerHeightUnit" class="input-accent w-16" onchange="updatePreview()">
+                                            <option value="px">px</option>
+                                            <option value="%">%</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <hr class="border-slate-800">
+
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-4">Estructura del Encabezado</h2>
+                            <div id="colorStopsContainer"></div>
+                            <button onclick="addStop()" id="btnAddStop" class="w-full mt-2 text-[9px] font-bold bg-slate-800 py-2 rounded border border-slate-700">+ Añadir Color al Gradiente</button>
+                            <div class="mt-4">
+                                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Ángulo del Gradiente: <span id="angleValue">180</span>°</label>
+                                <input type="range" id="gradientAngle" min="0" max="360" value="180" class="w-full accent-blue-500" oninput="updatePreview()">
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- PESTAÑA COMPONENTES: Menú + Selector -->
+                    <div id="tab-comps" class="tab-content space-y-6 hidden">
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-4">Botón Menú / Apps</h2>
+                            <div class="space-y-4 bg-yellow-400/5 p-4 rounded-2xl border border-yellow-400/10">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Left (px)</label>
+                                        <input type="number" id="appBtnLeft" value="25" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Top (px)</label>
+                                        <input type="number" id="appBtnTop" value="15" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Fondo</label>
+                                        <input type="color" id="appBtnBg" value="#000000" class="w-full h-8 cursor-pointer bg-transparent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Opacidad</label>
+                                        <input type="range" id="appBtnOpacity" min="0" max="100" value="30" class="w-full accent-yellow-400" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Borde</label>
+                                        <input type="color" id="appBtnBorder" value="#ffffff" class="w-full h-8 cursor-pointer bg-transparent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Blur (px)</label>
+                                        <input type="number" id="appBtnBlur" value="4" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <hr class="border-slate-800">
+
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-pink-400 mb-4">Selector de Vistas</h2>
+                            <div class="space-y-4 bg-pink-400/5 p-4 rounded-2xl border border-pink-400/10">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Left (px/%)</label>
+                                        <input type="text" id="viewSelLeft" value="50%" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Top (px)</label>
+                                        <input type="number" id="viewSelTop" value="85" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Contenedor</label>
+                                        <input type="color" id="viewSelectorBg" value="#000000" class="w-full h-8 cursor-pointer bg-transparent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Botón Activo</label>
+                                        <input type="color" id="viewBtnActiveBg" value="#2563eb" class="w-full h-8 cursor-pointer bg-transparent" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Resplandor (Glow)</label>
+                                    <input type="color" id="viewBtnGlow" value="#2563eb" class="w-full h-8 cursor-pointer bg-transparent" oninput="updatePreview()">
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- PESTAÑA TEXTO: Título + Contorno -->
+                    <div id="tab-text" class="tab-content space-y-6 hidden">
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4">Título Principal</h2>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Left (px/%)</label>
+                                        <input type="text" id="titleLeft" value="50%" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Top (px)</label>
+                                        <input type="number" id="titleTop" value="45" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <select id="fontSelector" class="w-full input-accent" onchange="updatePreview()"></select>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="number" id="fontSize" value="32" class="input-accent" oninput="updatePreview()" placeholder="Size">
+                                    <input type="number" step="0.05" id="letterSpacing" value="0.1" class="input-accent" oninput="updatePreview()" placeholder="Tracking">
+                                </div>
+                                <input type="color" id="textColor" value="#ffffff" class="w-full h-10 cursor-pointer bg-transparent" oninput="updatePreview()">
+                            </div>
+                        </section>
+
+                        <hr class="border-slate-800">
+
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-4">Contorno de Letras</h2>
+                            <div class="space-y-4 bg-orange-500/5 p-4 rounded-2xl border border-orange-500/10">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Grosor (px)</label>
+                                        <input type="number" id="strokeWidth" min="0" max="10" step="0.5" value="1.5" class="w-full input-accent" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Color Borde</label>
+                                        <input type="color" id="strokeColor" value="#0d0d0d" class="w-full h-10 rounded-lg cursor-pointer bg-transparent border-none" oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <select id="strokeType" class="w-full input-accent" onchange="updatePreview()">
+                                    <option value="solid">Sólido (Outline)</option>
+                                    <option value="glow">Resplandor (Glow)</option>
+                                    <option value="double">Relieve</option>
+                                </select>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- PESTAÑA ACABADO: Texturas -->
+                    <div id="tab-finish" class="tab-content space-y-6 hidden">
+                        <section>
+                            <h2 class="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-4">Texturas de Superficie</h2>
+                            <div class="space-y-4">
+                                <select id="textureSelector" class="w-full input-accent" onchange="updatePreview()"></select>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Opacidad Textura</label>
+                                    <input type="range" id="textureOpacity" min="0" max="100" value="20" class="w-full accent-blue-500" oninput="updatePreview()">
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- PANEL DERECHO: PREVIEW Y CSS -->
+            <main class="lg:col-span-8 space-y-6">
+                
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6">Vista Previa del Módulo</h2>
+                    <div id="headerPreview" class="preview-container">
+                        <div id="textureLayer" class="texture-layer"></div>
+                        
+                        <!-- Mock App Button -->
+                        <div id="mockAppBtn" class="mock-app-btn">
+                            <i data-lucide="layout-grid" class="w-4 h-4"></i> MENU
+                        </div>
+
+                        <!-- Main Title -->
+                        <span id="previewText" class="mock-title uppercase font-black">CIC ESTADO DE FUERZA</span>
+
+                        <!-- Mock View Selector -->
+                        <div id="mockViewSelector" class="mock-view-selector">
+                            <div id="mockViewBtnActive" class="mock-view-btn active text-white">Listado</div>
+                            <div id="mockViewBtnInactive" class="mock-view-btn text-white/40">Nuevo</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 leading-none">
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-2">Texto de prueba</label>
+                        <input type="text" id="headerTitleInput" value="CIC ESTADO DE FUERZA" class="w-full input-accent text-center font-bold uppercase tracking-widest" oninput="updateText(this.value)">
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Código CSS Generado</h2>
+                    <pre id="cssOutput" class="bg-black/50 p-6 rounded-2xl font-mono text-[11px] text-blue-300 overflow-x-auto whitespace-pre-wrap leading-relaxed border border-white/5 h-[350px] custom-scrollbar"></pre>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- BIBLIOTECA DE 60 FUENTES ---
+        const FONT_LIST = [
+            'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Source Sans Pro', 'Raleway', 'PT Sans',
+            'Poppins', 'Bebas Neue', 'Orbitron', 'JetBrains Mono', 'Teko', 'Kanit', 'Rajdhani', 'Space Mono',
+            'Merriweather', 'Noto Sans', 'Ubuntu', 'Lora', 'Playfair Display', 'Arimo', 'Titillium Web', 'Muli',
+            'Inconsolata', 'Indie Flower', 'Bitter', 'Caveat', 'Libre Baskerville', 'Anton', 'Pacifico', 'Dancing Script',
+            'Exo 2', 'Quicksand', 'Fira Sans', 'Josefin Sans', 'Abel', 'Varela Round', 'Archivo Narrow', 'Crimson Text',
+            'Cabin', 'Asap', 'Frank Ruhl Libre', 'Staatliches', 'Cinzel', 'Righteous', 'Zilla Slab', 'Comfortaa',
+            'Josefin Slab', 'Nanum Gothic', 'Oxygen', 'PT Serif', 'Signika', 'Ubuntu Mono', 'Volkhov', 'Yanone Kaffeesatz',
+            'Libre Franklin', 'Rubik', 'Heebo', 'Karla', 'IBM Plex Sans', 'Mukta', 'Hind', 'Barlow', 'Prompt'
+        ].sort();
+
+        let stops = [
+            { color: '#ffffff', pos: 0 },
+            { color: '#ababab', pos: 45 },
+            { color: '#636363', pos: 50 },
+            { color: '#3b3b3b', pos: 55 },
+            { color: '#676565', pos: 100 }
+        ];
+
+        const TEXTURES = Array.from({ length: 50 }, (_, i) => ({ id: i, name: `Textura ${i + 1}`, css: generateTextureCSS(i) }));
+
+        function generateTextureCSS(index) {
+            const types = [
+                () => `radial-gradient(circle, #fff 1px, transparent 1px) 0 0 / 10px 10px`,
+                () => `linear-gradient(45deg, #fff 25%, transparent 25%) 0 0 / 20px 20px`,
+                () => `repeating-linear-gradient(0deg, transparent, transparent 5px, #fff 5px, #fff 6px)`
+            ];
+            return types[index % types.length]();
+        }
+
+       import { firebaseConfig } from '../../script.js';
+        let db;
+
+        async function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                db = getFirestore(app);
+                await signInAnonymously(auth);
+                listenToStyles();
+            } catch (e) { console.warn("Firebase no conectado."); }
+        }
+
+        function listenToStyles() {
+            if (!db) return;
+            const stylesRef = collection(db, 'artifacts', appId, 'public', 'data', 'EstilosEncabezados');
+            onSnapshot(stylesRef, (snapshot) => {
+                const combo = document.getElementById('savedStylesCombo');
+                combo.innerHTML = '<option value="">-- Cargar Estilo --</option>';
+                snapshot.forEach((doc) => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.id; opt.textContent = doc.id;
+                    combo.appendChild(opt);
+                });
+            });
+        }
+
+        window.init = () => {
+            lucide.createIcons();
+            const fontSel = document.getElementById('fontSelector');
+            FONT_LIST.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f; opt.textContent = f;
+                if(f === 'Roboto') opt.selected = true;
+                fontSel.appendChild(opt);
+            });
+
+            const texSel = document.getElementById('textureSelector');
+            TEXTURES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id; opt.textContent = t.name;
+                texSel.appendChild(opt);
+            });
+
+            renderStops();
+            updatePreview();
+            initFirebase();
+            setupEvents();
+        };
+
+        function setupEvents() {
+            document.getElementById('btnSaveDB').onclick = saveStyle;
+            document.getElementById('savedStylesCombo').onchange = (e) => loadStyle(e.target.value);
+        }
+
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('active');
+        };
+
+        window.renderStops = () => {
+            const container = document.getElementById('colorStopsContainer');
+            container.innerHTML = '';
+            stops.forEach((stop, i) => {
+                const div = document.createElement('div');
+                div.className = 'color-stop';
+                div.innerHTML = `
+                    <input type="color" value="${stop.color}" class="w-10 h-8 rounded cursor-pointer bg-transparent border-none" oninput="updateStop(${i}, 'color', this.value)">
+                    <input type="number" value="${stop.pos}" class="w-16 input-accent text-xs" oninput="updateStop(${i}, 'pos', this.value)">
+                    <button onclick="removeStop(${i})" class="text-red-400">×</button>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('btnAddStop').style.display = stops.length >= 6 ? 'none' : 'block';
+        };
+
+        window.addStop = () => { if (stops.length < 6) { stops.push({ color: '#ffffff', pos: 100 }); renderStops(); updatePreview(); } };
+        window.updateStop = (i, k, v) => { stops[i][k] = k === 'pos' ? parseInt(v) : v; updatePreview(); };
+        window.removeStop = (i) => { stops.splice(i, 1); renderStops(); updatePreview(); };
+        window.updateText = (v) => { document.getElementById('previewText').textContent = v; updatePreview(); };
+
+        window.updatePreview = () => {
+            const preview = document.getElementById('headerPreview');
+            const text = document.getElementById('previewText');
+            const texLayer = document.getElementById('textureLayer');
+            
+            // Container Dimensions
+            const hW = document.getElementById('headerWidth').value;
+            const hH = document.getElementById('headerHeight').value;
+            const hHU = document.getElementById('headerHeightUnit').value;
+            preview.style.width = `${hW}%`;
+            preview.style.height = `${hH}${hHU}`;
+
+            // App Button
+            const appBtn = document.getElementById('mockAppBtn');
+            const abL = document.getElementById('appBtnLeft').value;
+            const abT = document.getElementById('appBtnTop').value;
+            const abBg = document.getElementById('appBtnBg').value;
+            const abOp = document.getElementById('appBtnOpacity').value / 100;
+            const abBr = document.getElementById('appBtnBorder').value;
+            const abBl = document.getElementById('appBtnBlur').value;
+
+            appBtn.style.left = `${abL}px`;
+            appBtn.style.top = `${abT}px`;
+            appBtn.style.backgroundColor = hexToRgba(abBg, abOp);
+            appBtn.style.backdropFilter = `blur(${abBl}px)`;
+            appBtn.style.color = abBr;
+            appBtn.style.border = `1px solid ${hexToRgba(abBr, 0.2)}`;
+
+            // View Selector
+            const viewSel = document.getElementById('mockViewSelector');
+            const vsL = document.getElementById('viewSelLeft').value;
+            const vsT = document.getElementById('viewSelTop').value;
+            const vsBg = document.getElementById('viewSelectorBg').value;
+            const vsActive = document.getElementById('viewBtnActiveBg').value;
+            const vsGlow = document.getElementById('viewBtnGlow').value;
+
+            viewSel.style.left = vsL;
+            viewSel.style.top = `${vsT}px`;
+            if(vsL.includes('%')) viewSel.style.transform = 'translateX(-50%)'; else viewSel.style.transform = 'none';
+            viewSel.style.backgroundColor = hexToRgba(vsBg, 0.6);
+            viewSel.style.backdropFilter = `blur(8px)`;
+            viewSel.style.border = `1px solid ${hexToRgba(vsActive, 0.3)}`;
+            
+            const activeBtnMock = document.getElementById('mockViewBtnActive');
+            activeBtnMock.style.background = vsActive;
+            activeBtnMock.style.boxShadow = `0 0 15px ${hexToRgba(vsGlow, 0.4)}`;
+
+            // Title
+            const tL = document.getElementById('titleLeft').value;
+            const tT = document.getElementById('titleTop').value;
+            text.style.left = tL;
+            text.style.top = `${tT}px`;
+            if(tL.includes('%')) text.style.transform = 'translateX(-50%)'; else text.style.transform = 'none';
+
+            // Header Base
+            const angle = document.getElementById('gradientAngle').value;
+            document.getElementById('angleValue').textContent = angle;
+            const grad = `linear-gradient(${angle}deg, ${stops.map(s => `${s.color} ${s.pos}%`).join(', ')})`;
+            preview.style.background = grad;
+
+            // Texture
+            const texId = document.getElementById('textureSelector').value;
+            const texOp = document.getElementById('textureOpacity').value / 100;
+            texLayer.style.background = TEXTURES[texId]?.css || '';
+            texLayer.style.opacity = texOp;
+
+            // Typography - DYNAMIC LOAD
+            const font = document.getElementById('fontSelector').value;
+            const size = document.getElementById('fontSize').value;
+            const track = document.getElementById('letterSpacing').value;
+            const color = document.getElementById('textColor').value;
+            const sW = document.getElementById('strokeWidth').value;
+            const sC = document.getElementById('strokeColor').value;
+            const sT = document.getElementById('strokeType').value;
+
+            const fontLoader = document.getElementById('dynamic-font-loader');
+            fontLoader.textContent = `@import url('https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;700;900&display=swap');`;
+
+            text.style.fontFamily = `'${font}', sans-serif`;
+            text.style.fontSize = `${size}px`;
+            text.style.letterSpacing = `${track}em`;
+            text.style.color = color;
+            text.style.webkitTextStroke = sT === 'solid' ? `${sW}px ${sC}` : '0';
+            text.style.textShadow = sT === 'glow' ? `0 0 ${sW * 2}px ${sC}` : 'none';
+
+            generateCSS({
+                hW, hH, hHU, grad, font, size, track, color, sW, sC, sT, abL, abT, vsL, vsT, tL, tT, 
+                abBg, abOp, abBr, abBl, vsBg, vsActive, vsGlow, texId, texOp
+            });
+        };
+
+        function hexToRgba(hex, alpha) {
+            if (!hex || hex.length < 7) return `rgba(0,0,0,${alpha})`;
+            const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function generateCSS(d) {
+            const css = `@import url('https://fonts.googleapis.com/css2?family=${d.font.replace(/ /g, '+')}:wght@900&display=swap');
+
+.cic-app-header {
+    width: ${d.hW}%;
+    height: ${d.hH}${d.hHU};
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    background: ${d.grad};
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.cic-app-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: ${TEXTURES[d.texId]?.css || ''};
+    opacity: ${d.texOp};
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+.cic-header-title {
+    position: absolute;
+    left: ${d.tL};
+    top: ${d.tT}px;
+    ${d.tL.includes('%') ? 'transform: translateX(-50%);' : ''}
+    font-family: '${d.font}', sans-serif;
+    font-size: ${d.size}px;
+    font-weight: 900;
+    color: ${d.color};
+    text-transform: uppercase;
+    letter-spacing: ${d.track}em;
+    ${d.sT === 'solid' ? `-webkit-text-stroke: ${d.sW}px ${d.sC};` : ''}
+    ${d.sT === 'glow' ? `text-shadow: 0 0 ${d.sW * 2}px ${d.sC};` : ''}
+    paint-order: stroke fill;
+    z-index: 10;
+}
+
+/* Cajón de Aplicaciones */
+.apps-header-btn {
+    position: absolute;
+    left: ${d.abL}px;
+    top: ${d.abT}px;
+    background: ${hexToRgba(d.abBg, d.abOp)};
+    border: 1px solid ${hexToRgba(d.abBr, 0.15)};
+    backdrop-filter: blur(${d.abBl}px);
+    color: ${d.abBr};
+    z-index: 20;
+}
+
+/* Selector de Vistas */
+.view-selector {
+    position: absolute;
+    left: ${d.vsL};
+    top: ${d.vsT}px;
+    ${d.vsL.includes('%') ? 'transform: translateX(-50%);' : ''}
+    background: ${hexToRgba(d.vsBg, 0.6)};
+    border: 1px solid ${hexToRgba(d.vsActive, 0.3)};
+    backdrop-filter: blur(8px);
+    z-index: 20;
+}
+
+.view-btn.active {
+    background: ${d.vsActive};
+    box-shadow: 0 0 15px ${hexToRgba(d.vsGlow, 0.4)};
+}`;
+            document.getElementById('cssOutput').textContent = css;
+        }
+
+        async function saveStyle() {
+            if (!db) return;
+            const name = prompt("Nombre del estilo:");
+            if (!name) return;
+            const data = {
+                stops,
+                headerWidth: document.getElementById('headerWidth').value,
+                headerHeight: document.getElementById('headerHeight').value,
+                headerHeightUnit: document.getElementById('headerHeightUnit').value,
+                angle: document.getElementById('gradientAngle').value,
+                font: document.getElementById('fontSelector').value,
+                size: document.getElementById('fontSize').value,
+                track: document.getElementById('letterSpacing').value,
+                color: document.getElementById('textColor').value,
+                strokeWidth: document.getElementById('strokeWidth').value,
+                strokeColor: document.getElementById('strokeColor').value,
+                strokeType: document.getElementById('strokeType').value,
+                textureId: document.getElementById('textureSelector').value,
+                textureOpacity: document.getElementById('textureOpacity').value,
+                pos: {
+                    abL: document.getElementById('appBtnLeft').value,
+                    abT: document.getElementById('appBtnTop').value,
+                    vsL: document.getElementById('viewSelLeft').value,
+                    vsT: document.getElementById('viewSelTop').value,
+                    tL: document.getElementById('titleLeft').value,
+                    tT: document.getElementById('titleTop').value
+                },
+                appBtn: { 
+                    bg: document.getElementById('appBtnBg').value, 
+                    op: document.getElementById('appBtnOpacity').value, 
+                    br: document.getElementById('appBtnBorder').value, 
+                    bl: document.getElementById('appBtnBlur').value 
+                },
+                viewSel: { 
+                    bg: document.getElementById('viewSelectorBg').value,
+                    active: document.getElementById('viewBtnActiveBg').value,
+                    glow: document.getElementById('viewBtnGlow').value
+                }
+            };
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'EstilosEncabezados', name), data);
+        }
+
+        async function loadStyle(id) {
+            if (!db || !id) return;
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'EstilosEncabezados', id), (d) => {
+                if (d.exists()) {
+                    const data = d.data();
+                    stops = data.stops;
+                    
+                    if(data.headerWidth) document.getElementById('headerWidth').value = data.headerWidth;
+                    if(data.headerHeight) document.getElementById('headerHeight').value = data.headerHeight;
+                    if(data.headerHeightUnit) document.getElementById('headerHeightUnit').value = data.headerHeightUnit;
+
+                    document.getElementById('gradientAngle').value = data.angle;
+                    document.getElementById('fontSelector').value = data.font;
+                    document.getElementById('fontSize').value = data.size;
+                    document.getElementById('letterSpacing').value = data.track;
+                    document.getElementById('textColor').value = data.color;
+                    
+                    document.getElementById('strokeWidth').value = data.strokeWidth || 1.5;
+                    document.getElementById('strokeColor').value = data.strokeColor || '#000000';
+                    document.getElementById('strokeType').value = data.strokeType || 'solid';
+                    document.getElementById('textureSelector').value = data.textureId || 0;
+                    document.getElementById('textureOpacity').value = data.textureOpacity || 20;
+
+                    document.getElementById('appBtnLeft').value = data.pos.abL;
+                    document.getElementById('appBtnTop').value = data.pos.abT;
+                    document.getElementById('viewSelLeft').value = data.pos.vsL;
+                    document.getElementById('viewSelTop').value = data.pos.vsT;
+                    document.getElementById('titleLeft').value = data.pos.tL;
+                    document.getElementById('titleTop').value = data.pos.tT;
+
+                    document.getElementById('appBtnBg').value = data.appBtn.bg;
+                    document.getElementById('appBtnOpacity').value = data.appBtn.op;
+                    document.getElementById('appBtnBorder').value = data.appBtn.br;
+                    document.getElementById('appBtnBlur').value = data.appBtn.bl;
+                    
+                    document.getElementById('viewSelectorBg').value = data.viewSel.bg;
+                    document.getElementById('viewBtnActiveBg').value = data.viewSel.active || '#2563eb';
+                    document.getElementById('viewBtnGlow').value = data.viewSel.glow || '#2563eb';
+
+                    renderStops(); updatePreview();
+                }
+            });
+        }
+
+        window.copyCSS = () => {
+            navigator.clipboard.writeText(document.getElementById('cssOutput').textContent);
+            alert("CSS Copiado al portapapeles");
+        };
+
+        window.onload = window.init;
+    </script>
+</body>
+</html>

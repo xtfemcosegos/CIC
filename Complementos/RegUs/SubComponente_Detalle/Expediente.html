@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff; 
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        .input-premium {
+            width: 100%;
+            font-size: 0.75rem;
+            border: 1.5px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            background-color: #f8fafc;
+            transition: all 0.3s;
+            color: #334155;
+            font-weight: 600;
+        }
+        .input-premium:focus {
+            background-color: #ffffff;
+            border-color: #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #1e40af;
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+        .section-title h5 { font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+        .section-title div { flex: 1; height: 1px; background: #f1f5f9; }
+        
+        .label-premium { font-size: 7.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem; display: block; }
+
+        .table-container { border: 1.5px solid #f1f5f9; border-radius: 10px; overflow: hidden; background: white; width: 100%; }
+        .dynamic-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .dynamic-table th { font-size: 7.5px; font-weight: 800; color: #94a3b8; padding: 6px 10px; text-transform: uppercase; background: #f8fafc; text-align: left; }
+        .dynamic-table td { padding: 4px 10px; border-top: 1px solid #f1f5f9; font-size: 11px; }
+
+        /* Estilos de botones de acceso */
+        .btn-access {
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .btn-grant { background: #1a1a1a; color: white; }
+        .btn-grant:hover { background: #2563eb; }
+        .btn-revoke { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
+        .btn-revoke:hover { background: #ef4444; color: white; }
+
+        .status-badge {
+            font-size: 7px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .status-active { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+        .status-inactive { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+
+        /* Toast Discreto */
+        #toast {
+            position: fixed; top: 15px; right: 15px;
+            background: #0f172a; color: white; padding: 8px 16px; border-radius: 10px;
+            font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+            display: none; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            align-items: center; gap: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Scroll suave */
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Notificación discreta de guardado -->
+    <div id="toast">
+        <i data-lucide="cloud-check" class="w-3.5 h-3.5 text-blue-400"></i>
+        <span>Cambios guardados</span>
+    </div>
+
+    <div class="w-full px-4 py-4">
+        <form id="expedienteForm" class="max-w-full mx-auto space-y-6" oninput="triggerAutoSave()">
+            
+            <!-- 1. INFORMACIÓN GENERAL -->
+            <section id="sec-1">
+                <div class="section-title">
+                    <i data-lucide="user"></i><h5>1. Información General</h5><div></div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="col-span-1">
+                        <label class="label-premium">Socio ID</label>
+                        <input type="text" id="input_socioId" name="socioId" class="input-premium font-mono font-bold !bg-slate-50" readonly>
+                    </div>
+                    
+                    <!-- SISTEMA DE ACCESO -->
+                    <div class="col-span-1 flex flex-col justify-end pb-1">
+                        <label class="label-premium">Acceso al Sistema</label>
+                        <div class="flex items-center gap-2">
+                            <span id="authStatusLabel" class="status-badge status-inactive">---</span>
+                            <button type="button" id="btnToggleAuth" class="btn-access btn-grant">---</button>
+                        </div>
+                    </div>
+
+                    <div class="col-span-2 md:col-span-2">
+                        <label class="label-premium">Nombre Completo</label>
+                        <input type="text" id="input_nombre" name="nombre" class="input-premium" required>
+                    </div>
+
+                    <div class="col-span-2">
+                        <label class="label-premium">Correo Electrónico</label>
+                        <input type="email" id="input_email" name="email" class="input-premium" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="label-premium">Teléfono Móvil</label>
+                        <input type="tel" id="input_telefono" name="telefono" class="input-premium">
+                    </div>
+
+                    <div class="col-span-1">
+                        <label class="label-premium">Género</label>
+                        <select id="input_sexo" name="sexo" class="input-premium">
+                            <option value="M">Masculino</option><option value="F">Femenino</option><option value="O">Otro</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Estado Civil</label>
+                        <select id="input_estadoCivil" name="estadoCivil" class="input-premium">
+                            <option value="S">Soltero(a)</option><option value="C">Casado(a)</option><option value="D">Divorciado(a)</option><option value="V">Viudo(a)</option><option value="UL">Unión Libre</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Cumpleaños</label>
+                        <input type="date" id="input_fechaNac" name="fechaNac" class="input-premium">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="label-premium">Origen</label>
+                        <input type="text" id="input_origen" name="origen" class="input-premium">
+                    </div>
+
+                    <div class="col-span-2 md:col-span-4">
+                        <label class="label-premium">Domicilio Registrado</label>
+                        <textarea id="input_domicilio" name="domicilio" class="input-premium h-14 resize-none text-[11px]"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. CARGA FAMILIAR -->
+            <section id="sec-3">
+                <div class="section-title">
+                    <i data-lucide="users"></i><h5>2. Carga Familiar</h5><div></div>
+                </div>
+                <div class="table-container">
+                    <table class="dynamic-table">
+                        <thead><tr><th>Nombre</th><th>Nac.</th><th class="w-6"></th></tr></thead>
+                        <tbody id="familiaContainer"></tbody>
+                    </table>
+                    <button type="button" onclick="addRow('familiaContainer')" class="p-1.5 text-blue-600 font-bold text-[8px] uppercase w-full hover:bg-blue-50 transition-colors">+ Familiar</button>
+                </div>
+            </section>
+
+            <!-- 3. SALUD -->
+            <section id="sec-4">
+                <div class="section-title">
+                    <i data-lucide="activity"></i><h5>3. Salud y Emergencias</h5><div></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="label-premium">NSS</label>
+                        <input type="text" id="input_nss" name="nss" class="input-premium">
+                    </div>
+                    <div>
+                        <label class="label-premium">Sangre</label>
+                        <select id="input_sangre" name="sangre" class="input-premium">
+                            <option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="label-premium">Alergias</label>
+                        <input type="text" id="input_alergias" name="alergias" class="input-premium">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="dynamic-table">
+                        <thead><tr><th>Emergencia</th><th>Tel.</th><th class="w-6"></th></tr></thead>
+                        <tbody id="emergenciaContainer"></tbody>
+                    </table>
+                    <button type="button" onclick="addRow('emergenciaContainer')" class="p-1.5 text-blue-600 font-bold text-[8px] uppercase w-full hover:bg-blue-50 transition-colors">+ Contacto</button>
+                </div>
+            </section>
+
+            <!-- 4. ACADÉMICO -->
+            <section id="sec-5">
+                <div class="section-title">
+                    <i data-lucide="graduation-cap"></i><h5>4. Perfil Académico</h5><div></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="label-premium">Grado</label>
+                        <select id="input_grado" name="grado" class="input-premium">
+                            <option>Primaria</option><option>Secundaria</option><option>Preparatoria</option><option>Licenciatura</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-premium">Escuela</label>
+                        <input type="text" id="input_escuela" name="escuela" class="input-premium">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="dynamic-table">
+                        <thead><tr><th>Curso</th><th>Año</th><th class="w-6"></th></tr></thead>
+                        <tbody id="cursosContainer"></tbody>
+                    </table>
+                    <button type="button" onclick="addRow('cursosContainer')" class="p-1.5 text-blue-600 font-bold text-[8px] uppercase w-full hover:bg-blue-50 transition-colors">+ Curso</button>
+                </div>
+            </section>
+
+            <!-- 5. DOTACIÓN -->
+            <section id="sec-6" class="pb-20">
+                <div class="section-title">
+                    <i data-lucide="shirt"></i><h5>5. Dotación</h5><div></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="label-premium text-center">Zapato</label>
+                        <input type="number" step="0.5" id="input_zapatos" name="zapatos" class="input-premium text-center">
+                    </div>
+                    <div>
+                        <label class="label-premium text-center">Camisa</label>
+                        <input type="text" id="input_camisa" name="camisa" class="input-premium text-center">
+                    </div>
+                    <div>
+                        <label class="label-premium text-center">Pant.</label>
+                        <input type="text" id="input_pantalon" name="pantalon" class="input-premium text-center">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border mt-2 cursor-pointer hover:bg-blue-50 transition-colors">
+                    <input type="checkbox" id="input_gorra" name="gorra" class="w-3.5 h-3.5 accent-blue-600">
+                    <span class="text-[8px] font-bold text-slate-500 uppercase">Gorra Reglamentaria</span>
+                </label>
+            </section>
+        </form>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const params = new URLSearchParams(window.location.search);
+        const socioId = params.get('socioId');
+        const memberKey = socioId ? socioId.toLowerCase().replace(/[^a-z0-9]/g, '_') : null;
+
+        let currentData = null;
+        let unsubscribe = null;
+        let saveTimeout = null;
+
+        const showToast = () => {
+            const t = document.getElementById('toast');
+            t.style.display = 'flex';
+            setTimeout(() => t.style.display = 'none', 3000);
+        };
+
+        window.triggerAutoSave = () => {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveExpediente, 1500); // 1.5 seg de pausa para no saturar
+        };
+
+        window.addRow = (id, data = null) => {
+            const container = document.getElementById(id);
+            const tr = document.createElement('tr');
+            
+            if (id === 'familiaContainer') {
+                tr.innerHTML = `<td><input type="text" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[10px] font-semibold text-slate-700" value="${data?.nombre || ''}" oninput="triggerAutoSave()"></td><td><input type="date" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[9px] font-semibold text-slate-700" value="${data?.fecha || ''}" oninput="triggerAutoSave()"></td><td class="text-center"><button type="button" class="text-red-400" onclick="this.closest('tr').remove(); triggerAutoSave()">×</button></td>`;
+            } else if (id === 'emergenciaContainer') {
+                tr.innerHTML = `<td><input type="text" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[10px] font-semibold text-slate-700" value="${data?.nombre || ''}" oninput="triggerAutoSave()"></td><td><input type="tel" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[10px] font-semibold text-slate-700" value="${data?.tel || ''}" oninput="triggerAutoSave()"></td><td class="text-center"><button type="button" class="text-red-400" onclick="this.closest('tr').remove(); triggerAutoSave()">×</button></td>`;
+            } else if (id === 'cursosContainer') {
+                tr.innerHTML = `<td><input type="text" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[10px] font-semibold text-slate-700" value="${data?.curso || ''}" oninput="triggerAutoSave()"></td><td><input type="text" class="w-full bg-transparent border-none p-0 focus:ring-0 text-[10px] font-semibold text-slate-700" value="${data?.año || ''}" oninput="triggerAutoSave()"></td><td class="text-center"><button type="button" class="text-red-400" onclick="this.closest('tr').remove(); triggerAutoSave()">×</button></td>`;
+            }
+            container.appendChild(tr);
+        };
+
+        const initDataListener = () => {
+            if (!memberKey) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+            if (unsubscribe) unsubscribe();
+            unsubscribe = onSnapshot(docRef, (snap) => {
+                if (snap.exists() && snap.data()[memberKey]) {
+                    currentData = snap.data()[memberKey];
+                    // Solo renderizamos inicialmente o si no hay foco activo para evitar saltos del cursor
+                    if (!document.activeElement.tagName.match(/INPUT|TEXTAREA|SELECT/)) {
+                        renderUser(currentData);
+                    }
+                }
+            });
+        };
+
+        const renderUser = (u) => {
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val || '';
+            };
+
+            setVal('input_socioId', u.socioId);
+            setVal('input_nombre', u.nombre);
+            setVal('input_sexo', u.identidad?.sexo);
+            setVal('input_estadoCivil', u.identidad?.estadoCivil);
+            setVal('input_fechaNac', u.identidad?.fechaNac);
+            setVal('input_origen', u.identidad?.origen);
+            setVal('input_domicilio', u.identidad?.domicilio);
+            setVal('input_telefono', u.contacto?.telefono);
+            setVal('input_email', u.contacto?.email);
+            setVal('input_nss', u.salud?.nss);
+            setVal('input_sangre', u.salud?.sangre);
+            setVal('input_grado', u.educacion?.grado);
+            setVal('input_escuela', u.educacion?.escuela);
+            setVal('input_zapatos', u.dotacion?.zapatos);
+            setVal('input_camisa', u.dotacion?.camisa);
+            setVal('input_pantalon', u.dotacion?.pantalon);
+            document.getElementById('input_gorra').checked = !!u.dotacion?.gorra;
+
+            const statusLabel = document.getElementById('authStatusLabel');
+            const toggleBtn = document.getElementById('btnToggleAuth');
+            if (u.hasAuth) {
+                statusLabel.textContent = "Activo"; statusLabel.className = "status-badge status-active";
+                toggleBtn.textContent = "Revocar Acceso"; toggleBtn.className = "btn-access btn-revoke";
+            } else {
+                statusLabel.textContent = "Inactivo"; statusLabel.className = "status-badge status-inactive";
+                toggleBtn.textContent = "Conceder Acceso"; toggleBtn.className = "btn-access btn-grant";
+            }
+
+            // Tablas
+            ['familiaContainer', 'emergenciaContainer', 'cursosContainer'].forEach(c => document.getElementById(c).innerHTML = '');
+            if (u.familia) u.familia.forEach(f => window.addRow('familiaContainer', f));
+            if (u.salud?.emergencias) u.salud.emergencias.forEach(e => window.addRow('emergenciaContainer', e));
+            if (u.educacion?.cursos) u.educacion.cursos.forEach(c => window.addRow('cursosContainer', c));
+
+            lucide.createIcons();
+        };
+
+        const saveExpediente = async () => {
+            if (!memberKey || !currentData) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const fullMap = snap.data();
+
+                const updated = {
+                    ...currentData,
+                    nombre: document.getElementById('input_nombre').value,
+                    identidad: { ...currentData.identidad, sexo: document.getElementById('input_sexo').value, estadoCivil: document.getElementById('input_estadoCivil').value, fechaNac: document.getElementById('input_fechaNac').value, origen: document.getElementById('input_origen').value, domicilio: document.getElementById('input_domicilio').value },
+                    contacto: { ...currentData.contacto, email: document.getElementById('input_email').value, telefono: document.getElementById('input_telefono').value },
+                    familia: Array.from(document.querySelectorAll('#familiaContainer tr')).map(tr => ({ nombre: tr.cells[0].querySelector('input').value, fecha: tr.cells[1].querySelector('input').value })),
+                    salud: { ...currentData.salud, nss: document.getElementById('input_nss').value, sangre: document.getElementById('input_sangre').value, alergias: document.getElementById('input_alergias')?.value || currentData.salud?.alergias, emergencias: Array.from(document.querySelectorAll('#emergenciaContainer tr')).map(tr => ({ nombre: tr.cells[0].querySelector('input').value, tel: tr.cells[1].querySelector('input').value })) },
+                    educacion: { ...currentData.educacion, grado: document.getElementById('input_grado').value, escuela: document.getElementById('input_escuela').value, cursos: Array.from(document.querySelectorAll('#cursosContainer tr')).map(tr => ({ curso: tr.cells[0].querySelector('input').value, año: tr.cells[1].querySelector('input').value })) },
+                    dotacion: { ...currentData.dotacion, zapatos: document.getElementById('input_zapatos').value, camisa: document.getElementById('input_camisa').value, pantalon: document.getElementById('input_pantalon').value, gorra: document.getElementById('input_gorra').checked },
+                    updatedAt: new Date().toISOString()
+                };
+
+                fullMap[memberKey] = updated;
+                await updateDoc(docRef, fullMap);
+                showToast();
+                window.parent.postMessage({ action: 'dataUpdated', data: updated }, '*');
+            } catch (err) { console.error("Auto-save error:", err); }
+        };
+
+        document.getElementById('btnToggleAuth').onclick = async () => {
+            if (!memberKey || !currentData) return;
+            const shouldEnable = !currentData.hasAuth;
+            if (!confirm(`¿Desea ${shouldEnable ? 'conceder' : 'revocar'} el acceso al sistema?`)) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(docRef);
+                const fullMap = snap.data();
+                fullMap[memberKey].hasAuth = shouldEnable;
+                await updateDoc(docRef, fullMap);
+                showToast();
+            } catch (err) { alert("Error: " + err.message); }
+        };
+
+        onAuthStateChanged(auth, (user) => { 
+            if (user) initDataListener(); 
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
