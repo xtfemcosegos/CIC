@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Elemento - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .search-container {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .element-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid #f1f5f9;
+            border-radius: 0.75rem;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .element-card:hover {
+            border-color: #d946ef;
+            background: #fdf4ff;
+            transform: translateY(-2px);
+        }
+
+        .element-card:active {
+            cursor: grabbing;
+        }
+
+        .photo-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .photo-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">Seleccionar Personal</h2>
+            <button onclick="window.parent.postMessage({action: 'closeRightPanel'}, '*')" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o socio ID..." 
+                   class="w-full pl-9 pr-4 py-2 bg-slate-100 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-fuchsia-500/20 transition-all">
+        </div>
+    </div>
+
+    <div id="elementsList" class="p-4 space-y-2">
+        <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+            <span class="text-[10px] font-black uppercase tracking-widest">Sincronizando...</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        let allPersonnel = [];
+        let currentUser = null;
+        const listContainer = document.getElementById('elementsList');
+        const searchInput = document.getElementById('searchInput');
+
+        async function resolveImage(path, imgElement) {
+            if (!path || !imgElement) return;
+            try {
+                if (path.startsWith('gs://')) {
+                    const storagePath = path.replace(/gs:\/\/[^\/]+\//, '');
+                    const url = await getDownloadURL(ref(storage, storagePath));
+                    imgElement.src = url;
+                } else if (path.startsWith('http')) {
+                    imgElement.src = path;
+                }
+            } catch (err) {}
+        }
+
+        async function loadPersonnel() {
+            if (!currentUser) return;
+            
+            try {
+                // Ruta confirmada: /artifacts/cic-71/public/data/Usuarios/ElementosPP
+                const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(usersRef);
+                
+                if (snap.exists()) {
+                    allPersonnel = Object.entries(snap.data()).map(([uid, d]) => ({
+                        uid,
+                        socioId: String(d.socioId || ''),
+                        nombre: d.nombre || 'Sin Nombre',
+                        puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
+                        photo: d.photo || null,
+                        status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase()
+                    })).filter(u => u.status !== 'baja' && u.socioId);
+
+                    renderList(allPersonnel);
+                }
+            } catch (error) {
+                console.error("Error cargando personal:", error);
+                listContainer.innerHTML = `<div class="text-center py-10 text-red-400 text-[10px] font-black uppercase">Error al cargar datos</div>`;
+            }
+        }
+
+        function renderList(list) {
+            listContainer.innerHTML = '';
+            
+            if (list.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-10 text-slate-300 text-[10px] font-black uppercase tracking-widest">No se encontraron resultados</div>`;
+                return;
+            }
+
+            list.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+            list.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'element-card';
+                card.draggable = true;
+                
+                const avatar = `https://ui-avatars.com/api/?name=${person.nombre}&background=f1f5f9&color=64748b`;
+                
+                card.innerHTML = `
+                    <div class="photo-thumb shadow-sm">
+                        <img src="${avatar}" data-uid="${person.uid}">
+                    </div>
+                    <div class="overflow-hidden leading-tight flex-1">
+                        <h4 class="text-[10px] font-black uppercase truncate text-slate-800">${person.nombre}</h4>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[8px] font-bold text-fuchsia-500">${person.socioId}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase truncate">${person.puesto}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.ondragstart = (e) => {
+                    e.dataTransfer.setData('socioId', person.socioId);
+                    e.dataTransfer.setData('uid', person.uid);
+                    card.classList.add('dragging');
+                };
+
+                card.ondragend = () => {
+                    card.classList.remove('dragging');
+                };
+
+                listContainer.appendChild(card);
+                
+                if (person.photo) {
+                    resolveImage(person.photo, card.querySelector('img'));
+                }
+            });
+        }
+
+        searchInput.oninput = (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allPersonnel.filter(p => 
+                p.nombre.toLowerCase().includes(query) || 
+                p.socioId.toLowerCase().includes(query)
+            );
+            renderList(filtered);
+        };
+
+        // Flujo de autenticación obligatorio antes de realizar consultas
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadPersonnel();
+            } else {
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+                initAuth();
+            }
+        });
+    </script>
+</body>
+</html>

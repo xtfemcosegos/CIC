@@ -16,216 +16,341 @@
             padding: 0;
             height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            /* Evita que el scroll afecte al Shell principal al llegar a los límites */
+            overscroll-behavior-y: contain;
         }
 
-        /* --- Header Fijo e Inmóvil --- */
+        /* --- Header Fijo (Escala 120%, Altura reducida al 60%: 63px) --- */
         .fixed-header {
             position: fixed; 
             top: 0;
             left: 0;
             right: 0;
-            z-index: 200;
+            z-index: 100;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid #e2e8f0;
-            padding: 0.75rem 2rem;
+            padding: 0 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            height: 80px;
+            height: 63px;
         }
 
         .day-label-large {
-            font-size: 1.5rem;
+            font-size: 1.2rem; 
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -0.04em;
+            letter-spacing: -0.02em;
             color: #0f172a;
             line-height: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        /* --- Controles de Fecha --- */
-        .date-controls {
+        .controls-group {
+            display: flex;
+            flex-direction: row; 
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .nav-selector {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             background: #f1f5f9;
-            padding: 4px;
-            border-radius: 14px;
+            padding: 2px;
+            border-radius: 10px;
             border: 1px solid #e2e8f0;
-            flex-shrink: 0;
         }
 
-        .date-nav-btn {
-            width: 32px;
-            height: 32px;
+        .nav-btn {
+            width: 30px;
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
+            border-radius: 8px;
             background: white;
             color: #64748b;
             transition: all 0.2s;
             cursor: pointer;
             border: 1px solid #e2e8f0;
+            font-size: 10px;
         }
-        .date-nav-btn:hover {
-            background: #d946ef;
-            color: white;
-            border-color: #d946ef;
-            box-shadow: 0 4px 10px rgba(217, 70, 239, 0.2);
-        }
+        .nav-btn:hover { background: #d946ef; color: white; border-color: #d946ef; }
 
-        .date-picker-wrapper {
+        .display-box {
             background: white;
-            padding: 0 12px;
-            height: 32px;
-            border-radius: 10px;
+            padding: 0 10px;
+            height: 30px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
+            justify-content: center;
             border: 1px solid #e2e8f0;
+            min-width: 130px;
         }
         
+        .display-text { font-size: 9px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+
         #dateSelector {
             background: transparent;
             border: none;
             outline: none;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 900;
             color: #0f172a;
             text-transform: uppercase;
             cursor: pointer;
+            width: 100%;
+            text-align: center;
         }
 
-        /* --- Contenedor Principal --- */
         #timelineContainer {
-            padding-top: 80px; 
-            min-height: 101vh; 
+            padding-top: 63px; /* Compensa el encabezado fijo */
+            min-height: 100vh; 
+            width: 100%;
         }
 
         .day-section {
-            padding: 2rem 2rem 3rem 2rem;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 1.5rem;
+            border-bottom: 8px solid #f1f5f9;
         }
 
-        /* --- Tarjetas Compactas --- */
+        .shift-drawer {
+            margin-bottom: 1.5rem;
+        }
+
+        .shift-header {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .shift-tools {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tool-check-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tool-check-label input { display: none; }
+        .tool-check-box {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
+        }
+        .tool-check-label input:checked + .tool-check-box {
+            background: #d946ef;
+            border-color: #d946ef;
+        }
+        .tool-check-label i { font-size: 9px; color: white; display: none; }
+        .tool-check-label input:checked + .tool-check-box i { display: block; }
+
+        .double-shift-btn {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 800;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #94a3b8;
+            transition: all 0.2s;
+        }
+        .double-shift-btn.active {
+            background: #fdf4ff;
+            border-color: #d946ef;
+            color: #d946ef;
+        }
+
+        .header-add-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .header-add-btn:hover {
+            background: #d946ef;
+            color: white;
+            border-color: #d946ef;
+            transform: scale(1.1);
+        }
+
+        /* --- Tarjetas (Escala 120%) --- */
         .user-card-mini {
             background: white;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid #e2e8f0;
             border-radius: 0.75rem;
-            padding: 0.4rem;
+            padding: 0.5rem;
             display: flex;
+            flex-direction: row; 
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.75rem;
             cursor: pointer;
+            position: relative;
+            min-height: 75px;
         }
-        .user-card-mini:hover {
-            border-color: #d946ef;
-            transform: scale(1.02);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        .user-card-mini:hover { border-color: #d946ef; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+
+        .user-card-mini.is-double {
+            border-width: 2px;
+            border-color: #f0abfc;
+            background: #fffaff;
         }
 
         .photo-container {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 58px;
+            height: 58px;
+            border-radius: 9px;
             overflow: hidden;
             flex-shrink: 0;
             background: #f1f5f9;
             position: relative;
         }
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .photo-container img { width: 100%; height: 100%; object-fit: cover; }
 
-        .shift-indicator {
+        .info-group { display: flex; flex-direction: column; justify-content: center; gap: 1px; flex: 1; min-width: 0; }
+
+        .double-badge {
             position: absolute;
-            bottom: -1px;
-            right: -1px;
-            width: 11px;
-            height: 11px;
+            top: -5px;
+            right: -5px;
+            background: #d946ef;
+            color: white;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
             border: 2px solid white;
+            z-index: 5;
         }
 
-        .dot-matutino { background: #f59e0b; }
-        .dot-vespertino { background: #3b82f6; }
-        .dot-nocturno { background: #8b5cf6; }
-        .dot-ausentismo { background: #ef4444; }
+        .indicators-strip { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; display: flex; }
+        .dot-indicator { flex: 1; height: 100%; }
+        .bg-matutino { background: #fef08a; } 
+        .bg-vespertino { background: #60a5fa; } 
+        .bg-nocturno { background: #1e3a8a; } 
+        .bg-ausentismo { background: #ef4444; } 
 
-        .btn-load-more {
-            width: 100%;
-            padding: 4rem;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.4em;
+        .caseta-select {
+            font-size: 9.5px;
+            font-weight: 700;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 2px 4px;
+            margin-top: 2px;
+            width: fit-content;
+            max-width: 100%;
+            outline: none;
+            color: #475569;
             cursor: pointer;
         }
 
-        ::-webkit-scrollbar { width: 5px; }
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 7px;
+            font-size: 13px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-entry { background: #10b981; color: white; } 
+        .btn-exit { background: #ef4444; color: white; } 
+        .btn-late { background: #fef08a; color: #ef4444; border-color: #ef4444; }
+        .btn-absence { background: #ef4444; color: #fef08a; }
+        .btn-complete { background: #94a3b8; color: white; cursor: default; }
+
+        ::-webkit-scrollbar { width: 7px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <!-- Header Fijo e Inmóvil -->
     <header class="fixed-header">
         <div class="flex items-center gap-4 overflow-hidden">
-            <div class="w-1 h-8 bg-fuchsia-600 rounded-full flex-shrink-0"></div>
-            <h2 id="currentDayLabel" class="day-label-large">---</h2>
-        </div>
-
-        <div class="flex items-center gap-6">
-            <!-- Navegación de Fecha -->
-            <div class="date-controls">
-                <button onclick="navigateDate(-1)" class="date-nav-btn" title="Ayer">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <div class="date-picker-wrapper">
-                    <input type="date" id="dateSelector">
-                </div>
-                <button onclick="navigateDate(1)" class="date-nav-btn" title="Mañana">
-                    <i class="fa-solid fa-chevron-right"></i>
+            <div id="headerIndicator" class="w-2 h-8 bg-fuchsia-600 rounded-full flex-shrink-0 transition-all duration-300"></div>
+            <div class="flex flex-col">
+                <h2 id="currentDayLabel" class="day-label-large">---</h2>
+                <button id="btnGoToToday" onclick="goToToday()" class="hidden text-[8px] font-black text-red-500 uppercase tracking-wider text-left hover:underline">
+                    Ir a Hoy
                 </button>
             </div>
+        </div>
 
-            <!-- Leyenda Visual -->
-            <div class="hidden xl:flex items-center gap-4 border-l pl-6 border-slate-200">
-                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-amber-500"></div><span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Mat</span></div>
-                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-blue-500"></div><span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Ves</span></div>
-                <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-purple-500"></div><span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Noc</span></div>
+        <div class="controls-group">
+            <!-- Columna Fecha -->
+            <div class="nav-selector">
+                <button onclick="navigateDate(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="display-box"><input type="date" id="dateSelector"></div>
+                <button onclick="navigateDate(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Columna Turno -->
+            <div class="nav-selector">
+                <button onclick="navigateShift(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="display-box"><span id="shiftLabel" class="display-text">MATUTINO</span></div>
+                <button onclick="navigateShift(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
         </div>
     </header>
 
-    <div id="timelineContainer" class="max-w-7xl mx-auto">
-        <!-- Contenido generado por JS -->
-    </div>
+    <div id="timelineContainer" class="max-w-[1920px] mx-auto px-6"></div>
 
-    <div id="loader" class="flex flex-col items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-fuchsia-600 mb-4"></div>
-        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Sincronizando registros...</p>
+    <div id="loader" class="flex flex-col items-center justify-center py-32">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-6"></div>
+        <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Sincronizando información...</p>
     </div>
 
     <div id="btnLoadMore" class="btn-load-more hidden" onclick="loadMoreDays()">
-        Cargar flujo de días ↓
+        Cargar días siguientes ↓
     </div>
 
     <script type="module">
         import { firebaseConfig } from '../../script.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         const app = initializeApp(firebaseConfig);
@@ -234,45 +359,224 @@
         const storage = getStorage(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
 
-        const casetasPrioridad = ["centro de control", "edison", "recepcion edison", "impulso", "michelena", "simon bolivar", "carranza", "universidad", "rondinero"];
+        const casetasPrioridad = ["Centro de Control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero", "Otro"];
+        const motivosAusentismo = ["Descanso", "Falta", "Vacaciones", "Suspensión", "Incapacidades", "Permiso"];
+        const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+
+        const DB_NAME = "CIC_RegAs_LocalDB";
+        const DB_VERSION = 1;
+        let localDB;
+        let currentShiftIndex = 0;
+        let isNavigating = false; 
+
+        const shiftFilterState = {}; 
+
+        async function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("TrimData")) {
+                        db.createObjectStore("TrimData", { keyPath: "trimId" });
+                    }
+                };
+                request.onsuccess = (e) => { localDB = e.target.result; resolve(localDB); };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function getLocalData(trimId) {
+            return new Promise((resolve) => {
+                if (!localDB) return resolve(null);
+                const transaction = localDB.transaction(["TrimData"], "readonly");
+                const store = transaction.objectStore("TrimData");
+                const request = store.get(trimId);
+                request.onsuccess = () => resolve(request.result?.data || null);
+                request.onerror = () => resolve(null);
+            });
+        }
+
+        async function saveLocalData(trimId, data) {
+            if (!localDB) return;
+            const transaction = localDB.transaction(["TrimData"], "readwrite");
+            const store = transaction.objectStore("TrimData");
+            store.put({ trimId, data, updatedAt: Date.now() });
+        }
 
         let allPersonnel = [];
         let activeDate = new Date();
         activeDate.setHours(12, 0, 0, 0);
         let activeSnapshots = new Map();
-        let dayDataCache = new Map(); // Cache para guardar la data de cada día y permitir filtrado instantáneo
+        let dayDataCache = new Map(); 
         let scrollObserver = null;
-        let currentFilter = 'proximos';
+        let shiftObserver = null;
+        let currentFilter = 'todos';
 
         const dom = {
             timeline: document.getElementById('timelineContainer'),
             loader: document.getElementById('loader'),
             dateInput: document.getElementById('dateSelector'),
             dayLabel: document.getElementById('currentDayLabel'),
-            loadMore: document.getElementById('btnLoadMore')
+            shiftLabel: document.getElementById('shiftLabel'),
+            loadMore: document.getElementById('btnLoadMore'),
+            indicator: document.getElementById('headerIndicator'),
+            btnToday: document.getElementById('btnGoToToday')
         };
 
         const updateMainHeader = (date = activeDate) => {
+            const today = new Date();
+            today.setHours(12, 0, 0, 0);
+            
+            const isToday = date.getFullYear() === today.getFullYear() && 
+                            date.getMonth() === today.getMonth() && 
+                            date.getDate() === today.getDate();
+
             dom.dayLabel.textContent = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
             dom.dateInput.value = date.toISOString().split('T')[0];
+
+            if (isToday) {
+                dom.indicator.style.backgroundColor = '#d946ef';
+                dom.btnToday.classList.add('hidden');
+            } else {
+                dom.indicator.style.backgroundColor = '#ef4444';
+                dom.btnToday.classList.remove('hidden');
+            }
+        };
+
+        window.toggleShiftTool = (dateId, shift, tool) => {
+            const key = `${dateId}_${shift}`;
+            if (!shiftFilterState[key]) shiftFilterState[key] = { hideComplete: false, highlightDouble: false };
+            
+            if (tool === 'hideComplete') {
+                shiftFilterState[key].hideComplete = !shiftFilterState[key].hideComplete;
+            } else if (tool === 'highlightDouble') {
+                shiftFilterState[key].highlightDouble = !shiftFilterState[key].highlightDouble;
+                const btn = document.getElementById(`double-btn-${shift}-${dateId}`);
+                if (btn) btn.classList.toggle('active', shiftFilterState[key].highlightDouble);
+            }
+            
+            const cache = dayDataCache.get(dateId);
+            if (cache) updateDayGrid(dateId, cache.data, cache.date);
+        };
+
+        window.navigateShift = (direction) => {
+            if (isNavigating) return;
+            isNavigating = true; 
+            
+            let nextIndex = currentShiftIndex + direction;
+            let targetDate = new Date(activeDate);
+            let dayChanged = false;
+
+            if (nextIndex < 0) {
+                targetDate.setDate(targetDate.getDate() - 1);
+                nextIndex = shifts.length - 1;
+                dayChanged = true;
+            } else if (nextIndex >= shifts.length) {
+                targetDate.setDate(targetDate.getDate() + 1);
+                nextIndex = 0;
+                dayChanged = true;
+            }
+
+            const shiftName = shifts[nextIndex];
+            const dateId = `${String(targetDate.getDate()).padStart(2, '0')}${String(targetDate.getMonth() + 1).padStart(2, '0')}${targetDate.getFullYear()}`;
+            const drawerId = shiftName === 'matutino' ? 'mat' : shiftName === 'vespertino' ? 'ves' : shiftName === 'nocturno' ? 'noc' : 'aus';
+            
+            const target = document.getElementById(`${drawerId}-${dateId}`);
+            const headerHeight = 63; 
+            
+            if (target) {
+                const rect = target.getBoundingClientRect();
+                const absoluteTop = rect.top + window.pageYOffset;
+                
+                window.scrollTo({
+                    top: absoluteTop - headerHeight,
+                    behavior: 'smooth'
+                });
+                
+                currentShiftIndex = nextIndex;
+                dom.shiftLabel.textContent = shiftName.toUpperCase();
+                
+                if (dayChanged) {
+                    activeDate = new Date(targetDate);
+                    updateMainHeader(activeDate);
+                }
+                
+                setTimeout(() => { isNavigating = false; }, 800);
+            } else {
+                activeDate = targetDate;
+                currentShiftIndex = nextIndex;
+                startTimeline().then(() => {
+                    setTimeout(() => {
+                        const newTarget = document.getElementById(`${drawerId}-${dateId}`);
+                        if (newTarget) {
+                            const rect = newTarget.getBoundingClientRect();
+                            const absoluteTop = rect.top + window.pageYOffset;
+                            window.scrollTo({
+                                top: absoluteTop - headerHeight,
+                                behavior: 'instant'
+                            });
+                        }
+                        isNavigating = false;
+                    }, 250);
+                });
+            }
+        };
+
+        window.goToToday = () => {
+            activeDate = new Date();
+            activeDate.setHours(12, 0, 0, 0);
+            startTimeline();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         const initScrollObserver = () => {
             if (scrollObserver) scrollObserver.disconnect();
+            if (shiftObserver) shiftObserver.disconnect();
+
+            const headerHeight = 63;
+
+            // Observador para actualización de fecha y color del indicador
             scrollObserver = new IntersectionObserver((entries) => {
+                if (isNavigating) return;
                 entries.forEach(entry => {
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
+                    // Detección cuando el tope de la sección entra en el área "visual" bajo el header
+                    if (entry.isIntersecting) {
                         const dateStr = entry.target.dataset.date;
                         if (dateStr) {
                             const dateObj = new Date(dateStr + "T12:00:00");
-                            updateMainHeader(dateObj);
+                            // Si el elemento está lo suficientemente arriba (cerca del header)
+                            if (entry.boundingClientRect.top < headerHeight + 50) {
+                                if (activeDate.getTime() !== dateObj.getTime()) {
+                                    activeDate = new Date(dateObj);
+                                    updateMainHeader(dateObj);
+                                }
+                            }
                         }
                     }
                 });
             }, {
                 root: null,
-                rootMargin: '-81px 0px -80% 0px',
-                threshold: [0, 0.1, 0.2]
+                // Observamos una franja muy pequeña en el tope para disparar el cambio
+                rootMargin: `-${headerHeight}px 0px -90% 0px`, 
+                threshold: 0
+            });
+
+            // Observador para actualización automática del selector de turnos
+            shiftObserver = new IntersectionObserver((entries) => {
+                if (isNavigating) return;
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const shiftType = entry.target.dataset.shift;
+                        if (shiftType && entry.boundingClientRect.top < headerHeight + 100) {
+                            currentShiftIndex = shifts.indexOf(shiftType);
+                            dom.shiftLabel.textContent = shiftType.toUpperCase();
+                        }
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: `-${headerHeight}px 0px -85% 0px`,
+                threshold: 0
             });
         };
 
@@ -284,7 +588,8 @@
                     uid, socioId: String(d.socioId || ''), nombre: d.nombre || 'S/N',
                     photo: d.photo || null,
                     puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
-                    status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase()
+                    status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase(),
+                    casetaDefault: d.operativa?.caseta || ""
                 })).filter(u => u.status !== 'baja' && u.socioId);
             }
         }
@@ -302,164 +607,308 @@
             } catch (err) {}
         }
 
-        function startTimeline() {
+        async function startTimeline() {
             activeSnapshots.forEach(unsub => unsub());
             activeSnapshots.clear();
             dayDataCache.clear();
-            
             dom.timeline.innerHTML = '';
             updateMainHeader();
-            initScrollObserver();
             
             for(let i=0; i < 5; i++) {
                 const date = new Date(activeDate);
                 date.setDate(date.getDate() + i);
-                renderDaySection(date);
+                await renderDaySection(date);
             }
             dom.loader.classList.add('hidden');
             dom.loadMore.classList.remove('hidden');
+            initScrollObserver();
         }
 
-        function renderDaySection(date) {
+        async function renderDaySection(date) {
             const iso = date.toISOString().split('T')[0];
             const dateId = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
             const trimId = `Trim${Math.ceil((date.getMonth() + 1) / 3)}-${date.getFullYear()}`;
-            const dayText = date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
             
             const section = document.createElement('div');
             section.className = 'day-section';
             section.id = `section-${dateId}`;
             section.dataset.date = iso;
+
             section.innerHTML = `
-                <div class="mb-4 flex items-center gap-3">
-                    <span class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">${dayText}</span>
+                <div class="mb-9 flex items-center gap-4">
+                    <span class="text-[14px] font-black text-slate-300 uppercase tracking-[0.2em]">${date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}</span>
                     <div class="h-px bg-slate-100 flex-1"></div>
                 </div>
-                <div id="grid-${dateId}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
+                <div id="drawers-${dateId}">
+                    ${shifts.map(shift => {
+                        const shiftLabel = shift === 'ausentismo' ? 'Ausentismo' : shift.charAt(0).toUpperCase() + shift.slice(1);
+                        const dotColor = shift === 'matutino' ? 'bg-yellow-200' : shift === 'vespertino' ? 'bg-blue-400' : shift === 'nocturno' ? 'bg-blue-900' : 'bg-red-500';
+                        const drawerId = shift === 'matutino' ? 'mat' : shift === 'vespertino' ? 'ves' : shift === 'nocturno' ? 'noc' : 'aus';
+                        return `
+                            <div class="shift-drawer" id="${drawerId}-${dateId}" data-shift="${shift}">
+                                <div class="shift-header">
+                                    <div class="flex items-center gap-3">
+                                        <div class="dot w-2 h-2 rounded-full ${dotColor}"></div> ${shiftLabel}
+                                    </div>
+                                    <div class="shift-tools">
+                                        <button onclick="openAddPanel('${dateId}', '${shift}')" title="Agregar Elemento" class="header-add-btn">
+                                            <i class="fa-solid fa-plus text-xs"></i>
+                                        </button>
+                                        <button id="double-btn-${shift}-${dateId}" onclick="toggleShiftTool('${dateId}', '${shift}', 'highlightDouble')" title="Identificar Doble Turno" class="double-shift-btn">
+                                            <i class="fa-solid fa-clone mr-1"></i> DOBLE
+                                        </button>
+                                        <label class="tool-check-label" title="Ocultar elementos con turno completo">
+                                            <input type="checkbox" onchange="toggleShiftTool('${dateId}', '${shift}', 'hideComplete')">
+                                            <div class="tool-check-box"><i class="fa-solid fa-check"></i></div>
+                                            <span class="text-[8px] font-black">OCULTAR COMPLETOS</span>
+                                        </label>
+                                        <button id="wa-btn-${shift}-${dateId}" onclick="openWaPanel('${dateId}', '${shift}')" title="Abrir Reporte Wa" class="wa-btn-header text-slate-300 hover:opacity-80 transition-all px-2">
+                                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 grid-container" 
+                                    data-dateid="${dateId}" data-shift="${shift}"></div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
             `;
             dom.timeline.appendChild(section);
 
+            section.querySelectorAll('.grid-container').forEach(grid => {
+                grid.ondragover = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
+                grid.ondragleave = (e) => { e.currentTarget.classList.remove('drag-over'); };
+                grid.ondrop = (e) => handleDrop(e, grid);
+            });
+
+            section.querySelectorAll('.shift-drawer').forEach(drawer => {
+                if (shiftObserver) shiftObserver.observe(drawer);
+            });
+
             if (scrollObserver) scrollObserver.observe(section);
+
+            const localData = await getLocalData(trimId);
+            if (localData) {
+                const dayData = localData[dateId] || {};
+                dayDataCache.set(dateId, { data: dayData, date: date, trimId: trimId }); 
+                updateDayGrid(dateId, dayData, date);
+            }
 
             const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
             const unsub = onSnapshot(attRef, (snap) => {
-                const dayData = snap.exists() ? (snap.data()[dateId] || {}) : {};
-                dayDataCache.set(dateId, { data: dayData, date: date }); // Guardar en cache
-                updateDayGrid(dateId, dayData, date);
-            });
+                if (snap.exists()) {
+                    const fullData = snap.data();
+                    saveLocalData(trimId, fullData);
+                    const dayData = fullData[dateId] || {};
+                    dayDataCache.set(dateId, { data: dayData, date: date, trimId: trimId }); 
+                    updateDayGrid(dateId, dayData, date);
+                }
+            }, (err) => console.error("Error en snapshot:", err));
             activeSnapshots.set(dateId, unsub);
         }
 
-        function updateDayGrid(dateId, dayData, dateObj) {
-            const grid = document.getElementById(`grid-${dateId}`);
-            if (!grid) return;
-
-            // Filtrar según el filtro activo (RegAs Signal)
-            let filtered = [];
-            if (currentFilter === 'proximos') {
-                filtered = allPersonnel.filter(u => dayData[u.socioId]);
-            } else {
-                filtered = allPersonnel.filter(u => dayData[u.socioId] && dayData[u.socioId][currentFilter]);
-            }
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-8 text-center text-[10px] font-bold text-slate-200 uppercase tracking-widest">Sin registros encontrados</div>`;
-                return;
-            }
-
-            const getPriority = (id) => {
-                const e = dayData[id];
-                let shiftPrio = 5, caseta = "";
-                if (e.matutino) { shiftPrio = 1; caseta = e.matutino.Caseta; }
-                else if (e.vespertino) { shiftPrio = 2; caseta = e.vespertino.Caseta; }
-                else if (e.nocturno) { shiftPrio = 3; caseta = e.nocturno.Caseta; }
-                else if (e.ausentismo) { shiftPrio = 4; }
-
-                let casetaPrio = 99;
-                if (caseta) {
-                    const idx = casetasPrioridad.findIndex(c => caseta.toLowerCase().includes(c));
-                    if (idx !== -1) casetaPrio = idx;
-                }
-                return { shiftPrio, casetaPrio };
-            };
-
-            filtered.sort((a, b) => {
-                const pA = getPriority(a.socioId), pB = getPriority(b.socioId);
-                if (pA.shiftPrio !== pB.shiftPrio) return pA.shiftPrio - pB.shiftPrio;
-                if (pA.casetaPrio !== pB.casetaPrio) return pA.casetaPrio - pB.casetaPrio;
-                return a.nombre.localeCompare(b.nombre);
-            });
-
-            grid.innerHTML = '';
-            filtered.forEach(person => grid.appendChild(createMiniCard(person, dayData[person.socioId], dateObj)));
+        async function handleDrop(e, grid) {
+            e.preventDefault();
+            grid.classList.remove('drag-over');
+            const socioId = e.dataTransfer.getData('socioId');
+            if (!socioId) return;
+            const { dateid, shift } = grid.dataset;
+            const cache = dayDataCache.get(dateid);
+            if (!cache) return;
+            const person = allPersonnel.find(p => p.socioId === socioId);
+            const defaultCaseta = person?.casetaDefault || "";
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+            const updateObj = {};
+            const path = `${dateid}.${socioId}.${shift}`;
+            if (shift === 'ausentismo') updateObj[`${path}.motivo`] = "Descanso";
+            else { updateObj[`${path}.Caseta`] = defaultCaseta; updateObj[`${path}.entrada_planificada`] = ""; }
+            try { await updateDoc(docRef, updateObj); } catch (err) { console.error(err); }
         }
 
-        function createMiniCard(person, entry, dateObj) {
+        function updateDayGrid(dateId, dayData, dateObj) {
+            const today = new Date();
+            const isToday = dateObj.getFullYear() === today.getFullYear() && 
+                            dateObj.getMonth() === today.getMonth() && 
+                            dateObj.getDate() === today.getDate();
+            
+            const drawersMap = { matutino: 'mat', vespertino: 'ves', nocturno: 'noc', ausentismo: 'aus' };
+
+            shifts.forEach(shiftKey => {
+                const drawerKey = drawersMap[shiftKey];
+                const drawer = document.getElementById(`${drawerKey}-${dateId}`);
+                const grid = document.querySelector(`#${drawerKey}-${dateId} .grid-container`);
+                if(!grid) return;
+                
+                const filterKey = `${dateId}_${shiftKey}`;
+                const config = shiftFilterState[filterKey] || { hideComplete: false, highlightDouble: false };
+
+                let list = allPersonnel.filter(person => {
+                    const entry = dayData[person.socioId];
+                    if (!entry || !entry[shiftKey]) return false;
+
+                    if (config.hideComplete && entry[shiftKey].entrada_real && entry[shiftKey].salida_real) {
+                        return false;
+                    }
+
+                    if (currentFilter === 'proximos') {
+                        if (!isToday || shiftKey === 'ausentismo') return false;
+                        const planTimeStr = entry[shiftKey].entrada_planificada || "";
+                        const planTime = planTimeStr.split(':').map(Number);
+                        if (planTime.length !== 2) return false;
+                        const nowMinutes = today.getHours() * 60 + today.getMinutes();
+                        const planMinutes = planTime[0] * 60 + planTime[1];
+                        return (nowMinutes >= planMinutes - 60 && nowMinutes <= planMinutes + 30);
+                    } else if (currentFilter !== 'todos') return currentFilter === shiftKey;
+                    return true;
+                });
+
+                // Aplicar visibilidad del drawer según el filtro activo
+                if (drawer) {
+                    if (currentFilter === 'todos') {
+                        drawer.style.display = 'block';
+                    } else if (currentFilter === 'proximos') {
+                        drawer.style.display = (shiftKey !== 'ausentismo' && list.length > 0) ? 'block' : 'none';
+                    } else {
+                        drawer.style.display = (shiftKey === currentFilter) ? 'block' : 'none';
+                    }
+                }
+
+                list.sort((a, b) => {
+                    if (shiftKey === 'ausentismo') return a.nombre.localeCompare(b.nombre);
+                    const idxA = casetasPrioridad.indexOf(dayData[a.socioId][shiftKey].Caseta || "Otro");
+                    const idxB = casetasPrioridad.indexOf(dayData[b.socioId][shiftKey].Caseta || "Otro");
+                    if (idxA !== idxB) return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+                    return a.nombre.localeCompare(b.nombre);
+                });
+
+                const waBtn = document.getElementById(`wa-btn-${shiftKey}-${dateId}`);
+                if (waBtn) {
+                    const everyoneIn = list.length > 0 && list.every(p => !!dayData[p.socioId][shiftKey].entrada_real);
+                    if (everyoneIn) {
+                        waBtn.classList.remove('text-slate-300');
+                        waBtn.classList.add('text-green-500');
+                    } else {
+                        waBtn.classList.remove('text-green-500');
+                        waBtn.classList.add('text-slate-300');
+                    }
+                }
+
+                grid.innerHTML = '';
+                list.forEach(person => grid.appendChild(createMiniCard(person, dayData[person.socioId], shiftKey, dateObj, dateId, isToday, config)));
+            });
+        }
+
+        function createMiniCard(person, entry, activeShift, dateObj, dateId, isToday, config) {
             const div = document.createElement('div');
             div.className = 'user-card-mini';
-            let dotClass = 'dot-ausentismo';
-            if (entry.matutino) dotClass = 'dot-matutino';
-            else if (entry.vespertino) dotClass = 'dot-vespertino';
-            else if (entry.nocturno) dotClass = 'dot-nocturno';
+            
+            const shiftsCount = shifts.filter(s => entry[s] && s !== 'ausentismo').length;
+            const isDouble = shiftsCount > 1;
+            
+            if (config.highlightDouble && isDouble) {
+                div.classList.add('is-double');
+            }
 
-            const iso = dateObj.toISOString().split('T')[0];
             const avatar = `https://ui-avatars.com/api/?name=${person.nombre}&background=f1f5f9&color=64748b`;
+            const iso = dateObj.toISOString().split('T')[0];
+            const shiftInfo = entry[activeShift] || {};
+
+            let actionButtonsHtml = '';
+            if (isToday) {
+                const now = new Date();
+                const nowM = now.getHours() * 60 + now.getMinutes();
+                const planStr = shiftInfo.entrada_planificada || "";
+                const plan = planStr.split(':').map(Number);
+                const hasIn = !!shiftInfo.entrada_real, hasOut = !!shiftInfo.salida_real;
+
+                if (hasIn && hasOut) actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
+                else if (hasIn) actionButtonsHtml = `<button class="action-btn btn-exit" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'salida')"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>`;
+                else if (activeShift !== 'ausentismo') {
+                    const isLate = plan.length === 2 && nowM > (plan[0] * 60 + plan[1]);
+                    if (isLate) actionButtonsHtml = `<div class="flex gap-1.5"><button class="action-btn btn-late" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada', true)"><i class="fa-solid fa-business-time"></i></button><button class="action-btn btn-absence" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'falta')"><i class="fa-solid fa-user-times"></i></button></div>`;
+                    else actionButtonsHtml = `<button class="action-btn btn-entry" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada')"><i class="fa-solid fa-door-open"></i></button>`;
+                }
+            } else if (shiftInfo.entrada_real && shiftInfo.salida_real) actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
+
+            let stripHtml = '';
+            shifts.forEach(s => { if(entry[s]) stripHtml += `<div class="dot-indicator bg-${s}"></div>`; });
 
             div.innerHTML = `
-                <div class="photo-container shadow-sm">
+                ${isDouble && config.highlightDouble ? `<div class="double-badge" title="Doble Turno"><i class="fa-solid fa-clone"></i></div>` : ''}
+                <div class="photo-container shadow-sm" onclick="openDetails('${person.uid}', '${iso}')">
                     <img src="${avatar}" onerror="this.src='${avatar}'">
-                    <div class="shift-indicator ${dotClass}"></div>
+                    <div class="indicators-strip">${stripHtml}</div>
                 </div>
-                <div class="overflow-hidden leading-tight">
-                    <h4 class="text-[10px] font-black uppercase truncate text-slate-800">${person.nombre}</h4>
-                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter truncate">${person.puesto}</p>
+                <div class="info-group">
+                    <h4 class="text-[11px] font-black uppercase truncate text-slate-800 leading-none">${person.nombre}</h4>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">${person.puesto}</p>
+                    ${activeShift === 'ausentismo' ? `
+                        <select class="caseta-select" onchange="updateMotivo('${person.socioId}', '${dateId}', this.value)">
+                            ${motivosAusentismo.map(m => `<option value="${m}" ${ (shiftInfo.motivo||shiftInfo.Motivo) === m ? 'selected' : ''}>${m}</option>`).join('')}
+                        </select>
+                    ` : `
+                        <select class="caseta-select" onchange="updateCaseta('${person.socioId}', '${activeShift}', '${dateId}', this.value)">
+                            ${casetasPrioridad.map(c => `<option value="${c}" ${shiftInfo.Caseta === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                    `}
                 </div>
+                <div class="flex-shrink-0">${actionButtonsHtml}</div>
             `;
-            
-            div.onclick = () => window.parent.postMessage({ 
-                action: 'openRightPanel', 
-                content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${person.uid}&date=${iso}&tab=gestion" class="w-full h-full border-none"></iframe>` 
-            }, '*');
-
             if (person.photo) resolveImage(person.photo, div.querySelector('img'));
             return div;
         }
 
-        window.navigateDate = (offset) => {
-            activeDate.setDate(activeDate.getDate() + offset);
-            startTimeline();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.registerAttendance = async (socioId, shift, dateId, type, isLate = false) => {
+            const cache = dayDataCache.get(dateId);
+            if (!cache) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+            const timeStr = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const updateObj = {};
+            if (type === 'falta') { updateObj[`${dateId}.${socioId}.ausentismo`] = { motivo: "Falta", originShift: shift }; updateObj[`${dateId}.${socioId}.${shift}`] = null; }
+            else { updateObj[`${dateId}.${socioId}.${shift}.${type === 'entrada' ? 'entrada_real' : 'salida_real'}`] = timeStr; if (isLate) updateObj[`${dateId}.${socioId}.${shift}.retardo`] = true; }
+            try { await updateDoc(docRef, updateObj); } catch (err) { console.error(err); }
         };
 
-        window.loadMoreDays = () => {
-            const offset = dayDataCache.size;
-            const lastDate = new Date(activeDate);
-            lastDate.setDate(lastDate.getDate() + offset);
-            for(let i=0; i < 5; i++) {
-                const date = new Date(lastDate);
-                date.setDate(date.getDate() + i);
-                renderDaySection(date);
-            }
+        window.openAddPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Agregar_Elemento.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
+        
+        window.openWaPanel = (dateId, shift) => {
+            const btn = document.getElementById(`wa-btn-${shift}-${dateId}`);
+            const includeTime = (btn && btn.classList.contains('text-green-500')) ? 'true' : 'false';
+            window.parent.postMessage({ 
+                action: 'openRightPanel', 
+                content: `<iframe src="../Complementos/RegAs/Wa.html?dateId=${dateId}&shift=${shift}&includeTime=${includeTime}" class="w-full h-full border-none"></iframe>` 
+            }, '*');
         };
 
-        dom.dateInput.onchange = (e) => {
-            activeDate = new Date(e.target.value + "T12:00:00");
-            startTimeline();
+        window.openDetails = (uid, iso) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&date=${iso}&tab=gestion" class="w-full h-full border-none"></iframe>` }, '*');
+
+        window.updateCaseta = async (socioId, shift, dateId, newValue) => {
+            const cache = dayDataCache.get(dateId);
+            if (!cache) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+            try { await updateDoc(docRef, { [`${dateId}.${socioId}.${shift}.Caseta`]: newValue }); } catch (err) { console.error(err); }
         };
 
-        // --- Escuchar filtros del ribbon superior ---
+        window.updateMotivo = async (socioId, dateId, newValue) => {
+            const cache = dayDataCache.get(dateId);
+            if (!cache) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+            try { await updateDoc(docRef, { [`${dateId}.${socioId}.ausentismo.motivo`]: newValue }); } catch (err) { console.error(err); }
+        };
+
+        window.navigateDate = (offset) => { activeDate.setDate(activeDate.getDate() + offset); startTimeline(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        dom.dateInput.onchange = (e) => { activeDate = new Date(e.target.value + "T12:00:00"); startTimeline(); };
+
         window.addEventListener('message', (e) => {
             if (e.data?.action === 'filter') {
                 currentFilter = e.data.type;
-                // Refrescar todas las secciones cargadas con el nuevo filtro
-                dayDataCache.forEach((cache, dateId) => {
-                    updateDayGrid(dateId, cache.data, cache.date);
-                });
+                dayDataCache.forEach((cache, dateId) => updateDayGrid(dateId, cache.data, cache.date));
             }
         });
 
         onAuthStateChanged(auth, async (u) => { 
-            if (u) { await fetchPersonnel(); startTimeline(); } 
+            if (u) { await initIndexedDB(); await fetchPersonnel(); startTimeline(); } 
             else if (typeof __initial_auth_token !== 'undefined') await signInWithCustomToken(auth, __initial_auth_token);
             else await signInAnonymously(auth);
         });
