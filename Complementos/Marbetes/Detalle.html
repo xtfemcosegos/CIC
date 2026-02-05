@@ -95,7 +95,7 @@
         
         .save-footer { 
             background: white; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; 
-            display: none; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
         }
 
         #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -140,7 +140,7 @@
     </div>
 
     <div id="detail-content">
-        <div id="sticky-header-container" class="sticky-top-section">
+        <div id="sticky-header-container" class="sticky-top-section shadow-sm">
             <div class="bg-green-gradient px-5 py-3 text-white flex items-center overflow-hidden">
                 <!-- Visualización Marbete -->
                 <div id="visual-marbete" class="marbete-vertical bg-white text-slate-900">
@@ -154,8 +154,9 @@
                     <span class="text-[7px] font-black uppercase tracking-[0.2em] opacity-50 block">Expediente de Usuario</span>
                     <h1 id="header-nombre" class="text-lg font-black tracking-tight uppercase truncate">---</h1>
                 </div>
-                <button onclick="closePanel()" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+                <!-- BOTÓN DE CIERRE EN ENCABEZADO -->
+                <button onclick="closePanel()" class="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl transition-all active:scale-95" title="Cerrar Panel">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
@@ -174,19 +175,19 @@
 
             <div class="px-5 py-2">
                 <div class="grid grid-cols-4 gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-                    <a id="btn-call" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600">
+                    <a id="btn-call" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600 shadow-sm">
                         <i class="fa-solid fa-phone"></i>
                         Llamar
                     </a>
-                    <a id="btn-whatsapp" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600">
+                    <a id="btn-whatsapp" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600 shadow-sm">
                         <i class="fa-brands fa-whatsapp"></i>
                         W.App
                     </a>
-                    <a id="btn-email" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600">
+                    <a id="btn-email" href="#" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600 shadow-sm">
                         <i class="fa-solid fa-envelope"></i>
                         E-Mail
                     </a>
-                    <a id="btn-teams" href="#" target="_blank" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600">
+                    <a id="btn-teams" href="#" target="_blank" class="action-btn bg-white text-slate-500 border-slate-100 hover:text-emerald-600 shadow-sm">
                         <i class="fa-solid fa-users"></i>
                         Teams
                     </a>
@@ -253,14 +254,16 @@
             <input type="hidden" id="field-PartId">
         </div>
 
-        <div id="excel-save-footer" class="save-footer">
-            <button onclick="handleExcelSave()" id="btn-save-excel" class="w-full bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] py-4 rounded-2xl shadow-xl hover:bg-emerald-800 transition-all active:scale-[0.98]">Subir a Excel Maestro (Sincronizar)</button>
+        <!-- FOOTER: Botones de Sincro y Cierre -->
+        <div class="save-footer">
+            <button onclick="closePanel()" class="bg-slate-100 text-slate-600 font-black uppercase tracking-widest text-[9px] py-4 rounded-2xl border border-slate-200 hover:bg-slate-200 transition-all active:scale-[0.98]">Cerrar Detalle</button>
+            <button onclick="handleExcelSave()" id="btn-save-excel" class="bg-slate-900 text-white font-black uppercase tracking-widest text-[9px] py-4 rounded-2xl shadow-lg hover:bg-emerald-800 transition-all active:scale-[0.98]">Subir a Excel</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const API_EXCEL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ef2d2f799b76471f9d826c4da323c548/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Dm2VAKxKYse9NcZL_qdi6DbOAPEBmdTZKaslmg67mVE";
@@ -282,6 +285,24 @@
         let currentItem = null;
         let autoSaveTimer = null;
         let currentUser = null;
+
+        /**
+         * Convierte serie de Excel a String DD/MM/YYYY ajustado a Mexico City (UTC-6)
+         */
+        function processExcelDate(val) {
+            if (!val || isNaN(val) || typeof val === 'string') return val || '---';
+            try {
+                const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                return new Intl.DateTimeFormat('es-MX', {
+                    timeZone: 'America/Mexico_City',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }).format(date);
+            } catch (e) { 
+                return val; 
+            }
+        }
 
         window.closePanel = () => {
             window.parent.postMessage({ action: 'closeRightPanel' }, '*');
@@ -365,8 +386,6 @@
                         statusBar.className = "sync-status-bar sync-done";
                         statusDot.classList.add('hidden');
                         
-                        document.getElementById('excel-save-footer').style.display = 'block';
-                        
                         setTimeout(() => {
                             if (statusBar.classList.contains('sync-done')) {
                                 statusBar.className = "sync-status-bar";
@@ -434,8 +453,7 @@
                             await updateDoc(docRef, { items: items });
                         }
                     }
-                    document.getElementById('excel-save-footer').style.display = 'none';
-                    updateBgStatus("Excel Maestro Actualizado");
+                    alert("Excel Maestro Actualizado");
                 } else {
                     throw new Error("Error en servidor de Excel");
                 }
@@ -480,18 +498,14 @@
             });
 
             document.getElementById('field-PartId').value = item.__docId || '';
-            document.getElementById('tag-fecha-solicitud').innerText = item["Fecha de solicitud"] || '---';
-            document.getElementById('tag-fecha-asignacion').innerText = item["Fecha de asignación"] || '---';
-
-            const footer = document.getElementById('excel-save-footer');
-            footer.style.display = (item.excel_sync === false) ? 'block' : 'none';
+            document.getElementById('tag-fecha-solicitud').innerText = processExcelDate(item["Fecha de solicitud"]);
+            document.getElementById('tag-fecha-asignacion').innerText = processExcelDate(item["Fecha de asignación"]);
 
             window.syncHeader();
 
             const rawTel = String(item.Teléfono || "");
             const cleanT = rawTel.replace(/\D/g, '');
             const email = item.Correo || "";
-            
             const formattedT = cleanT.length === 10 ? '52' + cleanT : cleanT;
 
             document.getElementById('btn-call').href = cleanT ? `tel:${cleanT}` : '#';
@@ -500,7 +514,6 @@
             document.getElementById('btn-teams').href = email ? `https://teams.microsoft.com/l/chat/0/0?users=${email}` : '#';
         }
 
-        // --- CARGA INICIAL SINCRONIZADA ---
         const immediateData = window.__CURRENT_MARBETE || (window.parent && window.parent.__CURRENT_MARBETE);
         if (immediateData) {
             loadForm(immediateData);
@@ -512,7 +525,10 @@
 
         onAuthStateChanged(auth, u => { 
             currentUser = u; 
-            if (!u) signInAnonymously(auth).catch(console.error); 
+            if (!u) {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) signInWithCustomToken(auth, __initial_auth_token);
+                else signInAnonymously(auth);
+            }
         });
     </script>
 </body>

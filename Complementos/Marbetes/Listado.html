@@ -116,26 +116,19 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteField, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
-        authDomain: "cic6-pp-web.firebaseapp.com",
-        projectId: "cic6-pp-web",
-        storageBucket: "cic6-pp-web.firebasestorage.app",
-        messagingSenderId: "248659087868",
-        appId: "1:248659087868:web:a277ef700d83c7f1d22279"
-    };
+    import { firebaseConfig } from '../../script.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = 'cic-71';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
     const PA_API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fe7a46f4aa314e7a993bc66528b0d03b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mTepaYfQc_U2RF4I-tX0PNhrniM2OgcErzU9gDtA0fw";
 
     const ROW_HEIGHT = 52;
-    let allData = []; // Fuente de verdad actual
+    let allData = []; 
     let filteredData = [];
     let currentKpiFilter = "Todos";
     let isProcessing = false;
@@ -152,25 +145,16 @@
         btnExecuteDelete: document.getElementById('btn-execute-delete')
     };
 
-    /**
-     * Convierte serie de Excel a String DD/MM/YYYY ajustado a Mexico City (UTC-6)
-     */
     function processExcelDate(val) {
         if (!val || isNaN(val) || typeof val === 'string') return val || '';
         try {
             const date = new Date(Math.round((val - 25569) * 86400 * 1000));
             return new Intl.DateTimeFormat('es-MX', {
-                timeZone: 'America/Mexico_City',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
+                timeZone: 'America/Mexico_City', day: '2-digit', month: '2-digit', year: 'numeric'
             }).format(date);
         } catch (e) { return val; }
     }
 
-    /**
-     * Normaliza un objeto de marbete procesando sus fechas
-     */
     function normalizeMarbete(item, docId = null) {
         const normalized = { ...item };
         if (docId) normalized.__docId = docId;
@@ -223,7 +207,7 @@
                 finishInitialLoad();
                 return;
             }
-        } catch (e) { console.warn("Firebase offline"); }
+        } catch (e) { console.warn("Firebase falló:", e); }
 
         updateBgStatus("Buscando en Local...");
         const cached = await getLocal();
@@ -231,7 +215,8 @@
             allData = cached; 
             updateBgStatus("Usando Caché Local");
             finishInitialLoad();
-            uploadToFirebase(allData); 
+            // RE-SINCRONIZACIÓN INMEDIATA: Si cargamos local, buscamos Excel para ver si cambió algo.
+            backgroundWorker(); 
             return;
         }
 
@@ -253,6 +238,7 @@
             if (excelMap.size > 0) {
                 allData = Array.from(excelMap.values());
                 updateBgStatus("Excel Sincronizado");
+                // SUBIR A FIREBASE (Aseguramos la nube)
                 await uploadToFirebase(allData);
                 await saveLocal(allData);
             }
@@ -272,7 +258,7 @@
     async function backgroundWorker() {
         if (isProcessing) return;
         isProcessing = true;
-        updateBgStatus("Verificando Cambios...");
+        updateBgStatus("Sincronizando Excel...");
 
         try {
             const res = await fetch(PA_API_URL, { method: 'POST' });
@@ -280,40 +266,56 @@
             const latestExcel = (data.result || []).map(i => normalizeMarbete(i));
             
             let hasChanges = false;
-            // Crear mapa actual para comparación rápida
-            const masterMap = new Map(allData.map(i => [i.IDFila, i]));
+            const currentMap = new Map(allData.map(i => [i.IDFila, i]));
 
             latestExcel.forEach(excelItem => {
-                const existingItem = masterMap.get(excelItem.IDFila);
-                // Si no existe o si el contenido cambió, actualizamos el mapa
-                if (!existingItem || JSON.stringify(existingItem) !== JSON.stringify(excelItem)) {
-                    masterMap.set(excelItem.IDFila, excelItem);
+                const existing = currentMap.get(excelItem.IDFila);
+                if (!existing || JSON.stringify(existing) !== JSON.stringify(excelItem)) {
+                    currentMap.set(excelItem.IDFila, excelItem);
                     hasChanges = true;
                 }
             });
 
             if (hasChanges) {
-                updateBgStatus("Actualizando...");
-                allData = Array.from(masterMap.values());
+                updateBgStatus("Actualizando Repositorio...");
+                allData = Array.from(currentMap.values());
+                // Aseguramos que la Nube y el Local reciban los nuevos datos
                 await uploadToFirebase(allData);
                 await saveLocal(allData);
                 applyFilters();
                 updateKPIs();
+                updateBgStatus("Sistema al día");
+            } else {
+                updateBgStatus("Listo");
             }
-            updateBgStatus("Sistema al día");
         } catch (e) {
-            updateBgStatus("Error Worker");
+            console.error("Worker error:", e);
+            updateBgStatus("Error de Sincro");
         } finally {
             isProcessing = false;
         }
     }
 
     async function uploadToFirebase(items) {
+        if (!items || items.length === 0) return;
+        updateBgStatus("Escribiendo en Nube...");
         const chunkSize = 1000;
-        for (let i = 0; i < items.length; i += chunkSize) {
+        const totalItems = items.length;
+        
+        const promises = [];
+        for (let i = 0; i < totalItems; i += chunkSize) {
             const part = Math.floor(i / chunkSize) + 1;
             const chunk = items.slice(i, i + chunkSize);
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', `Part${part}`), { items: chunk });
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', `Part${part}`);
+            promises.push(setDoc(docRef, { items: chunk, lastUpdate: new Date().toISOString() }));
+        }
+        
+        try {
+            await Promise.all(promises);
+            updateBgStatus("Nube Actualizada");
+        } catch (err) {
+            console.error("Error subiendo a Firebase:", err);
+            updateBgStatus("Fallo en Nube");
         }
     }
 
@@ -330,15 +332,11 @@
         const dateType = document.getElementById('date-type').value;
         const startVal = document.getElementById('date-start').value;
         const endVal = document.getElementById('date-end').value;
-        
         const startLimit = startVal ? new Date(startVal + "T00:00:00") : null;
         const endLimit = endVal ? new Date(endVal + "T23:59:59") : null;
 
         filteredData = allData.filter(item => {
-            // Filtro KPI
             if (kpi !== "Todos" && (item.Estatus || '').toLowerCase() !== kpi.toLowerCase()) return false;
-
-            // Filtro Fechas
             if (startLimit || endLimit) {
                 const val = item[dateType]; 
                 if (!val || typeof val !== 'string' || !val.includes('/')) return false;
@@ -347,16 +345,12 @@
                 if (startLimit && itemDate < startLimit) return false;
                 if (endLimit && itemDate > endLimit) return false;
             }
-
-            // Filtro Búsqueda
             if (queryParts.length === 0) return true;
             const pool = `${item.Folio} ${item.Nombre} ${item.Titular} ${item.Placas} ${item["No de socio"]} ${item.Puesto} ${item.Negocio}`.toLowerCase();
             return queryParts.every(p => pool.includes(p));
         });
 
-        // Ordenar: Los más recientes arriba (basado en IDFila que suele ser incremental)
-        filteredData.sort((a,b) => b.IDFila - a.IDFila);
-
+        filteredData.sort((a,b) => (b.IDFila || 0) - (a.IDFila || 0));
         dom.vSpacer.style.height = `${filteredData.length * ROW_HEIGHT}px`;
         renderVirtual();
     };
@@ -427,7 +421,6 @@
         setKpiFilter('Todos');
     };
 
-    // --- ELIMINACIÓN ---
     window.requestDelete = (index) => {
         itemToDelete = filteredData[index];
         if (!itemToDelete) return;
@@ -468,12 +461,13 @@
         }
     };
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            startDataEngine();
+            await startDataEngine();
             setInterval(backgroundWorker, 5 * 60 * 1000);
         } else {
-            signInAnonymously(auth);
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+            else await signInAnonymously(auth);
         }
     });
 
