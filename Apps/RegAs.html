@@ -23,7 +23,6 @@
             z-index: 120;
         }
 
-        /* Branding (Izquierda) */
         .branding-section {
             display: flex;
             align-items: center;
@@ -59,7 +58,6 @@
         .apps-drawer-btn:hover { background: #e2e8f0; border-color: #cbd5e1; transform: scale(1.05); }
         .apps-drawer-btn img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* Selector Gloss (Centro) */
         .gloss-nav {
             background: rgba(241, 245, 249, 0.8);
             backdrop-filter: blur(8px);
@@ -92,7 +90,6 @@
             box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
         }
 
-        /* Reloj (Derecha) */
         .clock-container {
             justify-self: end;
             font-family: 'JetBrains Mono', monospace;
@@ -251,9 +248,9 @@
         </div>
 
         <nav class="gloss-nav">
-            <div onclick="setTab('diaria', this)" class="main-tab-btn active">Diaria</div>
-            <div onclick="setTab('planeacion', this)" class="main-tab-btn">Planeación</div>
-            <div onclick="setTab('reporte', this)" class="main-tab-btn">Reporte</div>
+            <div onclick="setTab('diaria', this)" id="nav-diaria" class="main-tab-btn">Diaria</div>
+            <div onclick="setTab('planeacion', this)" id="nav-planeacion" class="main-tab-btn">Planeación</div>
+            <div onclick="setTab('reporte', this)" id="nav-reporte" class="main-tab-btn">Reporte</div>
         </nav>
 
         <div id="clock" class="clock-container">
@@ -263,7 +260,7 @@
     </header>
 
     <!-- NIVEL 2: Diaria -->
-    <div id="diariaControls" class="app-header-sub">
+    <div id="diariaControls" class="app-header-sub hidden">
         <div class="flex items-center gap-4">
             <div class="w-1.5 h-8 bg-fuchsia-600 rounded-full"></div>
             <h2 id="topDateLabel" class="text-sm font-black text-slate-800 uppercase tracking-tight">---</h2>
@@ -289,7 +286,7 @@
         <div id="ribbonContent" class="flex items-center gap-3 w-full"></div>
     </nav>
 
-    <iframe id="mainIframe" src="../Complementos/RegAs/Día.html"></iframe>
+    <iframe id="mainIframe" src=""></iframe>
 
     <script>
         let currentDate = new Date();
@@ -319,7 +316,7 @@
                 { label: 'Ausentismos', type: 'ausentismo' }
             ],
             'reporte': [
-                { label: 'WhatsApp', action: 'whatsapp', icon: 'fa-brands fa-whatsapp' },
+                { label: 'WhatsApp', action: 'whatsapp', icon: 'fa-brands fa-whatsapp', active: true },
                 { label: 'Diario', action: 'diario', icon: 'fa-solid fa-file-invoice' }
             ]
         };
@@ -348,30 +345,43 @@
                     };
                 } else {
                     btn.innerHTML = `<i class="${item.icon} mr-2"></i>${item.label}`;
-                    btn.onclick = () => sendToIframe({ action: 'reportType', type: item.action });
+                    btn.onclick = () => {
+                        document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
+                        btn.classList.add('active');
+                        // REPARACIÓN: Cambio de fuente de iframe según reporte seleccionado
+                        const reportPaths = {
+                            'whatsapp': '../Complementos/RegAs/Wa.html',
+                            'diario': '../Complementos/RegAs/Reporte_Diario.html'
+                        };
+                        dom.iframe.src = reportPaths[item.action];
+                    };
                 }
                 dom.ribbonContent.appendChild(btn);
             });
         }
 
-        function updateUI() {
-            const iso = currentDate.toISOString().split('T')[0];
-            dom.dateInput.value = iso;
-            dom.topLabel.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-            dom.shiftLabel.textContent = shifts[currentShiftIndex].toUpperCase();
-            if (currentActiveTab === 'diaria') {
-                sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex] });
-            }
-        }
-
         window.setTab = (tab, el) => {
             currentActiveTab = tab;
+            // Persistencia de última vista
+            localStorage.setItem('regas_last_view', tab);
+
             document.querySelectorAll('.main-tab-btn').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
+            
+            // Si el elemento no es pasado (carga inicial), buscarlo por ID
+            const targetBtn = el || document.getElementById(`nav-${tab}`);
+            if (targetBtn) targetBtn.classList.add('active');
+
             dom.diariaControls.classList.toggle('hidden', tab !== 'diaria');
             renderRibbon(tab);
-            const paths = { 'diaria': '../Complementos/RegAs/Día.html', 'planeacion': '../Complementos/RegAs/Planeación.html', 'reporte': '../Complementos/RegAs/Reporte_Diario.html' };
+
+            const paths = { 
+                'diaria': '../Complementos/RegAs/Día.html', 
+                'planeacion': '../Complementos/RegAs/Planeación.html', 
+                'reporte': '../Complementos/RegAs/Wa.html' // Predeterminado de reporte ahora es WhatsApp
+            };
             dom.iframe.src = paths[tab];
+            
+            if(tab === 'diaria') updateUI();
         };
 
         window.changeDate = (offset) => { currentDate.setDate(currentDate.getDate() + offset); updateUI(); };
@@ -384,17 +394,23 @@
 
         function sendToIframe(data) { if (dom.iframe.contentWindow) dom.iframe.contentWindow.postMessage(data, '*'); }
         
-        // CORRECCIÓN: Según Administración.html, se debe enviar 'toggleMenu' para abrir el panel lateral izquierdo
         window.openApps = () => {
             window.parent.postMessage({ action: 'toggleMenu' }, '*');
         };
 
         dom.dateInput.onchange = (e) => { currentDate = new Date(e.target.value + "T12:00:00"); updateUI(); };
 
-        // Receptor de mensajes (Bridge)
+        function updateUI() {
+            const iso = currentDate.toISOString().split('T')[0];
+            dom.dateInput.value = iso;
+            dom.topLabel.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            dom.shiftLabel.textContent = shifts[currentShiftIndex].toUpperCase();
+            if (currentActiveTab === 'diaria') {
+                sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex] });
+            }
+        }
+
         window.addEventListener('message', (e) => {
-            // PUENTE: Reenviar mensajes de apertura de paneles al Shell principal
-            // Se añaden toggleMenu y openApp para compatibilidad total con el Shell de Administración
             if (e.data.action && (
                 e.data.action.includes('Panel') || 
                 e.data.action.includes('Nav') || 
@@ -418,7 +434,12 @@
             }
         });
 
-        window.onload = () => { renderRibbon('diaria'); updateUI(); };
+        window.onload = () => { 
+            // Restaurar última vista o cargar Diaria por defecto
+            const lastView = localStorage.getItem('regas_last_view') || 'diaria';
+            setTab(lastView);
+            updateUI(); 
+        };
     </script>
 </body>
 </html>

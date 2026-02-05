@@ -48,10 +48,11 @@
             flex-shrink: 0;
         }
 
+        /* Contenedor de acciones en el encabezado */
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
         .btn-header-action {
@@ -62,18 +63,22 @@
             justify-content: center;
             border-radius: 8px;
             color: #94a3b8;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             border: 1px solid transparent;
         }
+        
         .btn-header-action:hover {
             background: #f8fafc;
             color: var(--accent-fiusha);
             border-color: #f1f5f9;
+            transform: translateY(-1px);
         }
+
         .btn-close:hover {
             color: #ef4444;
             background: #fef2f2;
+            border-color: #fee2e2;
         }
 
         .input-standard {
@@ -130,7 +135,22 @@
         }
         .btn-copy:hover { transform: translateY(-1px); filter: brightness(1.05); }
 
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 10px 20px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: none; z-index: 1000; }
+        .toast { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: #0f172a; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 10px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            display: none; 
+            z-index: 1000; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
         
         .label-mini {
             font-size: 8px;
@@ -155,18 +175,19 @@
 <body>
 
     <div class="card-material">
-        <!-- 1. Encabezado Chico con Botones de Acción -->
+        <!-- 1. Encabezado con Acciones -->
         <div class="mini-header">
             <i class="fa-brands fa-whatsapp text-green-500 text-base"></i>
             <h2 class="text-[10px] font-black text-slate-900 uppercase tracking-widest flex-1">Generador de Reporte</h2>
+            
             <div id="loading-indicator" class="hidden text-[8px] font-bold text-fuchsia-500 animate-pulse mr-2">SINCRO...</div>
             
             <div class="header-actions">
-                <!-- Botón para abrir Reporte Diario en el panel principal -->
-                <button onclick="openMainReport()" class="btn-header-action" title="Abrir Reporte Diario">
+                <!-- Abrir en panel principal (Comunicación directa con Administración) -->
+                <button onclick="openMainReport()" class="btn-header-action" title="Abrir Reporte Diario en el centro">
                     <i class="fa-solid fa-file-lines"></i>
                 </button>
-                <!-- Botón de cierre -->
+                <!-- Cerrar panel derecho -->
                 <button onclick="closePanel()" class="btn-header-action btn-close" title="Cerrar Panel">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -179,10 +200,10 @@
             Copiar Reporte
         </button>
 
-        <!-- 3. Reporte (Textarea) -->
+        <!-- 3. Área de Reporte -->
         <textarea id="report-text" class="report-box" readonly placeholder="Generando reporte..."></textarea>
 
-        <!-- 4. Controles Inferiores -->
+        <!-- 4. Controles de Filtrado -->
         <div class="footer-controls">
             <div class="grid grid-cols-2 gap-2">
                 <div>
@@ -230,7 +251,7 @@
         const includeTimeCheck = document.getElementById('include-time');
         const reportArea = document.getElementById('report-text');
 
-        // Configuración inicial por URL
+        // Configuración inicial basada en URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlDateId = urlParams.get('dateId');
         const urlShift = urlParams.get('shift');
@@ -244,47 +265,58 @@
 
         if (urlShift) shiftSelect.value = urlShift;
 
-        // Función para cerrar el panel
+        // Función para cerrar el panel derecho (Habla con Administración.html)
         window.closePanel = () => {
             window.parent.postMessage({ action: 'closeRightPanel' }, '*');
         };
 
-        // Función para abrir el Reporte Diario en el panel principal
+        // Función para abrir el Reporte Diario en el panel principal (Habla con Administración.html)
         window.openMainReport = () => {
-            // Enviamos un mensaje que el Shell de Asistencia puede interpretar o redirigir
             window.parent.postMessage({ 
-                action: 'switchMainTab', 
-                tab: 'reporte' 
+                action: 'openApp', 
+                path: 'Complementos/RegAs/Reporte_Diario.html' 
             }, '*');
         };
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) { await loadPersonnel(); startSync(); } 
-            else {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                else await signInAnonymously(auth);
+            if (user) { 
+                await loadPersonnel(); 
+                startSync(); 
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
             }
         });
 
         async function loadPersonnel() {
-            const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
-            const snap = await getDoc(usersRef);
-            if (snap.exists()) personnelMap = snap.data();
+            try {
+                const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
+                const snap = await getDoc(usersRef);
+                if (snap.exists()) personnelMap = snap.data();
+            } catch (err) { console.error("Error cargando personal:", err); }
         }
 
         function startSync() {
             if (activeUnsubscribe) activeUnsubscribe();
             const rawDate = dateInput.value;
             if (!rawDate) return;
+
             const dateObj = new Date(rawDate + "T12:00:00");
             const dateId = `${String(dateObj.getDate()).padStart(2,'0')}${String(dateObj.getMonth()+1).padStart(2,'0')}${dateObj.getFullYear()}`;
             const trimId = `Trim${Math.ceil((dateObj.getMonth() + 1) / 3)}-${dateObj.getFullYear()}`;
             
             document.getElementById('loading-indicator').classList.remove('hidden');
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
+            
             activeUnsubscribe = onSnapshot(docRef, (snap) => {
                 const dayData = (snap.exists() ? snap.data() : {})[dateId] || {};
                 generateText(dayData);
+                document.getElementById('loading-indicator').classList.add('hidden');
+            }, (err) => {
+                console.error("Error en tiempo real:", err);
                 document.getElementById('loading-indicator').classList.add('hidden');
             });
         }
@@ -329,6 +361,7 @@
             reportArea.value = text.trim();
         }
 
+        // Eventos de control
         dateInput.onchange = startSync;
         shiftSelect.onchange = startSync;
         includeTimeCheck.onchange = () => startSync();
@@ -336,11 +369,14 @@
         window.copyReport = () => {
             reportArea.select();
             try {
+                // Compatibilidad con entornos iFrame
                 document.execCommand('copy');
                 const toast = document.getElementById('toast');
                 toast.style.display = 'block';
                 setTimeout(() => toast.style.display = 'none', 2000);
-            } catch (err) {}
+            } catch (err) {
+                console.error("Error al copiar:", err);
+            }
         };
     </script>
 </body>
