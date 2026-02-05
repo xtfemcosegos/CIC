@@ -22,7 +22,7 @@
             padding: 0;
             height: 100vh;
             width: 100vw;
-            overflow: hidden; /* Evitar scroll en el body */
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -39,7 +39,6 @@
             gap: 0.75rem;
         }
 
-        /* Encabezado minimalista */
         .mini-header {
             display: flex;
             align-items: center;
@@ -47,6 +46,34 @@
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #f1f5f9;
             flex-shrink: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-header-action {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: #94a3b8;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .btn-header-action:hover {
+            background: #f8fafc;
+            color: var(--accent-fiusha);
+            border-color: #f1f5f9;
+        }
+        .btn-close:hover {
+            color: #ef4444;
+            background: #fef2f2;
         }
 
         .input-standard {
@@ -68,7 +95,7 @@
 
         .report-box {
             width: 100%;
-            flex: 1; /* Ocupa todo el espacio restante */
+            flex: 1;
             background: #0f172a;
             border: 1px solid #1e293b;
             border-radius: 0.75rem;
@@ -79,7 +106,7 @@
             resize: none;
             outline: none;
             color: #e2e8f0;
-            overflow-y: auto; /* Solo scroll aquí */
+            overflow-y: auto;
         }
 
         .btn-copy {
@@ -98,6 +125,8 @@
             justify-content: center;
             gap: 8px;
             flex-shrink: 0;
+            border: none;
+            cursor: pointer;
         }
         .btn-copy:hover { transform: translateY(-1px); filter: brightness(1.05); }
 
@@ -126,23 +155,34 @@
 <body>
 
     <div class="card-material">
-        <!-- 1. Encabezado Chico -->
+        <!-- 1. Encabezado Chico con Botones de Acción -->
         <div class="mini-header">
             <i class="fa-brands fa-whatsapp text-green-500 text-base"></i>
             <h2 class="text-[10px] font-black text-slate-900 uppercase tracking-widest flex-1">Generador de Reporte</h2>
-            <div id="loading-indicator" class="hidden text-[8px] font-bold text-fuchsia-500 animate-pulse">SINCRO...</div>
+            <div id="loading-indicator" class="hidden text-[8px] font-bold text-fuchsia-500 animate-pulse mr-2">SINCRO...</div>
+            
+            <div class="header-actions">
+                <!-- Botón para abrir Reporte Diario en el panel principal -->
+                <button onclick="openMainReport()" class="btn-header-action" title="Abrir Reporte Diario">
+                    <i class="fa-solid fa-file-lines"></i>
+                </button>
+                <!-- Botón de cierre -->
+                <button onclick="closePanel()" class="btn-header-action btn-close" title="Cerrar Panel">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
         </div>
         
-        <!-- 2. Botón de Copiar Arriba -->
+        <!-- 2. Botón de Copiar -->
         <button onclick="copyReport()" class="btn-copy">
             <i class="fa-solid fa-copy text-[10px]"></i>
             Copiar Reporte
         </button>
 
-        <!-- 3. Reporte (Textarea) con scroll interno -->
+        <!-- 3. Reporte (Textarea) -->
         <textarea id="report-text" class="report-box" readonly placeholder="Generando reporte..."></textarea>
 
-        <!-- 4. Fecha, Turno e Incluir hora en la base -->
+        <!-- 4. Controles Inferiores -->
         <div class="footer-controls">
             <div class="grid grid-cols-2 gap-2">
                 <div>
@@ -190,11 +230,10 @@
         const includeTimeCheck = document.getElementById('include-time');
         const reportArea = document.getElementById('report-text');
 
-        // Parámetros URL para configuración automática
+        // Configuración inicial por URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlDateId = urlParams.get('dateId');
         const urlShift = urlParams.get('shift');
-        const urlIncludeTime = urlParams.get('includeTime');
 
         if (urlDateId) {
             const day = urlDateId.substring(0, 2), month = urlDateId.substring(2, 4), year = urlDateId.substring(4, 8);
@@ -204,7 +243,20 @@
         }
 
         if (urlShift) shiftSelect.value = urlShift;
-        if (urlIncludeTime !== null) includeTimeCheck.checked = urlIncludeTime === 'true';
+
+        // Función para cerrar el panel
+        window.closePanel = () => {
+            window.parent.postMessage({ action: 'closeRightPanel' }, '*');
+        };
+
+        // Función para abrir el Reporte Diario en el panel principal
+        window.openMainReport = () => {
+            // Enviamos un mensaje que el Shell de Asistencia puede interpretar o redirigir
+            window.parent.postMessage({ 
+                action: 'switchMainTab', 
+                tab: 'reporte' 
+            }, '*');
+        };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) { await loadPersonnel(); startSync(); } 
