@@ -147,7 +147,6 @@
         .tag-descanso { background-color: #f1f5f9; color: #475569; }
         .tag-falta { background-color: #fee2e2; color: #991b1b; }
 
-        /* Estilos de Etiquetas de Incidencias (Actualizado de puntos a texto) */
         .incident-badge-container {
             position: absolute;
             top: 2px;
@@ -261,7 +260,6 @@
         <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Terminal Maestro...</p>
     </div>
 
-    <!-- Menú Contextual -->
     <div id="context-menu">
         <div class="p-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 mb-2 text-center">Operaciones Rápidas</div>
         
@@ -398,14 +396,20 @@
 
                     users = Object.entries(data)
                         .filter(([uid, d]) => d && typeof d === 'object') 
-                        .map(([uid, d]) => {
+                        .map(([idFromKey, d]) => {
                             const sId = (d.socioId !== undefined && d.socioId !== null) ? String(d.socioId) : '';
-                            userDataMap[sId] = { uid, ...d };
+                            
+                            // CORRECCIÓN CRÍTICA: Aseguramos que el UID real (llave del documento) 
+                            // prevalezca sobre cualquier campo 'uid' interno que pueda estar vacío.
+                            const finalUser = { ...d, uid: idFromKey, socioId: sId };
+                            userDataMap[sId] = finalUser;
+
                             const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
                             const estatusVal = String(d.operativa?.estatus || d.status || 'Activo').toLowerCase();
                             const casetaVal = d.operativa?.caseta || "Sin Asignar";
+                            
                             return { 
-                                uid, socioId: sId, ...d, 
+                                ...finalUser,
                                 displayPuesto: puestoVal, 
                                 displayStatus: estatusVal,
                                 displayCaseta: casetaVal 
@@ -505,10 +509,11 @@
                         </div>
                     `;
 
+                    // ACTUALIZADO: Apertura directa en gestión de turno para consistencia
                     uRow.onclick = () => {
                         window.parent.postMessage({ 
                             action: 'openRightPanel', 
-                            content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${user.uid}&tab=operacion" class="w-full h-full border-none"></iframe>` 
+                            content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${user.uid}&tab=gestion" class="w-full h-full border-none"></iframe>` 
                         }, '*');
                     };
 
@@ -629,7 +634,6 @@
             const tag = document.createElement('div');
             tag.className = `shift-tag tag-${type} ${specificClass}`;
             
-            // ACTUALIZACIÓN: De puntos a etiquetas de texto específicas
             let indicatorsHtml = '<div class="incident-badge-container">';
             if (data.es_extra) indicatorsHtml += '<div class="inc-badge inc-extra" title="Extra">Ext</div>';
             if (data.retardo) indicatorsHtml += '<div class="inc-badge inc-retardo" title="Retardo">Ret</div>';

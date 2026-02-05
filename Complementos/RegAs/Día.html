@@ -33,7 +33,6 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Encabezado de fecha */
         .day-header-pill {
             background: #d946ef;
             color: white;
@@ -88,7 +87,6 @@
         }
         .header-add-btn:hover { background: #d946ef; color: white; border-color: #d946ef; transform: scale(1.1); }
 
-        /* --- Tarjetas --- */
         .user-card-mini {
             background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem;
             display: flex; flex-direction: row; align-items: center; gap: 0.75rem; cursor: pointer;
@@ -117,7 +115,6 @@
         .btn-absence { background: #ef4444; color: #fef08a; }
         .btn-complete { background: #94a3b8; color: white; cursor: default; }
 
-        /* Menú Contextual Premium */
         #context-menu {
             display: none;
             position: fixed;
@@ -146,8 +143,6 @@
         .context-item:hover { background: #fdf4ff; color: #d946ef; }
         .context-item i { font-size: 12px; width: 16px; text-align: center; }
 
-        #infiniteSentinel { height: 20px; margin-bottom: 50px; }
-
         ::-webkit-scrollbar { width: 7px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
@@ -156,7 +151,7 @@
 
     <div id="timelineContainer" class="max-w-[1920px] mx-auto px-6"></div>
 
-    <div id="infiniteSentinel"></div>
+    <div id="infiniteSentinel" class="h-5"></div>
 
     <div id="loader" class="flex flex-col items-center justify-center py-32">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-6"></div>
@@ -272,7 +267,6 @@
                 </div>
             `;
             timeline.appendChild(section);
-
             section.querySelectorAll('.shift-drawer').forEach(d => scrollObserver.observe(d));
 
             const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
@@ -283,7 +277,7 @@
                     dayDataCache.set(dateId, { data: dayData, date: new Date(date), trimId: trimId }); 
                     updateDayGrid(dateId, dayData, new Date(date));
                 }
-            }, (err) => console.error("Snapshot error:", err));
+            });
             activeSnapshots.set(dateId, unsub);
         }
 
@@ -369,13 +363,12 @@
             div.className = 'user-card-mini';
             const iso = dateObj.toISOString().split('T')[0];
             
-            // LOGICA: Abrir detalle al dar clic en la tarjeta
+            // ACTUALIZADO: Abrir detalle directamente en gestión de turno
             div.onclick = (e) => {
                 if (e.target.closest('button') || e.target.closest('select')) return;
-                openDetails(person.uid, iso, 'expediente');
+                openDetails(person.uid, iso, 'gestion');
             };
 
-            // LOGICA: Menú contextual al dar clic derecho
             div.oncontextmenu = (e) => {
                 e.preventDefault();
                 showContextMenu(e, person.uid, iso);
@@ -429,7 +422,6 @@
             return div;
         }
 
-        // MENU CONTEXTUAL
         function showContextMenu(e, uid, iso) {
             contextMenu.style.display = 'block';
             contextMenu.style.left = `${e.clientX}px`;
@@ -521,8 +513,6 @@
 
         window.openAddPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Agregar_Elemento.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
         window.openWaPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Wa.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
-        
-        // ACTUALIZADO: Función openDetails ahora acepta el tab
         window.openDetails = (uid, iso, tab) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&date=${iso}&tab=${tab}" class="w-full h-full border-none"></iframe>` }, '*');
         
         window.toggleShiftTool = (dateId, shift, tool) => {

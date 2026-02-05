@@ -5,150 +5,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Marbetes - CIC 7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilos personalizados para el acabado Verde Metálico */
-        .nav-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .active-tab {
-            background: linear-gradient(135deg, #059669 0%, #064e3b 100%) !important;
-            color: white !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
-            border: 1px solid #10b981;
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; margin: 0; }
+
+        /* --- HEADER TOP (NIVEL 1) --- */
+        .app-header-top {
+            background: white;
+            height: 65px;
+            border-bottom: 1px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1.2fr;
+            align-items: center;
+            padding: 0 1.5rem;
+            flex-shrink: 0;
+            z-index: 100;
         }
 
-        .metallic-green-gradient {
-            background: linear-gradient(145deg, #10b981, #064e3b);
+        /* Branding (Izquierda) */
+        .branding-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        /* Animación de entrada para el contenido inyectado */
-        .fade-in-content {
-            animation: fadeIn 0.2s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Scrollbar personalizado con estética verde */
-        #Contenido_Marbetes::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        #Contenido_Marbetes::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        #Contenido_Marbetes::-webkit-scrollbar-thumb {
-            background: #10b981;
-            border-radius: 0px;
-        }
-        #Contenido_Marbetes::-webkit-scrollbar-thumb:hover {
-            background: #059669;
-        }
-
-        /* Eliminación de scrolls en body para control total del contenedor */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        .apps-drawer-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #f0fdf4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid #dcfce7;
             overflow: hidden;
+            padding: 4px;
         }
+        .apps-drawer-btn:hover { background: #dcfce7; border-color: #bbf7d0; transform: scale(1.05); }
+        .apps-drawer-btn img { width: 100%; height: 100%; object-fit: contain; }
+
+        .logo-container {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Selector Gloss (Centro) */
+        .gloss-nav {
+            background: rgba(236, 253, 245, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 4px;
+            border-radius: 14px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid rgba(167, 243, 208, 0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            justify-self: center;
+        }
+
+        .main-tab-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .main-tab-btn.active {
+            color: white;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Reloj (Derecha) */
+        .clock-container {
+            justify-self: end;
+            font-family: 'JetBrains Mono', monospace;
+            background: #f0fdf4;
+            color: #064e3b;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border: 1px solid #dcfce7;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .clock-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- ÁREA DE CONTENIDO --- */
+        #Contenido_Marbetes {
+            flex: 1;
+            width: 100%;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+
+        /* Scrollbar Personalizado */
+        #Contenido_Marbetes::-webkit-scrollbar { width: 8px; }
+        #Contenido_Marbetes::-webkit-scrollbar-track { background: #f1f5f9; }
+        #Contenido_Marbetes::-webkit-scrollbar-thumb { background: #10b981; }
+
+        .fade-in-content { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-white antialiased text-slate-900 font-sans flex flex-col">
+<body class="antialiased">
 
-    <!-- Header / Shell Navigation -->
-    <header class="flex-shrink-0 z-50 w-full bg-white border-b border-emerald-200 shadow-sm">
-        <div class="w-full px-4">
-            <div class="flex flex-col md:flex-row items-center justify-between py-2 gap-4">
-                
-                <!-- Branding del Módulo -->
-                <div class="flex items-center gap-3">
-                    <div class="p-1.5 metallic-green-gradient rounded-lg shadow-md shadow-emerald-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-black text-emerald-900 tracking-tight leading-none uppercase">Marbetes</h1>
-                        <p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Control Vehicular CIC</p>
-                    </div>
-                </div>
-
-                <!-- Navegación Estilo Tabs -->
-                <nav class="flex items-center p-1 bg-emerald-50 rounded-xl border border-emerald-100 gap-1">
-                    <button 
-                        onclick="Navegar_Marbetes('Listado')" 
-                        id="btn-listado"
-                        class="nav-btn active-tab flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                        Listado
-                    </button>
-                    <button 
-                        onclick="Navegar_Marbetes('Exportador')" 
-                        id="btn-exportador"
-                        class="nav-btn flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-700 hover:text-white hover:bg-emerald-500/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 10-8 0v2m8-2v2m7-10V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2m7 10h2a2 2 0 002-2V9a2 2 0 00-2-2h-2m-7 10H5a2 2 0 01-2-2V9a2 2 0 012-2h2" />
-                        </svg>
-                        Exportación
-                    </button>
-                    <button 
-                        onclick="Navegar_Marbetes('Fix')" 
-                        id="btn-fix"
-                        class="nav-btn flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-700 hover:text-white hover:bg-emerald-500/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        </svg>
-                        Reparar BD
-                    </button>
-                </nav>
+    <!-- HEADER PRINCIPAL -->
+    <header class="app-header-top">
+        <div class="branding-section">
+            <div onclick="openApps()" class="apps-drawer-btn" title="Aplicaciones">
+                <img src="../MM/Apps.png" alt="Apps">
             </div>
+            <div class="logo-container">
+                <!-- Se asume que existe un icono para marbetes, si no, se usa el de Apps como respaldo -->
+                <img src="../MM/Marbetes.png" alt="Logo" onerror="this.src='../MM/Apps.png'">
+            </div>
+            <div>
+                <h1 class="text-[13px] font-black text-emerald-900 uppercase tracking-widest leading-none">Marbetes</h1>
+                <p class="text-[8px] font-bold text-emerald-600 uppercase tracking-tighter mt-1">Control Vehicular CIC</p>
+            </div>
+        </div>
+
+        <nav class="gloss-nav">
+            <div onclick="Navegar_Marbetes('Listado', this)" id="btn-listado" class="main-tab-btn active">Listado</div>
+            <div onclick="Navegar_Marbetes('Exportador', this)" id="btn-exportador" class="main-tab-btn">Exportación</div>
+            <div onclick="Navegar_Marbetes('Fix', this)" id="btn-fix" class="main-tab-btn">Reparar BD</div>
+        </nav>
+
+        <div class="clock-container">
+            <div class="clock-dot"></div>
+            <span id="timeDisplay">00:00:00</span>
         </div>
     </header>
 
-    <!-- Contenedor de Contenido -->
-    <main class="flex-1 w-full overflow-hidden relative">
-        <div id="Contenido_Marbetes" class="w-full h-full bg-white overflow-y-auto">
-            <!-- Skeleton Loader Inicial -->
-            <div class="flex flex-col items-center justify-center h-full text-center bg-slate-50">
-                <div class="relative flex items-center justify-center">
-                    <div class="absolute w-12 h-12 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin"></div>
-                    <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <div class="w-3 h-3 bg-emerald-600 rounded-full animate-ping"></div>
-                    </div>
-                </div>
-                <h3 class="mt-4 font-black text-emerald-900 text-sm">Sincronizando Marbetes</h3>
-                <p class="text-[10px] text-emerald-600/60 font-bold uppercase tracking-tighter">Cargando interfaz completa...</p>
-            </div>
+    <!-- CONTENEDOR DINÁMICO -->
+    <main id="Contenido_Marbetes">
+        <div class="flex flex-col items-center justify-center h-full text-center bg-slate-50">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mb-4"></div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Sincronizando Módulo...</p>
         </div>
     </main>
 
     <script>
-        function Navegar_Marbetes(vista) {
+        // Actualización del Reloj
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('timeDisplay').textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Apertura de Aplicaciones (Comunicación con Shell Administración)
+        function openApps() {
+            window.parent.postMessage({ action: 'toggleMenu' }, '*');
+        }
+
+        // Navegación de Componentes
+        function Navegar_Marbetes(vista, el) {
             const contenedor = document.getElementById('Contenido_Marbetes');
-            const botones = document.querySelectorAll('.nav-btn');
-            const btnId = `btn-${vista.toLowerCase()}`;
             
-            // Actualización de UI de botones
-            botones.forEach(btn => {
-                if (btn.id === btnId) {
-                    btn.classList.add('active-tab');
-                    btn.classList.remove('text-emerald-700', 'hover:text-white', 'hover:bg-emerald-500/50');
-                } else {
-                    btn.classList.remove('active-tab');
-                    btn.classList.add('text-emerald-700', 'hover:text-white', 'hover:bg-emerald-500/50');
-                }
-            });
+            // Actualizar estilo visual de los botones
+            if (el) {
+                document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+                el.classList.add('active');
+            }
 
-            // Ruta de componentes ajustada al proyecto
             const path = `../Complementos/Marbetes/${vista}.html`;
-
             contenedor.scrollTop = 0;
 
             fetch(path)
@@ -159,7 +206,7 @@
                 .then(html => {
                     contenedor.innerHTML = `<div class="fade-in-content w-full h-full">${html}</div>`;
                     
-                    // Re-ejecución de scripts para asegurar funcionalidad de Firestore/Búsqueda
+                    // Re-ejecución de scripts inyectados
                     const scripts = contenedor.querySelectorAll('script');
                     scripts.forEach(oldScript => {
                         const newScript = document.createElement('script');
@@ -170,24 +217,35 @@
                 })
                 .catch(error => {
                     contenedor.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full text-center p-10 bg-emerald-50/30">
-                            <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 border border-emerald-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
+                        <div class="flex flex-col items-center justify-center h-full text-center p-10">
+                            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 border border-red-100">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 text-2xl"></i>
                             </div>
-                            <h2 class="text-lg font-black text-emerald-900 uppercase">Error de Componente</h2>
-                            <p class="text-emerald-600/70 mt-1 max-w-sm text-[11px] font-bold">No se encontró el archivo: ${path}</p>
-                            <button onclick="Navegar_Marbetes('${vista}')" class="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 transition-all shadow-md">
-                                Reintentar
-                            </button>
+                            <h2 class="text-lg font-black text-slate-800 uppercase">Error de Carga</h2>
+                            <p class="text-slate-400 mt-1 max-w-sm text-[11px] font-bold">No se pudo cargar el componente: ${vista}</p>
+                            <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs shadow-lg">Reiniciar Módulo</button>
                         </div>
                     `;
                 });
         }
 
+        // Puente de Mensajes (Para que los componentes internos puedan abrir paneles derechos/izquierdos)
+        window.addEventListener('message', (e) => {
+            if (e.data.action && (
+                e.data.action.includes('Panel') || 
+                e.data.action === 'toggleMenu' || 
+                e.data.action === 'openApp'
+            )) {
+                window.parent.postMessage(e.data, '*');
+            }
+        });
+
+        // Carga inicial
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => Navegar_Marbetes('Listado'), 200);
+            setTimeout(() => {
+                const btnInicial = document.getElementById('btn-listado');
+                Navegar_Marbetes('Listado', btnInicial);
+            }, 200);
         });
     </script>
 

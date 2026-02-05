@@ -1,46 +1,43 @@
-<!-- 
-    IMPORTANTE: Este archivo se carga dinámicamente en Marbetes.html.
-    Mantiene un diseño de contenedor flex para scroll interno y cabecera fija.
--->
 <div class="flex flex-col h-full w-full bg-white overflow-hidden relative">
 
-    <!-- Pantalla de carga local -->
-    <div id="loading-state" class="absolute inset-0 bg-white z-[1000] flex flex-col items-center justify-center">
+    <!-- Pantalla de carga inicial -->
+    <div id="loading-state" class="absolute inset-0 bg-white z-[1000] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="relative flex items-center justify-center">
             <div class="w-12 h-12 border-4 border-emerald-50 border-t-emerald-600 rounded-full animate-spin"></div>
             <div class="absolute w-4 h-4 bg-emerald-600 rounded-full animate-pulse"></div>
         </div>
-        <span class="text-[10px] font-black text-emerald-900 uppercase mt-4 tracking-widest text-center px-4">Sincronizando Repositorio Maestro...</span>
+        <span class="text-[10px] font-black text-emerald-900 uppercase mt-4 tracking-widest text-center px-4">Sincronizando Base de Datos...</span>
     </div>
 
-    <!-- Modal de Confirmación de Eliminación -->
+    <!-- Modal de Confirmación -->
     <div id="delete-modal" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
             <div class="p-6 text-center">
                 <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+                    <i class="fa-solid fa-trash-can text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-black text-slate-900 uppercase leading-tight">¿Eliminar Registro?</h3>
-                <p class="text-[11px] text-slate-500 font-medium mt-2 leading-relaxed">Esta acción es irreversible. Para continuar, escriba la palabra <span class="text-rose-600 font-black">ELIMINAR</span> a continuación:</p>
-                
-                <input type="text" id="delete-confirm-input" class="w-full mt-4 h-10 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-center text-xs font-black uppercase tracking-widest focus:border-rose-500 outline-none transition-all" placeholder="...">
-                
+                <h3 class="text-lg font-black text-slate-900 uppercase">¿Eliminar Registro?</h3>
+                <p class="text-[11px] text-slate-500 font-medium mt-2">Esta acción es irreversible. Escriba <span class="text-rose-600 font-black">ELIMINAR</span>:</p>
+                <input type="text" id="delete-confirm-input" class="w-full mt-4 h-10 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-center text-xs font-black uppercase outline-none transition-all focus:border-rose-500">
                 <div class="grid grid-cols-2 gap-3 mt-6">
                     <button onclick="closeDeleteModal()" class="h-10 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-black uppercase hover:bg-slate-200 transition-all">Cancelar</button>
-                    <button id="btn-execute-delete" disabled onclick="executeDelete()" class="h-10 rounded-xl bg-rose-500 text-white text-[10px] font-black uppercase shadow-lg shadow-rose-200 disabled:opacity-30 disabled:grayscale transition-all">Eliminar</button>
+                    <button id="btn-execute-delete" disabled onclick="executeDelete()" class="h-10 rounded-xl bg-rose-500 text-white text-[10px] font-black uppercase disabled:opacity-30 transition-all">Eliminar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sección Fija Superior: KPIs y Herramientas -->
+    <!-- HEADER: KPIs y Filtros Restaurados -->
     <div class="flex-shrink-0 z-[100] bg-white border-b border-emerald-200 shadow-sm">
-        
         <div class="flex items-center p-2 gap-3 overflow-x-auto no-scrollbar border-b border-slate-100">
-            <button id="btn-sync" onclick="fetchFromFirebase(false)" class="w-9 h-9 flex-shrink-0 rounded-xl bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Sincronizar Cloud y Excel">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-            </button>
+            
+            <!-- Indicador de Proceso -->
+            <div id="bg-task-indicator" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 min-w-fit">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span id="bg-task-text" class="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Iniciando Motor</span>
+            </div>
 
+            <!-- KPIs Completos -->
             <div class="flex gap-2 flex-shrink-0 border-r border-slate-100 pr-3">
                 <div onclick="setKpiFilter('Todos')" id="kpi-all" class="kpi-chip active">
                     <span id="count-all" class="text-xs font-black">0</span>
@@ -64,78 +61,69 @@
                 </div>
             </div>
 
+            <!-- Filtros de Fecha -->
             <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100 flex-shrink-0">
-                <select id="date-type" class="bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase px-2 py-1 text-emerald-800 outline-none" onchange="applyFilters()">
+                <select id="date-type" class="bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase px-2 py-1 outline-none text-emerald-800" onchange="applyFilters()">
                     <option value="Fecha de solicitud">Solicitud</option>
                     <option value="Fecha de asignación">Asignación</option>
                 </select>
                 <input type="date" id="date-start" class="bg-transparent border-none text-[10px] font-bold text-slate-600 outline-none" onchange="applyFilters()">
-                <span class="text-slate-300">/</span>
+                <span class="text-slate-300 text-xs">/</span>
                 <input type="date" id="date-end" class="bg-transparent border-none text-[10px] font-bold text-slate-600 outline-none" onchange="applyFilters()">
             </div>
 
+            <!-- Botones de Acción -->
             <div class="flex items-center gap-2 border-l border-slate-100 pl-3">
-                <button onclick="setFilterToday()" class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-black uppercase tracking-tighter">Solicitudes Hoy</button>
+                <button onclick="setFilterToday()" class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-black uppercase tracking-tighter">Hoy</button>
                 <button onclick="clearAllFilters()" class="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all text-[10px] font-black uppercase tracking-tighter">Limpiar</button>
             </div>
         </div>
 
+        <!-- Buscador -->
         <div class="p-2 bg-white flex items-center">
             <div class="relative w-full">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" id="search-input" class="w-full h-10 bg-slate-50 border-none rounded-xl pl-10 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all uppercase placeholder-slate-400" placeholder="BUSCAR POR NOMBRE, SOCIO, FOLIO O PLACAS..." oninput="applyFilters()">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="search-input" class="w-full h-10 bg-slate-50 rounded-xl pl-10 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 uppercase placeholder-slate-400" placeholder="FOLIO, SOCIO, NOMBRE O PLACAS..." oninput="applyFilters()">
             </div>
         </div>
 
-        <div class="flex metallic-header">
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest" style="width: 8%;">Folio</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest" style="width: 8%;">Socio</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest" style="width: 22%;">Nombre del Titular</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest" style="width: 20%;">Vehículo</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest" style="width: 22%;">Puesto / Negocio</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest text-right" style="width: 12%;">Teléfono</div>
-            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest text-center" style="width: 8%;">Eliminar</div>
+        <!-- Encabezado de Tabla -->
+        <div class="flex metallic-header bg-gradient-to-r from-emerald-900 via-emerald-700 to-emerald-500">
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[8%]">Folio</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[8%]">Socio</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[22%]">Nombre del Titular</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[20%]">Vehículo</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[22%]">Puesto / Negocio</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[12%] text-right">Teléfono</div>
+            <div class="p-3 text-[9px] font-black uppercase text-white tracking-widest w-[8%] text-center">Acción</div>
         </div>
     </div>
 
-    <!-- Viewport: Área de Scroll Virtual -->
-    <div id="viewport" class="flex-1 overflow-y-auto relative bg-white custom-scroll">
+    <!-- VIEWPORT: Virtual Scroll -->
+    <div id="viewport" class="flex-1 overflow-y-auto relative bg-white scroll-smooth">
         <div id="v-spacer" style="width: 100%; pointer-events: none;"></div>
-        <div id="v-content" class="absolute top-0 left-0 w-full">
-            <!-- Filas inyectadas -->
-        </div>
+        <div id="v-content" class="absolute top-0 left-0 w-full"></div>
     </div>
 
-    <!-- Pie de página informativo -->
-    <div class="flex-shrink-0 px-4 py-2 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Control Vehicular CIC 7.1</span>
-            <span id="sync-time" class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest italic">Iniciando...</span>
-        </div>
-    </div>
 </div>
 
 <style>
-    .metallic-header { background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); }
-    .kpi-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 90px; padding: 4px 10px; border-radius: 12px; background: white; border: 1.5px solid #e2e8f0; cursor: pointer; transition: all 0.2s; line-height: 1.1; }
+    .kpi-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 85px; padding: 4px; border-radius: 12px; background: white; border: 1.5px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
     .kpi-chip:hover { border-color: #10b981; transform: translateY(-1px); }
-    .kpi-chip.active { background: linear-gradient(135deg, #064e3b, #059669); color: white; border-color: #064e3b; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
-    .data-row { position: absolute; width: 100%; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.1s; }
+    .kpi-chip.active { background: #065f46; color: white; border-color: #064e3b; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2); }
+    .data-row { position: absolute; width: 100%; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; height: 52px; transition: background 0.1s; }
     .data-row:hover { background-color: #f0fdf4; }
     .cell-content { padding: 0 16px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .custom-scroll::-webkit-scrollbar { width: 6px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    mark.search-highlight { background-color: #fef08a; color: #1e293b; padding: 0 2px; border-radius: 2px; font-weight: 800; }
+    mark { background-color: #fef08a; color: #1e293b; font-weight: 800; border-radius: 2px; padding: 0 2px; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .syncing svg { animation: spin 1s linear infinite; }
-    .danger-zone { border-left: 1px solid #fee2e2; background-color: #fffafb; height: 100%; display: flex; align-items: center; justify-content: center; }
 </style>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteField, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCd4p8USmJeFOie1cJj0Hi80-z8IbLAGqU",
@@ -149,173 +137,178 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
-
+    const appId = 'cic-71';
     const PA_API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fe7a46f4aa314e7a993bc66528b0d03b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mTepaYfQc_U2RF4I-tX0PNhrniM2OgcErzU9gDtA0fw";
 
     const ROW_HEIGHT = 52;
     let allData = [];
     let filteredData = [];
     let currentKpiFilter = "Todos";
-    let isSyncing = false;
+    let isProcessing = false;
     let itemToDelete = null;
 
-    const viewport = document.getElementById('viewport');
-    const vSpacer = document.getElementById('v-spacer');
-    const vContent = document.getElementById('v-content');
-    const syncLabel = document.getElementById('sync-time');
+    const dom = {
+        viewport: document.getElementById('viewport'),
+        vSpacer: document.getElementById('v-spacer'),
+        vContent: document.getElementById('v-content'),
+        bgText: document.getElementById('bg-task-text'),
+        loader: document.getElementById('loading-state'),
+        searchInput: document.getElementById('search-input'),
+        deleteInput: document.getElementById('delete-confirm-input'),
+        btnExecuteDelete: document.getElementById('btn-execute-delete')
+    };
 
-    // --- AUTOMATIZACIÓN POWER AUTOMATE (EXCEL) ---
-    async function syncFromExcelAPI() {
-        if (isSyncing) return;
-        isSyncing = true;
-        document.getElementById('btn-sync').classList.add('syncing');
-        syncLabel.innerText = "Consultando Excel (API)...";
-        
-        try {
-            const response = await fetch(PA_API_URL, { method: 'POST' });
-            if (!response.ok) throw new Error("PA error");
-            const data = await response.json();
-            const items = data.result || [];
-            
-            if (items.length === 0) { 
-                syncLabel.innerText = "Excel sin registros nuevos"; 
-                isSyncing = false;
-                document.getElementById('btn-sync').classList.remove('syncing');
-                return; 
-            }
-            
-            syncLabel.innerText = "Procesando registros...";
-            let added = 0;
-            for (const item of items) {
-                const exists = allData.some(d => d.IDFila === item.IDFila);
-                if (!exists && item.Nombre) {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'), { items: [item] });
-                    added++;
-                }
-            }
-            
-            if (added > 0) {
-                await fetchFromFirebase(true); // Refrescar vista
-            } else {
-                syncLabel.innerText = "Nube al día";
-            }
-        } catch (e) {
-            console.error("Error Excel Sync:", e);
-            syncLabel.innerText = "Fallo en API Excel";
-        } finally {
-            isSyncing = false;
-            document.getElementById('btn-sync').classList.remove('syncing');
-        }
-    }
-
-    // --- INDEXED DB ENGINE ---
-    const DB_NAME = "CIC_Marbetes_DB_v71";
-    const STORE_NAME = "cache";
-    const initDB = () => new Promise((res) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains(STORE_NAME)) e.target.result.createObjectStore(STORE_NAME); };
+    // --- MOTOR LOCAL (INDEXED DB) ---
+    const initDB = () => new Promise(res => {
+        const req = indexedDB.open("CIC_Marbetes_Local", 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore("cache");
         req.onsuccess = e => res(e.target.result);
     });
 
     const saveLocal = async (data) => {
         const idb = await initDB();
-        return new Promise((resolve) => {
-            const tx = idb.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            store.clear().onsuccess = () => store.put(data, "current");
-            tx.oncomplete = () => resolve();
+        return new Promise(resolve => {
+            const tx = idb.transaction("cache", "readwrite");
+            tx.objectStore("cache").put(data, "master");
+            tx.oncomplete = resolve;
         });
     };
 
     const getLocal = async () => {
         const idb = await initDB();
         return new Promise(res => {
-            const req = idb.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get("current");
-            req.onsuccess = () => res(req.result || null);
-            req.onerror = () => res(null);
+            const req = idb.transaction("cache", "readonly").objectStore("cache").get("master");
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => res([]);
         });
     };
 
-    function excelToDate(val) {
-        if (!val || isNaN(val) || typeof val === 'string') return val;
-        try {
-            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
-            const adjusted = new Date(date.getTime() + (6 * 60 * 60 * 1000));
-            const dd = String(adjusted.getDate()).padStart(2, '0');
-            const mm = String(adjusted.getMonth() + 1).padStart(2, '0');
-            return `${dd}/${mm}/${adjusted.getFullYear()}`;
-        } catch (e) { return val; }
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-        const cached = await getLocal();
-        if (cached) {
-            allData = cached;
-            updateKPIs();
-            applyFilters();
-            document.getElementById('loading-state').style.display = 'none';
-            syncLabel.innerText = "Modo Offline (Caché)";
-        }
-        if (user) {
-            await fetchFromFirebase();
-            syncFromExcelAPI(); // Descarga automática al iniciar
-        } else {
-            signInAnonymously(auth);
-        }
-    });
-
-    async function fetchFromFirebase(skipAPI = false) {
-        if (!skipAPI && isSyncing) return;
-        if (!skipAPI) {
-            document.getElementById('btn-sync').classList.add('syncing');
-            syncLabel.innerText = "Conectando con Cloud...";
-        }
+    // --- LÓGICA DE DATOS ---
+    async function startDataEngine() {
+        updateBgStatus("Consultando Nube...");
         
         try {
             const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'Marbetes'));
-            let combined = [];
-            snap.forEach(doc => {
-                if (doc.data().items) {
-                    const formatted = doc.data().items.map(i => {
-                        i["Fecha de solicitud"] = excelToDate(i["Fecha de solicitud"]);
-                        i["Fecha de asignación"] = excelToDate(i["Fecha de asignación"]);
-                        return { ...i, __partId: doc.id };
-                    });
-                    combined = combined.concat(formatted);
+            if (!snap.empty) {
+                let cloudData = [];
+                snap.forEach(d => {
+                    const items = (d.data().items || []).map(i => ({ ...i, __docId: d.id }));
+                    cloudData = cloudData.concat(items);
+                });
+                allData = cloudData;
+                updateBgStatus("Nube Lista");
+                finishInitialLoad();
+                return;
+            }
+        } catch (e) { console.warn("Firebase offline"); }
+
+        updateBgStatus("Buscando en Local...");
+        const cached = await getLocal();
+        if (cached.length > 0) {
+            allData = cached;
+            updateBgStatus("Usando Caché Local");
+            finishInitialLoad();
+            uploadToFirebase(allData); 
+            return;
+        }
+
+        await fetchExcelMaster();
+        finishInitialLoad();
+    }
+
+    async function fetchExcelMaster() {
+        updateBgStatus("Conectando Excel API...");
+        try {
+            const res = await fetch(PA_API_URL, { method: 'POST' });
+            const data = await res.json();
+            const items = data.result || [];
+            if (items.length > 0) {
+                allData = items;
+                updateBgStatus("Excel Sincronizado");
+                await uploadToFirebase(items);
+                await saveLocal(items);
+            }
+        } catch (e) {
+            updateBgStatus("Sin conexión");
+        }
+    }
+
+    function finishInitialLoad() {
+        dom.loader.classList.add('opacity-0');
+        setTimeout(() => dom.loader.style.display = 'none', 500);
+        updateKPIs();
+        applyFilters();
+    }
+
+    // --- BACKGROUND WORKER (Cada 5 Minutos) ---
+    async function backgroundWorker() {
+        if (isProcessing) return;
+        isProcessing = true;
+        updateBgStatus("Verificando Excel...");
+
+        try {
+            const res = await fetch(PA_API_URL, { method: 'POST' });
+            const data = await res.json();
+            const latestExcel = data.result || [];
+            
+            let hasChanges = false;
+            const localMap = new Map(allData.map(i => [i.IDFila, i]));
+
+            latestExcel.forEach(excelItem => {
+                const localItem = localMap.get(excelItem.IDFila);
+                if (!localItem || JSON.stringify(localItem) !== JSON.stringify(excelItem)) {
+                    const idx = allData.findIndex(d => d.IDFila === excelItem.IDFila);
+                    if (idx === -1) allData.push(excelItem);
+                    else allData[idx] = excelItem;
+                    hasChanges = true;
                 }
             });
 
-            if (combined.length > 0) {
-                allData = combined.sort((a,b) => {
-                    const p = { "sin folio": 1, "pendiente": 2, "entregado": 3, "baja": 4 };
-                    return (p[normalizeText(a.Estatus)] || 99) - (p[normalizeText(b.Estatus)] || 99);
-                });
+            if (hasChanges) {
+                updateBgStatus("Guardando Cambios...");
+                await uploadToFirebase(allData);
                 await saveLocal(allData);
-                updateKPIs();
                 applyFilters();
-                document.getElementById('loading-state').style.display = 'none';
-                syncLabel.innerText = `Nube Sincronizada: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                updateKPIs();
             }
-        } catch (e) { console.error(e); } 
-        finally { if(!skipAPI) document.getElementById('btn-sync').classList.remove('syncing'); }
+            updateBgStatus("Sistema al día");
+        } catch (e) {
+            updateBgStatus("Error en Worker");
+        } finally {
+            isProcessing = false;
+        }
     }
 
-    const normalizeText = (str) => String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    async function uploadToFirebase(items) {
+        const chunkSize = 1000;
+        for (let i = 0; i < items.length; i += chunkSize) {
+            const part = Math.floor(i / chunkSize) + 1;
+            const chunk = items.slice(i, i + chunkSize);
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', `Part${part}`), { items: chunk });
+        }
+    }
 
+    function updateBgStatus(text) {
+        dom.bgText.textContent = text;
+    }
+
+    // --- FILTROS Y VIRTUALIZACIÓN ---
     window.applyFilters = () => {
-        const queryNorm = normalizeText(document.getElementById('search-input').value);
-        const queryParts = queryNorm.split(/\s+/).filter(p => p.length > 0);
+        const query = dom.searchInput.value.toLowerCase().trim();
+        const queryParts = query.split(' ').filter(p => p.length > 0);
+        const kpi = currentKpiFilter;
+        
         const dateType = document.getElementById('date-type').value;
         const startVal = document.getElementById('date-start').value;
         const endVal = document.getElementById('date-end').value;
-        
         const startLimit = startVal ? new Date(startVal + "T00:00:00") : null;
         const endLimit = endVal ? new Date(endVal + "T23:59:59") : null;
 
         filteredData = allData.filter(item => {
-            if (currentKpiFilter !== "Todos" && normalizeText(item.Estatus) !== normalizeText(currentKpiFilter)) return false;
-            
+            // Filtro KPI
+            if (kpi !== "Todos" && (item.Estatus || '').toLowerCase() !== kpi.toLowerCase()) return false;
+
+            // Filtro Fechas
             if (startLimit || endLimit) {
                 const val = item[dateType];
                 if (!val || typeof val !== 'string' || !val.includes('/')) return false;
@@ -325,65 +318,102 @@
                 if (endLimit && itemDate > endLimit) return false;
             }
 
+            // Filtro Búsqueda
             if (queryParts.length === 0) return true;
-            const haystack = normalizeText(`${item.Folio} ${item.Nombre} ${item.Titular} ${item.Placas} ${item["No de socio"]} ${item.Puesto} ${item.Negocio}`);
-            return queryParts.every(part => haystack.includes(part));
+            const pool = `${item.Folio} ${item.Nombre} ${item.Titular} ${item.Placas} ${item["No de socio"]} ${item.Puesto} ${item.Negocio}`.toLowerCase();
+            return queryParts.every(p => pool.includes(p));
         });
 
-        vSpacer.style.height = `${filteredData.length * ROW_HEIGHT}px`;
+        dom.vSpacer.style.height = `${filteredData.length * ROW_HEIGHT}px`;
         renderVirtual();
     };
 
     function renderVirtual() {
-        const scrollTop = viewport.scrollTop;
-        const viewportHeight = viewport.clientHeight;
+        const scrollTop = dom.viewport.scrollTop;
+        const viewportHeight = dom.viewport.clientHeight;
         let startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
         let endIdx = Math.min(startIdx + Math.ceil(viewportHeight / ROW_HEIGHT) + 8, filteredData.length);
         
-        vContent.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
+        dom.vContent.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
         const slice = filteredData.slice(startIdx, endIdx);
-        const queryParts = normalizeText(document.getElementById('search-input').value).split(/\s+/).filter(p => p.length > 0);
+        const queryParts = dom.searchInput.value.toLowerCase().trim().split(' ').filter(p => p.length > 0);
         
-        vContent.innerHTML = slice.map((item, idx) => {
+        dom.vContent.innerHTML = slice.map((item, idx) => {
             const socio = item["No de socio"] || item.Socio || '---';
             return `
-                <div class="data-row" style="height: ${ROW_HEIGHT}px; top: ${idx * ROW_HEIGHT}px;" onclick="handleItemClick(${startIdx + idx})">
-                    <div class="cell-content font-mono font-black text-emerald-800" style="width: 8%;">${item.Folio || '---'}</div>
-                    <div class="cell-content font-black text-slate-400" style="width: 8%;">${socio}</div>
-                    <div class="cell-content font-bold text-slate-800 uppercase" style="width: 22%;">${highlightText(item.Nombre || item.Titular || 'S/N', queryParts)}</div>
-                    <div class="cell-content text-slate-500 italic" style="width: 20%;">${item.Marca || ''} ${item.Modelo || ''} (${item.Placas || '---'})</div>
-                    <div class="cell-content text-[10px] text-slate-600 font-semibold" style="width: 22%;">${item.Puesto || '---'} - ${item.Negocio || '---'}</div>
-                    <div class="cell-content text-right font-mono text-slate-400 font-bold" style="width: 12%;">${item.Teléfono || '---'}</div>
-                    <div class="cell-content danger-zone" style="width: 8%;">
-                        <button onclick="event.stopPropagation(); requestDelete(${startIdx + idx})" class="flex items-center justify-center w-7 h-7 bg-rose-50 text-rose-500 rounded-lg border border-rose-100 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
-                        </button>
+                <div class="data-row" style="top: ${idx * ROW_HEIGHT}px;" onclick="handleItemClick(${startIdx + idx})">
+                    <div class="cell-content font-mono font-black text-emerald-800 w-[8%]">${item.Folio || '---'}</div>
+                    <div class="cell-content font-black text-slate-400 w-[8%]">${socio}</div>
+                    <div class="cell-content font-bold text-slate-800 uppercase w-[22%]">${highlightText(item.Nombre || item.Titular || '---', queryParts)}</div>
+                    <div class="cell-content text-slate-500 italic w-[20%]">${item.Marca || ''} ${item.Modelo || ''} (${item.Placas || '---'})</div>
+                    <div class="cell-content text-[10px] text-slate-600 font-semibold w-[22%]">${item.Puesto || '---'}</div>
+                    <div class="cell-content text-right font-mono text-slate-400 font-bold w-[12%]">${item.Teléfono || '---'}</div>
+                    <div class="cell-content w-[8%] text-center">
+                         <button onclick="event.stopPropagation(); requestDelete(${startIdx + idx})" class="text-rose-400 hover:text-rose-600 transition-colors p-2"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
+    const highlightText = (text, queryParts) => {
+        if (!queryParts.length || !text) return text;
+        const regex = new RegExp(`(${queryParts.join('|')})`, 'gi');
+        return String(text).replace(regex, '<mark>$1</mark>');
+    };
+
+    function updateKPIs() {
+        const getLen = (s) => allData.filter(d => (d.Estatus || '').toLowerCase() === s).length;
+        document.getElementById('count-all').innerText = allData.length;
+        document.getElementById('count-nofolio').innerText = getLen('sin folio');
+        document.getElementById('count-pending').innerText = getLen('pendiente');
+        document.getElementById('count-delivered').innerText = getLen('entregado');
+        document.getElementById('count-bajas').innerText = getLen('baja');
+    }
+
+    window.setKpiFilter = (s) => {
+        currentKpiFilter = s;
+        document.querySelectorAll('.kpi-chip').forEach(c => c.classList.remove('active'));
+        const ids = { "Todos": "kpi-all", "Sin folio": "kpi-nofolio", "Pendiente": "kpi-pendiente", "Entregado": "kpi-entregado", "Baja": "kpi-baja" };
+        document.getElementById(ids[s])?.classList.add('active');
+        applyFilters();
+    };
+
+    window.setFilterToday = () => {
+        const mexDate = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+        document.getElementById('date-type').value = "Fecha de solicitud";
+        document.getElementById('date-start').value = mexDate;
+        document.getElementById('date-end').value = mexDate;
+        applyFilters();
+    };
+
+    window.clearAllFilters = () => {
+        dom.searchInput.value = "";
+        document.getElementById('date-start').value = "";
+        document.getElementById('date-end').value = "";
+        setKpiFilter('Todos');
+    };
+
+    // --- ELIMINACIÓN ---
     window.requestDelete = (index) => {
         itemToDelete = filteredData[index];
         if (!itemToDelete) return;
         document.getElementById('delete-modal').classList.remove('hidden');
-        document.getElementById('delete-confirm-input').value = "";
-        document.getElementById('btn-execute-delete').disabled = true;
+        dom.deleteInput.value = "";
+        dom.btnExecuteDelete.disabled = true;
     };
 
     window.closeDeleteModal = () => { document.getElementById('delete-modal').classList.add('hidden'); itemToDelete = null; };
 
-    document.getElementById('delete-confirm-input').oninput = (e) => {
-        document.getElementById('btn-execute-delete').disabled = (e.target.value.trim().toUpperCase() !== "ELIMINAR");
+    dom.deleteInput.oninput = (e) => {
+        dom.btnExecuteDelete.disabled = (e.target.value.trim().toUpperCase() !== "ELIMINAR");
     };
 
     window.executeDelete = async () => {
         if (!itemToDelete) return;
-        const btn = document.getElementById('btn-execute-delete');
-        btn.disabled = true;
+        updateBgStatus("Eliminando...");
         try {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', itemToDelete.__partId);
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Marbetes', itemToDelete.__docId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const updatedItems = docSnap.data().items.filter(i => i.IDFila !== itemToDelete.IDFila);
@@ -394,45 +424,7 @@
                 applyFilters();
             }
         } catch (e) { console.error(e); } 
-        finally { closeDeleteModal(); btn.innerText = "Eliminar"; }
-    };
-
-    const highlightText = (text, queryParts) => {
-        if (!queryParts.length || !text) return text;
-        const regex = new RegExp(`(${queryParts.join('|')})`, 'gi');
-        return String(text).replace(regex, '<mark class="search-highlight">$1</mark>');
-    };
-
-    function updateKPIs() {
-        const getLen = (s) => allData.filter(d => normalizeText(d.Estatus) === s).length;
-        document.getElementById('count-all').innerText = allData.length;
-        document.getElementById('count-nofolio').innerText = getLen('sin folio');
-        document.getElementById('count-pending').innerText = getLen('pendiente');
-        document.getElementById('count-delivered').innerText = getLen('entregado');
-        document.getElementById('count-bajas').innerText = getLen('baja');
-    }
-
-    window.setKpiFilter = (s) => { 
-        currentKpiFilter = s; 
-        document.querySelectorAll('.kpi-chip').forEach(c => c.classList.remove('active')); 
-        const map = { "Todos": "kpi-all", "Sin folio": "kpi-nofolio", "Pendiente": "kpi-pendiente", "Entregado": "kpi-entregado", "Baja": "kpi-baja" }; 
-        document.getElementById(map[s])?.classList.add('active'); 
-        applyFilters(); 
-    };
-
-    window.setFilterToday = () => {
-        const now = new Date();
-        document.getElementById('date-type').value = "Fecha de solicitud";
-        document.getElementById('date-start').value = now.toISOString().split('T')[0];
-        document.getElementById('date-end').value = now.toISOString().split('T')[0];
-        applyFilters();
-    };
-
-    window.clearAllFilters = () => {
-        document.getElementById('search-input').value = "";
-        document.getElementById('date-start').value = "";
-        document.getElementById('date-end').value = "";
-        window.setKpiFilter('Todos');
+        finally { closeDeleteModal(); updateBgStatus("Listo"); }
     };
 
     window.handleItemClick = (index) => { 
@@ -443,8 +435,15 @@
         }
     };
 
-    viewport.onscroll = renderVirtual;
-    window.fetchFromFirebase = fetchFromFirebase;
-    window.syncFromExcelAPI = syncFromExcelAPI;
-    window.addEventListener('resize', renderVirtual);
+    // --- INICIALIZACIÓN ---
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            startDataEngine();
+            setInterval(backgroundWorker, 5 * 60 * 1000);
+        } else {
+            signInAnonymously(auth);
+        }
+    });
+
+    dom.viewport.onscroll = renderVirtual;
 </script>
