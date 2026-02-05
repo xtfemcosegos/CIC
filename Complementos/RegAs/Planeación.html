@@ -97,7 +97,16 @@
         }
         .user-row-info:hover { background: #fdf2f8; padding-left: 20px; }
 
-        .grid-viewport { grid-row: 2; grid-column: 2; overflow: auto; background: #f8fafc; scroll-behavior: smooth; }
+        .grid-viewport { 
+            grid-row: 2; grid-column: 2; 
+            overflow: auto; 
+            background: #f8fafc; 
+            scroll-behavior: smooth; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        .grid-viewport::-webkit-scrollbar { display: none; }
+
         .grid-body-container { display: flex; flex-direction: column; padding: 0 var(--nav-btn-width); }
         
         .row-container { 
@@ -138,6 +147,33 @@
         .tag-descanso { background-color: #f1f5f9; color: #475569; }
         .tag-falta { background-color: #fee2e2; color: #991b1b; }
 
+        /* Estilos de Etiquetas de Incidencias (Actualizado de puntos a texto) */
+        .incident-badge-container {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1px;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .inc-badge {
+            font-size: 5.5px;
+            font-weight: 900;
+            color: white;
+            padding: 1px 3px;
+            border-radius: 2px;
+            line-height: 1;
+            text-transform: uppercase;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .inc-extra { background-color: #f97316; } 
+        .inc-retardo { background-color: #ef4444; } 
+        .inc-recuperacion { background-color: #3b82f6; } 
+        .inc-festivo { background-color: #d946ef; } 
+
         .btn-go-today {
             margin-top: 8px; background: var(--accent-fiusha); padding: 4px 16px; border-radius: 20px;
             font-size: 9px; font-weight: 900; text-transform: uppercase; cursor: pointer;
@@ -157,11 +193,65 @@
             flex-shrink: 0;
             white-space: nowrap;
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        .context-submenu { display: none; position: absolute; left: 100%; top: 0; padding-left: 12px; margin-left: -4px; z-index: 1001; }
-        .context-menu-item:hover > .context-submenu { display: block; }
-        .submenu-content { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); padding: 6px; min-width: 180px; backdrop-filter: blur(8px); }
+        #context-menu {
+            display: none; 
+            position: fixed; 
+            z-index: 9999; 
+            background: rgba(255, 255, 255, 0.98); 
+            border-radius: 18px; 
+            padding: 8px; 
+            min-width: 240px; 
+            backdrop-filter: blur(15px);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .context-menu-item {
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #475569;
+            cursor: pointer;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f8fafc;
+            color: var(--accent-fiusha);
+        }
+
+        .context-submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            padding-left: 8px;
+            z-index: 10000;
+        }
+
+        .context-menu-item:hover > .context-submenu {
+            display: block;
+        }
+
+        .submenu-content {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 6px;
+            min-width: 190px;
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .submenu-content::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="no-scrollbar">
@@ -171,53 +261,61 @@
         <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Terminal Maestro...</p>
     </div>
 
-    <div id="context-menu" class="fixed z-[1000] bg-white/95 rounded-2xl shadow-2xl p-2 border border-slate-200 hidden min-w-[220px] backdrop-blur-md">
+    <!-- Menú Contextual -->
+    <div id="context-menu">
         <div class="p-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 mb-2 text-center">Operaciones Rápidas</div>
         
-        <div class="context-menu-item group relative p-3 hover:bg-yellow-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+        <div class="context-menu-item group">
             <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-amber-400"></div> Matutino</div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
             <div class="context-submenu"><div class="submenu-content" id="sub-matutino"></div></div>
         </div>
 
-        <div class="context-menu-item group relative p-3 hover:bg-blue-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+        <div class="context-menu-item group">
             <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Vespertino</div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
             <div class="context-submenu"><div class="submenu-content" id="sub-vespertino"></div></div>
         </div>
 
-        <div class="context-menu-item group relative p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+        <div class="context-menu-item group">
             <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-900"></div> Nocturno</div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
             <div class="context-submenu"><div class="submenu-content" id="sub-nocturno"></div></div>
         </div>
 
-        <div class="context-menu-item group relative p-3 hover:bg-fuchsia-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex justify-between items-center">
+        <div class="context-menu-item group">
             <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-slate-400"></div> Ausentismo</div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="9 18 15 12 9 6"></polyline></svg>
             <div class="context-submenu">
                 <div class="submenu-content">
-                    <div onclick="window.quickAssignAbsence('Descanso')" class="p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Descanso</div>
-                    <div onclick="window.quickAssignAbsence('Vacaciones')" class="p-2 hover:bg-emerald-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Vacaciones</div>
-                    <div onclick="window.quickAssignAbsence('Falta')" class="p-2 hover:bg-yellow-50 rounded-lg mb-1 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Falta</div>
+                    <div onclick="window.quickAssignAbsence('Descanso')" class="p-2 hover:bg-slate-50 rounded-lg mb-1 flex items-center gap-3 text-[9px] font-bold"><div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Descanso</div>
+                    <div onclick="window.quickAssignAbsence('Vacaciones')" class="p-2 hover:bg-emerald-50 rounded-lg mb-1 flex items-center gap-3 text-[9px] font-bold"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Vacaciones</div>
+                    <div onclick="window.quickAssignAbsence('Falta')" class="p-2 hover:bg-yellow-50 rounded-lg mb-1 flex items-center gap-3 text-[9px] font-bold"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Falta</div>
                 </div>
             </div>
         </div>
 
         <div class="h-px bg-slate-100 my-2"></div>
 
-        <div onclick="window.openPatrones()" class="context-menu-item group relative p-3 hover:bg-indigo-50 rounded-xl cursor-pointer text-[10px] font-bold uppercase flex items-center gap-3 transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-            Asignar Patrón
+        <div onclick="window.openPatrones()" class="context-menu-item">
+            <div class="flex items-center gap-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                Asignar Patrón
+            </div>
         </div>
 
-        <div onclick="window.deleteFromHere()" class="p-3 hover:bg-rose-50 text-rose-700 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3 transition-all">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 5H19V11M19 5L5 19M5 19H11M5 19V13"></path></svg>
-            Limpiar desde aquí
+        <div onclick="window.deleteFromHere()" class="context-menu-item !text-rose-700 hover:!bg-rose-50">
+            <div class="flex items-center gap-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 5H19V11M19 5L5 19M5 19H11M5 19V13"></path></svg>
+                Limpiar desde aquí
+            </div>
         </div>
 
-        <div onclick="window.quickDelete()" class="p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer text-[10px] font-black uppercase flex items-center gap-3">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg> Limpiar Celda
+        <div onclick="window.quickDelete()" class="context-menu-item !text-red-600 hover:!bg-red-50">
+            <div class="flex items-center gap-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg> 
+                Limpiar Celda
+            </div>
         </div>
     </div>
 
@@ -273,6 +371,11 @@
 
         const casetasOrden = ["Centro de control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"];
 
+        function getMexicoToday() {
+            return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Mexico_City' });
+        }
+        const realTodayStr = getMexicoToday();
+
         window.handleManualScroll = (dir) => { UI.viewport.scrollLeft += (dir * 62 * 7); };
         window.scrollToToday = () => { UI.viewport.scrollTo({ left: (60 * 62), behavior: 'smooth' }); };
 
@@ -287,23 +390,40 @@
 
         async function startSystem() {
             const usersRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
-            const usersSnap = await getDoc(usersRef);
-            if(usersSnap.exists()) {
-                const data = usersSnap.data();
-                users = Object.entries(data)
-                    .filter(([uid, d]) => d && typeof d === 'object') // Asegurar objeto válido
-                    .map(([uid, d]) => {
-                        // CORRECCIÓN: Manejar ID 0 o nulo de forma segura
-                        const sId = (d.socioId !== undefined && d.socioId !== null) ? String(d.socioId) : '';
-                        userDataMap[sId] = { uid, ...d };
-                        const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
-                        const estatusVal = String(d.operativa?.estatus || d.status || 'Activo').toLowerCase();
-                        return { uid, socioId: sId, ...d, displayPuesto: puestoVal, displayStatus: estatusVal };
-                    })
-                    // CORRECCIÓN: Filtro de estatus más flexible
-                    .filter(u => u.displayStatus !== 'baja' && u.socioId !== '')
-                    .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
-            }
+            
+            onSnapshot(usersRef, (usersSnap) => {
+                if(usersSnap.exists()) {
+                    const data = usersSnap.data();
+                    const allowedKeywords = ["SEGURIDAD", "ENCARGADO", "ANALISTA"];
+
+                    users = Object.entries(data)
+                        .filter(([uid, d]) => d && typeof d === 'object') 
+                        .map(([uid, d]) => {
+                            const sId = (d.socioId !== undefined && d.socioId !== null) ? String(d.socioId) : '';
+                            userDataMap[sId] = { uid, ...d };
+                            const puestoVal = d.puesto || d.operativa?.puesto || 'PERSONAL';
+                            const estatusVal = String(d.operativa?.estatus || d.status || 'Activo').toLowerCase();
+                            const casetaVal = d.operativa?.caseta || "Sin Asignar";
+                            return { 
+                                uid, socioId: sId, ...d, 
+                                displayPuesto: puestoVal, 
+                                displayStatus: estatusVal,
+                                displayCaseta: casetaVal 
+                            };
+                        })
+                        .filter(u => {
+                            const isNotBaja = u.displayStatus !== 'baja';
+                            const hasId = u.socioId !== '';
+                            const pStr = u.displayPuesto.toUpperCase().trim();
+                            const isAllowed = allowedKeywords.some(key => pStr.includes(key));
+                            return isNotBaja && hasId && isAllowed;
+                        });
+
+                    renderStructure();
+                    setupAssignments();
+                    UI.overlay.style.display = 'none';
+                }
+            });
 
             ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
                 const container = document.getElementById(`sub-${shift}`);
@@ -317,24 +437,24 @@
                 });
             });
 
-            renderStructure();
-            setupAssignments();
-            UI.overlay.style.display = 'none';
-            setTimeout(window.scrollToToday, 500);
+            setTimeout(window.scrollToToday, 800);
         }
 
         function renderStructure() {
             const grouped = users.reduce((acc, el) => {
-                const g = el.operativa?.caseta || "GENERAL";
+                const g = el.displayCaseta.trim();
                 if (!acc[g]) acc[g] = [];
                 acc[g].push(el);
                 return acc;
             }, {});
 
+            Object.keys(grouped).forEach(key => {
+                grouped[key].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            });
+
             UI.header.innerHTML = ''; 
             document.getElementById('left-col').innerHTML = ''; 
             UI.gridBody.innerHTML = '';
-            const realTodayStr = new Date().toISOString().split('T')[0];
 
             for(let i=0; i<totalDays; i++) {
                 const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
@@ -345,11 +465,18 @@
                 UI.header.appendChild(cell);
             }
 
-            // CORRECCIÓN: Asegurar que todos los grupos detectados se incluyan
-            const allGroups = [...new Set([...casetasOrden, ...Object.keys(grouped)])];
+            const allDetectedGroups = Object.keys(grouped);
+            const sortedGroups = casetasOrden.filter(c => allDetectedGroups.some(ag => ag.toLowerCase() === c.toLowerCase()));
+            
+            allDetectedGroups.forEach(ag => {
+                if (!sortedGroups.some(sg => sg.toLowerCase() === ag.toLowerCase())) {
+                    sortedGroups.push(ag);
+                }
+            });
 
-            allGroups.forEach(groupName => {
-                if(!grouped[groupName] || grouped[groupName].length === 0) return;
+            sortedGroups.forEach(groupName => {
+                const realKey = Object.keys(grouped).find(k => k.toLowerCase() === groupName.toLowerCase());
+                if(!realKey || grouped[realKey].length === 0) return;
                 
                 const ghL = document.createElement('div'); 
                 ghL.className = 'group-header'; 
@@ -361,7 +488,7 @@
                 ghR.style.width = `${totalDays * 62}px`; 
                 UI.gridBody.appendChild(ghR);
 
-                grouped[groupName].forEach(user => {
+                grouped[realKey].forEach(user => {
                     const uRow = document.createElement('div');
                     uRow.className = 'user-row-info';
                     const avatarPlaceholder = `https://ui-avatars.com/api/?name=${user.nombre}&background=d946ef&color=fff`;
@@ -408,9 +535,18 @@
                         cell.oncontextmenu = (e) => {
                             e.preventDefault(); 
                             currentContext = { uid: user.uid, socioId: user.socioId, dateId };
+                            
+                            const menuWidth = 240;
+                            const menuHeight = 300;
+                            let posX = e.clientX;
+                            let posY = e.clientY;
+
+                            if (posX + menuWidth > window.innerWidth) posX -= menuWidth;
+                            if (posY + menuHeight > window.innerHeight) posY -= menuHeight;
+
                             UI.menu.style.display = 'block'; 
-                            UI.menu.style.left = `${Math.min(e.clientX, window.innerWidth - 240)}px`; 
-                            UI.menu.style.top = `${Math.min(e.clientY, window.innerHeight - 300)}px`;
+                            UI.menu.style.left = `${posX}px`; 
+                            UI.menu.style.top = `${posY}px`;
                         };
                         gRow.appendChild(cell);
                     }
@@ -461,7 +597,7 @@
                             clearCellUI(parts[0], dateId, parts[2]);
                         }
                     }
-                }, (error) => console.error("Firebase Snapshot Error:", error));
+                });
                 activeListeners.set(docId, unsub);
             });
         }
@@ -492,7 +628,16 @@
 
             const tag = document.createElement('div');
             tag.className = `shift-tag tag-${type} ${specificClass}`;
-            tag.innerHTML = `<span>${label}</span>`;
+            
+            // ACTUALIZACIÓN: De puntos a etiquetas de texto específicas
+            let indicatorsHtml = '<div class="incident-badge-container">';
+            if (data.es_extra) indicatorsHtml += '<div class="inc-badge inc-extra" title="Extra">Ext</div>';
+            if (data.retardo) indicatorsHtml += '<div class="inc-badge inc-retardo" title="Retardo">Ret</div>';
+            if (data.es_recuperacion) indicatorsHtml += '<div class="inc-badge inc-recuperacion" title="Recuperación">Recu</div>';
+            if (data.es_festivo) indicatorsHtml += '<div class="inc-badge inc-festivo" title="Festivo">Fest</div>';
+            indicatorsHtml += '</div>';
+
+            tag.innerHTML = `<span>${label}</span>${indicatorsHtml}`;
 
             tag.onclick = (e) => {
                 e.stopPropagation();
@@ -636,7 +781,9 @@
             }, '*');
         };
 
-        document.addEventListener('click', (e) => { if (!e.target.closest('#context-menu')) UI.menu.style.display = 'none'; });
+        document.addEventListener('mousedown', (e) => { 
+            if (!UI.menu.contains(e.target)) UI.menu.style.display = 'none'; 
+        });
         
         const initSession = async () => {
           if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
