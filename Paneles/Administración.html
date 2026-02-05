@@ -14,7 +14,7 @@
             color: #1a1a1a;
             font-family: 'Inter', sans-serif;
             margin: 0;
-            overflow: hidden;
+            padding: 0;
             height: 100vh;
             -webkit-tap-highlight-color: transparent;
         }
@@ -234,15 +234,9 @@
         };
 
         const toggleRightSidebar = (forceOpen = null) => {
-            // Detección robusta de si está abierto o cerrado
             const currentWidth = dom.rightSidebar.style.width;
             const isCurrentlyClosed = !currentWidth || currentWidth === '0px' || currentWidth === '0';
-            
-            let targetWidth;
-            if (forceOpen === true) targetWidth = '35%';
-            else if (forceOpen === false) targetWidth = '0px';
-            else targetWidth = isCurrentlyClosed ? '35%' : '0px';
-
+            let targetWidth = forceOpen === true ? '35%' : (forceOpen === false ? '0px' : (isCurrentlyClosed ? '35%' : '0px'));
             dom.rightSidebar.style.width = targetWidth;
             saveUIState();
         };
@@ -264,10 +258,8 @@
             activeTabIndex = index;
             const tab = openTabs[index];
             if (tab) {
-                // Asegurar que la URL sea absoluta para el iframe principal
                 const targetUrl = new URL(tab.url, window.location.href).href;
                 if (dom.appFrame.src !== targetUrl) dom.appFrame.src = tab.url;
-                
                 dom.noApp.classList.add('hidden');
                 dom.shellHeader.classList.add('hidden-header');
                 dom.mainLayout.classList.remove('with-shell');
@@ -300,17 +292,26 @@
             else switchApp(activeTabIndex);
         };
 
-        // Listener de mensajes mejorado
         window.addEventListener('message', (e) => {
-            const { action, url, name, color, content } = e.data || {};
+            const { action, url, path, name, color, content } = e.data || {};
             
-            if (action === 'openApp') openApp(url, name, color);
+            // REDIRECCIÓN INTELIGENTE: Si se pide abrir el Reporte Diario, pasarlo a la App de Asistencia
+            if (action === 'openApp' && path && path.includes('Reporte_Diario')) {
+                // 1. Abrir/Activar Asistencia
+                openApp('Apps/RegAs.html', 'Asistencia', '#d946ef');
+                // 2. Notificar a la App que cambie de vista internamente
+                setTimeout(() => {
+                    const regAsIframe = dom.appFrame.contentWindow;
+                    if (regAsIframe) regAsIframe.postMessage({ action: 'internalNav', tab: 'reporte', subview: 'diario' }, '*');
+                }, 600); // Pequeño delay para asegurar que el iframe esté listo
+                return;
+            }
+
+            if (action === 'openApp') openApp(url || path, name, color);
             if (action === 'toggleMenu') toggleLeftSidebar();
             
             if (action === 'openRightPanel' || action === 'toggleRightPanel') {
-                if (content) {
-                    dom.rightContent.innerHTML = content;
-                }
+                if (content) dom.rightContent.innerHTML = content;
                 toggleRightSidebar(action === 'openRightPanel' ? true : null);
             }
             
@@ -329,11 +330,9 @@
             const data = JSON.parse(saved);
             openTabs = data.openTabs || [];
             activeTabIndex = data.activeTabIndex ?? -1;
-            
             if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
             if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
             if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
-
             if (openTabs.length > 0) switchApp(activeTabIndex);
             else openApp('home.html', 'Dashboard', '#0f172a');
         } else {

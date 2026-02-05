@@ -328,14 +328,17 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        function renderRibbon(tab) {
+        function renderRibbon(tab, forcedAction = null) {
             dom.ribbonContent.innerHTML = '';
             if (tab === 'planeacion') { dom.ribbon.classList.add('hidden'); return; }
             dom.ribbon.classList.remove('hidden');
             const items = ribbonConfigs[tab] || [];
             items.forEach(item => {
                 const btn = document.createElement('div');
-                btn.className = `ribbon-pill ${item.active ? 'active' : ''}`;
+                // Si hay un action forzado (ej. 'diario'), marcarlo como activo
+                const isActive = forcedAction ? (item.action === forcedAction) : item.active;
+                btn.className = `ribbon-pill ${isActive ? 'active' : ''}`;
+                
                 if (tab === 'diaria') {
                     btn.textContent = item.label;
                     btn.onclick = () => {
@@ -348,7 +351,6 @@
                     btn.onclick = () => {
                         document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
                         btn.classList.add('active');
-                        // REPARACIÓN: Cambio de fuente de iframe según reporte seleccionado
                         const reportPaths = {
                             'whatsapp': '../Complementos/RegAs/Wa.html',
                             'diario': '../Complementos/RegAs/Reporte_Diario.html'
@@ -360,26 +362,33 @@
             });
         }
 
-        window.setTab = (tab, el) => {
+        window.setTab = (tab, el, forcedSubView = null) => {
             currentActiveTab = tab;
-            // Persistencia de última vista
             localStorage.setItem('regas_last_view', tab);
 
             document.querySelectorAll('.main-tab-btn').forEach(t => t.classList.remove('active'));
-            
-            // Si el elemento no es pasado (carga inicial), buscarlo por ID
             const targetBtn = el || document.getElementById(`nav-${tab}`);
             if (targetBtn) targetBtn.classList.add('active');
 
             dom.diariaControls.classList.toggle('hidden', tab !== 'diaria');
-            renderRibbon(tab);
-
-            const paths = { 
-                'diaria': '../Complementos/RegAs/Día.html', 
-                'planeacion': '../Complementos/RegAs/Planeación.html', 
-                'reporte': '../Complementos/RegAs/Wa.html' // Predeterminado de reporte ahora es WhatsApp
-            };
-            dom.iframe.src = paths[tab];
+            
+            // Si venimos de un comando externo (ej. abrir reporte diario)
+            if (forcedSubView) {
+                renderRibbon(tab, forcedSubView);
+                const forcedPaths = {
+                    'diario': '../Complementos/RegAs/Reporte_Diario.html',
+                    'whatsapp': '../Complementos/RegAs/Wa.html'
+                };
+                dom.iframe.src = forcedPaths[forcedSubView];
+            } else {
+                renderRibbon(tab);
+                const paths = { 
+                    'diaria': '../Complementos/RegAs/Día.html', 
+                    'planeacion': '../Complementos/RegAs/Planeación.html', 
+                    'reporte': '../Complementos/RegAs/Wa.html' 
+                };
+                dom.iframe.src = paths[tab];
+            }
             
             if(tab === 'diaria') updateUI();
         };
@@ -420,6 +429,11 @@
                 window.parent.postMessage(e.data, '*');
             }
 
+            // COMANDO EXTERNO: Recibido desde Administración.html para cambiar de vista internamente
+            if (e.data.action === 'internalNav') {
+                setTab(e.data.tab, null, e.data.subview);
+            }
+
             if (e.data.action === 'reportShift') {
                 currentShiftIndex = shifts.indexOf(e.data.shift);
                 dom.shiftLabel.textContent = e.data.shift.toUpperCase();
@@ -435,7 +449,6 @@
         });
 
         window.onload = () => { 
-            // Restaurar última vista o cargar Diaria por defecto
             const lastView = localStorage.getItem('regas_last_view') || 'diaria';
             setTab(lastView);
             updateUI(); 
