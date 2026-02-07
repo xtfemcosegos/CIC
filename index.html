@@ -35,6 +35,10 @@
             outline: none;
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
+        .input-field:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -67,11 +71,11 @@
                         placeholder="••••••••">
                 </div>
 
-                <div id="messageBox" class="hidden p-4 rounded-xl text-sm font-medium transition-all duration-300"></div>
+                <div id="messageBox" class="hidden p-4 rounded-xl text-sm font-medium transition-all duration-300 text-center"></div>
 
                 <button type="submit" id="submitBtn" 
                     class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex justify-center items-center gap-3 text-lg shadow-lg shadow-blue-900/40">
-                    <span>Entrar al Sistema</span>
+                    <span id="btnText">Entrar al Sistema</span>
                     <svg id="loader" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -82,6 +86,7 @@
 
         <div class="mt-12 pt-8 border-t border-white/10 w-full max-w-2xl text-center">
             <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-black">Uso exclusivo para personal de Protección Patrimonial OS</p>
+            <p id="versionTag" class="text-[8px] text-gray-700 mt-2 font-mono">v7.1.18</p>
         </div>
     </div>
 
@@ -90,7 +95,7 @@
 
         import { firebaseConfig } from './script.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
@@ -101,13 +106,53 @@
         const loginForm = document.getElementById('loginForm');
         const messageBox = document.getElementById('messageBox');
         const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
         const loader = document.getElementById('loader');
+        const versionTag = document.getElementById('versionTag');
 
         const showMessage = (text, isError = true) => {
             messageBox.textContent = text;
             messageBox.className = `p-4 rounded-xl text-sm font-medium ${isError ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-green-500/20 text-green-400 border border-green-500/50'}`;
             messageBox.classList.remove('hidden');
         };
+
+        /**
+         * Verifica si hay una nueva versión y limpia la caché
+         */
+        async function checkUpdate() {
+            try {
+                // Timeout de seguridad para no bloquear el login si falla la red
+                const timeout = setTimeout(() => { throw new Error("TIMEOUT"); }, 3500);
+
+                await signInAnonymously(auth);
+                const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'AppConfig', 'System');
+                const snap = await getDoc(configRef);
+
+                clearTimeout(timeout);
+
+                if (snap.exists()) {
+                    const remoteVersion = snap.data().version;
+                    versionTag.textContent = `v${remoteVersion}`;
+
+                    if (remoteVersion && remoteVersion !== APP_VERSION) {
+                        console.log("Detectada nueva versión: " + remoteVersion + ". Actualizando...");
+                        
+                        // Limpieza profunda de caché
+                        localStorage.clear();
+                        if ('caches' in window) {
+                            const cacheKeys = await caches.keys();
+                            await Promise.all(cacheKeys.map(key => caches.delete(key)));
+                        }
+
+                        // Recargar forzando descarga del servidor
+                        window.location.reload(true);
+                    }
+                }
+            } catch (err) {
+                console.warn("No se pudo verificar la versión:", err.message);
+                // Si falla, permitimos que el usuario use el formulario normal
+            }
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -118,11 +163,11 @@
             messageBox.classList.add('hidden');
             submitBtn.disabled = true;
             loader.classList.remove('hidden');
-            submitBtn.classList.add('opacity-70');
+            btnText.textContent = "Verificando...";
 
             try {
                 // 1. Intentar Autenticación básica
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, email, password);
                 
                 // 2. Verificar permisos en la base de datos de Socios (hasAuth)
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP');
@@ -147,14 +192,14 @@
                 }
 
                 if (!authorized) {
-                    // Si no tiene el flag hasAuth, cerramos la sesión forzosamente
                     await signOut(auth);
-                    showMessage("Acceso denegado: Su cuenta no tiene permisos activos.");
+                    showMessage("Acceso denegado: Su cuenta no tiene permisos operativos activos.");
                     resetButton();
                     return;
                 }
 
                 showMessage("Acceso verificado. Redirigiendo...", false);
+                btnText.textContent = "Acceso Correcto";
                 
                 setTimeout(() => {
                     window.location.href = "Paneles/Administración.html";
@@ -163,9 +208,10 @@
             } catch (error) {
                 console.error(error);
                 let friendlyMessage = "Error al intentar ingresar.";
-                if (error.code === 'auth/invalid-credential') friendlyMessage = "Las credenciales no coinciden.";
-                if (error.code === 'auth/user-not-found') friendlyMessage = "Usuario no registrado.";
-                if (error.message === "ERROR_DB_MISSING") friendlyMessage = "Error de sincronización con la base de datos.";
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') 
+                    friendlyMessage = "Las credenciales no coinciden.";
+                if (error.message === "ERROR_DB_MISSING") 
+                    friendlyMessage = "Error de sincronización con la base de datos.";
                 
                 showMessage(friendlyMessage);
                 resetButton();
@@ -175,8 +221,11 @@
         function resetButton() {
             submitBtn.disabled = false;
             loader.classList.add('hidden');
-            submitBtn.classList.remove('opacity-70');
+            btnText.textContent = "Entrar al Sistema";
         }
+
+        // Ejecutar verificación de actualización al cargar
+        window.onload = checkUpdate;
     </script>
 </body>
 </html>
