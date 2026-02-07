@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC 7.1 - Combinador de Datos Plano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .drop-zone.has-file {
+            border-color: #2563eb;
+            background-color: #f8fafc;
+        }
+        .priority-card {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        input[type="radio"]:checked + .priority-card {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Encabezado -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight text-center md:text-left">Combinador de Registros</h1>
+                <p class="text-slate-500 text-sm">Versión 7.1 | Estructura Plana sin Arreglos</p>
+            </div>
+            <div class="flex gap-2">
+                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Lógica de Objeto Puro</span>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <!-- Archivo A -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Archivo JSON A</label>
+                <div id="zoneA" class="drop-zone p-8 rounded-2xl text-center cursor-pointer">
+                    <input type="file" id="fileA" class="hidden" accept=".json">
+                    <p id="nameA" class="text-slate-400 text-sm">Haz clic o arrastra el primer archivo</p>
+                </div>
+                <div class="mt-4">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="radio" name="priority" value="A" checked class="hidden">
+                        <div class="priority-card w-full p-4 rounded-xl border border-slate-100 text-center group-hover:bg-slate-50">
+                            <span class="text-sm font-bold text-slate-600">Marcar como Prioritario</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Archivo B -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Archivo JSON B</label>
+                <div id="zoneB" class="drop-zone p-8 rounded-2xl text-center cursor-pointer">
+                    <input type="file" id="fileB" class="hidden" accept=".json">
+                    <p id="nameB" class="text-slate-400 text-sm">Haz clic o arrastra el segundo archivo</p>
+                </div>
+                <div class="mt-4">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="radio" name="priority" value="B" class="hidden">
+                        <div class="priority-card w-full p-4 rounded-xl border border-slate-100 text-center group-hover:bg-slate-50">
+                            <span class="text-sm font-bold text-slate-600">Marcar como Prioritario</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="space-y-4">
+            <button id="btnProcess" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-3xl transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Combinar y Aplanar Estructura
+            </button>
+            <div id="status" class="hidden p-4 rounded-2xl text-center text-sm font-medium"></div>
+            <button id="btnDownload" class="hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-3xl transition-all shadow-xl">
+                Descargar Objeto Plano (JSON)
+            </button>
+        </div>
+
+        <!-- Previsualización -->
+        <div id="previewArea" class="mt-8 hidden">
+            <h3 class="text-slate-700 font-bold mb-3 uppercase text-xs tracking-widest">Vista previa del resultado:</h3>
+            <pre id="jsonPreview" class="bg-slate-900 text-emerald-400 p-6 rounded-3xl text-[10px] font-mono overflow-auto max-h-80 shadow-inner"></pre>
+        </div>
+    </div>
+
+    <script>
+        let dataA = null;
+        let dataB = null;
+        let resultData = null;
+
+        const setupZone = (zoneId, inputId, nameId, setData) => {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const nameDisp = document.getElementById(nameId);
+
+            zone.onclick = () => input.click();
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        setData(JSON.parse(ev.target.result));
+                        nameDisp.textContent = file.name;
+                        zone.classList.add('has-file');
+                        checkReady();
+                    } catch (err) {
+                        alert("Error al leer JSON: " + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+        };
+
+        setupZone('zoneA', 'fileA', 'nameA', (d) => dataA = d);
+        setupZone('zoneB', 'fileB', 'nameB', (d) => dataB = d);
+
+        function checkReady() {
+            if (dataA && dataB) {
+                document.getElementById('btnProcess').disabled = false;
+            }
+        }
+
+        document.getElementById('btnProcess').onclick = () => {
+            const priority = document.querySelector('input[name="priority"]:checked').value;
+            const status = document.getElementById('status');
+            
+            status.classList.remove('hidden');
+            status.className = "p-4 rounded-2xl text-center text-sm font-medium bg-blue-50 text-blue-600 mb-4";
+            status.textContent = "Procesando y eliminando anidamientos...";
+
+            setTimeout(() => {
+                try {
+                    const primary = priority === 'A' ? dataA : dataB;
+                    const secondary = priority === 'A' ? dataB : dataA;
+                    
+                    // Fusión y aplanamiento total
+                    resultData = mergeAndFlatten(primary, secondary);
+
+                    status.className = "p-4 rounded-2xl text-center text-sm font-medium bg-emerald-50 text-emerald-600 mb-4";
+                    status.textContent = "Estructura aplanada correctamente. Se han eliminado todos los arreglos [].";
+                    
+                    document.getElementById('btnDownload').classList.remove('hidden');
+                    document.getElementById('previewArea').classList.remove('hidden');
+                    document.getElementById('jsonPreview').textContent = JSON.stringify(resultData, null, 2).substring(0, 1000) + "...";
+                } catch (err) {
+                    status.className = "p-4 rounded-2xl text-center text-sm font-medium bg-red-50 text-red-600 mb-4";
+                    status.textContent = "Error en el proceso: " + err.message;
+                }
+            }, 300);
+        };
+
+        // Función para extraer todas las fechas de una estructura (sea array de meses o un objeto directo)
+        function normalizeToFlatObject(data) {
+            let flatMap = {};
+            
+            // Si es un array (ej: [{id: "012026", "10012026": { ... }}])
+            if (Array.isArray(data)) {
+                data.forEach(monthNode => {
+                    Object.keys(monthNode).forEach(key => {
+                        // Omitir el ID del mes, solo queremos las fechas
+                        if (key !== 'id' && !isNaN(parseInt(key))) {
+                            flatMap[key] = monthNode[key];
+                        }
+                    });
+                });
+            } else {
+                // Si ya es un objeto, extraer solo las llaves que parecen fechas
+                Object.keys(data).forEach(key => {
+                    if (!isNaN(parseInt(key))) {
+                        flatMap[key] = data[key];
+                    }
+                });
+            }
+            return flatMap;
+        }
+
+        function mergeAndFlatten(pIn, sIn) {
+            const pFlat = normalizeToFlatObject(pIn);
+            const sFlat = normalizeToFlatObject(sIn);
+            
+            const masterMap = {};
+            const allDates = [...new Set([...Object.keys(pFlat), ...Object.keys(sFlat)])];
+
+            allDates.sort().forEach(date => {
+                masterMap[date] = {};
+                const pDate = pFlat[date] || {};
+                const sDate = sFlat[date] || {};
+                
+                const allUserIds = [...new Set([...Object.keys(pDate), ...Object.keys(sDate)])];
+                
+                allUserIds.forEach(uid => {
+                    masterMap[date][uid] = {};
+                    const pUser = pDate[uid] || {};
+                    const sUser = sDate[uid] || {};
+
+                    // Unificar categorías (matutino, vespertino, Ausentismo)
+                    const allCats = [...new Set([...Object.keys(pUser), ...Object.keys(sUser)])];
+
+                    allCats.forEach(cat => {
+                        const pData = pUser[cat] || null;
+                        const sData = sUser[cat] || null;
+
+                        if (!pData) {
+                            masterMap[date][uid][cat] = sData;
+                        } else if (!sData) {
+                            masterMap[date][uid][cat] = pData;
+                        } else {
+                            // Fusión de campos específicos
+                            const mergedInfo = { ...pData };
+
+                            // Prioridad 1: Configuración (Mandatorio el Prioritario)
+                            const configFields = ['entrada_planificada', 'Caseta', 'retardo', 'es_festivo', 'es_extra', 'es_recuperacion'];
+                            configFields.forEach(f => {
+                                if (pData[f] !== undefined) mergedInfo[f] = pData[f];
+                            });
+
+                            // Prioridad 2: Valores Reales (Dato existente manda sobre vacío)
+                            const realFields = ['entrada_real', 'salida_real'];
+                            realFields.forEach(f => {
+                                const valP = pData[f];
+                                const valS = sData[f];
+                                if ((valP === null || valP === "") && (valS !== null && valS !== "")) {
+                                    mergedInfo[f] = valS;
+                                } else {
+                                    mergedInfo[f] = valP;
+                                }
+                            });
+
+                            masterMap[date][uid][cat] = mergedInfo;
+                        }
+                    });
+                });
+            });
+
+            return masterMap;
+        }
+
+        document.getElementById('btnDownload').onclick = () => {
+            if (!resultData) return;
+            const blob = new Blob([JSON.stringify(resultData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CIC_PLANO_${new Date().getTime()}.json`;
+            a.click();
+        };
+    </script>
+</body>
+</html>

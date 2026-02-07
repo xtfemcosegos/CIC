@@ -141,6 +141,7 @@
             padding: 3px;
             border-radius: 10px;
             border: 1px solid #f0abfc;
+            position: relative;
         }
 
         .nav-btn {
@@ -168,8 +169,11 @@
             align-items: center;
             justify-content: center;
             border: 1px solid #f5d0fe;
-            min-width: 150px;
+            min-width: 140px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        .display-box:hover { background: #f5d0fe; }
         
         .display-text { font-size: 11px; font-weight: 900; color: #701a75; text-transform: uppercase; }
 
@@ -186,60 +190,115 @@
             text-align: center;
         }
 
-        /* --- NIVEL 3: RIBBON --- */
-        .app-ribbon {
-            background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
-            height: 45px;
+        /* Botón HOY */
+        .today-btn {
+            background: #d946ef;
+            color: white;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(217, 70, 239, 0.2);
+        }
+        .today-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(217, 70, 239, 0.3); }
+        .today-btn.hidden { opacity: 0; pointer-events: none; }
+
+        /* MENU LISTA DESPLEGABLE */
+        .dropdown-shift-list {
+            display: none;
+            position: absolute;
+            top: 115%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #f0abfc;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(112, 26, 117, 0.15);
+            z-index: 500;
+            overflow: hidden;
+            padding: 5px;
+        }
+        .dropdown-shift-list.show { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dropdown-item {
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            padding: 0 1.5rem;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+        .dropdown-item:hover { background: #fdf4ff; color: #d946ef; padding-left: 18px; }
+        .dropdown-item.active { background: #d946ef; color: white; }
+
+        /* --- NIVEL 3: RIBBON (Barra de herramientas) --- */
+        .app-ribbon {
+            background: #1e293b; /* Barra oscura sólida */
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
             position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 -2px 10px rgba(0,0,0,0.2);
             flex-shrink: 0;
             z-index: 110;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .app-ribbon.hidden { display: none; }
 
-        .app-ribbon::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -150%; width: 60%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.08) 55%, transparent);
-            transform: skewX(-25deg);
-            animation: shine-sweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        @keyframes shine-sweep { 0% { left: -150%; } 15% { left: 150%; } 100% { left: 150%; } }
-
         .ribbon-pill {
-            padding: 0.4rem 1.2rem;
-            border-radius: 20px;
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
             font-size: 10px;
             font-weight: 700;
             color: #94a3b8;
-            background: rgba(255, 255, 255, 0.04);
-            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
         }
-        .ribbon-pill:hover { color: white; background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
-        .ribbon-pill.active { background: white; color: #1e293b; border-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        .ribbon-pill:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .ribbon-pill.active {
+            background: white;
+            color: #1e293b;
+            border-color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
 
         #mainIframe { flex: 1; border: none; width: 100%; background: #f8fafc; }
     </style>
 </head>
 <body>
 
-    <!-- NIVEL 1 -->
     <header class="app-header-top">
         <div class="branding-section">
             <div onclick="openApps()" class="apps-drawer-btn" title="Aplicaciones">
                 <img src="../MM/Apps.png" alt="Apps">
             </div>
             <div class="logo-container">
-                <img src="../MM/RegAs.png" alt="Logo Asistencia" onerror="this.style.display='none'">
+                <img src="../MM/RegAs.png" alt="Logo Asistencia">
             </div>
             <div>
                 <h1 class="text-[13px] font-black text-slate-900 uppercase tracking-widest leading-none">Registros de asistencia</h1>
@@ -259,11 +318,13 @@
         </div>
     </header>
 
-    <!-- NIVEL 2: Diaria -->
     <div id="diariaControls" class="app-header-sub hidden">
         <div class="flex items-center gap-4">
             <div class="w-1.5 h-8 bg-fuchsia-600 rounded-full"></div>
-            <h2 id="topDateLabel" class="text-sm font-black text-slate-800 uppercase tracking-tight">---</h2>
+            <div class="flex flex-col">
+                <h2 id="topDateLabel" class="text-[11px] font-black text-slate-800 uppercase tracking-tight leading-none">---</h2>
+                <span id="viewStatus" class="text-[8px] font-bold text-fuchsia-500 uppercase mt-0.5">Vista Histórica</span>
+            </div>
         </div>
         
         <div class="flex items-center gap-4">
@@ -273,15 +334,26 @@
                 <button onclick="changeDate(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
 
+            <button id="todayBtn" onclick="goToToday()" class="today-btn transition-opacity duration-300">Ir a Hoy</button>
+
             <div class="nav-selector">
                 <button onclick="changeShift(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                <div class="display-box"><span id="shiftLabel" class="display-text">MATUTINO</span></div>
+                <div class="display-box" onclick="toggleShiftMenu(event)">
+                    <span id="shiftLabel" class="display-text">MATUTINO</span>
+                    <i class="fa-solid fa-caret-down ml-2 text-[10px] text-fuchsia-400"></i>
+                </div>
                 <button onclick="changeShift(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                
+                <div id="shiftMenu" class="dropdown-shift-list"></div>
             </div>
+
+            <label class="flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 bg-white border border-fuchsia-200 rounded-xl hover:bg-fuchsia-50 transition-all">
+                <input type="checkbox" id="hideAbsences" checked class="w-4 h-4 accent-fuchsia-600 cursor-pointer">
+                <span class="text-[9px] font-black text-fuchsia-900 uppercase tracking-tighter">Ocultar Ausentismos</span>
+            </label>
         </div>
     </div>
 
-    <!-- NIVEL 3: Ribbon -->
     <nav id="appRibbon" class="app-ribbon">
         <div id="ribbonContent" class="flex items-center gap-3 w-full"></div>
     </nav>
@@ -303,7 +375,11 @@
             diariaControls: document.getElementById('diariaControls'),
             ribbon: document.getElementById('appRibbon'),
             ribbonContent: document.getElementById('ribbonContent'),
-            clockText: document.getElementById('timeDisplay')
+            clockText: document.getElementById('timeDisplay'),
+            hideAbsences: document.getElementById('hideAbsences'),
+            shiftMenu: document.getElementById('shiftMenu'),
+            todayBtn: document.getElementById('todayBtn'),
+            viewStatus: document.getElementById('viewStatus')
         };
 
         const ribbonConfigs = {
@@ -328,6 +404,60 @@
         setInterval(updateClock, 1000);
         updateClock();
 
+        window.goToToday = () => {
+            const now = new Date();
+            const hour = now.getHours();
+            currentDate = new Date();
+            currentDate.setHours(12, 0, 0, 0);
+
+            if (hour >= 0 && hour < 7) {
+                currentShiftIndex = 2; // Nocturno
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else if (hour >= 7 && hour < 12) {
+                currentShiftIndex = 0; // Matutino
+            } else if (hour >= 12 && hour < 18) {
+                currentShiftIndex = 1; // Vespertino
+            } else {
+                currentShiftIndex = 2; // Nocturno
+            }
+
+            updateUI();
+        };
+
+        dom.hideAbsences.onchange = (e) => {
+            if (e.target.checked && shifts[currentShiftIndex] === 'ausentismo') currentShiftIndex = 0;
+            sendToIframe({ action: 'toggleAbsences', hide: e.target.checked });
+            updateUI();
+        };
+
+        window.toggleShiftMenu = (e) => {
+            e.stopPropagation();
+            const show = !dom.shiftMenu.classList.contains('show');
+            document.querySelectorAll('.dropdown-shift-list').forEach(m => m.classList.remove('show'));
+            
+            if (show) {
+                const hideAbsences = dom.hideAbsences.checked;
+                const menuShifts = hideAbsences ? shifts.filter(s => s !== 'ausentismo') : shifts;
+                
+                dom.shiftMenu.innerHTML = menuShifts.map(s => `
+                    <div class="dropdown-item ${shifts[currentShiftIndex] === s ? 'active' : ''}" 
+                         onclick="selectShiftFromMenu('${s}')">
+                        <span>${s.toUpperCase()}</span>
+                        ${shifts[currentShiftIndex] === s ? '<i class="fa-solid fa-check text-[8px]"></i>' : ''}
+                    </div>
+                `).join('');
+                dom.shiftMenu.classList.add('show');
+            }
+        };
+
+        window.selectShiftFromMenu = (shift) => {
+            currentShiftIndex = shifts.indexOf(shift);
+            dom.shiftMenu.classList.remove('show');
+            updateUI();
+        };
+
+        document.addEventListener('click', () => dom.shiftMenu.classList.remove('show'));
+
         function renderRibbon(tab, forcedAction = null) {
             dom.ribbonContent.innerHTML = '';
             if (tab === 'planeacion') { dom.ribbon.classList.add('hidden'); return; }
@@ -335,7 +465,6 @@
             const items = ribbonConfigs[tab] || [];
             items.forEach(item => {
                 const btn = document.createElement('div');
-                // Si hay un action forzado (ej. 'diario'), marcarlo como activo
                 const isActive = forcedAction ? (item.action === forcedAction) : item.active;
                 btn.className = `ribbon-pill ${isActive ? 'active' : ''}`;
                 
@@ -351,10 +480,7 @@
                     btn.onclick = () => {
                         document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
                         btn.classList.add('active');
-                        const reportPaths = {
-                            'whatsapp': '../Complementos/RegAs/Wa.html',
-                            'diario': '../Complementos/RegAs/Reporte_Diario.html'
-                        };
+                        const reportPaths = { 'whatsapp': '../Complementos/RegAs/Wa.html', 'diario': '../Complementos/RegAs/Reporte_Diario.html' };
                         dom.iframe.src = reportPaths[item.action];
                     };
                 }
@@ -365,75 +491,72 @@
         window.setTab = (tab, el, forcedSubView = null) => {
             currentActiveTab = tab;
             localStorage.setItem('regas_last_view', tab);
-
             document.querySelectorAll('.main-tab-btn').forEach(t => t.classList.remove('active'));
             const targetBtn = el || document.getElementById(`nav-${tab}`);
             if (targetBtn) targetBtn.classList.add('active');
 
             dom.diariaControls.classList.toggle('hidden', tab !== 'diaria');
             
-            // Si venimos de un comando externo (ej. abrir reporte diario)
             if (forcedSubView) {
                 renderRibbon(tab, forcedSubView);
-                const forcedPaths = {
-                    'diario': '../Complementos/RegAs/Reporte_Diario.html',
-                    'whatsapp': '../Complementos/RegAs/Wa.html'
-                };
+                const forcedPaths = { 'diario': '../Complementos/RegAs/Reporte_Diario.html', 'whatsapp': '../Complementos/RegAs/Wa.html' };
                 dom.iframe.src = forcedPaths[forcedSubView];
             } else {
                 renderRibbon(tab);
-                const paths = { 
-                    'diaria': '../Complementos/RegAs/Día.html', 
-                    'planeacion': '../Complementos/RegAs/Planeación.html', 
-                    'reporte': '../Complementos/RegAs/Wa.html' 
-                };
+                const paths = { 'diaria': '../Complementos/RegAs/Día.html', 'planeacion': '../Complementos/RegAs/Planeación.html', 'reporte': '../Complementos/RegAs/Wa.html' };
                 dom.iframe.src = paths[tab];
             }
-            
             if(tab === 'diaria') updateUI();
         };
 
         window.changeDate = (offset) => { currentDate.setDate(currentDate.getDate() + offset); updateUI(); };
+        
         window.changeShift = (direction) => {
-            currentShiftIndex += direction;
-            if (currentShiftIndex < 0) { currentDate.setDate(currentDate.getDate() - 1); currentShiftIndex = shifts.length - 1; }
-            else if (currentShiftIndex >= shifts.length) { currentDate.setDate(currentDate.getDate() + 1); currentShiftIndex = 0; }
+            const hideAbsences = dom.hideAbsences.checked;
+            const validShifts = hideAbsences ? shifts.filter(s => s !== 'ausentismo') : shifts;
+            let currentValidIndex = validShifts.indexOf(shifts[currentShiftIndex]);
+            if (currentValidIndex === -1) currentValidIndex = 0;
+            let nextValidIndex = currentValidIndex + direction;
+
+            if (nextValidIndex < 0) { 
+                currentDate.setDate(currentDate.getDate() - 1); 
+                nextValidIndex = validShifts.length - 1; 
+            } else if (nextValidIndex >= validShifts.length) { 
+                currentDate.setDate(currentDate.getDate() + 1); 
+                nextValidIndex = 0; 
+            }
+            currentShiftIndex = shifts.indexOf(validShifts[nextValidIndex]);
             updateUI();
         };
 
         function sendToIframe(data) { if (dom.iframe.contentWindow) dom.iframe.contentWindow.postMessage(data, '*'); }
-        
-        window.openApps = () => {
-            window.parent.postMessage({ action: 'toggleMenu' }, '*');
-        };
-
+        window.openApps = () => { window.parent.postMessage({ action: 'toggleMenu' }, '*'); };
         dom.dateInput.onchange = (e) => { currentDate = new Date(e.target.value + "T12:00:00"); updateUI(); };
 
         function updateUI() {
             const iso = currentDate.toISOString().split('T')[0];
+            const todayIso = new Date().toISOString().split('T')[0];
+            
             dom.dateInput.value = iso;
             dom.topLabel.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
             dom.shiftLabel.textContent = shifts[currentShiftIndex].toUpperCase();
+
+            const isToday = iso === todayIso;
+            dom.todayBtn.classList.toggle('hidden', isToday);
+            dom.viewStatus.textContent = isToday ? "Jornada Actual" : "Vista Histórica";
+            dom.viewStatus.classList.toggle('text-fuchsia-500', !isToday);
+            dom.viewStatus.classList.toggle('text-emerald-500', isToday);
+
             if (currentActiveTab === 'diaria') {
-                sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex] });
+                sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex], hideAbsences: dom.hideAbsences.checked });
             }
         }
 
         window.addEventListener('message', (e) => {
-            if (e.data.action && (
-                e.data.action.includes('Panel') || 
-                e.data.action.includes('Nav') || 
-                e.data.action === 'toggleMenu' || 
-                e.data.action === 'openApp'
-            )) {
+            if (e.data.action && (e.data.action.includes('Panel') || e.data.action.includes('Nav') || e.data.action === 'toggleMenu' || e.data.action === 'openApp')) {
                 window.parent.postMessage(e.data, '*');
             }
-
-            // COMANDO EXTERNO: Recibido desde Administración.html para cambiar de vista internamente
-            if (e.data.action === 'internalNav') {
-                setTab(e.data.tab, null, e.data.subview);
-            }
-
+            if (e.data.action === 'internalNav') { setTab(e.data.tab, null, e.data.subview); }
             if (e.data.action === 'reportShift') {
                 currentShiftIndex = shifts.indexOf(e.data.shift);
                 dom.shiftLabel.textContent = e.data.shift.toUpperCase();
@@ -442,8 +565,7 @@
                 const newDate = new Date(e.data.date + "T12:00:00");
                 if (newDate.getTime() !== currentDate.getTime()) {
                     currentDate = newDate;
-                    dom.dateInput.value = e.data.date;
-                    dom.topLabel.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                    updateUI();
                 }
             }
         });

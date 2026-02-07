@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC 7.1 - Analizador de Límites Firestore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwindcss.config = {
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    <style type="text/css">
+        .card { @apply bg-white p-6 rounded-3xl shadow-sm border border-slate-200; }
+        .gauge-bar { @apply h-3 w-full bg-slate-100 rounded-full overflow-hidden mt-2; }
+        .gauge-fill { @apply h-full transition-all duration-500 ease-out; }
+        .limit-safe { @apply bg-green-500; }
+        .limit-warning { @apply bg-amber-500; }
+        .limit-danger { @apply bg-red-500; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans text-slate-900">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight">Analizador de Límites</h1>
+                <p class="text-slate-500">Herramienta de Auditoría para Estructuras Firestore V7.1</p>
+            </div>
+            <div class="bg-slate-900 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg">
+                LÍMITES OFICIALES GCP
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Columna Izquierda: Carga -->
+            <div class="md:col-span-1 space-y-6">
+                <div class="card">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Cargar Archivo</h2>
+                    <div id="dropZone" class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                        <input type="file" id="fileInput" class="hidden" accept=".json">
+                        <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                        <p class="text-xs font-medium text-slate-500">Arrastra tu JSON aquí</p>
+                    </div>
+                </div>
+
+                <div class="card bg-slate-900 text-slate-300">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Limitaciones Firestore</h2>
+                    <ul class="text-[11px] space-y-3">
+                        <li class="flex justify-between border-b border-slate-800 pb-2">
+                            <span>Tamaño Máximo Doc</span>
+                            <span class="text-white font-bold">1 MiB</span>
+                        </li>
+                        <li class="flex justify-between border-b border-slate-800 pb-2">
+                            <span>Entradas de Índice</span>
+                            <span class="text-white font-bold">40,000</span>
+                        </li>
+                        <li class="flex justify-between border-b border-slate-800 pb-2">
+                            <span>Profundidad Mapas</span>
+                            <span class="text-white font-bold">20 niveles</span>
+                        </li>
+                        <li class="flex justify-between pb-2">
+                            <span>Escrituras x Segundo</span>
+                            <span class="text-white font-bold">1 / doc</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Resultados -->
+            <div id="resultsArea" class="md:col-span-2 space-y-6 opacity-40 pointer-events-none transition-all">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Gauge Tamaño -->
+                    <div class="card">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold uppercase text-slate-500">Peso del Documento</span>
+                            <span id="sizeValue" class="text-xl font-black">0.00 <small class="text-[10px] text-slate-400">MiB</small></span>
+                        </div>
+                        <div class="gauge-bar"><div id="sizeFill" class="gauge-fill" style="width: 0%"></div></div>
+                        <p id="sizeStatus" class="text-[10px] mt-3 font-medium text-slate-400"></p>
+                    </div>
+
+                    <!-- Gauge Índices -->
+                    <div class="card">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold uppercase text-slate-500">Entradas de Índice</span>
+                            <span id="indexValue" class="text-xl font-black">0</span>
+                        </div>
+                        <div class="gauge-bar"><div id="indexFill" class="gauge-fill" style="width: 0%"></div></div>
+                        <p id="indexStatus" class="text-[10px] mt-3 font-medium text-slate-400"></p>
+                    </div>
+                </div>
+
+                <!-- Detalle Técnico -->
+                <div class="card">
+                    <h2 class="text-sm font-bold mb-4 border-b pb-4">Desglose de la Estructura</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="p-3 bg-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Campos Totales</p>
+                            <p id="statFields" class="text-lg font-bold">0</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Nivel Máx.</p>
+                            <p id="statDepth" class="text-lg font-bold">0</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Strings</p>
+                            <p id="statStrings" class="text-lg font-bold">0</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-2xl">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Booleans/Num</p>
+                            <p id="statMix" class="text-lg font-bold">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recomendación -->
+                <div id="recommendationPanel" class="p-6 rounded-3xl border transition-all">
+                    <h3 id="recTitle" class="font-bold mb-1">Esperando datos...</h3>
+                    <p id="recDesc" class="text-xs leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const resultsArea = document.getElementById('resultsArea');
+
+        // Límites Firestore
+        const MAX_SIZE_BYTES = 1048576; // 1 MiB
+        const MAX_INDEX_ENTRIES = 40000;
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        function handleFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    analyzeJSON(json);
+                } catch (err) {
+                    alert("Error: El archivo no es un JSON válido.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function analyzeJSON(obj) {
+            resultsArea.style.opacity = "1";
+            resultsArea.style.pointerEvents = "auto";
+
+            const stats = {
+                bytes: 0,
+                indexEntries: 0,
+                totalFields: 0,
+                maxDepth: 0,
+                strings: 0,
+                others: 0
+            };
+
+            // Cálculo Recursivo Estricto para Firestore
+            function traverse(current, depth) {
+                stats.maxDepth = Math.max(stats.maxDepth, depth);
+
+                for (let key in current) {
+                    const value = current[key];
+                    stats.totalFields++;
+                    
+                    // Cada llave en un objeto CUENTA como una entrada de índice (ASC y DESC)
+                    // Firestore indexa la ruta completa del campo.
+                    stats.indexEntries += 2;
+
+                    // Tamaño del nombre del campo (UTF-8) + 1 byte
+                    stats.bytes += (new TextEncoder().encode(key).length + 1);
+
+                    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                        // Es un Mapa: Recursividad
+                        traverse(value, depth + 1);
+                    } else if (Array.isArray(value)) {
+                        // Es un Array: Cada elemento es una entrada para ARRAY_CONTAINS
+                        value.forEach(item => {
+                            stats.indexEntries += 1; 
+                            if (typeof item === 'object' && item !== null) traverse(item, depth + 1);
+                        });
+                    } else {
+                        // Cálculo de peso por tipo (Algoritmo Firestore)
+                        if (typeof value === 'string') {
+                            stats.bytes += (new TextEncoder().encode(value).length + 1);
+                            stats.strings++;
+                        } else if (typeof value === 'number') {
+                            stats.bytes += 8;
+                            stats.others++;
+                        } else if (typeof value === 'boolean') {
+                            stats.bytes += 1;
+                            stats.others++;
+                        } else if (value === null) {
+                            stats.bytes += 1;
+                            stats.others++;
+                        }
+                    }
+                }
+            }
+
+            traverse(obj, 1);
+
+            // Overhead base de documento
+            stats.bytes += 32; 
+
+            updateUI(stats);
+        }
+
+        function updateUI(s) {
+            const sizeMiB = (s.bytes / 1024 / 1024);
+            const sizePct = Math.min((s.bytes / MAX_SIZE_BYTES) * 100, 100);
+            const indexPct = Math.min((s.indexEntries / MAX_INDEX_ENTRIES) * 100, 100);
+
+            document.getElementById('sizeValue').innerHTML = `${sizeMiB.toFixed(4)} <small class="text-[10px] text-slate-400">MiB</small>`;
+            document.getElementById('indexValue').textContent = s.indexEntries.toLocaleString();
+            
+            const sFill = document.getElementById('sizeFill');
+            const iFill = document.getElementById('indexFill');
+            sFill.style.width = sizePct + "%";
+            iFill.style.width = indexPct + "%";
+
+            sFill.className = "gauge-fill " + (sizePct > 85 ? 'limit-danger' : (sizePct > 60 ? 'limit-warning' : 'limit-safe'));
+            iFill.className = "gauge-fill " + (indexPct > 85 ? 'limit-danger' : (indexPct > 60 ? 'limit-warning' : 'limit-safe'));
+
+            document.getElementById('statFields').textContent = s.totalFields.toLocaleString();
+            document.getElementById('statDepth').textContent = s.maxDepth;
+            document.getElementById('statStrings').textContent = s.strings;
+            document.getElementById('statMix').textContent = s.others;
+
+            const recPanel = document.getElementById('recommendationPanel');
+            const recTitle = document.getElementById('recTitle');
+            const recDesc = document.getElementById('recDesc');
+
+            if (sizePct >= 100 || indexPct >= 100) {
+                recPanel.className = "p-6 rounded-3xl border border-red-200 bg-red-50 text-red-900";
+                recTitle.textContent = "CRÍTICO: DOCUMENTO INVÁLIDO";
+                recDesc.textContent = `Este documento EXCEDE los límites de Firestore (${indexPct >= 100 ? 'Índices' : 'Tamaño'}). Por eso recibes el error de escritura.`;
+            } else if (sizePct > 75 || indexPct > 75) {
+                recPanel.className = "p-6 rounded-3xl border border-amber-200 bg-amber-50 text-amber-900";
+                recTitle.textContent = "ADVERTENCIA: ZONA DE RIESGO";
+                recDesc.textContent = "Estás muy cerca del límite. Aunque pase ahora, no podrá crecer más.";
+            } else {
+                recPanel.className = "p-6 rounded-3xl border border-emerald-200 bg-emerald-50 text-emerald-900";
+                recTitle.textContent = "DOCUMENTO SEGURO";
+                recDesc.textContent = "La estructura actual es válida para Firestore.";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* CSS PURO - Sin directivas @apply */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
@@ -19,36 +20,46 @@
             overflow-x: hidden;
             scroll-behavior: smooth;
             overscroll-behavior-y: contain;
+            /* Evita saltos automáticos al insertar contenido arriba */
+            overflow-anchor: none; 
         }
 
         #timelineContainer {
             padding: 1rem 0;
-            min-height: 101vh; 
+            min-height: 101vh;
             width: 100%;
+            /* Espacio extra al final para permitir que el último turno suba al tope */
+            padding-bottom: 70vh;
         }
 
         .day-section {
-            padding: 2.5rem 1.5rem;
-            border-bottom: 8px solid #f1f5f9;
+            padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+            border-bottom: 4px solid #f1f5f9;
             transition: opacity 0.3s ease;
         }
 
         .day-header-pill {
-            background: #d946ef;
-            color: white;
-            padding: 0.6rem 2rem;
-            border-radius: 99px;
-            font-size: 16px;
-            font-weight: 900;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.15em;
-            box-shadow: 0 10px 25px -5px rgba(217, 70, 239, 0.4);
+            letter-spacing: 0.1em;
             display: inline-block;
         }
 
         .shift-drawer {
             margin-bottom: 1.5rem;
-            scroll-margin-top: 20px;
+            scroll-margin-top: 10px;
+            border: 2px solid transparent;
+            border-radius: 1rem;
+            transition: all 0.2s;
+        }
+
+        /* Estado durante el arrastre */
+        .shift-drawer.drag-over {
+            border-color: #d946ef;
+            background: rgba(217, 70, 239, 0.03);
+            transform: scale(1.01);
         }
 
         .shift-header {
@@ -64,53 +75,214 @@
             gap: 1rem;
             border-bottom: 1px solid #e2e8f0;
             padding-bottom: 0.5rem;
+            
+            /* Lógica Sticky: Se queda pegado al encabezado superior */
+            position: sticky;
+            top: 0;
+            background-color: #f8fafc;
+            z-index: 40;
+            padding-top: 0.75rem;
         }
 
-        .shift-tools { display: flex; align-items: center; gap: 0.75rem; }
+        .shift-tools {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
 
-        .tool-check-label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; }
-        .tool-check-label input { display: none; }
+        .tool-check-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tool-check-label input {
+            display: none;
+        }
+
         .tool-check-box {
-            width: 18px; height: 18px; border: 2px solid #e2e8f0; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: white;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
         }
-        .tool-check-label input:checked + .tool-check-box { background: #d946ef; border-color: #d946ef; }
-        .tool-check-label i { font-size: 10px; color: white; display: none; }
-        .tool-check-label input:checked + .tool-check-box i { display: block; }
 
-        .double-shift-btn { padding: 4px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; border: 1px solid #e2e8f0; background: white; color: #64748b; transition: all 0.2s; }
-        .double-shift-btn.active { background: #fdf4ff; border-color: #d946ef; color: #d946ef; }
+        .tool-check-label input:checked + .tool-check-box {
+            background: #d946ef;
+            border-color: #d946ef;
+        }
+
+        .tool-check-label i {
+            font-size: 10px;
+            color: white;
+            display: none;
+        }
+
+        .tool-check-label input:checked + .tool-check-box i {
+            display: block;
+        }
+
+        .double-shift-btn {
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .double-shift-btn.active {
+            background: #fdf4ff;
+            border-color: #d946ef;
+            color: #d946ef;
+        }
 
         .header-add-btn {
-            width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; color: #64748b;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: 1px solid #e2e8f0;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
         }
-        .header-add-btn:hover { background: #d946ef; color: white; border-color: #d946ef; transform: scale(1.1); }
+
+        .header-add-btn:hover {
+            background: #d946ef;
+            color: white;
+            border-color: #d946ef;
+            transform: scale(1.1);
+        }
 
         .user-card-mini {
-            background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem;
-            display: flex; flex-direction: row; align-items: center; gap: 0.75rem; cursor: pointer;
-            position: relative; min-height: 80px; transition: all 0.2s;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.6rem;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            position: relative;
+            min-height: 80px;
+            transition: all 0.2s;
         }
-        .user-card-mini:hover { border-color: #d946ef; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
-        .user-card-mini.is-double { border-width: 2px; border-color: #f0abfc; background: #fffaff; }
 
-        .photo-container { width: 60px; height: 60px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: #f1f5f9; position: relative; }
-        .photo-container img { width: 100%; height: 100%; object-fit: cover; }
+        .user-card-mini:hover {
+            border-color: #d946ef;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
 
-        .double-badge { position: absolute; top: -5px; right: -5px; background: #d946ef; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; border: 2px solid white; z-index: 5; }
+        .user-card-mini.is-double {
+            border-width: 2px;
+            border-color: #f0abfc;
+            background: #fffaff;
+        }
 
-        .indicators-strip { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; display: flex; }
-        .dot-indicator { flex: 1; height: 100%; }
-        .bg-matutino { background: #fef08a; } .bg-vespertino { background: #60a5fa; } .bg-nocturno { background: #1e3a8a; } .bg-ausentismo { background: #ef4444; } 
+        .photo-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #f1f5f9;
+            position: relative;
+        }
 
-        .info-group { display: flex; flex-direction: column; justify-content: center; gap: 1px; flex: 1; min-width: 0; }
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        .caseta-select { font-size: 10px; font-weight: 700; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 6px; margin-top: 2px; width: fit-content; max-width: 100%; outline: none; color: #475569; cursor: pointer; }
+        .double-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #d946ef;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            border: 2px solid white;
+            z-index: 5;
+        }
 
-        .action-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
-        .btn-entry { background: #10b981; color: white; } 
-        .btn-exit { background: #ef4444; color: white; } 
+        .indicators-strip {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            display: flex;
+        }
+
+        .dot-indicator {
+            flex: 1;
+            height: 100%;
+        }
+
+        .bg-matutino { background: #fef08a; }
+        .bg-vespertino { background: #60a5fa; }
+        .bg-nocturno { background: #1e3a8a; }
+        .bg-ausentismo { background: #ef4444; }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .caseta-select {
+            font-size: 10px;
+            font-weight: 700;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 3px 6px;
+            margin-top: 2px;
+            width: fit-content;
+            max-width: 100%;
+            outline: none;
+            color: #475569;
+            cursor: pointer;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-entry { background: #10b981; color: white; }
+        .btn-exit { background: #ef4444; color: white; }
         .btn-late { background: #fef08a; color: #ef4444; border-color: #ef4444; }
         .btn-absence { background: #ef4444; color: #fef08a; }
         .btn-complete { background: #94a3b8; color: white; cursor: default; }
@@ -123,10 +295,11 @@
             backdrop-filter: blur(10px);
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             padding: 6px;
             min-width: 180px;
         }
+
         .context-item {
             padding: 10px 14px;
             font-size: 10px;
@@ -140,8 +313,17 @@
             gap: 10px;
             transition: all 0.2s;
         }
-        .context-item:hover { background: #fdf4ff; color: #d946ef; }
-        .context-item i { font-size: 12px; width: 16px; text-align: center; }
+
+        .context-item:hover {
+            background: #fdf4ff;
+            color: #d946ef;
+        }
+
+        .context-item i {
+            font-size: 12px;
+            width: 16px;
+            text-align: center;
+        }
 
         ::-webkit-scrollbar { width: 7px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -149,9 +331,12 @@
 </head>
 <body>
 
-    <div id="timelineContainer" class="max-w-[1920px] mx-auto px-6"></div>
-
-    <div id="infiniteSentinel" class="h-5"></div>
+    <div id="timelineContainer" class="max-w-[1920px] mx-auto px-6">
+        <!-- Centinela para scroll hacia arriba (días pasados) -->
+        <div id="topSentinel" class="h-1 w-full"></div>
+        <!-- Centinela para scroll hacia abajo (días futuros) -->
+        <div id="infiniteSentinel" class="h-5"></div>
+    </div>
 
     <div id="loader" class="flex flex-col items-center justify-center py-32">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-6"></div>
@@ -183,17 +368,27 @@
         const motivosAusentismo = ["Descanso", "Falta", "Vacaciones", "Suspensión", "Incapacidades", "Permiso"];
         const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
 
+        const SHIFT_START_NIGHT = 22; // 10 PM
+        const SHIFT_END_NIGHT = 7;    // 7 AM
+
         let allPersonnel = [];
+        let personnelLoaded = false;
         let activeDate = new Date();
         activeDate.setHours(12, 0, 0, 0);
-        let lastLoadedDate = new Date(activeDate);
+
+        let futureDateCursor = new Date(activeDate);
+        let pastDateCursor = new Date(activeDate);
+
         let currentFilter = 'todos';
         let dayDataCache = new Map();
         let activeSnapshots = new Map();
+        let hideGlobalAbsences = true; 
         const shiftFilterState = {};
 
         const timeline = document.getElementById('timelineContainer');
-        const sentinel = document.getElementById('infiniteSentinel');
+        // Usamos let para permitir re-asignación tras limpiar timeline.innerHTML
+        let sentinel = document.getElementById('infiniteSentinel');
+        let topSentinel = document.getElementById('topSentinel');
         const contextMenu = document.getElementById('context-menu');
 
         async function fetchPersonnel() {
@@ -208,8 +403,18 @@
                         status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase(),
                         casetaDefault: d.operativa?.caseta || ""
                     })).filter(u => u.status !== 'baja' && u.socioId);
+                    personnelLoaded = true;
+                    
+                    // IMPORTANTE: Una vez cargado el personal, refrescamos la vista de los días ya cacheados
+                    refreshAllVisibleGrids();
                 }
             } catch (e) { console.error("Error fetching personnel:", e); }
+        }
+
+        function refreshAllVisibleGrids() {
+            dayDataCache.forEach((cache, dateId) => {
+                updateDayGrid(dateId, cache.data, cache.date);
+            });
         }
 
         async function resolveImage(path, imgElement) {
@@ -222,14 +427,14 @@
                 } else if (path.startsWith('http')) {
                     imgElement.src = path;
                 }
-            } catch (err) {}
+            } catch (err) { }
         }
 
-        async function renderDaySection(date) {
+        async function renderDaySection(date, pos = 'append') {
             const iso = date.toISOString().split('T')[0];
             const dateId = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
             const trimId = `Trim${Math.ceil((date.getMonth() + 1) / 3)}-${date.getFullYear()}`;
-            
+
             if (document.getElementById(`section-${dateId}`)) return;
 
             const section = document.createElement('div');
@@ -238,7 +443,7 @@
             section.dataset.date = iso;
 
             section.innerHTML = `
-                <div class="mb-12 flex items-center gap-6">
+                <div class="mb-6 flex items-center gap-4">
                     <div class="day-header-pill">${date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
                     <div class="h-px bg-slate-200 flex-1"></div>
                 </div>
@@ -248,7 +453,14 @@
                         const dotColor = shift === 'matutino' ? 'bg-yellow-200' : shift === 'vespertino' ? 'bg-blue-400' : shift === 'nocturno' ? 'bg-blue-900' : 'bg-red-500';
                         const drawerId = shift === 'matutino' ? 'mat' : shift === 'vespertino' ? 'ves' : shift === 'nocturno' ? 'noc' : 'aus';
                         return `
-                            <div class="shift-drawer" id="${drawerId}-${dateId}" data-shift="${shift}">
+                            <div class="shift-drawer" 
+                                 id="${drawerId}-${dateId}" 
+                                 data-shift="${shift}" 
+                                 data-dateid="${dateId}"
+                                 data-trimid="${trimId}"
+                                 ondragover="event.preventDefault(); this.classList.add('drag-over');"
+                                 ondragleave="this.classList.remove('drag-over');"
+                                 ondrop="handleDrop(event, this)">
                                 <div class="shift-header">
                                     <div class="flex items-center gap-3">
                                         <div class="dot w-2.5 h-2.5 rounded-full ${dotColor}"></div> ${shiftLabel}
@@ -266,29 +478,71 @@
                     }).join('')}
                 </div>
             `;
-            timeline.appendChild(section);
+
+            if (pos === 'append') {
+                timeline.insertBefore(section, sentinel);
+            } else {
+                const oldScrollHeight = document.documentElement.scrollHeight;
+                topSentinel.insertAdjacentElement('afterend', section);
+                const newScrollHeight = document.documentElement.scrollHeight;
+                window.scrollBy(0, newScrollHeight - oldScrollHeight);
+            }
+
             section.querySelectorAll('.shift-drawer').forEach(d => scrollObserver.observe(d));
 
             const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
             const unsub = onSnapshot(attRef, (snap) => {
-                if (snap.exists()) {
-                    const fullData = snap.data();
-                    const dayData = fullData[dateId] || {};
-                    dayDataCache.set(dateId, { data: dayData, date: new Date(date), trimId: trimId }); 
-                    updateDayGrid(dateId, dayData, new Date(date));
-                }
-            });
+                const fullData = snap.exists() ? snap.data() : {};
+                const dayData = fullData[dateId] || {};
+                dayDataCache.set(dateId, { data: dayData, date: new Date(date), trimId: trimId });
+                updateDayGrid(dateId, dayData, new Date(date));
+            }, (err) => console.error("Error en snapshot:", err));
             activeSnapshots.set(dateId, unsub);
         }
 
+        window.handleDrop = async (e, drawer) => {
+            e.preventDefault();
+            drawer.classList.remove('drag-over');
+            
+            const socioId = e.dataTransfer.getData('socioId');
+            const shift = drawer.dataset.shift;
+            const dateId = drawer.dataset.dateid;
+            const trimId = drawer.dataset.trimid;
+
+            if (!socioId || !shift || !dateId) return;
+
+            const person = allPersonnel.find(p => p.socioId === socioId);
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
+            const updateObj = {};
+            
+            updateObj[`${dateId}.${socioId}.${shift}`] = {
+                Caseta: person?.casetaDefault || "Otro",
+                entrada_planificada: "07:00",
+                entrada_real: null,
+                salida_real: null
+            };
+
+            try {
+                await updateDoc(docRef, updateObj);
+            } catch (err) { console.error("Error al agregar elemento:", err); }
+        };
+
         function updateDayGrid(dateId, dayData, dateObj) {
+            if (!personnelLoaded) return; // Esperar a que el personal esté listo
+
+            const now = new Date();
+            const hour = now.getHours();
             const today = new Date();
             today.setHours(12, 0, 0, 0);
             const isToday = dateObj.getTime() === today.getTime();
-            const section = document.getElementById(`section-${dateId}`);
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const isYesterday = dateObj.getTime() === yesterday.getTime();
 
+            const section = document.getElementById(`section-${dateId}`);
             if (currentFilter === 'proximos') {
-                if (section) section.style.display = isToday ? 'block' : 'none';
+                if (section) section.style.display = (isToday || (isYesterday && hour < SHIFT_END_NIGHT)) ? 'block' : 'none';
             } else {
                 if (section) section.style.display = 'block';
             }
@@ -297,36 +551,42 @@
             shifts.forEach(shiftKey => {
                 const drawerKey = drawersMap[shiftKey];
                 const drawer = document.getElementById(`${drawerKey}-${dateId}`);
-                if(!drawer) return;
+                if (!drawer) return;
+
+                if (shiftKey === 'ausentismo') {
+                    const shouldShowDrawer = (currentFilter === 'ausentismo') || (currentFilter !== 'ausentismo' && !hideGlobalAbsences);
+                    drawer.style.display = shouldShowDrawer ? 'block' : 'none';
+                    if (!shouldShowDrawer) return;
+                }
+
                 const grid = drawer.querySelector('.grid-container');
                 const filterKey = `${dateId}_${shiftKey}`;
                 const config = shiftFilterState[filterKey] || { hideComplete: false, highlightDouble: false };
 
                 let list = allPersonnel.filter(person => {
                     const entry = dayData[person.socioId];
+                    const shiftInfo = entry?.[shiftKey];
+
                     if (currentFilter === 'proximos') {
-                        if (!isToday || shiftKey === 'ausentismo') return false;
-                        let hasActiveSession = false;
-                        for (let [cacheId, cacheObj] of dayDataCache) {
-                            const historicShift = cacheObj.data[person.socioId]?.[shiftKey];
-                            if (historicShift?.entrada_real && !historicShift?.salida_real) {
-                                hasActiveSession = true;
-                                break;
-                            }
+                        if (shiftKey === 'ausentismo') return false;
+                        if (shiftInfo?.entrada_real && !shiftInfo?.salida_real) {
+                            if (isToday) return true;
+                            if (isYesterday && shiftKey === 'nocturno' && hour < SHIFT_END_NIGHT) return true;
                         }
-                        if (hasActiveSession) return true;
-                        const planTimeStr = entry?.[shiftKey]?.entrada_planificada || "";
-                        if (planTimeStr) {
-                            const [pHours, pMins] = planTimeStr.split(':').map(Number);
-                            const now = new Date();
-                            const nowMinutes = now.getHours() * 60 + now.getMinutes();
-                            const planMinutes = pHours * 60 + pMins;
-                            if (nowMinutes >= planMinutes - 60 && nowMinutes <= planMinutes + 30) return true;
+                        if (isToday) {
+                            const planTimeStr = shiftInfo?.entrada_planificada || "";
+                            if (planTimeStr) {
+                                const [pHours, pMins] = planTimeStr.split(':').map(Number);
+                                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                                const planMinutes = pHours * 60 + pMins;
+                                if (nowMinutes >= planMinutes - 60 && nowMinutes <= planMinutes + 30) return true;
+                            }
                         }
                         return false;
                     }
+
                     if (!entry || !entry[shiftKey]) return false;
-                    if (config.hideComplete && entry[shiftKey].entrada_real && entry[shiftKey].salida_real) return false;
+                    if (config.hideComplete && shiftInfo.entrada_real && shiftInfo.salida_real) return false;
                     if (currentFilter !== 'todos' && currentFilter !== shiftKey) return false;
                     return true;
                 });
@@ -341,29 +601,22 @@
                     return a.nombre.localeCompare(b.nombre);
                 });
 
-                drawer.style.display = (list.length > 0 || currentFilter === 'todos') ? 'block' : 'none';
+                const hasMembers = list.length > 0;
+                const isVisibleByGlobal = (shiftKey !== 'ausentismo' || !hideGlobalAbsences || currentFilter === 'ausentismo');
+                drawer.style.display = (hasMembers && isVisibleByGlobal) ? 'block' : 'none';
+                
                 grid.innerHTML = '';
                 list.forEach(person => {
-                    let targetEntry = dayData[person.socioId];
-                    if (currentFilter === 'proximos' && (!targetEntry || !targetEntry[shiftKey]?.entrada_real)) {
-                        for (let [cacheId, cacheObj] of dayDataCache) {
-                            if (cacheObj.data[person.socioId]?.[shiftKey]?.entrada_real) {
-                                targetEntry = cacheObj.data[person.socioId];
-                                break;
-                            }
-                        }
-                    }
-                    grid.appendChild(createMiniCard(person, targetEntry, shiftKey, dateObj, dateId, config, isToday));
+                    grid.appendChild(createMiniCard(person, dayData[person.socioId], shiftKey, dateObj, dateId, config, isToday, isYesterday));
                 });
             });
         }
 
-        function createMiniCard(person, entry, activeShift, dateObj, dateId, config, isToday) {
+        function createMiniCard(person, entry, activeShift, dateObj, dateId, config, isToday, isYesterday) {
             const div = document.createElement('div');
             div.className = 'user-card-mini';
             const iso = dateObj.toISOString().split('T')[0];
-            
-            // ACTUALIZADO: Abrir detalle directamente en gestión de turno
+
             div.onclick = (e) => {
                 if (e.target.closest('button') || e.target.closest('select')) return;
                 openDetails(person.uid, iso, 'gestion');
@@ -381,8 +634,12 @@
             const shiftInfo = entry?.[activeShift] || {};
 
             let actionButtonsHtml = '';
-            if (isToday) {
-                const now = new Date();
+            const now = new Date();
+            const hour = now.getHours();
+            
+            const canAction = isToday || (isYesterday && activeShift === 'nocturno' && hour < SHIFT_END_NIGHT);
+
+            if (canAction) {
                 const nowM = now.getHours() * 60 + now.getMinutes();
                 const planStr = shiftInfo.entrada_planificada || "";
                 const plan = planStr.split(':').map(Number);
@@ -395,7 +652,9 @@
                     if (isLate) actionButtonsHtml = `<div class="flex gap-1.5"><button class="action-btn btn-late" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada', true)"><i class="fa-solid fa-business-time"></i></button><button class="action-btn btn-absence" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'falta')"><i class="fa-solid fa-user-times"></i></button></div>`;
                     else actionButtonsHtml = `<button class="action-btn btn-entry" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada')"><i class="fa-solid fa-door-open"></i></button>`;
                 }
-            } else if (shiftInfo.entrada_real && shiftInfo.salida_real) actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
+            } else if (shiftInfo.entrada_real && shiftInfo.salida_real) {
+                actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
+            }
 
             div.innerHTML = `
                 ${shiftsCount > 1 && config.highlightDouble ? `<div class="double-badge"><i class="fa-solid fa-clone"></i></div>` : ''}
@@ -408,7 +667,7 @@
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">${person.puesto}</p>
                     ${activeShift === 'ausentismo' ? `
                         <select class="caseta-select" onchange="updateMotivo('${person.socioId}', '${dateId}', this.value)">
-                            ${motivosAusentismo.map(m => `<option value="${m}" ${ (shiftInfo.motivo||shiftInfo.Motivo) === m ? 'selected' : ''}>${m}</option>`).join('')}
+                            ${motivosAusentismo.map(m => `<option value="${m}" ${(shiftInfo.motivo || shiftInfo.Motivo) === m ? 'selected' : ''}>${m}</option>`).join('')}
                         </select>
                     ` : `
                         <select class="caseta-select" onchange="updateCaseta('${person.socioId}', '${activeShift}', '${dateId}', this.value)">
@@ -444,43 +703,81 @@
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
             const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
             const updateObj = {};
-            if (type === 'falta') { updateObj[`${dateId}.${socioId}.ausentismo`] = { motivo: "Falta", originShift: shift }; updateObj[`${dateId}.${socioId}.${shift}`] = null; }
-            else { updateObj[`${dateId}.${socioId}.${shift}.${type === 'entrada' ? 'entrada_real' : 'salida_real'}`] = timeStr; if (isLate) updateObj[`${dateId}.${socioId}.${shift}.retardo`] = true; }
+            if (type === 'falta') { 
+                updateObj[`${dateId}.${socioId}.ausentismo`] = { motivo: "Falta", originShift: shift }; 
+                updateObj[`${dateId}.${socioId}.${shift}`] = null; 
+            } else { 
+                updateObj[`${dateId}.${socioId}.${shift}.${type === 'entrada' ? 'entrada_real' : 'salida_real'}`] = timeStr; 
+                if (isLate) updateObj[`${dateId}.${socioId}.${shift}.retardo`] = true; 
+            }
             try { await updateDoc(docRef, updateObj); } catch (err) { console.error(err); }
         };
 
-        const infiniteObserver = new IntersectionObserver((entries) => {
+        const futureObserver = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && currentFilter !== 'proximos') {
-                lastLoadedDate.setDate(lastLoadedDate.getDate() + 1);
-                renderDaySection(new Date(lastLoadedDate));
+                futureDateCursor.setDate(futureDateCursor.getDate() + 1);
+                renderDaySection(new Date(futureDateCursor), 'append');
             }
-        }, { threshold: 0.1 });
+        }, { threshold: 0, rootMargin: '0px 0px 800px 0px' });
+
+        const pastObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && currentFilter !== 'proximos') {
+                pastDateCursor.setDate(pastDateCursor.getDate() - 1);
+                renderDaySection(new Date(pastDateCursor), 'prepend');
+            }
+        }, { threshold: 0, rootMargin: '800px 0px 0px 0px' });
 
         window.addEventListener('message', async (e) => {
             if (e.data.action === 'syncDate') {
                 const newDate = new Date(e.data.date + "T12:00:00");
-                if (newDate.getTime() !== activeDate.getTime() || timeline.children.length === 0) {
+                if (e.data.hideAbsences !== undefined) { hideGlobalAbsences = e.data.hideAbsences; }
+                
+                if (newDate.getTime() !== activeDate.getTime() || timeline.children.length <= 2) {
                     activeDate = new Date(newDate);
-                    lastLoadedDate = new Date(newDate);
-                    timeline.innerHTML = '';
+                    futureDateCursor = new Date(newDate);
+                    pastDateCursor = new Date(newDate);
+                    
+                    const sentinelsHtml = `
+                        <div id="topSentinel" class="h-1 w-full"></div>
+                        <div id="infiniteSentinel" class="h-5"></div>
+                    `;
+                    timeline.innerHTML = sentinelsHtml;
+                    
+                    // Re-asignar referencias y reiniciar observadores
+                    sentinel = document.getElementById('infiniteSentinel');
+                    topSentinel = document.getElementById('topSentinel');
+                    futureObserver.observe(sentinel);
+                    pastObserver.observe(topSentinel);
+                    
                     await renderDaySection(activeDate);
                     if (currentFilter !== 'proximos') {
-                        for(let i=1; i<=2; i++) {
-                            const d = new Date(activeDate);
-                            d.setDate(d.getDate() + i);
-                            await renderDaySection(d);
-                            lastLoadedDate = d;
+                        for (let i = 1; i <= 2; i++) {
+                            const dF = new Date(activeDate); dF.setDate(dF.getDate() + i);
+                            await renderDaySection(dF, 'append'); futureDateCursor = dF;
+                            const dP = new Date(activeDate); dP.setDate(dP.getDate() - i);
+                            await renderDaySection(dP, 'prepend'); pastDateCursor = dP;
                         }
                     }
+                } else {
+                    refreshAllVisibleGrids();
                 }
-                const drawerId = e.data.shift === 'matutino' ? 'mat' : e.data.shift === 'vespertino' ? 'ves' : e.data.shift === 'nocturno' ? 'noc' : 'aus';
-                const dateId = `${String(newDate.getDate()).padStart(2, '0')}${String(newDate.getMonth() + 1).padStart(2, '0')}${newDate.getFullYear()}`;
-                const target = document.getElementById(`${drawerId}-${dateId}`);
-                if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                
+                setTimeout(() => {
+                    const drawerId = e.data.shift === 'matutino' ? 'mat' : e.data.shift === 'vespertino' ? 'ves' : e.data.shift === 'nocturno' ? 'noc' : 'aus';
+                    const dateId = `${String(newDate.getDate()).padStart(2, '0')}${String(newDate.getMonth() + 1).padStart(2, '0')}${newDate.getFullYear()}`;
+                    const target = document.getElementById(`${drawerId}-${dateId}`);
+                    if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                }, 100);
             }
+
+            if (e.data.action === 'toggleAbsences') {
+                hideGlobalAbsences = e.data.hide;
+                refreshAllVisibleGrids();
+            }
+
             if (e.data.action === 'filter') {
                 currentFilter = e.data.type;
-                dayDataCache.forEach((cache, dateId) => updateDayGrid(dateId, cache.data, cache.date));
+                refreshAllVisibleGrids();
             }
         });
 
@@ -495,16 +792,48 @@
             });
         }, { root: null, rootMargin: '-5% 0px -80% 0px', threshold: 0 });
 
-        onAuthStateChanged(auth, async (u) => { 
-            if (u) { 
-                await fetchPersonnel(); 
-                const today = new Date();
-                today.setHours(12, 0, 0, 0);
-                activeDate = new Date(today);
-                lastLoadedDate = new Date(today);
-                await renderDaySection(today);
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                await fetchPersonnel();
+                
+                const now = new Date();
+                const hour = now.getHours();
+                let initialShift = 'matutino';
+                let initialDate = new Date(); initialDate.setHours(12, 0, 0, 0);
+
+                if (hour >= 0 && hour < 7) { initialShift = 'nocturno'; initialDate.setDate(initialDate.getDate() - 1); }
+                else if (hour >= 7 && hour < 12) { initialShift = 'matutino'; }
+                else if (hour >= 12 && hour < 18) { initialShift = 'vespertino'; }
+                else { initialShift = 'nocturno'; }
+
+                activeDate = new Date(initialDate);
+                futureDateCursor = new Date(initialDate);
+                pastDateCursor = new Date(initialDate);
+                
+                await renderDaySection(activeDate);
+
+                if (currentFilter !== 'proximos') {
+                    for (let i = 1; i <= 3; i++) {
+                        const dF = new Date(activeDate); dF.setDate(dF.getDate() + i);
+                        await renderDaySection(dF, 'append'); futureDateCursor = dF;
+                        const dP = new Date(activeDate); dP.setDate(dP.getDate() - i);
+                        await renderDaySection(dP, 'prepend'); pastDateCursor = dP;
+                    }
+                }
+
                 document.getElementById('loader').classList.add('hidden');
-                infiniteObserver.observe(sentinel);
+                futureObserver.observe(sentinel);
+                pastObserver.observe(topSentinel);
+
+                setTimeout(() => {
+                    const drawerId = initialShift === 'matutino' ? 'mat' : initialShift === 'vespertino' ? 'ves' : initialShift === 'nocturno' ? 'noc' : 'aus';
+                    const dateId = `${String(initialDate.getDate()).padStart(2, '0')}${String(initialDate.getMonth() + 1).padStart(2, '0')}${initialDate.getFullYear()}`;
+                    const target = document.getElementById(`${drawerId}-${dateId}`);
+                    if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                    window.parent.postMessage({ action: 'reportShift', shift: initialShift }, '*');
+                    window.parent.postMessage({ action: 'reportDate', date: initialDate.toISOString().split('T')[0] }, '*');
+                }, 800);
+
             } else {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
                 else await signInAnonymously(auth);
@@ -514,7 +843,7 @@
         window.openAddPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Agregar_Elemento.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
         window.openWaPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Wa.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
         window.openDetails = (uid, iso, tab) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&date=${iso}&tab=${tab}" class="w-full h-full border-none"></iframe>` }, '*');
-        
+
         window.toggleShiftTool = (dateId, shift, tool) => {
             const key = `${dateId}_${shift}`;
             if (!shiftFilterState[key]) shiftFilterState[key] = { hideComplete: false, highlightDouble: false };
