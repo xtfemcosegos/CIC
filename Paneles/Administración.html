@@ -30,12 +30,17 @@
             position: fixed;
             top: 0;
             width: 100%;
+        }
+
+        .tab-container { 
+            display: flex; 
+            align-items: flex-end; 
+            height: 100%; 
+            flex: 1;
             overflow-x: auto;
             scrollbar-width: none;
         }
-        .tab-bar::-webkit-scrollbar { display: none; }
-
-        .tab-container { display: flex; align-items: flex-end; height: 100%; }
+        .tab-container::-webkit-scrollbar { display: none; }
 
         .tab-item {
             height: 22px;
@@ -78,6 +83,19 @@
             font-size: 12px;
             background: rgba(0,0,0,0.1);
             transition: background 0.2s;
+        }
+
+        /* Etiqueta de versión discreta */
+        .version-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8px;
+            color: #9ca3af;
+            padding: 0 12px 4px 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            user-select: none;
+            pointer-events: none;
         }
 
         .shell-header {
@@ -127,6 +145,7 @@
 
     <nav class="tab-bar">
         <div id="tabBar" class="tab-container"></div>
+        <div class="version-badge">CIC Build 7.1.18</div>
     </nav>
 
     <header id="shellHeader" class="shell-header">
@@ -295,15 +314,12 @@
         window.addEventListener('message', (e) => {
             const { action, url, path, name, color, content } = e.data || {};
             
-            // REDIRECCIÓN INTELIGENTE: Si se pide abrir el Reporte Diario, pasarlo a la App de Asistencia
             if (action === 'openApp' && path && path.includes('Reporte_Diario')) {
-                // 1. Abrir/Activar Asistencia
                 openApp('Apps/RegAs.html', 'Asistencia', '#d946ef');
-                // 2. Notificar a la App que cambie de vista internamente
                 setTimeout(() => {
                     const regAsIframe = dom.appFrame.contentWindow;
                     if (regAsIframe) regAsIframe.postMessage({ action: 'internalNav', tab: 'reporte', subview: 'diario' }, '*');
-                }, 600); // Pequeño delay para asegurar que el iframe esté listo
+                }, 600);
                 return;
             }
 
