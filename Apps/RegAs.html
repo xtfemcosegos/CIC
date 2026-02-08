@@ -2,15 +2,28 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Asistencia - CIC 7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        /* Bloqueo total de scroll en el contenedor principal */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #f8fafc;
+        }
 
-        /* --- NIVEL 1: HEADER TOP --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* Nivel 1: Cabecera Superior */
         .app-header-top {
             background: white;
             height: 65px;
@@ -19,44 +32,19 @@
             grid-template-columns: 1.2fr 1fr 1.2fr; 
             align-items: center;
             padding: 0 1.5rem;
-            flex-shrink: 0;
-            z-index: 120;
+            flex: none; /* No permite que la cabecera cambie de tamaño */
+            z-index: 100;
         }
 
-        .branding-section {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo-container {
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .logo-container:hover { transform: scale(1.05); }
+        .branding-section { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-container { width: 38px; height: 38px; }
         .logo-container img { width: 100%; height: 100%; object-fit: contain; }
 
         .apps-drawer-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-            background: #f1f5f9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-            padding: 4px;
+            width: 34px; height: 34px; border-radius: 9px; background: #f1f5f9;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 1px solid #e2e8f0; padding: 4px;
         }
-        .apps-drawer-btn:hover { background: #e2e8f0; border-color: #cbd5e1; transform: scale(1.05); }
-        .apps-drawer-btn img { width: 100%; height: 100%; object-fit: contain; }
 
         .gloss-nav {
             background: rgba(241, 245, 249, 0.8);
@@ -66,59 +54,24 @@
             display: flex;
             gap: 4px;
             border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             justify-self: center;
         }
 
         .main-tab-btn {
-            padding: 0.5rem 1.4rem;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            white-space: nowrap;
+            padding: 0.5rem 1.4rem; border-radius: 10px; font-size: 11px; font-weight: 800;
+            color: #64748b; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
         }
-
-        .main-tab-btn.active {
-            color: white;
-            background: #d946ef;
-            box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
-        }
+        .main-tab-btn.active { color: white; background: #d946ef; box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3); }
 
         .clock-container {
-            justify-self: end;
-            font-family: 'JetBrains Mono', monospace;
-            background: #f8fafc;
-            color: #1e293b;
-            padding: 0.4rem 1rem;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            justify-self: end; font-family: 'JetBrains Mono', monospace; background: #f8fafc;
+            padding: 0.4rem 1rem; border-radius: 12px; font-size: 15px; font-weight: 600;
+            border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.5rem;
         }
-        .clock-dot {
-            width: 6px;
-            height: 6px;
-            background: #d946ef;
-            border-radius: 50%;
-            animation: pulse-glow 2s infinite;
-        }
-        @keyframes pulse-glow {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        .clock-dot { width: 6px; height: 6px; background: #d946ef; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* --- NIVEL 2: CONTROLES DIARIOS --- */
+        /* Nivel 2: Controles de Fecha/Turno */
         .app-header-sub {
             background: #fdf4ff;
             height: 60px;
@@ -127,131 +80,39 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
-            flex-shrink: 0;
-            z-index: 115;
-            box-shadow: 0 2px 10px rgba(217, 70, 239, 0.05);
+            flex: none;
+            z-index: 90;
         }
         .app-header-sub.hidden { display: none; }
 
-        .nav-selector {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            background: white;
-            padding: 3px;
-            border-radius: 10px;
-            border: 1px solid #f0abfc;
-            position: relative;
-        }
+        .nav-selector { display: flex; align-items: center; gap: 0.3rem; background: white; padding: 3px; border-radius: 10px; border: 1px solid #f0abfc; position: relative; }
+        .nav-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: #d946ef; cursor: pointer; border: 1px solid #f5d0fe; }
+        .nav-btn:hover { background: #d946ef; color: white; }
 
-        .nav-btn {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 7px;
-            background: white;
-            color: #d946ef;
-            cursor: pointer;
-            border: 1px solid #f5d0fe;
-            font-size: 11px;
-            transition: all 0.2s;
-        }
-        .nav-btn:hover { background: #d946ef; color: white; border-color: #d946ef; }
-
-        .display-box {
-            background: #fdf4ff;
-            padding: 0 12px;
-            height: 32px;
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #f5d0fe;
-            min-width: 140px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .display-box:hover { background: #f5d0fe; }
-        
+        .display-box { background: #fdf4ff; padding: 0 12px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; border: 1px solid #f5d0fe; min-width: 140px; cursor: pointer; }
         .display-text { font-size: 11px; font-weight: 900; color: #701a75; text-transform: uppercase; }
 
-        #dateSelector {
-            background: transparent;
-            border: none;
-            outline: none;
-            font-size: 11px;
-            font-weight: 900;
-            color: #701a75;
-            text-transform: uppercase;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-        }
+        #dateSelector { background: transparent; border: none; outline: none; font-size: 11px; font-weight: 900; color: #701a75; text-transform: uppercase; cursor: pointer; width: 100%; text-align: center; }
 
-        /* Botón HOY */
-        .today-btn {
-            background: #d946ef;
-            color: white;
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(217, 70, 239, 0.2);
-        }
-        .today-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(217, 70, 239, 0.3); }
-        .today-btn.hidden { opacity: 0; pointer-events: none; }
+        .today-btn { background: #d946ef; color: white; font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .today-btn.hidden { display: none; }
 
-        /* MENU LISTA DESPLEGABLE */
-        .dropdown-shift-list {
-            display: none;
-            position: absolute;
-            top: 115%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #f0abfc;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(112, 26, 117, 0.15);
-            z-index: 500;
-            overflow: hidden;
-            padding: 5px;
-        }
-        .dropdown-shift-list.show { display: block; animation: slideDown 0.2s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .dropdown-item {
-            padding: 10px 14px;
-            font-size: 10px;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            cursor: pointer;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.2s;
-        }
-        .dropdown-item:hover { background: #fdf4ff; color: #d946ef; padding-left: 18px; }
+        .dropdown-shift-list { display: none; position: absolute; top: 115%; left: 0; right: 0; background: white; border: 1px solid #f0abfc; border-radius: 12px; box-shadow: 0 10px 25px rgba(112, 26, 117, 0.1); z-index: 500; padding: 5px; }
+        .dropdown-shift-list.show { display: block; }
+        .dropdown-item { padding: 10px 14px; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .dropdown-item:hover { background: #fdf4ff; color: #d946ef; }
         .dropdown-item.active { background: #d946ef; color: white; }
 
-        /* --- NIVEL 3: RIBBON (Barra de herramientas) --- */
+        /* Nivel 3: Ribbon (Barra de Botones) */
         .app-ribbon {
-            background: #1e293b; /* Barra oscura sólida */
+            background: #1e293b; 
             height: 50px;
             display: flex;
             align-items: center;
             padding: 0 1.25rem;
-            position: relative;
-            flex-shrink: 0;
-            z-index: 110;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex: none;
+            z-index: 80;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .app-ribbon.hidden { display: none; }
 
@@ -262,46 +123,45 @@
             font-weight: 700;
             color: #94a3b8;
             background: rgba(255, 255, 255, 0.05);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             border: 1px solid rgba(255, 255, 255, 0.08);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             white-space: nowrap;
+            margin-right: 0.5rem;
+            transition: all 0.2s;
+        }
+        .ribbon-pill:hover { color: white; background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
+        .ribbon-pill.active { background: white; color: #1e293b; border-color: white; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+        /* Nivel 4: Contenedor de Contenido (Iframe) */
+        .main-content-area {
+            flex: 1; /* Ocupa todo el espacio restante */
+            position: relative;
+            min-height: 0; /* Importante para flexbox y scroll interno */
+            background: #f8fafc;
         }
 
-        .ribbon-pill:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
+        #mainIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
         }
-
-        .ribbon-pill.active {
-            background: white;
-            color: #1e293b;
-            border-color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        #mainIframe { flex: 1; border: none; width: 100%; background: #f8fafc; }
     </style>
 </head>
 <body>
 
+    <!-- CABECERA PRINCIPAL -->
     <header class="app-header-top">
         <div class="branding-section">
-            <div onclick="openApps()" class="apps-drawer-btn" title="Aplicaciones">
+            <div onclick="openApps()" class="apps-drawer-btn" title="Menú de Aplicaciones">
                 <img src="../MM/Apps.png" alt="Apps">
             </div>
             <div class="logo-container">
-                <img src="../MM/RegAs.png" alt="Logo Asistencia">
+                <img src="../MM/RegAs.png" alt="Logo">
             </div>
-            <div>
-                <h1 class="text-[13px] font-black text-slate-900 uppercase tracking-widest leading-none">Registros de asistencia</h1>
+            <div class="hidden xs:block">
+                <h1 class="text-[12px] font-black text-slate-900 uppercase tracking-widest leading-none">Registros de asistencia</h1>
                 <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">CIC 7.1 · Gestión Operativa</p>
             </div>
         </div>
@@ -312,30 +172,33 @@
             <div onclick="setTab('reporte', this)" id="nav-reporte" class="main-tab-btn">Reporte</div>
         </nav>
 
-        <div id="clock" class="clock-container">
+        <div class="clock-container">
             <div class="clock-dot"></div>
             <span id="timeDisplay">00:00:00</span>
         </div>
     </header>
 
+    <!-- CONTROLES DIARIOS -->
     <div id="diariaControls" class="app-header-sub hidden">
         <div class="flex items-center gap-4">
             <div class="w-1.5 h-8 bg-fuchsia-600 rounded-full"></div>
             <div class="flex flex-col">
                 <h2 id="topDateLabel" class="text-[11px] font-black text-slate-800 uppercase tracking-tight leading-none">---</h2>
-                <span id="viewStatus" class="text-[8px] font-bold text-fuchsia-500 uppercase mt-0.5">Vista Histórica</span>
+                <span id="viewStatus" class="text-[8px] font-bold text-emerald-500 uppercase mt-0.5">Jornada Actual</span>
             </div>
         </div>
-        
+
         <div class="flex items-center gap-4">
+            <!-- Selector Fecha -->
             <div class="nav-selector">
                 <button onclick="changeDate(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
                 <div class="display-box"><input type="date" id="dateSelector"></div>
                 <button onclick="changeDate(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
 
-            <button id="todayBtn" onclick="goToToday()" class="today-btn transition-opacity duration-300">Ir a Hoy</button>
+            <button id="todayBtn" onclick="goToToday()" class="today-btn">Hoy</button>
 
+            <!-- Selector Turno -->
             <div class="nav-selector">
                 <button onclick="changeShift(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
                 <div class="display-box" onclick="toggleShiftMenu(event)">
@@ -343,26 +206,28 @@
                     <i class="fa-solid fa-caret-down ml-2 text-[10px] text-fuchsia-400"></i>
                 </div>
                 <button onclick="changeShift(1)" class="nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
-                
                 <div id="shiftMenu" class="dropdown-shift-list"></div>
             </div>
 
-            <label class="flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 bg-white border border-fuchsia-200 rounded-xl hover:bg-fuchsia-50 transition-all">
-                <input type="checkbox" id="hideAbsences" checked class="w-4 h-4 accent-fuchsia-600 cursor-pointer">
-                <span class="text-[9px] font-black text-fuchsia-900 uppercase tracking-tighter">Ocultar Ausentismos</span>
+            <label class="flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 bg-white border border-fuchsia-200 rounded-xl">
+                <input type="checkbox" id="hideAbsences" checked class="w-4 h-4 accent-fuchsia-600">
+                <span class="text-[9px] font-black text-fuchsia-900 uppercase">Ocultar Ausentismos</span>
             </label>
         </div>
     </div>
 
+    <!-- RIBBON DE BOTONES -->
     <nav id="appRibbon" class="app-ribbon">
-        <div id="ribbonContent" class="flex items-center gap-3 w-full"></div>
+        <div id="ribbonContent" class="flex items-center w-full overflow-x-auto no-scrollbar"></div>
     </nav>
 
-    <iframe id="mainIframe" src=""></iframe>
+    <!-- ÁREA DE IFRAME -->
+    <main class="main-content-area">
+        <iframe id="mainIframe" src="about:blank"></iframe>
+    </main>
 
     <script>
         let currentDate = new Date();
-        currentDate.setHours(12, 0, 0, 0);
         const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
         let currentShiftIndex = 0;
         let currentActiveTab = 'diaria';
@@ -397,30 +262,17 @@
             ]
         };
 
-        function updateClock() {
-            const now = new Date();
-            dom.clockText.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+        function updateClock() { dom.clockText.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }
+        setInterval(updateClock, 1000); updateClock();
 
         window.goToToday = () => {
             const now = new Date();
             const hour = now.getHours();
-            currentDate = new Date();
-            currentDate.setHours(12, 0, 0, 0);
-
-            if (hour >= 0 && hour < 7) {
-                currentShiftIndex = 2; // Nocturno
-                currentDate.setDate(currentDate.getDate() - 1);
-            } else if (hour >= 7 && hour < 12) {
-                currentShiftIndex = 0; // Matutino
-            } else if (hour >= 12 && hour < 18) {
-                currentShiftIndex = 1; // Vespertino
-            } else {
-                currentShiftIndex = 2; // Nocturno
-            }
-
+            currentDate = new Date(); currentDate.setHours(12, 0, 0, 0);
+            if (hour < 7) { currentShiftIndex = 2; currentDate.setDate(currentDate.getDate() - 1); }
+            else if (hour < 12) currentShiftIndex = 0;
+            else if (hour < 18) currentShiftIndex = 1;
+            else currentShiftIndex = 2;
             updateUI();
         };
 
@@ -433,29 +285,19 @@
         window.toggleShiftMenu = (e) => {
             e.stopPropagation();
             const show = !dom.shiftMenu.classList.contains('show');
-            document.querySelectorAll('.dropdown-shift-list').forEach(m => m.classList.remove('show'));
-            
             if (show) {
-                const hideAbsences = dom.hideAbsences.checked;
-                const menuShifts = hideAbsences ? shifts.filter(s => s !== 'ausentismo') : shifts;
-                
-                dom.shiftMenu.innerHTML = menuShifts.map(s => `
-                    <div class="dropdown-item ${shifts[currentShiftIndex] === s ? 'active' : ''}" 
-                         onclick="selectShiftFromMenu('${s}')">
-                        <span>${s.toUpperCase()}</span>
-                        ${shifts[currentShiftIndex] === s ? '<i class="fa-solid fa-check text-[8px]"></i>' : ''}
+                const hide = dom.hideAbsences.checked;
+                const valid = hide ? shifts.filter(s => s !== 'ausentismo') : shifts;
+                dom.shiftMenu.innerHTML = valid.map(s => `
+                    <div class="dropdown-item ${shifts[currentShiftIndex] === s ? 'active' : ''}" onclick="selectShift('${s}')">
+                        <span>${s.toUpperCase()}</span>${shifts[currentShiftIndex] === s ? '<i class="fa-solid fa-check text-[8px]"></i>' : ''}
                     </div>
                 `).join('');
                 dom.shiftMenu.classList.add('show');
-            }
+            } else dom.shiftMenu.classList.remove('show');
         };
 
-        window.selectShiftFromMenu = (shift) => {
-            currentShiftIndex = shifts.indexOf(shift);
-            dom.shiftMenu.classList.remove('show');
-            updateUI();
-        };
-
+        window.selectShift = (s) => { currentShiftIndex = shifts.indexOf(s); dom.shiftMenu.classList.remove('show'); updateUI(); };
         document.addEventListener('click', () => dom.shiftMenu.classList.remove('show'));
 
         function renderRibbon(tab, forcedAction = null) {
@@ -465,25 +307,17 @@
             const items = ribbonConfigs[tab] || [];
             items.forEach(item => {
                 const btn = document.createElement('div');
-                const isActive = forcedAction ? (item.action === forcedAction) : item.active;
-                btn.className = `ribbon-pill ${isActive ? 'active' : ''}`;
-                
-                if (tab === 'diaria') {
-                    btn.textContent = item.label;
-                    btn.onclick = () => {
-                        document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
-                        btn.classList.add('active');
-                        sendToIframe({ action: 'filter', type: item.type });
-                    };
-                } else {
-                    btn.innerHTML = `<i class="${item.icon} mr-2"></i>${item.label}`;
-                    btn.onclick = () => {
-                        document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
-                        btn.classList.add('active');
-                        const reportPaths = { 'whatsapp': '../Complementos/RegAs/Wa.html', 'diario': '../Complementos/RegAs/Reporte_Diario.html' };
-                        dom.iframe.src = reportPaths[item.action];
-                    };
-                }
+                btn.className = `ribbon-pill ${forcedAction === item.action || (!forcedAction && item.active) ? 'active' : ''}`;
+                btn.textContent = item.label;
+                btn.onclick = () => {
+                    document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (tab === 'diaria') sendToIframe({ action: 'filter', type: item.type });
+                    else {
+                        const paths = { 'whatsapp': '../Complementos/RegAs/Wa.html', 'diario': '../Complementos/RegAs/Reporte_Diario.html' };
+                        dom.iframe.src = paths[item.action];
+                    }
+                };
                 dom.ribbonContent.appendChild(btn);
             });
         }
@@ -492,15 +326,13 @@
             currentActiveTab = tab;
             localStorage.setItem('regas_last_view', tab);
             document.querySelectorAll('.main-tab-btn').forEach(t => t.classList.remove('active'));
-            const targetBtn = el || document.getElementById(`nav-${tab}`);
-            if (targetBtn) targetBtn.classList.add('active');
-
+            (el || document.getElementById(`nav-${tab}`)).classList.add('active');
             dom.diariaControls.classList.toggle('hidden', tab !== 'diaria');
             
             if (forcedSubView) {
                 renderRibbon(tab, forcedSubView);
-                const forcedPaths = { 'diario': '../Complementos/RegAs/Reporte_Diario.html', 'whatsapp': '../Complementos/RegAs/Wa.html' };
-                dom.iframe.src = forcedPaths[forcedSubView];
+                const paths = { 'diario': '../Complementos/RegAs/Reporte_Diario.html', 'whatsapp': '../Complementos/RegAs/Wa.html' };
+                dom.iframe.src = paths[forcedSubView];
             } else {
                 renderRibbon(tab);
                 const paths = { 'diaria': '../Complementos/RegAs/Día.html', 'planeacion': '../Complementos/RegAs/Planeación.html', 'reporte': '../Complementos/RegAs/Wa.html' };
@@ -510,22 +342,14 @@
         };
 
         window.changeDate = (offset) => { currentDate.setDate(currentDate.getDate() + offset); updateUI(); };
-        
-        window.changeShift = (direction) => {
-            const hideAbsences = dom.hideAbsences.checked;
-            const validShifts = hideAbsences ? shifts.filter(s => s !== 'ausentismo') : shifts;
-            let currentValidIndex = validShifts.indexOf(shifts[currentShiftIndex]);
-            if (currentValidIndex === -1) currentValidIndex = 0;
-            let nextValidIndex = currentValidIndex + direction;
-
-            if (nextValidIndex < 0) { 
-                currentDate.setDate(currentDate.getDate() - 1); 
-                nextValidIndex = validShifts.length - 1; 
-            } else if (nextValidIndex >= validShifts.length) { 
-                currentDate.setDate(currentDate.getDate() + 1); 
-                nextValidIndex = 0; 
-            }
-            currentShiftIndex = shifts.indexOf(validShifts[nextValidIndex]);
+        window.changeShift = (dir) => {
+            const valid = dom.hideAbsences.checked ? shifts.filter(s => s !== 'ausentismo') : shifts;
+            let idx = valid.indexOf(shifts[currentShiftIndex]);
+            if (idx === -1) idx = 0;
+            let nIdx = idx + dir;
+            if (nIdx < 0) { currentDate.setDate(currentDate.getDate() - 1); nIdx = valid.length - 1; }
+            else if (nIdx >= valid.length) { currentDate.setDate(currentDate.getDate() + 1); nIdx = 0; }
+            currentShiftIndex = shifts.indexOf(valid[nIdx]);
             updateUI();
         };
 
@@ -535,45 +359,29 @@
 
         function updateUI() {
             const iso = currentDate.toISOString().split('T')[0];
-            const todayIso = new Date().toISOString().split('T')[0];
-            
+            const today = new Date().toISOString().split('T')[0];
             dom.dateInput.value = iso;
             dom.topLabel.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
             dom.shiftLabel.textContent = shifts[currentShiftIndex].toUpperCase();
-
-            const isToday = iso === todayIso;
-            dom.todayBtn.classList.toggle('hidden', isToday);
-            dom.viewStatus.textContent = isToday ? "Jornada Actual" : "Vista Histórica";
-            dom.viewStatus.classList.toggle('text-fuchsia-500', !isToday);
-            dom.viewStatus.classList.toggle('text-emerald-500', isToday);
-
-            if (currentActiveTab === 'diaria') {
-                sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex], hideAbsences: dom.hideAbsences.checked });
-            }
+            dom.todayBtn.classList.toggle('hidden', iso === today);
+            dom.viewStatus.textContent = iso === today ? "Jornada Actual" : "Vista Histórica";
+            dom.viewStatus.className = `text-[8px] font-bold uppercase mt-0.5 ${iso === today ? 'text-emerald-500' : 'text-fuchsia-500'}`;
+            if (currentActiveTab === 'diaria') sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex], hideAbsences: dom.hideAbsences.checked });
         }
 
         window.addEventListener('message', (e) => {
-            if (e.data.action && (e.data.action.includes('Panel') || e.data.action.includes('Nav') || e.data.action === 'toggleMenu' || e.data.action === 'openApp')) {
-                window.parent.postMessage(e.data, '*');
-            }
-            if (e.data.action === 'internalNav') { setTab(e.data.tab, null, e.data.subview); }
-            if (e.data.action === 'reportShift') {
-                currentShiftIndex = shifts.indexOf(e.data.shift);
-                dom.shiftLabel.textContent = e.data.shift.toUpperCase();
-            }
+            if (e.data.action && (e.data.action.includes('Panel') || e.data.action.includes('Nav') || e.data.action === 'toggleMenu' || e.data.action === 'openApp')) window.parent.postMessage(e.data, '*');
+            if (e.data.action === 'internalNav') setTab(e.data.tab, null, e.data.subview);
+            if (e.data.action === 'reportShift') { currentShiftIndex = shifts.indexOf(e.data.shift); dom.shiftLabel.textContent = e.data.shift.toUpperCase(); }
             if (e.data.action === 'reportDate') {
                 const newDate = new Date(e.data.date + "T12:00:00");
-                if (newDate.getTime() !== currentDate.getTime()) {
-                    currentDate = newDate;
-                    updateUI();
-                }
+                if (newDate.getTime() !== currentDate.getTime()) { currentDate = newDate; updateUI(); }
             }
         });
 
         window.onload = () => { 
-            const lastView = localStorage.getItem('regas_last_view') || 'diaria';
-            setTab(lastView);
-            updateUI(); 
+            const last = localStorage.getItem('regas_last_view') || 'diaria';
+            setTab(last); 
         };
     </script>
 </body>

@@ -8,87 +8,83 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS PURO - Sin directivas @apply */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+        /* Bloqueo de scroll exterior para forzar scroll interno controlado */
+        html, body {
+            height: 100%;
             margin: 0;
             padding: 0;
-            height: 100vh;
+            overflow: hidden;
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Contenedor principal de desplazamiento */
+        #scroll-viewport {
+            height: 100%;
             overflow-y: auto;
             overflow-x: hidden;
             scroll-behavior: smooth;
-            overscroll-behavior-y: contain;
-            /* Evita saltos automáticos al insertar contenido arriba */
-            overflow-anchor: none; 
+            -webkit-overflow-scrolling: touch;
         }
 
         #timelineContainer {
-            padding: 1rem 0;
-            min-height: 101vh;
             width: 100%;
-            /* Espacio extra al final para permitir que el último turno suba al tope */
-            padding-bottom: 70vh;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 1.5rem 85vh 1.5rem; 
         }
 
         .day-section {
-            padding: 1.25rem 1.5rem 0.5rem 1.5rem;
-            border-bottom: 4px solid #f1f5f9;
-            transition: opacity 0.3s ease;
+            padding: 1.5rem 0 0.5rem 0;
+            border-bottom: 2px solid #f1f5f9;
         }
 
         .day-header-pill {
-            color: #64748b;
-            font-size: 12px;
+            color: #94a3b8;
+            font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: inline-block;
-        }
-
-        .shift-drawer {
+            letter-spacing: 0.05em;
             margin-bottom: 1.5rem;
-            scroll-margin-top: 10px;
-            border: 2px solid transparent;
-            border-radius: 1rem;
-            transition: all 0.2s;
-        }
-
-        /* Estado durante el arrastre */
-        .shift-drawer.drag-over {
-            border-color: #d946ef;
-            background: rgba(217, 70, 239, 0.03);
-            transform: scale(1.01);
-        }
-
-        .shift-header {
-            font-size: 11px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: #64748b;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 0.5rem;
-            
-            /* Lógica Sticky: Se queda pegado al encabezado superior */
-            position: sticky;
-            top: 0;
-            background-color: #f8fafc;
-            z-index: 40;
-            padding-top: 0.75rem;
-        }
-
-        .shift-tools {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
+
+        .shift-drawer {
+            margin-bottom: 1.5rem;
+            border: 2px solid transparent;
+            border-radius: 1.25rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shift-drawer.drag-over {
+            border-color: #d946ef;
+            background: rgba(217, 70, 239, 0.03);
+            transform: scale(1.005);
+        }
+
+        .shift-header {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #64748b;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 0.85rem 0.6rem;
+            position: sticky;
+            top: -1px;
+            background-color: #f8fafc;
+            z-index: 100;
+        }
+
+        .shift-tools { display: flex; align-items: center; gap: 0.5rem; }
 
         .tool-check-label {
             display: flex;
@@ -97,187 +93,69 @@
             cursor: pointer;
             user-select: none;
         }
-
-        .tool-check-label input {
-            display: none;
-        }
-
+        .tool-check-label input { display: none; }
         .tool-check-box {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 18px; height: 18px; border: 2px solid #e2e8f0; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; background: white;
             transition: all 0.2s;
-            background: white;
         }
-
-        .tool-check-label input:checked + .tool-check-box {
-            background: #d946ef;
-            border-color: #d946ef;
-        }
-
-        .tool-check-label i {
-            font-size: 10px;
-            color: white;
-            display: none;
-        }
-
-        .tool-check-label input:checked + .tool-check-box i {
-            display: block;
-        }
+        .tool-check-label input:checked + .tool-check-box { background: #d946ef; border-color: #d946ef; }
+        .tool-check-label i { font-size: 9px; color: white; display: none; }
+        .tool-check-label input:checked + .tool-check-box i { display: block; }
 
         .double-shift-btn {
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: 800;
-            border: 1px solid #e2e8f0;
-            background: white;
-            color: #64748b;
-            transition: all 0.2s;
+            padding: 4px 12px; border-radius: 7px; font-size: 9px; font-weight: 800;
+            border: 1px solid #e2e8f0; background: white; color: #64748b; transition: all 0.2s;
         }
-
-        .double-shift-btn.active {
-            background: #fdf4ff;
-            border-color: #d946ef;
-            color: #d946ef;
-        }
+        .double-shift-btn.active { background: #fdf4ff; border-color: #d946ef; color: #d946ef; }
 
         .header-add-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: #f1f5f9;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            border: 1px solid #e2e8f0;
+            width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9;
+            color: #64748b; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #e2e8f0; transition: all 0.2s;
         }
-
-        .header-add-btn:hover {
-            background: #d946ef;
-            color: white;
-            border-color: #d946ef;
-            transform: scale(1.1);
-        }
+        .header-add-btn:hover { background: #d946ef; color: white; border-color: #d946ef; }
 
         .user-card-mini {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.6rem;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 0.75rem;
-            cursor: pointer;
+            background: white; border: 1px solid #e2e8f0; border-radius: 1rem;
+            padding: 0.8rem; display: flex; flex-direction: row; align-items: center; gap: 0.9rem;
+            cursor: pointer; min-height: 85px; transition: all 0.2s;
             position: relative;
-            min-height: 80px;
-            transition: all 0.2s;
         }
-
-        .user-card-mini:hover {
-            border-color: #d946ef;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-        }
-
-        .user-card-mini.is-double {
-            border-width: 2px;
-            border-color: #f0abfc;
-            background: #fffaff;
-        }
+        .user-card-mini:hover { border-color: #d946ef; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+        .user-card-mini.is-double { border-width: 2px; border-color: #f0abfc; background: #fffaff; }
 
         .photo-container {
-            width: 60px;
-            height: 60px;
-            border-radius: 10px;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: #f1f5f9;
-            position: relative;
+            width: 60px; height: 60px; border-radius: 12px; overflow: hidden;
+            flex-shrink: 0; background: #f1f5f9; position: relative;
         }
+        .photo-container img { width: 100%; height: 100%; object-fit: cover; }
 
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .double-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #d946ef;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            border: 2px solid white;
-            z-index: 5;
-        }
-
-        .indicators-strip {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            display: flex;
-        }
-
-        .dot-indicator {
-            flex: 1;
-            height: 100%;
-        }
-
+        /* Indicadores de turnos en la foto */
+        .indicators-strip { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; display: flex; }
+        .dot-indicator { flex: 1; height: 100%; }
         .bg-matutino { background: #fef08a; }
         .bg-vespertino { background: #60a5fa; }
         .bg-nocturno { background: #1e3a8a; }
         .bg-ausentismo { background: #ef4444; }
 
-        .info-group {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 1px;
-            flex: 1;
-            min-width: 0;
+        .double-badge {
+            position: absolute; top: -5px; right: -5px; background: #d946ef; color: white;
+            width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 9px; border: 2px solid white; z-index: 5;
         }
 
+        .info-group { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+
         .caseta-select {
-            font-size: 10px;
-            font-weight: 700;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 3px 6px;
-            margin-top: 2px;
-            width: fit-content;
-            max-width: 100%;
-            outline: none;
-            color: #475569;
-            cursor: pointer;
+            font-size: 10px; font-weight: 700; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 7px; padding: 4px 7px; margin-top: 5px; width: fit-content; outline: none;
+            color: #475569; cursor: pointer;
         }
 
         .action-btn {
-            width: 34px;
-            height: 34px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.2s;
-            cursor: pointer;
+            width: 38px; height: 38px; border-radius: 11px; display: flex;
+            align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s;
             border: 1px solid transparent;
         }
 
@@ -287,75 +165,124 @@
         .btn-absence { background: #ef4444; color: #fef08a; }
         .btn-complete { background: #94a3b8; color: white; cursor: default; }
 
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        #loader {
+            position: fixed; inset: 0; background: #f8fafc; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* --- ESTILO MENU CONTEXTUAL REINVENTADO --- */
         #context-menu {
             display: none;
             position: fixed;
             z-index: 5000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 14px;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+            overflow: hidden;
             padding: 6px;
-            min-width: 180px;
+            animation: menuPop 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .context-item {
-            padding: 10px 14px;
-            font-size: 10px;
-            font-weight: 800;
+        @keyframes menuPop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .menu-header {
+            padding: 8px 12px;
+            font-size: 9px;
+            font-weight: 900;
+            color: #94a3b8;
             text-transform: uppercase;
-            color: #64748b;
-            cursor: pointer;
-            border-radius: 8px;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 4px;
+        }
+
+        .menu-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            border-radius: 10px;
+            cursor: pointer;
             transition: all 0.2s;
         }
 
-        .context-item:hover {
+        .menu-item:hover {
             background: #fdf4ff;
             color: #d946ef;
         }
 
-        .context-item i {
-            font-size: 12px;
-            width: 16px;
-            text-align: center;
+        .menu-item.danger {
+            color: #ef4444;
+        }
+        .menu-item.danger:hover {
+            background: #fef2f2;
+            color: #ef4444;
         }
 
-        ::-webkit-scrollbar { width: 7px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .menu-item i {
+            width: 18px;
+            text-align: center;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="timelineContainer" class="max-w-[1920px] mx-auto px-6">
-        <!-- Centinela para scroll hacia arriba (días pasados) -->
-        <div id="topSentinel" class="h-1 w-full"></div>
-        <!-- Centinela para scroll hacia abajo (días futuros) -->
-        <div id="infiniteSentinel" class="h-5"></div>
+    <div id="loader">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sincronizando Tablero CIC...</p>
     </div>
 
-    <div id="loader" class="flex flex-col items-center justify-center py-32">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-fuchsia-600 mb-6"></div>
-        <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Sincronizando información...</p>
+    <div id="scroll-viewport">
+        <div id="timelineContainer">
+            <div id="topSentinel" class="h-1 w-full"></div>
+            <div id="infiniteSentinel" class="h-10 w-full"></div>
+        </div>
     </div>
 
-    <!-- MENÚ CONTEXTUAL -->
+    <!-- Menú Contextual Rediseñado -->
     <div id="context-menu">
-        <div class="context-item" onclick="openByContext('expediente')"><i class="fa-solid fa-address-card"></i> Expediente</div>
-        <div class="context-item" onclick="openByContext('operacion')"><i class="fa-solid fa-briefcase"></i> Función Operativa</div>
-        <div class="context-item" onclick="openByContext('gestion')"><i class="fa-solid fa-clock"></i> Gestión de Turno</div>
-        <div class="context-item" onclick="openByContext('patrones')"><i class="fa-solid fa-calendar-days"></i> Patrones</div>
+        <div class="menu-header">Opciones de Socio</div>
+        <div onclick="openByContext('expediente')" class="menu-item">
+            <i class="fa-solid fa-address-card"></i>
+            <span>Expediente</span>
+        </div>
+        <div onclick="openByContext('operacion')" class="menu-item">
+            <i class="fa-solid fa-briefcase"></i>
+            <span>Función Operativa</span>
+        </div>
+        <div onclick="openByContext('gestion')" class="menu-item">
+            <i class="fa-solid fa-clock"></i>
+            <span>Gestión de Turno</span>
+        </div>
+        <div onclick="openByContext('patrones')" class="menu-item">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>Patrones</span>
+        </div>
+        <div class="border-t border-slate-50 my-1"></div>
+        <div onclick="openByContext('delete')" class="menu-item danger">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Eliminar del Turno</span>
+        </div>
     </div>
 
     <script type="module">
         import { firebaseConfig } from '../../script.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         const app = initializeApp(firebaseConfig);
@@ -364,6 +291,7 @@
         const storage = getStorage(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
 
+        // Orden de prioridad solicitado para las casetas
         const casetasPrioridad = ["Centro de Control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero", "Otro"];
         const motivosAusentismo = ["Descanso", "Falta", "Vacaciones", "Suspensión", "Incapacidades", "Permiso"];
         const shifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
@@ -373,8 +301,7 @@
 
         let allPersonnel = [];
         let personnelLoaded = false;
-        let activeDate = new Date();
-        activeDate.setHours(12, 0, 0, 0);
+        let activeDate = new Date(); activeDate.setHours(12, 0, 0, 0);
 
         let futureDateCursor = new Date(activeDate);
         let pastDateCursor = new Date(activeDate);
@@ -385,10 +312,14 @@
         let hideGlobalAbsences = true; 
         const shiftFilterState = {};
 
+        let isProgrammaticScroll = false;
+        let lastReportedDate = "";
+        let lastReportedShift = "";
+
+        const scrollViewport = document.getElementById('scroll-viewport');
         const timeline = document.getElementById('timelineContainer');
-        // Usamos let para permitir re-asignación tras limpiar timeline.innerHTML
-        let sentinel = document.getElementById('infiniteSentinel');
-        let topSentinel = document.getElementById('topSentinel');
+        const sentinel = document.getElementById('infiniteSentinel');
+        const topSentinel = document.getElementById('topSentinel');
         const contextMenu = document.getElementById('context-menu');
 
         async function fetchPersonnel() {
@@ -398,17 +329,14 @@
                 if (snap.exists()) {
                     allPersonnel = Object.entries(snap.data()).map(([uid, d]) => ({
                         uid, socioId: String(d.socioId || ''), nombre: d.nombre || 'S/N',
-                        photo: d.photo || null,
-                        puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
+                        photo: d.photo || null, puesto: d.operativa?.puesto || d.puesto || 'PERSONAL',
                         status: (d.operativa?.estatus || d.status || 'Activo').toLowerCase(),
                         casetaDefault: d.operativa?.caseta || ""
                     })).filter(u => u.status !== 'baja' && u.socioId);
                     personnelLoaded = true;
-                    
-                    // IMPORTANTE: Una vez cargado el personal, refrescamos la vista de los días ya cacheados
                     refreshAllVisibleGrids();
                 }
-            } catch (e) { console.error("Error fetching personnel:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function refreshAllVisibleGrids() {
@@ -424,10 +352,8 @@
                     const storagePath = path.replace(/gs:\/\/[^\/]+\//, '');
                     const url = await getDownloadURL(ref(storage, storagePath));
                     imgElement.src = url;
-                } else if (path.startsWith('http')) {
-                    imgElement.src = path;
-                }
-            } catch (err) { }
+                } else imgElement.src = path;
+            } catch (err) {}
         }
 
         async function renderDaySection(date, pos = 'append') {
@@ -443,36 +369,36 @@
             section.dataset.date = iso;
 
             section.innerHTML = `
-                <div class="mb-6 flex items-center gap-4">
-                    <div class="day-header-pill">${date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                <div class="day-header-pill">
+                    <span>${date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
                     <div class="h-px bg-slate-200 flex-1"></div>
                 </div>
                 <div id="drawers-${dateId}">
                     ${shifts.map(shift => {
-                        const shiftLabel = shift === 'ausentismo' ? 'Ausentismo' : shift.charAt(0).toUpperCase() + shift.slice(1);
+                        const drawerId = shift.substring(0, 3);
                         const dotColor = shift === 'matutino' ? 'bg-yellow-200' : shift === 'vespertino' ? 'bg-blue-400' : shift === 'nocturno' ? 'bg-blue-900' : 'bg-red-500';
-                        const drawerId = shift === 'matutino' ? 'mat' : shift === 'vespertino' ? 'ves' : shift === 'nocturno' ? 'noc' : 'aus';
                         return `
-                            <div class="shift-drawer" 
-                                 id="${drawerId}-${dateId}" 
-                                 data-shift="${shift}" 
-                                 data-dateid="${dateId}"
-                                 data-trimid="${trimId}"
+                            <div class="shift-drawer" id="${drawerId}-${dateId}" data-shift="${shift}" data-dateid="${dateId}" data-trimid="${trimId}"
                                  ondragover="event.preventDefault(); this.classList.add('drag-over');"
                                  ondragleave="this.classList.remove('drag-over');"
                                  ondrop="handleDrop(event, this)">
-                                <div class="shift-header">
-                                    <div class="flex items-center gap-3">
-                                        <div class="dot w-2.5 h-2.5 rounded-full ${dotColor}"></div> ${shiftLabel}
+                                <div class="shift-header shadow-sm">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full ${dotColor}"></div>
+                                        <span>${shift}</span>
                                     </div>
                                     <div class="shift-tools">
-                                        <button onclick="openAddPanel('${dateId}', '${shift}')" title="Agregar Elemento" class="header-add-btn"><i class="fa-solid fa-plus text-xs"></i></button>
-                                        <button id="double-btn-${shift}-${dateId}" onclick="toggleShiftTool('${dateId}', '${shift}', 'highlightDouble')" class="double-shift-btn"><i class="fa-solid fa-clone mr-1"></i> DOBLE</button>
-                                        <label class="tool-check-label"><input type="checkbox" onchange="toggleShiftTool('${dateId}', '${shift}', 'hideComplete')"><div class="tool-check-box"><i class="fa-solid fa-check"></i></div><span class="text-[9px] font-black">OCULTAR COMPLETOS</span></label>
-                                        <button onclick="openWaPanel('${dateId}', '${shift}')" class="wa-btn-header text-slate-400 px-2 hover:text-green-500 transition-colors"><i class="fa-brands fa-whatsapp text-xl"></i></button>
+                                        <button onclick="openAddPanel('${dateId}', '${shift}')" class="header-add-btn"><i class="fa-solid fa-plus"></i></button>
+                                        <button id="double-btn-${shift}-${dateId}" onclick="toggleShiftTool('${dateId}', '${shift}', 'highlightDouble')" class="double-shift-btn">DOBLE</button>
+                                        <label class="tool-check-label">
+                                            <input type="checkbox" onchange="toggleShiftTool('${dateId}', '${shift}', 'hideComplete')">
+                                            <div class="tool-check-box"><i class="fa-solid fa-check"></i></div>
+                                            <span class="text-[8px] font-black uppercase tracking-tighter">Ocultar Completos</span>
+                                        </label>
+                                        <button onclick="openWaPanel('${dateId}', '${shift}')" class="wa-btn-header text-slate-400 px-2 hover:text-green-500 transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></button>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 grid-container" data-dateid="${dateId}" data-shift="${shift}"></div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 grid-container"></div>
                             </div>
                         `;
                     }).join('')}
@@ -482,13 +408,17 @@
             if (pos === 'append') {
                 timeline.insertBefore(section, sentinel);
             } else {
-                const oldScrollHeight = document.documentElement.scrollHeight;
+                isProgrammaticScroll = true;
+                const oldH = scrollViewport.scrollHeight;
+                const oldScroll = scrollViewport.scrollTop;
                 topSentinel.insertAdjacentElement('afterend', section);
-                const newScrollHeight = document.documentElement.scrollHeight;
-                window.scrollBy(0, newScrollHeight - oldScrollHeight);
+                const newH = scrollViewport.scrollHeight;
+                scrollViewport.scrollTop = oldScroll + (newH - oldH);
+                setTimeout(() => isProgrammaticScroll = false, 250);
             }
 
-            section.querySelectorAll('.shift-drawer').forEach(d => scrollObserver.observe(d));
+            dateObserver.observe(section);
+            section.querySelectorAll('.shift-drawer').forEach(d => shiftObserver.observe(d));
 
             const attRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
             const unsub = onSnapshot(attRef, (snap) => {
@@ -496,123 +426,81 @@
                 const dayData = fullData[dateId] || {};
                 dayDataCache.set(dateId, { data: dayData, date: new Date(date), trimId: trimId });
                 updateDayGrid(dateId, dayData, new Date(date));
-            }, (err) => console.error("Error en snapshot:", err));
+            });
             activeSnapshots.set(dateId, unsub);
         }
 
         window.handleDrop = async (e, drawer) => {
-            e.preventDefault();
-            drawer.classList.remove('drag-over');
-            
+            e.preventDefault(); drawer.classList.remove('drag-over');
             const socioId = e.dataTransfer.getData('socioId');
             const shift = drawer.dataset.shift;
             const dateId = drawer.dataset.dateid;
             const trimId = drawer.dataset.trimid;
-
             if (!socioId || !shift || !dateId) return;
 
             const person = allPersonnel.find(p => p.socioId === socioId);
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimId);
-            const updateObj = {};
+            const key = `${dateId}.${socioId}.${shift}`;
             
-            updateObj[`${dateId}.${socioId}.${shift}`] = {
-                Caseta: person?.casetaDefault || "Otro",
-                entrada_planificada: "07:00",
-                entrada_real: null,
-                salida_real: null
-            };
-
             try {
-                await updateDoc(docRef, updateObj);
-            } catch (err) { console.error("Error al agregar elemento:", err); }
+                await updateDoc(docRef, { [key]: {
+                    Caseta: person?.casetaDefault || "Otro",
+                    entrada_planificada: "07:00",
+                    entrada_real: null, salida_real: null
+                }});
+            } catch (err) { console.error(err); }
         };
 
         function updateDayGrid(dateId, dayData, dateObj) {
-            if (!personnelLoaded) return; // Esperar a que el personal esté listo
-
-            const now = new Date();
-            const hour = now.getHours();
-            const today = new Date();
-            today.setHours(12, 0, 0, 0);
-            const isToday = dateObj.getTime() === today.getTime();
-            
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const isYesterday = dateObj.getTime() === yesterday.getTime();
-
-            const section = document.getElementById(`section-${dateId}`);
-            if (currentFilter === 'proximos') {
-                if (section) section.style.display = (isToday || (isYesterday && hour < SHIFT_END_NIGHT)) ? 'block' : 'none';
-            } else {
-                if (section) section.style.display = 'block';
-            }
-
+            if (!personnelLoaded) return;
             const drawersMap = { matutino: 'mat', vespertino: 'ves', nocturno: 'noc', ausentismo: 'aus' };
             shifts.forEach(shiftKey => {
-                const drawerKey = drawersMap[shiftKey];
-                const drawer = document.getElementById(`${drawerKey}-${dateId}`);
+                const drawer = document.getElementById(`${drawersMap[shiftKey]}-${dateId}`);
                 if (!drawer) return;
 
-                if (shiftKey === 'ausentismo') {
-                    const shouldShowDrawer = (currentFilter === 'ausentismo') || (currentFilter !== 'ausentismo' && !hideGlobalAbsences);
-                    drawer.style.display = shouldShowDrawer ? 'block' : 'none';
-                    if (!shouldShowDrawer) return;
+                if (shiftKey === 'ausentismo' && hideGlobalAbsences && currentFilter !== 'ausentismo') {
+                    drawer.style.display = 'none'; return;
                 }
 
                 const grid = drawer.querySelector('.grid-container');
-                const filterKey = `${dateId}_${shiftKey}`;
-                const config = shiftFilterState[filterKey] || { hideComplete: false, highlightDouble: false };
+                const config = shiftFilterState[`${dateId}_${shiftKey}`] || { hideComplete: false, highlightDouble: false };
 
-                let list = allPersonnel.filter(person => {
-                    const entry = dayData[person.socioId];
-                    const shiftInfo = entry?.[shiftKey];
-
-                    if (currentFilter === 'proximos') {
-                        if (shiftKey === 'ausentismo') return false;
-                        if (shiftInfo?.entrada_real && !shiftInfo?.salida_real) {
-                            if (isToday) return true;
-                            if (isYesterday && shiftKey === 'nocturno' && hour < SHIFT_END_NIGHT) return true;
-                        }
-                        if (isToday) {
-                            const planTimeStr = shiftInfo?.entrada_planificada || "";
-                            if (planTimeStr) {
-                                const [pHours, pMins] = planTimeStr.split(':').map(Number);
-                                const nowMinutes = now.getHours() * 60 + now.getMinutes();
-                                const planMinutes = pHours * 60 + pMins;
-                                if (nowMinutes >= planMinutes - 60 && nowMinutes <= planMinutes + 30) return true;
-                            }
-                        }
-                        return false;
-                    }
-
-                    if (!entry || !entry[shiftKey]) return false;
-                    if (config.hideComplete && shiftInfo.entrada_real && shiftInfo.salida_real) return false;
+                let list = allPersonnel.filter(p => {
+                    const info = dayData[p.socioId]?.[shiftKey];
+                    if (!info) return false;
+                    if (config.hideComplete && info.entrada_real && info.salida_real) return false;
                     if (currentFilter !== 'todos' && currentFilter !== shiftKey) return false;
                     return true;
                 });
 
+                // Lógica de ordenamiento: Por prioridad de caseta y luego por nombre
                 list.sort((a, b) => {
                     if (shiftKey === 'ausentismo') return a.nombre.localeCompare(b.nombre);
-                    const casetaA = (dayData[a.socioId]?.[shiftKey]?.Caseta) || "Otro";
-                    const casetaB = (dayData[b.socioId]?.[shiftKey]?.Caseta) || "Otro";
-                    const sortA = casetasPrioridad.indexOf(casetaA) === -1 ? 999 : casetasPrioridad.indexOf(casetaA);
-                    const sortB = casetasPrioridad.indexOf(casetaB) === -1 ? 999 : casetasPrioridad.indexOf(casetaB);
-                    if (sortA !== sortB) return sortA - sortB;
+                    
+                    const casetaA = dayData[a.socioId]?.[shiftKey]?.Caseta || "Otro";
+                    const casetaB = dayData[b.socioId]?.[shiftKey]?.Caseta || "Otro";
+                    
+                    const idxA = casetasPrioridad.indexOf(casetaA);
+                    const idxB = casetasPrioridad.indexOf(casetaB);
+                    
+                    const prioA = idxA === -1 ? 999 : idxA;
+                    const prioB = idxB === -1 ? 999 : idxB;
+                    
+                    if (prioA !== prioB) return prioA - prioB;
                     return a.nombre.localeCompare(b.nombre);
                 });
 
-                const hasMembers = list.length > 0;
-                const isVisibleByGlobal = (shiftKey !== 'ausentismo' || !hideGlobalAbsences || currentFilter === 'ausentismo');
-                drawer.style.display = (hasMembers && isVisibleByGlobal) ? 'block' : 'none';
-                
+                const shiftsCount = (pId) => Object.keys(dayData[pId] || {}).filter(s => s !== 'ausentismo').length;
+
+                drawer.style.display = list.length > 0 ? 'block' : 'none';
                 grid.innerHTML = '';
                 list.forEach(person => {
-                    grid.appendChild(createMiniCard(person, dayData[person.socioId], shiftKey, dateObj, dateId, config, isToday, isYesterday));
+                    grid.appendChild(createMiniCard(person, dayData[person.socioId], shiftKey, dateObj, dateId, config));
                 });
             });
         }
 
-        function createMiniCard(person, entry, activeShift, dateObj, dateId, config, isToday, isYesterday) {
+        function createMiniCard(person, entry, activeShift, dateObj, dateId, config) {
             const div = document.createElement('div');
             div.className = 'user-card-mini';
             const iso = dateObj.toISOString().split('T')[0];
@@ -624,7 +512,7 @@
 
             div.oncontextmenu = (e) => {
                 e.preventDefault();
-                showContextMenu(e, person.uid, iso);
+                showMenu(e, person.uid, person.socioId, activeShift, dateId);
             };
 
             const shiftsCount = shifts.filter(s => entry?.[s] && s !== 'ausentismo').length;
@@ -637,20 +525,34 @@
             const now = new Date();
             const hour = now.getHours();
             
+            const today = new Date(); today.setHours(12, 0, 0, 0);
+            const isToday = dateObj.getTime() === today.getTime();
+            const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+            const isYesterday = dateObj.getTime() === yesterday.getTime();
+
             const canAction = isToday || (isYesterday && activeShift === 'nocturno' && hour < SHIFT_END_NIGHT);
 
             if (canAction) {
                 const nowM = now.getHours() * 60 + now.getMinutes();
-                const planStr = shiftInfo.entrada_planificada || "";
+                const planStr = shiftInfo.entrada_planificada || "07:00";
                 const plan = planStr.split(':').map(Number);
                 const hasIn = !!shiftInfo.entrada_real, hasOut = !!shiftInfo.salida_real;
 
-                if (hasIn && hasOut) actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
-                else if (hasIn) actionButtonsHtml = `<button class="action-btn btn-exit" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'salida')"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>`;
-                else if (activeShift !== 'ausentismo') {
+                if (hasIn && hasOut) {
+                    actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
+                } else if (hasIn) {
+                    actionButtonsHtml = `<button class="action-btn btn-exit" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'salida')"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>`;
+                } else if (activeShift !== 'ausentismo') {
                     const isLate = plan.length === 2 && nowM > (plan[0] * 60 + plan[1]);
-                    if (isLate) actionButtonsHtml = `<div class="flex gap-1.5"><button class="action-btn btn-late" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada', true)"><i class="fa-solid fa-business-time"></i></button><button class="action-btn btn-absence" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'falta')"><i class="fa-solid fa-user-times"></i></button></div>`;
-                    else actionButtonsHtml = `<button class="action-btn btn-entry" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada')"><i class="fa-solid fa-door-open"></i></button>`;
+                    if (isLate) {
+                        actionButtonsHtml = `
+                            <div class="flex gap-1.5">
+                                <button class="action-btn btn-late" title="Marcar Retardo" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada', true)"><i class="fa-solid fa-business-time"></i></button>
+                                <button class="action-btn btn-absence" title="Marcar Falta" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'falta')"><i class="fa-solid fa-user-times"></i></button>
+                            </div>`;
+                    } else {
+                        actionButtonsHtml = `<button class="action-btn btn-entry" onclick="registerAttendance('${person.socioId}', '${activeShift}', '${dateId}', 'entrada')"><i class="fa-solid fa-door-open"></i></button>`;
+                    }
                 }
             } else if (shiftInfo.entrada_real && shiftInfo.salida_real) {
                 actionButtonsHtml = `<div class="action-btn btn-complete"><i class="fa-solid fa-check-double"></i></div>`;
@@ -663,8 +565,8 @@
                     <div class="indicators-strip">${shifts.map(s => entry?.[s] ? `<div class="dot-indicator bg-${s}"></div>` : '').join('')}</div>
                 </div>
                 <div class="info-group">
-                    <h4 class="text-[11px] font-black uppercase truncate text-slate-800 leading-none">${person.nombre}</h4>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">${person.puesto}</p>
+                    <h4 class="text-[11px] font-black uppercase truncate text-slate-800 leading-tight">${person.nombre}</h4>
+                    <p class="text-[8px] font-bold text-slate-400 uppercase truncate">${person.puesto}</p>
                     ${activeShift === 'ausentismo' ? `
                         <select class="caseta-select" onchange="updateMotivo('${person.socioId}', '${dateId}', this.value)">
                             ${motivosAusentismo.map(m => `<option value="${m}" ${(shiftInfo.motivo || shiftInfo.Motivo) === m ? 'selected' : ''}>${m}</option>`).join('')}
@@ -681,159 +583,192 @@
             return div;
         }
 
-        function showContextMenu(e, uid, iso) {
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = `${e.clientX}px`;
-            contextMenu.style.top = `${e.clientY}px`;
-            contextMenu.dataset.uid = uid;
-            contextMenu.dataset.iso = iso;
-        }
-
-        window.openByContext = (tab) => {
-            const { uid, iso } = contextMenu.dataset;
-            openDetails(uid, iso, tab);
-            contextMenu.style.display = 'none';
-        };
-
-        document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
-
         window.registerAttendance = async (socioId, shift, dateId, type, isLate = false) => {
-            const cache = dayDataCache.get(dateId);
-            if (!cache) return;
+            const cache = dayDataCache.get(dateId); if (!cache) return;
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
             const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
             const updateObj = {};
-            if (type === 'falta') { 
-                updateObj[`${dateId}.${socioId}.ausentismo`] = { motivo: "Falta", originShift: shift }; 
-                updateObj[`${dateId}.${socioId}.${shift}`] = null; 
-            } else { 
-                updateObj[`${dateId}.${socioId}.${shift}.${type === 'entrada' ? 'entrada_real' : 'salida_real'}`] = timeStr; 
-                if (isLate) updateObj[`${dateId}.${socioId}.${shift}.retardo`] = true; 
+
+            if (type === 'falta') {
+                updateObj[`${dateId}.${socioId}.ausentismo`] = { motivo: "Falta", originShift: shift };
+                updateObj[`${dateId}.${socioId}.${shift}`] = deleteField();
+            } else {
+                const field = type === 'entrada' ? 'entrada_real' : 'salida_real';
+                updateObj[`${dateId}.${socioId}.${shift}.${field}`] = timeStr;
+                if (isLate) updateObj[`${dateId}.${socioId}.${shift}.retardo`] = true;
             }
+
             try { await updateDoc(docRef, updateObj); } catch (err) { console.error(err); }
         };
 
+        window.updateCaseta = async (socioId, shift, dateId, val) => {
+            const cache = dayDataCache.get(dateId); if (!cache) return;
+            const key = `${dateId}.${socioId}.${shift}.Caseta`;
+            try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId), { [key]: val }); } catch (err) { console.error(err); }
+        };
+
+        window.updateMotivo = async (socioId, dateId, newValue) => {
+            const cache = dayDataCache.get(dateId); if (!cache) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+            try { await updateDoc(docRef, { [`${dateId}.${socioId}.ausentismo.motivo`]: newValue }); } catch (err) { console.error(err); }
+        };
+
+        window.toggleShiftTool = (dateId, shift, tool) => {
+            const key = `${dateId}_${shift}`;
+            if (!shiftFilterState[key]) shiftFilterState[key] = { hideComplete: false, highlightDouble: false };
+            shiftFilterState[key][tool] = !shiftFilterState[key][tool];
+            const cache = dayDataCache.get(dateId);
+            if (cache) updateDayGrid(dateId, cache.data, cache.date);
+            if (tool === 'highlightDouble') {
+                const btn = document.getElementById(`double-btn-${shift}-${dateId}`);
+                if(btn) btn.classList.toggle('active');
+            }
+        };
+
+        window.showMenu = (e, uid, socioId, shift, dateId) => {
+            e.preventDefault();
+            contextMenu.style.display = 'block';
+            let x = e.clientX, y = e.clientY;
+            if (x + 200 > window.innerWidth) x -= 200;
+            if (y + 200 > window.innerHeight) y -= 200;
+            contextMenu.style.left = `${x}px`;
+            contextMenu.style.top = `${y}px`;
+            contextMenu.dataset.uid = uid;
+            contextMenu.dataset.socioId = socioId;
+            contextMenu.dataset.shift = shift;
+            contextMenu.dataset.dateId = dateId;
+            contextMenu.dataset.iso = document.getElementById(`section-${dateId}`).dataset.date;
+        };
+
+        window.openByContext = async (action) => {
+            const { uid, iso, socioId, shift, dateId } = contextMenu.dataset;
+            contextMenu.style.display = 'none';
+
+            if (action === 'delete') {
+                const cache = dayDataCache.get(dateId); if (!cache) return;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
+                try { await updateDoc(docRef, { [`${dateId}.${socioId}.${shift}`]: deleteField() }); } catch (err) { console.error(err); }
+            } else {
+                openDetails(uid, iso, action);
+            }
+        };
+
+        document.addEventListener('click', () => contextMenu.style.display = 'none');
+
+        const dateObserver = new IntersectionObserver((entries) => {
+            if (isProgrammaticScroll) return;
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const date = entry.target.dataset.date;
+                    if (date && date !== lastReportedDate) {
+                        lastReportedDate = date;
+                        window.parent.postMessage({ action: 'reportDate', date }, '*');
+                    }
+                }
+            });
+        }, { root: scrollViewport, rootMargin: '-5% 0px -90% 0px', threshold: 0 });
+
+        const shiftObserver = new IntersectionObserver((entries) => {
+            if (isProgrammaticScroll) return;
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.boundingClientRect.top < 400) {
+                    const shift = entry.target.dataset.shift;
+                    if (shift && shift !== lastReportedShift) {
+                        lastReportedShift = shift;
+                        window.parent.postMessage({ action: 'reportShift', shift }, '*');
+                    }
+                }
+            });
+        }, { root: scrollViewport, rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+
         const futureObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && currentFilter !== 'proximos') {
+            if (entries[0].isIntersecting && !isProgrammaticScroll && currentFilter !== 'proximos') {
                 futureDateCursor.setDate(futureDateCursor.getDate() + 1);
                 renderDaySection(new Date(futureDateCursor), 'append');
             }
-        }, { threshold: 0, rootMargin: '0px 0px 800px 0px' });
+        }, { root: scrollViewport, threshold: 0, rootMargin: '0px 0px 1500px 0px' });
 
         const pastObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && currentFilter !== 'proximos') {
+            if (entries[0].isIntersecting && !isProgrammaticScroll && currentFilter !== 'proximos') {
                 pastDateCursor.setDate(pastDateCursor.getDate() - 1);
                 renderDaySection(new Date(pastDateCursor), 'prepend');
             }
-        }, { threshold: 0, rootMargin: '800px 0px 0px 0px' });
+        }, { root: scrollViewport, threshold: 0, rootMargin: '1500px 0px 0px 0px' });
 
         window.addEventListener('message', async (e) => {
             if (e.data.action === 'syncDate') {
                 const newDate = new Date(e.data.date + "T12:00:00");
-                if (e.data.hideAbsences !== undefined) { hideGlobalAbsences = e.data.hideAbsences; }
+                const parts = e.data.date.split('-');
+                const dateId = `${parts[2]}${parts[1]}${parts[0]}`;
+                const drawerId = e.data.shift.substring(0, 3) + '-' + dateId;
                 
-                if (newDate.getTime() !== activeDate.getTime() || timeline.children.length <= 2) {
+                if (e.data.hideAbsences !== undefined) hideGlobalAbsences = e.data.hideAbsences;
+                
+                if (e.data.date === lastReportedDate && e.data.shift === lastReportedShift) return;
+
+                const target = document.getElementById(drawerId);
+                if (target) {
+                    isProgrammaticScroll = true;
+                    scrollViewport.scrollTo({ top: target.offsetTop - 5, behavior: 'smooth' });
+                    setTimeout(() => isProgrammaticScroll = false, 1000);
+                } else {
+                    // Reiniciar ante saltos de fecha
                     activeDate = new Date(newDate);
                     futureDateCursor = new Date(newDate);
                     pastDateCursor = new Date(newDate);
-                    
-                    const sentinelsHtml = `
-                        <div id="topSentinel" class="h-1 w-full"></div>
-                        <div id="infiniteSentinel" class="h-5"></div>
-                    `;
-                    timeline.innerHTML = sentinelsHtml;
-                    
-                    // Re-asignar referencias y reiniciar observadores
-                    sentinel = document.getElementById('infiniteSentinel');
-                    topSentinel = document.getElementById('topSentinel');
-                    futureObserver.observe(sentinel);
-                    pastObserver.observe(topSentinel);
-                    
+                    timeline.innerHTML = `<div id="topSentinel" class="h-1 w-full"></div><div id="infiniteSentinel" class="h-10 w-full"></div>`;
+                    const sentinelNew = document.getElementById('infiniteSentinel');
+                    const topSentinelNew = document.getElementById('topSentinel');
+                    futureObserver.observe(sentinelNew);
+                    pastObserver.observe(topSentinelNew);
                     await renderDaySection(activeDate);
-                    if (currentFilter !== 'proximos') {
-                        for (let i = 1; i <= 2; i++) {
-                            const dF = new Date(activeDate); dF.setDate(dF.getDate() + i);
-                            await renderDaySection(dF, 'append'); futureDateCursor = dF;
-                            const dP = new Date(activeDate); dP.setDate(dP.getDate() - i);
-                            await renderDaySection(dP, 'prepend'); pastDateCursor = dP;
-                        }
+                    for (let i = 1; i <= 2; i++) {
+                        const dF = new Date(activeDate); dF.setDate(dF.getDate() + i); await renderDaySection(dF, 'append');
+                        const dP = new Date(activeDate); dP.setDate(dP.getDate() - i); await renderDaySection(dP, 'prepend');
                     }
-                } else {
-                    refreshAllVisibleGrids();
                 }
-                
-                setTimeout(() => {
-                    const drawerId = e.data.shift === 'matutino' ? 'mat' : e.data.shift === 'vespertino' ? 'ves' : e.data.shift === 'nocturno' ? 'noc' : 'aus';
-                    const dateId = `${String(newDate.getDate()).padStart(2, '0')}${String(newDate.getMonth() + 1).padStart(2, '0')}${newDate.getFullYear()}`;
-                    const target = document.getElementById(`${drawerId}-${dateId}`);
-                    if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
-                }, 100);
             }
-
-            if (e.data.action === 'toggleAbsences') {
-                hideGlobalAbsences = e.data.hide;
-                refreshAllVisibleGrids();
-            }
-
-            if (e.data.action === 'filter') {
-                currentFilter = e.data.type;
-                refreshAllVisibleGrids();
-            }
+            if (e.data.action === 'filter') { currentFilter = e.data.type; refreshAllVisibleGrids(); }
+            if (e.data.action === 'toggleAbsences') { hideGlobalAbsences = e.data.hide; refreshAllVisibleGrids(); }
         });
-
-        const scrollObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && entry.boundingClientRect.top < 200) {
-                    const shift = entry.target.dataset.shift;
-                    const date = entry.target.closest('.day-section')?.dataset.date;
-                    if (shift) window.parent.postMessage({ action: 'reportShift', shift: shift }, '*');
-                    if (date) window.parent.postMessage({ action: 'reportDate', date: date }, '*');
-                }
-            });
-        }, { root: null, rootMargin: '-5% 0px -80% 0px', threshold: 0 });
 
         onAuthStateChanged(auth, async (u) => {
             if (u) {
                 await fetchPersonnel();
-                
-                const now = new Date();
-                const hour = now.getHours();
-                let initialShift = 'matutino';
-                let initialDate = new Date(); initialDate.setHours(12, 0, 0, 0);
-
-                if (hour >= 0 && hour < 7) { initialShift = 'nocturno'; initialDate.setDate(initialDate.getDate() - 1); }
-                else if (hour >= 7 && hour < 12) { initialShift = 'matutino'; }
-                else if (hour >= 12 && hour < 18) { initialShift = 'vespertino'; }
-                else { initialShift = 'nocturno'; }
+                const now = new Date(); const hour = now.getHours();
+                let initialShift = 'matutino', initialDate = new Date(); initialDate.setHours(12,0,0,0);
+                if (hour < 7) { initialShift = 'nocturno'; initialDate.setDate(initialDate.getDate() - 1); }
+                else if (hour < 12) initialShift = 'matutino';
+                else if (hour < 18) initialShift = 'vespertino';
+                else initialShift = 'nocturno';
 
                 activeDate = new Date(initialDate);
                 futureDateCursor = new Date(initialDate);
                 pastDateCursor = new Date(initialDate);
-                
-                await renderDaySection(activeDate);
 
-                if (currentFilter !== 'proximos') {
-                    for (let i = 1; i <= 3; i++) {
-                        const dF = new Date(activeDate); dF.setDate(dF.getDate() + i);
-                        await renderDaySection(dF, 'append'); futureDateCursor = dF;
-                        const dP = new Date(activeDate); dP.setDate(dP.getDate() - i);
-                        await renderDaySection(dP, 'prepend'); pastDateCursor = dP;
-                    }
+                await renderDaySection(activeDate);
+                for (let i = 1; i <= 3; i++) {
+                    const dF = new Date(activeDate); dF.setDate(dF.getDate() + i); await renderDaySection(dF, 'append'); futureDateCursor = dF;
+                    const dP = new Date(activeDate); dP.setDate(dP.getDate() - i); await renderDaySection(dP, 'prepend'); pastDateCursor = dP;
                 }
 
-                document.getElementById('loader').classList.add('hidden');
-                futureObserver.observe(sentinel);
-                pastObserver.observe(topSentinel);
+                document.getElementById('loader').style.display = 'none';
+                futureObserver.observe(document.getElementById('infiniteSentinel'));
+                pastObserver.observe(document.getElementById('topSentinel'));
 
                 setTimeout(() => {
-                    const drawerId = initialShift === 'matutino' ? 'mat' : initialShift === 'vespertino' ? 'ves' : initialShift === 'nocturno' ? 'noc' : 'aus';
-                    const dateId = `${String(initialDate.getDate()).padStart(2, '0')}${String(initialDate.getMonth() + 1).padStart(2, '0')}${initialDate.getFullYear()}`;
-                    const target = document.getElementById(`${drawerId}-${dateId}`);
-                    if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                    const iso = initialDate.toISOString().split('T')[0];
+                    const parts = iso.split('-');
+                    const targetId = initialShift.substring(0, 3) + '-' + parts[2] + parts[1] + parts[0];
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        isProgrammaticScroll = true;
+                        scrollViewport.scrollTo({ top: target.offsetTop - 5 });
+                        setTimeout(() => isProgrammaticScroll = false, 500);
+                    }
+                    window.parent.postMessage({ action: 'reportDate', date: iso }, '*');
                     window.parent.postMessage({ action: 'reportShift', shift: initialShift }, '*');
-                    window.parent.postMessage({ action: 'reportDate', date: initialDate.toISOString().split('T')[0] }, '*');
-                }, 800);
-
+                }, 1000);
             } else {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
                 else await signInAnonymously(auth);
@@ -843,28 +778,6 @@
         window.openAddPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Agregar_Elemento.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
         window.openWaPanel = (dateId, shift) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegAs/Wa.html?dateId=${dateId}&shift=${shift}" class="w-full h-full border-none"></iframe>` }, '*');
         window.openDetails = (uid, iso, tab) => window.parent.postMessage({ action: 'openRightPanel', content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&date=${iso}&tab=${tab}" class="w-full h-full border-none"></iframe>` }, '*');
-
-        window.toggleShiftTool = (dateId, shift, tool) => {
-            const key = `${dateId}_${shift}`;
-            if (!shiftFilterState[key]) shiftFilterState[key] = { hideComplete: false, highlightDouble: false };
-            shiftFilterState[key][tool] = !shiftFilterState[key][tool];
-            const cache = dayDataCache.get(dateId);
-            if (cache) updateDayGrid(dateId, cache.data, cache.date);
-        };
-
-        window.updateCaseta = async (socioId, shift, dateId, newValue) => {
-            const cache = dayDataCache.get(dateId);
-            if (!cache) return;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
-            try { await updateDoc(docRef, { [`${dateId}.${socioId}.${shift}.Caseta`]: newValue }); } catch (err) { console.error(err); }
-        };
-
-        window.updateMotivo = async (socioId, dateId, newValue) => {
-            const cache = dayDataCache.get(dateId);
-            if (!cache) return;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', cache.trimId);
-            try { await updateDoc(docRef, { [`${dateId}.${socioId}.ausentismo.motivo`]: newValue }); } catch (err) { console.error(err); }
-        };
     </script>
 </body>
 </html>

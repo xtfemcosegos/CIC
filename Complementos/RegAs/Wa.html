@@ -48,7 +48,6 @@
             flex-shrink: 0;
         }
 
-        /* Contenedor de acciones en el encabezado */
         .header-actions {
             display: flex;
             align-items: center;
@@ -165,7 +164,7 @@
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.35rem;
         }
 
         ::-webkit-scrollbar { width: 5px; }
@@ -183,11 +182,9 @@
             <div id="loading-indicator" class="hidden text-[8px] font-bold text-fuchsia-500 animate-pulse mr-2">SINCRO...</div>
             
             <div class="header-actions">
-                <!-- Abrir en panel principal (Comunicación directa con Administración) -->
                 <button onclick="openMainReport()" class="btn-header-action" title="Abrir Reporte Diario en el centro">
                     <i class="fa-solid fa-file-lines"></i>
                 </button>
-                <!-- Cerrar panel derecho -->
                 <button onclick="closePanel()" class="btn-header-action btn-close" title="Cerrar Panel">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -221,10 +218,16 @@
                 </div>
             </div>
 
-            <label class="flex items-center gap-2 cursor-pointer py-1">
-                <input type="checkbox" id="include-time" class="w-3 h-3 accent-fuchsia-500">
-                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Incluir hora de ingreso</span>
-            </label>
+            <div class="flex flex-col gap-1 mt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="include-time" class="w-3 h-3 accent-fuchsia-500">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Incluir hora de ingreso</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="include-empty-posts" class="w-3 h-3 accent-fuchsia-500">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Incluir casetas sin elementos</span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -249,6 +252,7 @@
         const dateInput = document.getElementById('report-date');
         const shiftSelect = document.getElementById('report-shift');
         const includeTimeCheck = document.getElementById('include-time');
+        const includeEmptyCheck = document.getElementById('include-empty-posts');
         const reportArea = document.getElementById('report-text');
 
         // Configuración inicial basada en URL
@@ -265,12 +269,10 @@
 
         if (urlShift) shiftSelect.value = urlShift;
 
-        // Función para cerrar el panel derecho (Habla con Administración.html)
         window.closePanel = () => {
             window.parent.postMessage({ action: 'closeRightPanel' }, '*');
         };
 
-        // Función para abrir el Reporte Diario en el panel principal (Habla con Administración.html)
         window.openMainReport = () => {
             window.parent.postMessage({ 
                 action: 'openApp', 
@@ -325,6 +327,7 @@
             const rawDate = dateInput.value;
             const shiftId = shiftSelect.value;
             const includeTime = includeTimeCheck.checked;
+            const includeEmpty = includeEmptyCheck.checked;
             const dateObj = new Date(rawDate + "T12:00:00");
             const longDate = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             const capitalizedDate = longDate.charAt(0).toUpperCase() + longDate.slice(1);
@@ -339,6 +342,12 @@
                     nombre: personnelMap[sid]?.nombre || personnelMap[sid.toLowerCase()]?.nombre || 'S/N'
                 }));
 
+            // Mapa de secuencia para turnos continuos
+            const previousShiftMap = {
+                'vespertino': 'matutino',
+                'nocturno': 'vespertino'
+            };
+
             if (shiftId === 'ausentismo') {
                 text += `*REPORTE DE INCIDENCIAS*\n`;
                 activeElements.forEach(el => {
@@ -347,15 +356,43 @@
             } else {
                 casetasOrden.forEach(caseta => {
                     const assigned = activeElements.filter(el => (el.Caseta || "").toLowerCase().trim() === caseta.toLowerCase().trim());
+                    
                     if (assigned.length > 0) {
                         text += `*${caseta.toUpperCase()}*\n`;
                         assigned.forEach(el => {
                             const timeStr = includeTime ? `*${el.entrada_real || "--:--"}* hrs. ` : "";
-                            text += `${timeStr}${el.nombre}\n`;
+                            
+                            // Lógica de turno continuo
+                            const prevShiftId = previousShiftMap[shiftId];
+                            const isContinuing = prevShiftId && dayData[el.sid] && dayData[el.sid][prevShiftId];
+                            const continuingLabel = isContinuing ? " -Continúa turno-" : "";
+                            
+                            text += `${timeStr}${el.nombre}${continuingLabel}\n`;
                         });
                         text += `\n`;
+                    } else if (includeEmpty) {
+                        text += `*${caseta.toUpperCase()}*\n`;
+                        text += `~Sin elementos programados~\n\n`;
                     }
                 });
+
+                // Casetas "Otros" o no listadas
+                const others = activeElements.filter(el => {
+                    const casetaLower = (el.Caseta || "").toLowerCase().trim();
+                    return !casetasOrden.some(c => c.toLowerCase().trim() === casetaLower);
+                });
+
+                if (others.length > 0) {
+                    text += `*OTROS*\n`;
+                    others.forEach(el => {
+                        const timeStr = includeTime ? `*${el.entrada_real || "--:--"}* hrs. ` : "";
+                        const prevShiftId = previousShiftMap[shiftId];
+                        const isContinuing = prevShiftId && dayData[el.sid] && dayData[el.sid][prevShiftId];
+                        const continuingLabel = isContinuing ? " -Continúa turno-" : "";
+                        text += `${timeStr}${el.nombre} (${el.Caseta || 'Sin asignar'})${continuingLabel}\n`;
+                    });
+                    text += `\n`;
+                }
             }
 
             reportArea.value = text.trim();
@@ -365,11 +402,12 @@
         dateInput.onchange = startSync;
         shiftSelect.onchange = startSync;
         includeTimeCheck.onchange = () => startSync();
+        includeEmptyCheck.onchange = () => startSync();
 
         window.copyReport = () => {
             reportArea.select();
             try {
-                // Compatibilidad con entornos iFrame
+                // Compatibilidad con entornos iFrame mediante execCommand
                 document.execCommand('copy');
                 const toast = document.getElementById('toast');
                 toast.style.display = 'block';

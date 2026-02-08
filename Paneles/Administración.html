@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Administración - CIC 7.1</title>
+    
+    <!-- Etiquetas Meta para Comportamiento de Aplicación -->
+    <meta name="theme-color" content="#111827">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CIC 7.1">
+    
+    <!-- Enlace al Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../MM/Logo.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -17,6 +29,7 @@
             padding: 0;
             height: 100vh;
             -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
         }
 
         .tab-bar {
@@ -26,7 +39,7 @@
             display: flex;
             align-items: flex-end;
             padding-left: 0.5rem;
-            z-index: 100;
+            z-index: 150;
             position: fixed;
             top: 0;
             width: 100%;
@@ -85,7 +98,6 @@
             transition: background 0.2s;
         }
 
-        /* Etiqueta de versión discreta */
         .version-badge {
             font-family: 'JetBrains Mono', monospace;
             font-size: 8px;
@@ -136,6 +148,49 @@
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* --- ARQUITECTURA DE PERSISTENCIA POR Z-INDEX --- */
+        #appsViewport {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: white;
+        }
+
+        .app-instance {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1;
+            pointer-events: none;
+            /* Mantener cargado pero invisible para el usuario */
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        .app-instance.active {
+            z-index: 20;
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        #noApp {
+            z-index: 10; 
+            position: absolute;
+            inset: 0;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        #noApp.visible { opacity: 1; }
+
         @media (max-width: 640px) {
             .header-title { font-size: 9px !important; letter-spacing: 0.2em !important; }
         }
@@ -183,8 +238,9 @@
 
         <!-- Contenido Central -->
         <section id="mainContent" class="flex-1 h-full relative overflow-hidden bg-white shadow-inner">
-            <iframe src="about:blank" class="w-full h-full border-none" id="appFrame"></iframe>
-            <div id="noApp" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-0">
+            <div id="appsViewport"></div>
+            
+            <div id="noApp">
                 <i data-lucide="shield-check" class="w-16 h-16 text-gray-200 mb-4"></i>
                 <p class="text-[9px] uppercase tracking-[0.6em] font-bold text-gray-400 animate-pulse">Inicie una aplicación</p>
             </div>
@@ -207,7 +263,7 @@
             mainLayout: document.getElementById('mainLayout'),
             overlay: document.getElementById('overlay'),
             tabBar: document.getElementById('tabBar'),
-            appFrame: document.getElementById('appFrame'),
+            appsViewport: document.getElementById('appsViewport'),
             noApp: document.getElementById('noApp'),
             clock: document.getElementById('clock'),
             date: document.getElementById('date'),
@@ -219,11 +275,24 @@
 
         lucide.createIcons();
 
+        // --- REGISTRO DEL SERVICE WORKER (APP MODE) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../sw.js').catch(err => console.log('SW fail', err));
+            });
+        }
+
         function updateClock() {
             const now = new Date();
             dom.clock.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
             dom.date.textContent = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
         }
+
+        const normalizeUrl = (url) => {
+            if (!url) return "";
+            if (url.startsWith('http')) return url;
+            return url.split('?')[0].replace(/^(\.\.\/)+/, '');
+        };
 
         const saveUIState = () => {
             const state = JSON.parse(localStorage.getItem('cic_shell_state') || '{}');
@@ -274,39 +343,78 @@
         };
 
         const switchApp = (index) => {
-            activeTabIndex = index;
-            const tab = openTabs[index];
-            if (tab) {
-                const targetUrl = new URL(tab.url, window.location.href).href;
-                if (dom.appFrame.src !== targetUrl) dom.appFrame.src = tab.url;
-                dom.noApp.classList.add('hidden');
-                dom.shellHeader.classList.add('hidden-header');
-                dom.mainLayout.classList.remove('with-shell');
-            } else {
-                dom.appFrame.src = 'about:blank';
-                dom.noApp.classList.remove('hidden');
+            if (index === -1) {
+                activeTabIndex = -1;
+                document.querySelectorAll('.app-instance').forEach(i => i.classList.remove('active'));
+                dom.noApp.classList.add('visible');
                 dom.shellHeader.classList.remove('hidden-header');
                 dom.mainLayout.classList.add('with-shell');
+                renderTabs();
+                return;
             }
+
+            activeTabIndex = index;
+            const tab = openTabs[index];
+            const normalized = normalizeUrl(tab.url);
+
+            document.querySelectorAll('.app-instance').forEach(iframe => {
+                if (iframe.dataset.normalized === normalized) {
+                    iframe.classList.add('active');
+                } else {
+                    iframe.classList.remove('active');
+                }
+            });
+
+            dom.noApp.classList.remove('visible');
+            
+            if (normalized.includes('home.html')) {
+                dom.shellHeader.classList.remove('hidden-header');
+                dom.mainLayout.classList.add('with-shell');
+            } else {
+                dom.shellHeader.classList.add('hidden-header');
+                dom.mainLayout.classList.remove('with-shell');
+            }
+
             renderTabs();
             saveUIState();
         };
 
+        const createIframe = (url) => {
+            const normalized = normalizeUrl(url);
+            let iframe = document.querySelector(`.app-instance[data-normalized="${normalized}"]`);
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.className = 'app-instance';
+                iframe.dataset.normalized = normalized;
+                iframe.src = url.startsWith('http') ? url : (url.startsWith('../') ? url : '../' + url);
+                dom.appsViewport.appendChild(iframe);
+            }
+            return iframe;
+        };
+
         const openApp = (url, name, color) => {
-            let normalizedUrl = url.startsWith('http') ? url : (url.startsWith('../') ? url : '../' + url);
-            const existingIndex = openTabs.findIndex(t => t.url === normalizedUrl);
+            const normalized = normalizeUrl(url);
+            const existingIndex = openTabs.findIndex(t => normalizeUrl(t.url) === normalized);
+            
             if (existingIndex !== -1) {
                 switchApp(existingIndex);
             } else {
-                openTabs.push({ url: normalizedUrl, name: name || 'Aplicación', color: color });
+                openTabs.push({ url, name: name || 'Aplicación', color: color });
+                createIframe(url);
                 switchApp(openTabs.length - 1);
             }
             toggleLeftSidebar(true);
         };
 
         const closeTab = (index) => {
+            const tab = openTabs[index];
+            const normalized = normalizeUrl(tab.url);
+            const iframe = document.querySelector(`.app-instance[data-normalized="${normalized}"]`);
+            if (iframe) iframe.remove();
+
             openTabs.splice(index, 1);
             activeTabIndex = openTabs.length > 0 ? (activeTabIndex >= index ? Math.max(0, activeTabIndex - 1) : activeTabIndex) : -1;
+            
             if (openTabs.length === 0) openApp('home.html', 'Dashboard', '#0f172a');
             else switchApp(activeTabIndex);
         };
@@ -317,8 +425,8 @@
             if (action === 'openApp' && path && path.includes('Reporte_Diario')) {
                 openApp('Apps/RegAs.html', 'Asistencia', '#d946ef');
                 setTimeout(() => {
-                    const regAsIframe = dom.appFrame.contentWindow;
-                    if (regAsIframe) regAsIframe.postMessage({ action: 'internalNav', tab: 'reporte', subview: 'diario' }, '*');
+                    const regAsIframe = document.querySelector('.app-instance[data-normalized*="RegAs.html"]');
+                    if (regAsIframe) regAsIframe.contentWindow.postMessage({ action: 'internalNav', tab: 'reporte', subview: 'diario' }, '*');
                 }, 600);
                 return;
             }
@@ -341,19 +449,33 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        const saved = localStorage.getItem('cic_shell_state');
-        if (saved) {
-            const data = JSON.parse(saved);
-            openTabs = data.openTabs || [];
-            activeTabIndex = data.activeTabIndex ?? -1;
-            if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
-            if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
-            if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
-            if (openTabs.length > 0) switchApp(activeTabIndex);
-            else openApp('home.html', 'Dashboard', '#0f172a');
-        } else {
-            openApp('home.html', 'Dashboard', '#0f172a');
-        }
+        const initShell = () => {
+            const saved = localStorage.getItem('cic_shell_state');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const savedTabs = data.openTabs || [];
+                const savedActiveIndex = data.activeTabIndex ?? -1;
+                
+                if (savedTabs.length > 0) {
+                    savedTabs.forEach((tab) => {
+                        createIframe(tab.url);
+                        openTabs.push(tab);
+                    });
+                    
+                    if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
+                    if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
+                    if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
+                    
+                    switchApp(savedActiveIndex);
+                } else {
+                    openApp('home.html', 'Dashboard', '#0f172a');
+                }
+            } else {
+                openApp('home.html', 'Dashboard', '#0f172a');
+            }
+        };
+
+        window.onload = initShell;
     </script>
 </body>
 </html>
