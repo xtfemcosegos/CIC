@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control de Flujo - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* --- ENCABEZADO METÁLICO AZUL MARINO (5 NIVELES) --- */
+        .app-header {
+            background: linear-gradient(180deg, 
+                #020617 0%, 
+                #0f172a 25%, 
+                #1e293b 50%, 
+                #0f172a 75%, 
+                #020617 100%
+            );
+            height: 75px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            flex: none;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Branding Izquierda */
+        .branding-section { 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem; 
+            flex: 1;
+        }
+
+        .apps-drawer-btn {
+            width: 38px; 
+            height: 38px; 
+            border-radius: 10px; 
+            background: rgba(255, 255, 255, 0.05);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 6px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .apps-drawer-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+            border-color: #6366f1;
+        }
+
+        /* Selector de Vistas Centro */
+        .nav-tabs {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 14px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex: none;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 0.05em;
+        }
+        .tab-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .tab-btn.active {
+            background: #6366f1;
+            color: white;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Reloj Derecha - Color Blanco */
+        .clock-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .clock-container {
+            font-family: 'JetBrains Mono', monospace; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.4rem 1rem; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600;
+            color: #ffffff; /* Fuente Blanca */
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        /* --- ÁREA DE PERSISTENCIA --- */
+        .content-area {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        .flow-instance {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .flow-instance.active {
+            z-index: 10;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 900px) {
+            .app-header { height: auto; padding: 1rem; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+            .branding-section, .clock-wrapper { flex: none; width: 100%; justify-content: center; text-align: center; }
+            .nav-tabs { width: 100%; overflow-x: auto; justify-content: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <!-- IZQUIERDA: Menú y Título -->
+        <div class="branding-section">
+            <div onclick="window.parent.postMessage({action:'toggleMenu'}, '*')" class="apps-drawer-btn" title="Menú de Aplicaciones">
+                <img src="../MM/Apps.png" alt="Apps">
+            </div>
+            <div>
+                <h1 class="text-[12px] font-black text-white uppercase tracking-[0.2em] leading-none">Registro de ingresos</h1>
+                <p class="text-[8px] font-bold text-slate-400 uppercase mt-1 tracking-tighter">Control de Flujo</p>
+            </div>
+        </div>
+
+        <!-- CENTRO: Selector de Vistas (Tabs) -->
+        <nav class="nav-tabs">
+            <div onclick="setFlowTab('colaboradores', this)" id="tab-colaboradores" class="tab-btn active">Colaboradores</div>
+            <div onclick="setFlowTab('visitas', this)" id="tab-visitas" class="tab-btn">Visitas</div>
+            <div onclick="setFlowTab('consultores', this)" id="tab-consultores" class="tab-btn">Consultores</div>
+            <div onclick="setFlowTab('prestadores', this)" id="tab-prestadores" class="tab-btn">Prestadores</div>
+        </nav>
+
+        <!-- DERECHA: Reloj Digital -->
+        <div class="clock-wrapper">
+            <div class="clock-container">
+                <i class="fa-regular fa-clock text-[12px] opacity-70"></i>
+                <span id="timeDisplay">00:00:00</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-area" id="viewport">
+        <!-- Los iframes se inyectarán aquí mediante JS -->
+    </main>
+
+    <script>
+        const dom = {
+            viewport: document.getElementById('viewport'),
+            clockText: document.getElementById('timeDisplay')
+        };
+
+        const flowTypes = ['colaboradores', 'visitas', 'consultores', 'prestadores'];
+
+        // 1. Reloj
+        function updateClock() {
+            const now = new Date();
+            dom.clockText.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 2. Inicialización de Instancias (Pre-carga)
+        function initInstances() {
+            flowTypes.forEach(type => {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'flow-instance';
+                iframe.id = `frame-${type}`;
+                iframe.dataset.type = type;
+                // Cargamos cada contador con su tipo correspondiente
+                iframe.src = `../Complementos/RegFlow/Contador.html?type=${type}`;
+                dom.viewport.appendChild(iframe);
+            });
+            
+            // Activar la primera por defecto
+            document.getElementById('frame-colaboradores').classList.add('active');
+        }
+
+        // 3. Cambio de Tab (Persistencia real)
+        window.setFlowTab = (type, el) => {
+            // Actualizar estilo de botones
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Alternar visibilidad de instancias mediante Z-Index / Opacity
+            document.querySelectorAll('.flow-instance').forEach(iframe => {
+                if (iframe.dataset.type === type) {
+                    iframe.classList.add('active');
+                } else {
+                    iframe.classList.remove('active');
+                }
+            });
+        };
+
+        // Escuchar mensajes para el shell principal (Administración)
+        window.addEventListener('message', (e) => {
+            if (e.data.action && (e.data.action.includes('Panel') || e.data.action === 'toggleMenu')) {
+                window.parent.postMessage(e.data, '*');
+            }
+        });
+
+        // Ejecutar carga al inicio
+        window.onload = initInstances;
+    </script>
+</body>
+</html>

@@ -32,7 +32,7 @@
             grid-template-columns: 1.2fr 1fr 1.2fr; 
             align-items: center;
             padding: 0 1.5rem;
-            flex: none; /* No permite que la cabecera cambie de tamaño */
+            flex: none;
             z-index: 100;
         }
 
@@ -103,7 +103,7 @@
         .dropdown-item:hover { background: #fdf4ff; color: #d946ef; }
         .dropdown-item.active { background: #d946ef; color: white; }
 
-        /* Nivel 3: Ribbon (Barra de Botones) */
+        /* Nivel 3: Ribbon */
         .app-ribbon {
             background: #1e293b; 
             height: 50px;
@@ -133,19 +133,31 @@
         .ribbon-pill:hover { color: white; background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
         .ribbon-pill.active { background: white; color: #1e293b; border-color: white; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
-        /* Nivel 4: Contenedor de Contenido (Iframe) */
+        /* Nivel 4: ÁREA DE PERSISTENCIA (Z-Stacking) */
         .main-content-area {
-            flex: 1; /* Ocupa todo el espacio restante */
+            flex: 1;
             position: relative;
-            min-height: 0; /* Importante para flexbox y scroll interno */
+            min-height: 0;
             background: #f8fafc;
         }
 
-        #mainIframe {
+        .app-instance {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .app-instance.active {
+            z-index: 10;
+            opacity: 1;
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -189,7 +201,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <!-- Selector Fecha -->
             <div class="nav-selector">
                 <button onclick="changeDate(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
                 <div class="display-box"><input type="date" id="dateSelector"></div>
@@ -198,7 +209,6 @@
 
             <button id="todayBtn" onclick="goToToday()" class="today-btn">Hoy</button>
 
-            <!-- Selector Turno -->
             <div class="nav-selector">
                 <button onclick="changeShift(-1)" class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
                 <div class="display-box" onclick="toggleShiftMenu(event)">
@@ -221,9 +231,9 @@
         <div id="ribbonContent" class="flex items-center w-full overflow-x-auto no-scrollbar"></div>
     </nav>
 
-    <!-- ÁREA DE IFRAME -->
-    <main class="main-content-area">
-        <iframe id="mainIframe" src="about:blank"></iframe>
+    <!-- ÁREA DE PERSISTENCIA (Viewport para Iframes) -->
+    <main class="main-content-area" id="viewport">
+        <!-- Los iframes se inyectan dinámicamente -->
     </main>
 
     <script>
@@ -236,7 +246,7 @@
             dateInput: document.getElementById('dateSelector'),
             shiftLabel: document.getElementById('shiftLabel'),
             topLabel: document.getElementById('topDateLabel'),
-            iframe: document.getElementById('mainIframe'),
+            viewport: document.getElementById('viewport'),
             diariaControls: document.getElementById('diariaControls'),
             ribbon: document.getElementById('appRibbon'),
             ribbonContent: document.getElementById('ribbonContent'),
@@ -257,13 +267,32 @@
                 { label: 'Ausentismos', type: 'ausentismo' }
             ],
             'reporte': [
-                { label: 'WhatsApp', action: 'whatsapp', icon: 'fa-brands fa-whatsapp', active: true },
-                { label: 'Diario', action: 'diario', icon: 'fa-solid fa-file-invoice' }
+                { label: 'WhatsApp', action: 'whatsapp', id: 'wa' },
+                { label: 'Diario', action: 'diario', id: 'diario', active: true }
             ]
+        };
+
+        const instances = {
+            'diaria': '../Complementos/RegAs/Día.html',
+            'planeacion': '../Complementos/RegAs/Planeación.html',
+            'wa': '../Complementos/RegAs/Wa.html',
+            'diario': '../Complementos/RegAs/Reporte_Diario.html'
         };
 
         function updateClock() { dom.clockText.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }
         setInterval(updateClock, 1000); updateClock();
+
+        // Inicialización de Instancias (Pre-carga)
+        function initInstances() {
+            Object.entries(instances).forEach(([id, url]) => {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'app-instance';
+                iframe.id = `frame-${id}`;
+                iframe.dataset.id = id;
+                iframe.src = url;
+                dom.viewport.appendChild(iframe);
+            });
+        }
 
         window.goToToday = () => {
             const now = new Date();
@@ -278,7 +307,7 @@
 
         dom.hideAbsences.onchange = (e) => {
             if (e.target.checked && shifts[currentShiftIndex] === 'ausentismo') currentShiftIndex = 0;
-            sendToIframe({ action: 'toggleAbsences', hide: e.target.checked });
+            sendToIframe('diaria', { action: 'toggleAbsences', hide: e.target.checked });
             updateUI();
         };
 
@@ -300,45 +329,55 @@
         window.selectShift = (s) => { currentShiftIndex = shifts.indexOf(s); dom.shiftMenu.classList.remove('show'); updateUI(); };
         document.addEventListener('click', () => dom.shiftMenu.classList.remove('show'));
 
-        function renderRibbon(tab, forcedAction = null) {
+        function activateIframe(id) {
+            document.querySelectorAll('.app-instance').forEach(i => {
+                if(i.dataset.id === id) i.classList.add('active');
+                else i.classList.remove('active');
+            });
+        }
+
+        function renderRibbon(tab, forcedActionId = null) {
             dom.ribbonContent.innerHTML = '';
             if (tab === 'planeacion') { dom.ribbon.classList.add('hidden'); return; }
             dom.ribbon.classList.remove('hidden');
             const items = ribbonConfigs[tab] || [];
+            
             items.forEach(item => {
                 const btn = document.createElement('div');
-                btn.className = `ribbon-pill ${forcedAction === item.action || (!forcedAction && item.active) ? 'active' : ''}`;
+                const isActive = forcedActionId ? (item.id === forcedActionId) : item.active;
+                btn.className = `ribbon-pill ${isActive ? 'active' : ''}`;
                 btn.textContent = item.label;
                 btn.onclick = () => {
                     document.querySelectorAll('.ribbon-pill').forEach(p => p.classList.remove('active'));
                     btn.classList.add('active');
-                    if (tab === 'diaria') sendToIframe({ action: 'filter', type: item.type });
-                    else {
-                        const paths = { 'whatsapp': '../Complementos/RegAs/Wa.html', 'diario': '../Complementos/RegAs/Reporte_Diario.html' };
-                        dom.iframe.src = paths[item.action];
-                    }
+                    if (tab === 'diaria') sendToIframe('diaria', { action: 'filter', type: item.type });
+                    else activateIframe(item.id);
                 };
                 dom.ribbonContent.appendChild(btn);
+                if(isActive && tab === 'reporte') activateIframe(item.id);
             });
         }
 
-        window.setTab = (tab, el, forcedSubView = null) => {
+        window.setTab = (tab, el, forcedSubViewId = null) => {
             currentActiveTab = tab;
             localStorage.setItem('regas_last_view', tab);
             document.querySelectorAll('.main-tab-btn').forEach(t => t.classList.remove('active'));
             (el || document.getElementById(`nav-${tab}`)).classList.add('active');
             dom.diariaControls.classList.toggle('hidden', tab !== 'diaria');
             
-            if (forcedSubView) {
-                renderRibbon(tab, forcedSubView);
-                const paths = { 'diario': '../Complementos/RegAs/Reporte_Diario.html', 'whatsapp': '../Complementos/RegAs/Wa.html' };
-                dom.iframe.src = paths[forcedSubView];
-            } else {
-                renderRibbon(tab);
-                const paths = { 'diaria': '../Complementos/RegAs/Día.html', 'planeacion': '../Complementos/RegAs/Planeación.html', 'reporte': '../Complementos/RegAs/Wa.html' };
-                dom.iframe.src = paths[tab];
+            if (tab === 'diaria') {
+                activateIframe('diaria');
+                renderRibbon('diaria');
+                updateUI();
+            } else if (tab === 'planeacion') {
+                activateIframe('planeacion');
+                renderRibbon('planeacion');
+            } else if (tab === 'reporte') {
+                // Por defecto carga Reporte Diario (o el subview forzado)
+                const target = forcedSubViewId || 'diario';
+                renderRibbon('reporte', target);
+                activateIframe(target);
             }
-            if(tab === 'diaria') updateUI();
         };
 
         window.changeDate = (offset) => { currentDate.setDate(currentDate.getDate() + offset); updateUI(); };
@@ -353,7 +392,11 @@
             updateUI();
         };
 
-        function sendToIframe(data) { if (dom.iframe.contentWindow) dom.iframe.contentWindow.postMessage(data, '*'); }
+        function sendToIframe(id, data) { 
+            const iframe = document.getElementById(`frame-${id}`);
+            if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage(data, '*'); 
+        }
+
         window.openApps = () => { window.parent.postMessage({ action: 'toggleMenu' }, '*'); };
         dom.dateInput.onchange = (e) => { currentDate = new Date(e.target.value + "T12:00:00"); updateUI(); };
 
@@ -366,12 +409,17 @@
             dom.todayBtn.classList.toggle('hidden', iso === today);
             dom.viewStatus.textContent = iso === today ? "Jornada Actual" : "Vista Histórica";
             dom.viewStatus.className = `text-[8px] font-bold uppercase mt-0.5 ${iso === today ? 'text-emerald-500' : 'text-fuchsia-500'}`;
-            if (currentActiveTab === 'diaria') sendToIframe({ action: 'syncDate', date: iso, shift: shifts[currentShiftIndex], hideAbsences: dom.hideAbsences.checked });
+            if (currentActiveTab === 'diaria') sendToIframe('diaria', { action: 'syncDate', date: iso, shift: shifts[currentShiftIndex], hideAbsences: dom.hideAbsences.checked });
         }
 
         window.addEventListener('message', (e) => {
             if (e.data.action && (e.data.action.includes('Panel') || e.data.action.includes('Nav') || e.data.action === 'toggleMenu' || e.data.action === 'openApp')) window.parent.postMessage(e.data, '*');
-            if (e.data.action === 'internalNav') setTab(e.data.tab, null, e.data.subview);
+            
+            if (e.data.action === 'internalNav') {
+                const subView = e.data.subview === 'diario' ? 'diario' : (e.data.subview === 'whatsapp' ? 'wa' : null);
+                setTab(e.data.tab, null, subView);
+            }
+
             if (e.data.action === 'reportShift') { currentShiftIndex = shifts.indexOf(e.data.shift); dom.shiftLabel.textContent = e.data.shift.toUpperCase(); }
             if (e.data.action === 'reportDate') {
                 const newDate = new Date(e.data.date + "T12:00:00");
@@ -380,8 +428,10 @@
         });
 
         window.onload = () => { 
+            initInstances();
             const last = localStorage.getItem('regas_last_view') || 'diaria';
-            setTab(last); 
+            // Pequeño delay para asegurar que los iframes están en el DOM antes de activar el inicial
+            setTimeout(() => setTab(last), 50);
         };
     </script>
 </body>

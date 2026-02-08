@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta Conteo - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; padding: 1rem; height: 100vh; display: flex; flex-direction: column; gap: 1rem; overflow: hidden; }
+        
+        .control-card { background: white; border-radius: 24px; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex: none; }
+        .action-card { background: white; border-radius: 28px; padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1rem; }
+        .totals-card { background: #1e293b; border-radius: 24px; padding: 1.25rem; color: white; flex: none; display: flex; justify-content: space-around; align-items: center; }
+
+        .access-select { width: 100%; padding: 0.85rem; border-radius: 16px; border: 2px solid #e2e8f0; font-weight: 800; text-transform: uppercase; color: #1e293b; outline: none; background: #f8fafc; font-size: 14px; }
+        .access-select:focus { border-color: #6366f1; }
+
+        .btn-counter { 
+            height: 140px; 
+            border-radius: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 12px; 
+            color: white; 
+            transition: all 0.1s; 
+            position: relative; 
+            overflow: hidden; 
+            width: 100%; 
+        }
+        .btn-counter:active { transform: scale(0.95); filter: brightness(0.9); }
+        
+        .btn-p { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+        .btn-v { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); }
+        .btn-va { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+
+        .display-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800; line-height: 1; }
+        .btn-label { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; }
+        
+        .minus-circle { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            width: 34px; 
+            height: 34px; 
+            background: rgba(0,0,0,0.15); 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 14px; 
+            backdrop-filter: blur(4px); 
+        }
+
+        .total-item { text-align: center; }
+        .total-label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.1em; margin-bottom: 2px; }
+        .total-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #f8fafc; }
+        #auth-lock { position: fixed; inset: 0; background: #f1f5f9; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-lock">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-fuchsia-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Autenticando...</p>
+    </div>
+
+    <div class="control-card">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h1 class="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Control de Colaboradores</h1>
+                <p class="text-[8px] font-bold text-indigo-500 uppercase mt-1">Acceso Operativo</p>
+            </div>
+            <div id="sync" class="w-2.5 h-2.5 bg-slate-200 rounded-full border-2 border-white shadow-sm"></div>
+        </div>
+        <select id="accessPoint" class="access-select" onchange="saveAccessSelection()">
+            <option value="Edison">Edison</option>
+            <option value="Recepción">Recepción</option>
+            <option value="Impulso">Impulso</option>
+            <option value="Carranza">Carranza</option>
+            <option value="Portero U.N.">Portero U.N.</option>
+            <option value="Estacionamiento U.N.">Estacionamiento U.N.</option>
+            <option value="Michelena">Michelena</option>
+            <option value="Simón Bolívar">Simón Bolívar</option>
+        </select>
+    </div>
+
+    <div class="action-card">
+        <div id="button-grid" class="grid grid-cols-2 gap-4">
+            <!-- PERSONAS -->
+            <button id="btn-people" class="btn-counter btn-p" onclick="count('pIn')">
+                <i class="fa-solid fa-person-walking text-3xl"></i>
+                <div class="btn-label">Personas</div>
+                <div class="display-num" id="pIn-val">0</div>
+                <div class="minus-circle" onclick="event.stopPropagation(); count('pIn', -1)"><i class="fa-solid fa-minus"></i></div>
+            </button>
+
+            <!-- VEHÍCULOS -->
+            <button id="btn-vehicle" class="btn-counter btn-v" onclick="count('vIn')">
+                <i class="fa-solid fa-car text-3xl"></i>
+                <div class="btn-label" id="v-label">Vehículos</div>
+                <div class="display-num" id="vIn-val">0</div>
+                <div class="minus-circle" onclick="event.stopPropagation(); count('vIn', -1)"><i class="fa-solid fa-minus"></i></div>
+            </button>
+
+            <!-- ANEXO (SOLO MICHELENA) -->
+            <button class="btn-counter btn-va hidden col-span-2" id="v-annex-container" onclick="count('vInAnnex')">
+                <i class="fa-solid fa-square-p text-3xl"></i>
+                <div class="btn-label">Estacionamiento Anexo</div>
+                <div class="display-num" id="vInAnnex-val">0</div>
+                <div class="minus-circle" onclick="event.stopPropagation(); count('vInAnnex', -1)"><i class="fa-solid fa-minus"></i></div>
+            </button>
+        </div>
+    </div>
+
+    <div class="totals-card">
+        <div id="total-p-container" class="total-item">
+            <div class="total-label">Total Personas</div>
+            <div class="total-val" id="total-p">0</div>
+        </div>
+        <div id="total-divider" class="w-px h-8 bg-slate-700"></div>
+        <div class="total-item">
+            <div class="total-label" id="total-v-label">Total Vehículos</div>
+            <div class="total-val" id="total-v">0</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const currentType = 'colaboradores';
+        const accessSelect = document.getElementById('accessPoint');
+        const saved = localStorage.getItem('regflow_last_access');
+        if (saved) accessSelect.value = saved;
+
+        const dateId = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const flowDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegFlow', dateId);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('auth-lock').style.display = 'none';
+                startSync();
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) { console.error("Auth Fail:", e); }
+            }
+        });
+
+        function startSync() {
+            onSnapshot(flowDocRef, (snap) => {
+                const data = snap.exists() ? (snap.data()[currentType] || {}) : {};
+                const currentAccessData = data[accessSelect.value] || {};
+                updateUI(currentAccessData);
+                document.getElementById('sync').className = 'w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm';
+            });
+        }
+
+        function updateUI(data) {
+            const val = accessSelect.value;
+            const isMic = val === 'Michelena';
+            const isUN = val === 'Estacionamiento U.N.';
+
+            document.getElementById('pIn-val').textContent = data.pIn || 0;
+            document.getElementById('vIn-val').textContent = data.vIn || 0;
+            document.getElementById('vInAnnex-val').textContent = data.vInAnnex || 0;
+            document.getElementById('total-p').textContent = data.pIn || 0;
+            document.getElementById('total-v').textContent = (data.vIn || 0) + (data.vInAnnex || 0);
+
+            // Elementos de UI
+            const pBtn = document.getElementById('btn-people');
+            const vBtn = document.getElementById('btn-vehicle');
+            const annexBtn = document.getElementById('v-annex-container');
+            const vLabel = document.getElementById('v-label');
+            const pTotalContainer = document.getElementById('total-p-container');
+            const totalDivider = document.getElementById('total-divider');
+
+            // Lógica Michelena
+            annexBtn.classList.toggle('hidden', !isMic);
+            vLabel.textContent = isMic ? 'Acceso Principal' : 'Vehículos';
+
+            // Lógica Estacionamiento U.N. (Solo vehículos)
+            pBtn.classList.toggle('hidden', isUN);
+            pTotalContainer.classList.toggle('hidden', isUN);
+            totalDivider.classList.toggle('hidden', isUN);
+            
+            if (isUN) {
+                vBtn.classList.add('col-span-2');
+            } else {
+                vBtn.classList.remove('col-span-2');
+            }
+        }
+
+        window.saveAccessSelection = () => { localStorage.setItem('regflow_last_access', accessSelect.value); startSync(); };
+
+        window.count = async (field, amount = 1) => {
+            const path = `${currentType}.${accessSelect.value}.${field}`;
+            const el = document.getElementById(`${field}-val`);
+            if(el) {
+                const current = parseInt(el.textContent) || 0;
+                el.textContent = Math.max(0, current + amount);
+            }
+            try {
+                await updateDoc(flowDocRef, { [path]: increment(amount) });
+            } catch (e) {
+                const initialData = { [currentType]: { [accessSelect.value]: { [field]: Math.max(0, amount) } } };
+                await setDoc(flowDocRef, initialData, { merge: true });
+            }
+            if ("vibrate" in navigator) navigator.vibrate(40);
+        };
+    </script>
+</body>
+</html>

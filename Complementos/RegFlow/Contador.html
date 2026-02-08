@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Flujo - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; padding: 1.5rem; }
+        .table-glass { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        th { background: #f1f5f9; padding: 12px 16px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.1em; text-align: left; }
+        td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        .row-total { background: #fdf4ff; font-weight: 800; }
+        .row-sub { background: #ffffff; color: #64748b; font-size: 12px; }
+        .row-grand-total { background: #1e293b; color: white; font-weight: 900; }
+        .row-grand-total td { border: none; color: white; }
+        .count-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+        
+        .btn-copy {
+            background: #25d366; color: white; padding: 8px 16px; border-radius: 12px;
+            font-size: 10px; font-weight: 800; text-transform: uppercase;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+            border: none; cursor: pointer;
+        }
+        .btn-copy:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-copy:active { transform: translateY(0); }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; color: white; padding: 10px 20px; border-radius: 12px;
+            font-size: 10px; font-weight: 800; display: none; z-index: 1000;
+        }
+
+        #auth-lock {
+            position: fixed; inset: 0; background: #f8fafc; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-lock">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-fuchsia-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Validando Sesión...</p>
+    </div>
+
+    <div class="mb-6 flex justify-between items-end">
+        <div>
+            <h2 id="viewTitle" class="text-lg font-black text-slate-900 uppercase tracking-tight">Cargando...</h2>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resumen de Ingresos</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="copyToWhatsApp()" class="btn-copy">
+                <i class="fa-brands fa-whatsapp text-sm"></i> Copiar Reporte
+            </button>
+            <div id="syncStatus" class="w-2.5 h-2.5 bg-slate-200 rounded-full"></div>
+        </div>
+    </div>
+
+    <div class="table-glass">
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="w-1/2">Punto de Acceso</th>
+                    <th class="text-center"><i class="fa-solid fa-car mr-2"></i>Vehículos</th>
+                    <th class="text-center"><i class="fa-solid fa-users mr-2"></i>Personas</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot id="tableFoot"></tfoot>
+        </table>
+    </div>
+
+    <div id="toast" class="toast uppercase tracking-widest">¡Reporte Copiado!</div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get('type') || 'colaboradores';
+        document.getElementById('viewTitle').textContent = `Ingreso ${type}`;
+
+        const complejoOS = ["Edison", "Recepción", "Impulso", "Carranza", "Portero U.N."];
+        let currentDayData = {};
+
+        const dateId = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const flowDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegFlow', dateId);
+
+        // --- MANEJO DE AUTENTICACIÓN ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('auth-lock').style.display = 'none';
+                startListening();
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        // Intentar anónimo solo si es necesario, pero con cautela por las restricciones de consola
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("Auth Error:", e);
+                    document.getElementById('auth-lock').innerHTML = `<p class="text-[10px] font-black text-red-500 uppercase">Error de Sesión</p>`;
+                }
+            }
+        });
+
+        function startListening() {
+            onSnapshot(flowDocRef, (snap) => {
+                currentDayData = snap.exists() ? (snap.data()[type] || {}) : {};
+                renderTable(currentDayData);
+                document.getElementById('syncStatus').className = 'w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+            }, (err) => {
+                console.error("Snapshot Error:", err);
+                document.getElementById('syncStatus').className = 'w-2.5 h-2.5 bg-red-500 rounded-full';
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const tfoot = document.getElementById('tableFoot');
+            
+            let osV = 0, osP = 0;
+            complejoOS.forEach(k => { 
+                osV += (data[k]?.vIn || 0); 
+                osP += (data[k]?.pIn || 0); 
+            });
+
+            const mic = data["Michelena"] || {};
+            const simon = data["Simón Bolívar"] || {};
+            const micTotalV = (mic.vIn || 0) + (mic.vInAnnex || 0);
+            const micTotalP = mic.pIn || 0;
+
+            const grandTotalV = osV + micTotalV + (simon.vIn || 0);
+            const grandTotalP = osP + micTotalP + (simon.pIn || 0);
+
+            let html = `<tr class="row-total"><td>COMPLEJO OS (TOTAL)</td><td class="text-center count-val">${osV}</td><td class="text-center count-val">${osP}</td></tr>`;
+            complejoOS.forEach(k => {
+                html += `<tr class="row-sub"><td class="pl-10 text-slate-400">• ${k}</td><td class="text-center font-mono">${data[k]?.vIn || 0}</td><td class="text-center font-mono">${data[k]?.pIn || 0}</td></tr>`;
+            });
+
+            html += `
+                <tr class="row-total"><td>MICHELENA (TOTAL)</td><td class="text-center count-val">${micTotalV}</td><td class="text-center count-val">${micTotalP}</td></tr>
+                <tr class="row-sub"><td class="pl-10 text-slate-400">• Acceso Principal</td><td class="text-center font-mono">${mic.vIn || 0}</td><td class="text-center font-mono">${mic.pIn || 0}</td></tr>
+                <tr class="row-sub"><td class="pl-10 text-slate-400">• Estacionamiento Anexo</td><td class="text-center font-mono">${mic.vInAnnex || 0}</td><td class="text-center font-mono">---</td></tr>
+                <tr class="row-total"><td>SIMÓN BOLÍVAR</td><td class="text-center count-val">${simon.vIn || 0}</td><td class="text-center count-val">${simon.pIn || 0}</td></tr>
+            `;
+
+            tbody.innerHTML = html;
+            tfoot.innerHTML = `<tr class="row-grand-total"><td>TOTAL GENERAL</td><td class="text-center count-val text-xl">${grandTotalV}</td><td class="text-center count-val text-xl">${grandTotalP}</td></tr>`;
+        }
+
+        window.copyToWhatsApp = () => {
+            const date = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+            
+            let osV = 0, osP = 0;
+            complejoOS.forEach(k => { 
+                osV += (currentDayData[k]?.vIn || 0); 
+                osP += (currentDayData[k]?.pIn || 0); 
+            });
+
+            const mic = currentDayData["Michelena"] || {};
+            const simon = currentDayData["Simón Bolívar"] || {};
+            const micTotalV = (mic.vIn || 0) + (mic.vInAnnex || 0);
+            const micTotalP = mic.pIn || 0; // CORREGIDO: Definición de variable faltante
+
+            const gV = osV + micTotalV + (simon.vIn || 0);
+            const gP = osP + micTotalP + (simon.pIn || 0);
+
+            let text = `*📊 REPORTE DE INGRESOS (${type.toUpperCase()})*\n`;
+            text += `📅 _${date}_\n\n`;
+            
+            text += `*🏢 COMPLEJO OS (TOTAL)*: ${osV} Veh. / ${osP} Pers.\n`;
+            complejoOS.forEach(k => {
+                text += `  • ${k}: ${currentDayData[k]?.vIn || 0} / ${currentDayData[k]?.pIn || 0}\n`;
+            });
+            
+            text += `\n*🚧 MICHELENA (TOTAL)*: ${micTotalV} Veh. / ${micTotalP} Pers.\n`;
+            text += `  • Principal: ${mic.vIn || 0} / ${mic.pIn || 0}\n`;
+            text += `  • Anexo: ${mic.vInAnnex || 0} Veh.\n`;
+            
+            text += `\n*📍 SIMÓN BOLÍVAR*: ${simon.vIn || 0} Veh. / ${simon.pIn || 0} Pers.\n`;
+            
+            text += `\n*🏆 TOTAL GENERAL*\n`;
+            text += `🚗 Vehículos: *${gV}*\n`;
+            text += `👥 Personas: *${gP}*`;
+
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2500);
+        };
+    </script>
+</body>
+</html>
