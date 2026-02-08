@@ -27,7 +27,6 @@
             box-sizing: border-box;
         }
 
-        /* --- Contenedor del Reporte --- */
         #report-content {
             background: white;
             border-radius: 20px;
@@ -39,7 +38,6 @@
             border: 1px solid var(--md-outline);
         }
 
-        /* --- Header Estilo Metal --- */
         .report-header {
             background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
             color: white;
@@ -55,7 +53,6 @@
             background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 11px);
         }
 
-        /* --- Divisor de Turnos --- */
         .shift-divider {
             background: #0f172a;
             color: white;
@@ -69,11 +66,12 @@
             align-items: center;
         }
 
-        /* --- Tablas --- */
+        .shift-divider.absences { background: #be185d; }
+
         .table-container { background: white; overflow: hidden; }
         .table-responsive { width: 100%; overflow-x: auto; }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 950px; }
         th { 
             background: #f8fafc; padding: 12px 8px; text-align: left; 
             font-size: 10px; font-weight: 900; text-transform: uppercase; 
@@ -82,12 +80,12 @@
         td { padding: 12px 8px; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
 
         .col-id { width: 80px; }
-        .col-nombre { width: 300px; } 
+        .col-nombre { width: 280px; } 
         .col-estado { width: auto; }
-        .col-tiempo { width: 100px; }
-        .col-comentario { width: 250px; }
+        .col-tiempo { width: 90px; }
+        .col-comentario { width: 200px; }
+        .col-accion { width: 50px; text-align: center; }
 
-        /* --- Badges --- */
         .badge {
             display: inline-flex; align-items: center; justify-content: center;
             padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;
@@ -98,8 +96,14 @@
         .bg-late { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
         .bg-special { background: #ede9fe; color: #4c1d95; }
         .bg-holiday { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        
+        /* Estilos específicos de ausentismo */
+        .badge-vacaciones { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-falta { background: #fef08a; color: #b91c1c; border: 1px solid #fde047; }
+        .badge-suspension { background: #ffedd5; color: #9a3412; border: 2px solid #ef4444; }
+        .badge-permiso { background: #fff7ed; color: #c2410c; border: 2px solid #22c55e; }
+        .badge-default-abs { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
-        /* --- Controles --- */
         .input-date {
             background: white; border: 2px solid var(--md-outline);
             border-radius: 12px; padding: 8px 16px; font-size: 12px;
@@ -110,6 +114,13 @@
             text-transform: uppercase; border-radius: 9px; transition: all 0.2s; color: #64748b;
         }
         .mode-btn.active { background: white; color: var(--metal-fuchsia-dark); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .detail-btn {
+            width: 28px; height: 28px; border-radius: 8px; background: #f1f5f9;
+            display: flex; align-items: center; justify-content: center; color: #64748b;
+            transition: all 0.2s; border: 1px solid #e2e8f0;
+        }
+        .detail-btn:hover { background: #d946ef; color: white; border-color: #d946ef; }
 
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(26, 3, 28, 0.4); backdrop-filter: blur(8px);
@@ -313,6 +324,7 @@
             dom.container.innerHTML = '';
             dom.loading.classList.add('hidden');
 
+            // 1. Renderizar Turnos Operativos
             sections.forEach(sec => {
                 const parts = sec.date.split('-');
                 const dateId = `${parts[2]}${parts[1]}${parts[0]}`;
@@ -322,21 +334,52 @@
                 let list = Object.entries(dayData)
                     .filter(([sid, shifts]) => shifts[sec.id])
                     .map(([sid, shifts]) => {
-                        const user = personnelMap[sid.toLowerCase().replace(/[^a-z0-9]/g, '_')] || personnelMap[sid] || { nombre: 'S/N', socioId: sid };
-                        return { sid, nombre: user.nombre, id_empleado: user.socioId, ...shifts[sec.id] };
+                        const personnelKey = Object.keys(personnelMap).find(k => (personnelMap[k].socioId === sid || k === sid));
+                        const user = personnelMap[personnelKey] || { nombre: 'S/N', socioId: sid };
+                        return { sid, uid: personnelKey || sid, nombre: user.nombre, id_empleado: user.socioId, ...shifts[sec.id] };
                     });
 
                 if (list.length > 0) renderSection(sec.label, list, sec.id, sec.date);
             });
+
+            // 2. Renderizar Ausentismos e Incidencias (Excluyendo Descansos)
+            const rawDate = dom.dateInput.value;
+            const parts = rawDate.split('-');
+            const dateId = `${parts[2]}${parts[1]}${parts[0]}`;
+            const trimId = `Trim${Math.ceil(parseInt(parts[1])/3)}-${parts[0]}`;
+            const dayData = cacheData[trimId]?.[dateId] || {};
+
+            let absencesList = Object.entries(dayData)
+                .filter(([sid, shifts]) => shifts.ausentismo && shifts.ausentismo.motivo !== "Descanso")
+                .map(([sid, shifts]) => {
+                    const personnelKey = Object.keys(personnelMap).find(k => (personnelMap[k].socioId === sid || k === sid));
+                    const user = personnelMap[personnelKey] || { nombre: 'S/N', socioId: sid };
+                    return { 
+                        sid, 
+                        uid: personnelKey || sid,
+                        nombre: user.nombre, 
+                        id_empleado: user.socioId, 
+                        ...shifts.ausentismo, 
+                        isAbsenceSection: true 
+                    };
+                });
+
+            if (absencesList.length > 0) {
+                renderSection("Ausentismos e Incidencias", absencesList, "ausentismo", rawDate);
+            }
         }
 
         function renderSection(label, list, type, date) {
+            const isAbsence = type === "ausentismo";
+
             list.sort((a, b) => {
-                const idxA = casetaOrder.findIndex(c => (a.Caseta || "").toLowerCase().includes(c.toLowerCase()));
-                const idxB = casetaOrder.findIndex(c => (b.Caseta || "").toLowerCase().includes(c.toLowerCase()));
-                const prioA = idxA === -1 ? 99 : idxA;
-                const prioB = idxB === -1 ? 99 : idxB;
-                if (prioA !== prioB) return prioA - prioB;
+                if (!isAbsence) {
+                    const idxA = casetaOrder.findIndex(c => (a.Caseta || "").toLowerCase().includes(c.toLowerCase()));
+                    const idxB = casetaOrder.findIndex(c => (b.Caseta || "").toLowerCase().includes(c.toLowerCase()));
+                    const prioA = idxA === -1 ? 99 : idxA;
+                    const prioB = idxB === -1 ? 99 : idxB;
+                    if (prioA !== prioB) return prioA - prioB;
+                }
                 return a.nombre.localeCompare(b.nombre);
             });
 
@@ -344,21 +387,31 @@
             
             const div = document.createElement('div');
             div.innerHTML = `
-                <div class="shift-divider"><span>${label}</span><span class="opacity-40">${headerDate}</span></div>
+                <div class="shift-divider ${isAbsence ? 'absences' : ''}">
+                    <span>${label}</span>
+                    <span class="opacity-40">${headerDate}</span>
+                </div>
                 <div class="table-container"><div class="table-responsive"><table>
                     <thead><tr>
-                        <th class="col-id">ID</th><th class="col-nombre">Nombre</th><th class="col-estado">Estado / Incidencias</th>
-                        <th class="col-tiempo">Entrada</th><th class="col-tiempo">Salida</th>
+                        <th class="col-id">ID</th><th class="col-nombre">Nombre</th><th class="col-estado">Estado / Incidencia</th>
+                        <th class="col-tiempo">${isAbsence ? 'Origen' : 'Entrada'}</th>
+                        <th class="col-tiempo">${isAbsence ? '---' : 'Salida'}</th>
                         <th class="col-comentario">Observaciones</th>
+                        <th class="col-accion"></th>
                     </tr></thead>
                     <tbody>${list.map(item => `
                         <tr>
                             <td class="font-mono text-[11px] text-slate-400">${item.id_empleado}</td>
                             <td class="font-bold text-indigo-950">${item.nombre}</td>
                             <td><div class="flex flex-wrap gap-1">${renderStatus(item)}</div></td>
-                            <td class="font-bold text-slate-500 font-mono text-[11px]">${item.entrada_real || '--:--'}</td>
-                            <td class="font-bold text-slate-400 font-mono text-[11px]">${item.salida_real || '--:--'}</td>
+                            <td class="font-bold text-slate-500 font-mono text-[11px] uppercase">${isAbsence ? (item.originShift || 'N/A') : (item.entrada_real || '--:--')}</td>
+                            <td class="font-bold text-slate-400 font-mono text-[11px]">${isAbsence ? '---' : (item.salida_real || '--:--')}</td>
                             <td class="italic text-slate-400 text-[11px]">${item.comentario || ''}</td>
+                            <td class="col-accion">
+                                <button onclick="openDetails('${item.uid}', '${date}')" class="detail-btn no-print" title="Ver Detalle">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </td>
                         </tr>
                     `).join('')}</tbody>
                 </table></div></div>
@@ -367,11 +420,22 @@
         }
 
         function renderStatus(item) {
-            // Estado base de asistencia
+            if (item.isAbsenceSection) {
+                const motivo = (item.motivo || "").toLowerCase();
+                let cls = "badge-default-abs";
+                
+                if (motivo.includes("vacaciones")) cls = "badge-vacaciones";
+                else if (motivo.includes("falta")) cls = "badge-falta";
+                else if (motivo.includes("suspensión") || motivo.includes("suspension")) cls = "badge-suspension";
+                else if (motivo.includes("permiso")) cls = "badge-permiso";
+
+                return `<span class="badge ${cls}">${item.motivo}</span>`;
+            }
+
+            // Estado base de asistencia para turnos normales
             let html = item.salida_real ? '<span class="badge bg-finished">Finalizado</span>' : 
                        (item.entrada_real ? '<span class="badge bg-in-turn">En Turno</span>' : '<span class="badge bg-finished opacity-40">Pendiente</span>');
             
-            // --- INCIDENCIAS SOLICITADAS ---
             if (item.retardo) html += '<span class="badge bg-late ml-1">Retardo</span>';
             if (item.es_festivo) html += '<span class="badge bg-holiday ml-1">Festivo</span>';
             if (item.es_extra) html += '<span class="badge bg-special ml-1">Horas Extra</span>';
@@ -379,6 +443,13 @@
             
             return html;
         }
+
+        window.openDetails = (uid, date) => {
+            window.parent.postMessage({ 
+                action: 'openRightPanel', 
+                content: `<iframe src="../Complementos/RegUs/Detalle.html?socioId=${uid}&date=${date}&tab=gestion" class="w-full h-full border-none"></iframe>` 
+            }, '*');
+        };
 
         window.openEmailModal = () => dom.emailModal.style.display = 'flex';
         window.closeEmailModal = () => dom.emailModal.style.display = 'none';
@@ -395,10 +466,21 @@
             const cc = document.getElementById('email-cc').value.trim();
             const btn = document.getElementById('btn-confirm-send');
             if (!to) return;
-            btn.disabled = true; btn.innerText = "PROCESANDO IMAGEN...";
+            
+            btn.disabled = true; 
+            btn.innerText = "PROCESANDO IMAGEN...";
+
+            // Ocultar botones de detalle para la captura
+            const actionButtons = document.querySelectorAll('.no-print');
+            actionButtons.forEach(b => b.style.display = 'none');
 
             try {
-                const canvas = await html2canvas(document.getElementById('report-content'), { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' });
+                const canvas = await html2canvas(document.getElementById('report-content'), { 
+                    scale: 1.5, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff' 
+                });
+                
                 const base64 = canvas.toDataURL('image/png', 0.9).split(',')[1];
                 const subject = `REPORTE ASISTENCIA - ${dom.dateLabel.innerText}`;
                 
@@ -411,7 +493,13 @@
 
                 btn.innerText = "¡ENVIADO!";
                 setTimeout(() => { closeEmailModal(); btn.disabled = false; btn.innerText = "Confirmar Envío"; }, 2000);
-            } catch (err) { btn.disabled = false; btn.innerText = "ERROR - REINTENTAR"; }
+            } catch (err) { 
+                btn.disabled = false; 
+                btn.innerText = "ERROR - REINTENTAR"; 
+            } finally {
+                // Restaurar visibilidad de botones
+                actionButtons.forEach(b => b.style.display = 'flex');
+            }
         };
 
     </script>
