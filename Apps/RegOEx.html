@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Objetos Extraviados - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #fffaf8; }
+        body { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+
+        /* --- CABECERA METÁLICA NARANJA --- */
+        .app-header {
+            background: linear-gradient(180deg, 
+                #431407 0%, 
+                #7c2d12 25%, 
+                #9a3412 50%, 
+                #7c2d12 75%, 
+                #431407 100%
+            );
+            height: 75px; border-bottom: 1px solid #9a3412;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.5rem; flex: none; z-index: 100;
+            box-shadow: 0 4px 15px rgba(67, 20, 7, 0.3);
+        }
+
+        .branding { display: flex; align-items: center; gap: 1rem; flex: 1; }
+        .apps-btn {
+            width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 255, 255, 0.05);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px; transition: all 0.3s;
+        }
+        .apps-btn:hover { background: rgba(255, 255, 255, 0.1); transform: rotate(90deg); border-color: #f97316; }
+
+        .nav-tabs { background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 14px; display: flex; gap: 4px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .tab-btn {
+            padding: 0.5rem 1.25rem; border-radius: 10px; font-size: 10px; font-weight: 800;
+            color: #fb923c; text-transform: uppercase; white-space: nowrap; cursor: pointer;
+            transition: all 0.3s; letter-spacing: 0.05em;
+        }
+        .tab-btn:hover { color: white; background: rgba(255, 255, 255, 0.03); }
+        .tab-btn.active { background: #f97316; color: white; box-shadow: 0 0 15px rgba(249, 115, 22, 0.4); }
+
+        .clock-container {
+            font-family: 'JetBrains Mono', monospace; background: rgba(0, 0, 0, 0.3);
+            padding: 0.4rem 1rem; border-radius: 12px; font-size: 16px; font-weight: 600;
+            color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end;
+        }
+
+        /* --- PERSISTENCIA DE VISTAS --- */
+        .viewport { flex: 1; position: relative; background: #fffaf8; }
+        .app-instance {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: none; z-index: 1; pointer-events: none; opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+        .app-instance.active { z-index: 10; opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="branding">
+            <div onclick="window.parent.postMessage({action:'toggleMenu'}, '*')" class="apps-btn">
+                <img src="../MM/Apps.png" alt="Apps">
+            </div>
+            <div>
+                <h1 class="text-[12px] font-black text-white uppercase tracking-[0.2em] leading-none">Objetos Extraviados</h1>
+                <p class="text-[8px] font-bold text-orange-400 uppercase mt-1 tracking-tighter">Inventario y Resguardo</p>
+            </div>
+        </div>
+
+        <nav class="nav-tabs">
+            <div onclick="setTab('inventario', this)" class="tab-btn active">Inventario</div>
+            <div onclick="setTab('recepcion', this)" class="tab-btn">Recepción</div>
+            <div onclick="setTab('entregados', this)" class="tab-btn">Histórico</div>
+        </nav>
+
+        <div class="clock-container">
+            <span id="timeDisplay">00:00:00</span>
+        </div>
+    </header>
+
+    <main class="viewport" id="appViewport"></main>
+
+    <script>
+        const views = {
+            'inventario': '../Complementos/RegLost/Listado.html?view=active',
+            'recepcion': '../Complementos/RegLost/Nuevo.html',
+            'entregados': '../Complementos/RegLost/Listado.html?view=archived'
+        };
+
+        function init() {
+            const viewport = document.getElementById('appViewport');
+            Object.entries(views).forEach(([id, url]) => {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'app-instance';
+                iframe.id = `view-${id}`;
+                iframe.dataset.id = id;
+                iframe.src = url;
+                viewport.appendChild(iframe);
+            });
+            
+            // Activar la vista inicial
+            setTimeout(() => {
+                const initialView = document.getElementById('view-inventario');
+                if (initialView) initialView.classList.add('active');
+            }, 50);
+
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function setTab(id, el) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+            
+            document.querySelectorAll('.app-instance').forEach(i => {
+                i.classList.toggle('active', i.dataset.id === id);
+            });
+        }
+
+        function updateClock() {
+            const display = document.getElementById('timeDisplay');
+            if (display) display.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false });
+        }
+
+        // --- PROTECCIÓN DE MENSAJES PARA EVITAR TYPEERROR ---
+        window.addEventListener('message', (e) => {
+            // Validar que la data y la acción existan antes de procesar
+            if (e.data && typeof e.data.action === 'string') {
+                const action = e.data.action;
+                
+                // Reenviar mensajes válidos al shell de administración
+                if (action === 'openApp' || action === 'toggleMenu' || action.includes('Panel')) {
+                    window.parent.postMessage(e.data, '*');
+                }
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>

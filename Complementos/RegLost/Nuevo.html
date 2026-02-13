@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Registro - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fffaf8; padding: 1.5rem; color: #431407; }
+        
+        .form-card { 
+            background: white; 
+            border: 1px solid #fed7aa; 
+            border-radius: 24px; 
+            padding: 2rem; 
+            max-width: 600px; 
+            margin: 0 auto;
+            box-shadow: 0 10px 25px -5px rgba(124, 45, 18, 0.05);
+        }
+
+        .input-group { margin-bottom: 1.5rem; }
+        .label-style { 
+            display: block; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: #9a3412; 
+            margin-bottom: 0.5rem; 
+            margin-left: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        .input-style { 
+            width: 100%; 
+            background: #fffaf8; 
+            border: 2px solid #fed7aa; 
+            border-radius: 14px; 
+            padding: 0.85rem 1rem; 
+            font-size: 14px; 
+            font-weight: 600;
+            outline: none; 
+            transition: all 0.2s; 
+        }
+        .input-style:focus { border-color: #f97316; background: white; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1); }
+
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+        .category-btn { 
+            padding: 1rem 0.5rem; 
+            border: 2px solid #fed7aa; 
+            border-radius: 16px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            background: white;
+        }
+        .category-btn i { font-size: 1.25rem; margin-bottom: 0.5rem; color: #fdba74; display: block; }
+        .category-btn span { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #9a3412; }
+        .category-btn.active { border-color: #f97316; background: #fff7ed; }
+        .category-btn.active i { color: #f97316; }
+
+        .btn-submit { 
+            width: 100%; 
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+            color: white; 
+            padding: 1.1rem; 
+            border-radius: 16px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            box-shadow: 0 10px 20px -5px rgba(234, 88, 12, 0.3);
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-submit:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        .btn-submit:active { transform: translateY(0); }
+
+        #msg-box { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            padding: 1rem 2rem; border-radius: 14px; font-size: 12px; font-weight: 800; 
+            text-transform: uppercase; display: none; z-index: 3000; box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        #auth-lock { position: fixed; inset: 0; background: #fffaf8; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-lock">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-orange-800/40">Iniciando Formulario...</p>
+    </div>
+
+    <div id="msg-box"></div>
+
+    <div class="form-card">
+        <div class="mb-8 border-b border-orange-50 pb-4">
+            <h2 class="text-xl font-black uppercase text-indigo-950 leading-none">Recepción de Objeto</h2>
+            <p class="text-[9px] font-bold text-slate-400 uppercase mt-2 tracking-widest">Ingrese los detalles del hallazgo</p>
+        </div>
+
+        <form id="lostForm">
+            <div class="input-group">
+                <label class="label-style">Categoría del Objeto</label>
+                <div class="category-grid">
+                    <div class="category-btn" onclick="selectCategory('Electrónica', this)">
+                        <i class="fa-solid fa-laptop"></i><span>Electrónica</span>
+                    </div>
+                    <div class="category-btn" onclick="selectCategory('Ropa', this)">
+                        <i class="fa-solid fa-shirt"></i><span>Ropa</span>
+                    </div>
+                    <div class="category-btn" onclick="selectCategory('Llaves', this)">
+                        <i class="fa-solid fa-key"></i><span>Llaves</span>
+                    </div>
+                    <div class="category-btn" onclick="selectCategory('Cartera', this)">
+                        <i class="fa-solid fa-wallet"></i><span>Cartera</span>
+                    </div>
+                    <div class="category-btn" onclick="selectCategory('Documentos', this)">
+                        <i class="fa-solid fa-id-card"></i><span>Documentos</span>
+                    </div>
+                    <div class="category-btn" onclick="selectCategory('Otro', this)">
+                        <i class="fa-solid fa-box-open"></i><span>Otro</span>
+                    </div>
+                </div>
+                <input type="hidden" id="categoria" required>
+            </div>
+
+            <div class="input-group">
+                <label class="label-style">Nombre del Objeto</label>
+                <input type="text" id="nombre" class="input-style" placeholder="Ej. iPhone 13, Mochila Azul, Llaves Toyota..." required>
+            </div>
+
+            <div class="input-group">
+                <label class="label-style">Descripción Detallada</label>
+                <textarea id="descripcion" class="input-style h-24 resize-none" placeholder="Indique color, marca, señas particulares..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label class="label-style">Lugar del Hallazgo</label>
+                    <input type="text" id="lugar" class="input-style" placeholder="Ej. Comedor, Piso 4..." required>
+                </div>
+                <div class="input-group">
+                    <label class="label-style">Fecha</label>
+                    <input type="date" id="fecha" class="input-style" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="label-style">Estado Inicial</label>
+                <select id="estado" class="input-style">
+                    <option value="Resguardado">Resguardado (Encontrado)</option>
+                    <option value="Extraviado">Reporte de Extravío (Buscado)</option>
+                </select>
+            </div>
+
+            <button type="submit" id="btnSave" class="btn-submit mt-4">
+                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar en Inventario
+            </button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        // --- REGLA 3: AUTENTICACIÓN ESTRICTA (Sin anónimos) ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                document.getElementById('auth-lock').style.display = 'none';
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        // Bloqueo total si no hay sesión ni token
+                        document.getElementById('auth-lock').innerHTML = `
+                            <i class="fa-solid fa-lock text-red-500 text-2xl mb-4"></i>
+                            <p class="text-[10px] font-black uppercase text-slate-600">Acceso restringido: Inicie sesión</p>
+                        `;
+                    }
+                } catch (e) {
+                    console.error("Auth Fail:", e);
+                    document.getElementById('auth-lock').innerHTML = `<p class="text-[10px] font-black uppercase text-red-500">Error de Sesión</p>`;
+                }
+            }
+        });
+
+        // Establecer fecha de hoy por defecto
+        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+        window.selectCategory = (cat, el) => {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('categoria').value = cat;
+        };
+
+        const showMsg = (text, type = 'success') => {
+            const box = document.getElementById('msg-box');
+            box.textContent = text;
+            box.style.display = 'block';
+            box.style.backgroundColor = type === 'success' ? '#dcfce7' : '#fee2e2';
+            box.style.color = type === 'success' ? '#166534' : '#991b1b';
+            setTimeout(() => box.style.display = 'none', 3000);
+        };
+
+        document.getElementById('lostForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            // Verificación extra de seguridad antes de procesar
+            if (!auth.currentUser) {
+                showMsg('Error: Debe estar autenticado para guardar', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSave');
+            const cat = document.getElementById('categoria').value;
+
+            if (!cat) {
+                showMsg('Por favor seleccione una categoría', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const data = {
+                nombre: document.getElementById('nombre').value.trim(),
+                categoria: cat,
+                descripcion: document.getElementById('descripcion').value.trim(),
+                lugar: document.getElementById('lugar').value.trim(),
+                fecha: document.getElementById('fecha').value,
+                estado: document.getElementById('estado').value,
+                createdAt: serverTimestamp(),
+                registradoPor: auth.currentUser?.email || 'Sistema'
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'RegLost'), data);
+                showMsg('Objeto registrado correctamente');
+                document.getElementById('lostForm').reset();
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            } catch (err) {
+                console.error(err);
+                showMsg('Error al guardar el registro', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar en Inventario';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Objetos - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #fffaf8; 
+            padding: 1.5rem; 
+            color: #431407; 
+            min-height: 100vh;
+        }
+
+        .search-container {
+            background: white;
+            border: 1px solid #fed7aa;
+            border-radius: 1.5rem;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(124, 45, 18, 0.03);
+            transition: all 0.2s;
+        }
+        .search-container:focus-within {
+            border-color: #f97316;
+            box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.1);
+        }
+
+        .input-search {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 0.5rem 0.75rem;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .item-card {
+            background: white;
+            border: 1px solid #fed7aa;
+            border-radius: 1.5rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .item-card:hover {
+            border-color: #f97316;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(124, 45, 18, 0.1);
+        }
+
+        .icon-box {
+            width: 100%;
+            height: 140px;
+            background: #fff7ed;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fdba74;
+            font-size: 2.5rem;
+            border: 1px dashed #fed7aa;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-resguardado { background: #dcfce7; color: #166534; }
+        .badge-extraviado { background: #fee2e2; color: #991b1b; }
+        .badge-entregado { background: #f1f5f9; color: #475569; }
+
+        #auth-lock { 
+            position: fixed; inset: 0; background: #fffaf8; z-index: 5000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Bloqueo de Seguridad (Estrictamente Autenticados) -->
+    <div id="auth-lock">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-orange-800/40">Sincronizando Inventario...</p>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-4 mb-8 items-stretch md:items-center">
+            <div class="flex-1">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass ml-4 text-orange-300"></i>
+                    <input type="text" id="searchInput" class="input-search" placeholder="Buscar por nombre, descripción o lugar...">
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <select id="statusFilter" class="bg-white border border-orange-200 rounded-2xl px-4 py-3 text-xs font-bold text-orange-900 outline-none shadow-sm">
+                    <option value="all">Todos los Estados</option>
+                    <option value="Resguardado">Resguardado</option>
+                    <option value="Extraviado">Extraviado</option>
+                    <option value="Entregado">Entregado</option>
+                </select>
+                
+                <select id="categoryFilter" class="bg-white border border-orange-200 rounded-2xl px-4 py-3 text-xs font-bold text-orange-900 outline-none shadow-sm">
+                    <option value="all">Todas las Categorías</option>
+                    <option value="Electrónica">Electrónica</option>
+                    <option value="Ropa">Ropa</option>
+                    <option value="Llaves">Llaves</option>
+                    <option value="Cartera">Cartera</option>
+                    <option value="Documentos">Documentos</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+
+        <div id="noResults" class="hidden empty-state">
+            <i class="fa-solid fa-box-open text-5xl mb-4 opacity-20"></i>
+            <h3 class="text-sm font-black uppercase tracking-tight text-slate-400">No se encontraron objetos</h3>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewMode = urlParams.get('view') || 'active';
+
+        let masterData = [];
+
+        // --- AUTENTICACIÓN SIN USUARIOS ANÓNIMOS ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const lock = document.getElementById('auth-lock');
+                if(lock) lock.style.display = 'none';
+                startSync();
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        const lock = document.getElementById('auth-lock');
+                        if(lock) {
+                            lock.innerHTML = `
+                                <div class="text-center p-8 bg-white rounded-3xl border border-red-100 shadow-xl">
+                                    <i class="fa-solid fa-lock text-red-500 text-3xl mb-4"></i>
+                                    <h2 class="text-sm font-black uppercase text-slate-800">Acceso Denegado</h2>
+                                    <p class="text-[10px] font-bold text-slate-400 mt-2 uppercase">Debe iniciar sesión en el portal CIC</p>
+                                </div>`;
+                        }
+                    }
+                } catch (e) { console.error("Auth Fail:", e); }
+            }
+        });
+
+        function startSync() {
+            const lostRef = collection(db, 'artifacts', appId, 'public', 'data', 'RegLost');
+            onSnapshot(lostRef, (snap) => {
+                masterData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                applyFilters();
+            }, (error) => { console.error("Error en conexión:", error); });
+        }
+
+        function applyFilters() {
+            const searchEl = document.getElementById('searchInput');
+            const search = (searchEl ? searchEl.value : "").toLowerCase();
+            const status = document.getElementById('statusFilter')?.value || 'all';
+            const category = document.getElementById('categoryFilter')?.value || 'all';
+
+            let filtered = masterData.filter(item => {
+                if (!item) return false;
+                if (viewMode === 'active' && item.estado === 'Entregado') return false;
+                if (viewMode === 'archived' && item.estado !== 'Entregado') return false;
+
+                const nombre = (item.nombre || "").toLowerCase();
+                const desc = (item.descripcion || "").toLowerCase();
+                const lugar = (item.lugar || "").toLowerCase();
+
+                const matchText = nombre.includes(search) || desc.includes(search) || lugar.includes(search);
+                const matchStatus = status === 'all' || item.estado === status;
+                const matchCategory = category === 'all' || item.categoria === category;
+
+                return matchText && matchStatus && matchCategory;
+            });
+
+            filtered.sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+            renderGrid(filtered);
+        }
+
+        function renderGrid(items) {
+            const grid = document.getElementById('itemsGrid');
+            const noResults = document.getElementById('noResults');
+            if (!grid) return;
+
+            if (items.length === 0) {
+                grid.innerHTML = '';
+                if(noResults) noResults.classList.remove('hidden');
+                return;
+            }
+
+            if(noResults) noResults.classList.add('hidden');
+            grid.innerHTML = items.map(item => `
+                <div class="item-card" onclick="openDetail('${item.id}')">
+                    <div class="flex justify-between items-start">
+                        <span class="badge badge-${(item.estado || 'default').toLowerCase()}">${item.estado || 'S/E'}</span>
+                        <span class="text-[9px] font-black text-slate-300 uppercase">${item.fecha || ''}</span>
+                    </div>
+                    <div class="icon-box"><i class="fa-solid ${getCategoryIcon(item.categoria)}"></i></div>
+                    <div class="flex flex-col gap-1">
+                        <h3 class="text-sm font-black uppercase text-indigo-950 leading-tight truncate">${item.nombre || 'Sin nombre'}</h3>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <i class="fa-solid fa-location-dot text-[10px] text-orange-400"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase truncate">${item.lugar || 'Ubicación desconocida'}</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-3 border-t border-orange-50 flex justify-between items-center">
+                        <span class="text-[8px] font-black text-orange-300 uppercase tracking-tighter">${item.categoria || 'General'}</span>
+                        <div class="w-6 h-6 rounded-full bg-orange-50 flex items-center justify-center">
+                            <i class="fa-solid fa-chevron-right text-[8px] text-orange-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCategoryIcon(cat) {
+            const icons = { 'Electrónica': 'fa-laptop', 'Ropa': 'fa-shirt', 'Llaves': 'fa-key', 'Cartera': 'fa-wallet', 'Documentos': 'fa-id-card', 'Otro': 'fa-box-open' };
+            return icons[cat] || 'fa-box';
+        }
+
+        window.openDetail = (id) => {
+            window.parent.postMessage({ 
+                action: 'openRightPanel', 
+                content: `<iframe src="../Complementos/RegLost/Detalle.html?id=${id}" class="w-full h-full border-none"></iframe>` 
+            }, '*');
+        };
+
+        document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('categoryFilter')?.addEventListener('change', applyFilters);
+    </script>
+</body>
+</html>

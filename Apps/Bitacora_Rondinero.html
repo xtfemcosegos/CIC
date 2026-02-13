@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bitácora de Rondineros - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #fffdf5; }
+        body { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+
+        /* --- CABECERA METÁLICA AMARILLO OSCURO (5 NIVELES) --- */
+        .app-header {
+            background: linear-gradient(180deg, 
+                #422006 0%, 
+                #713f12 25%, 
+                #a16207 50%, 
+                #713f12 75%, 
+                #422006 100%
+            );
+            height: 70px; 
+            border-bottom: 1px solid #a16207;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            padding: 0 1rem; 
+            flex: none; 
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(66, 32, 6, 0.3);
+        }
+
+        .branding { display: flex; align-items: center; gap: 0.75rem; }
+        
+        /* Botón de Aplicaciones (Drawer) */
+        .apps-btn {
+            width: 34px; height: 34px; border-radius: 9px; background: rgba(255, 255, 255, 0.05);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 5px; transition: all 0.3s;
+        }
+        .apps-btn:hover { 
+            background: rgba(255, 255, 255, 0.1); 
+            transform: rotate(90deg); 
+            border-color: #eab308; 
+        }
+
+        /* Logotipo de la Aplicación */
+        .app-logo {
+            width: 32px; height: 32px; object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        /* Reloj Digital Compacto */
+        .clock-container {
+            font-family: 'JetBrains Mono', monospace; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.4rem 0.75rem; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 600;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            display: flex; 
+            align-items: center; 
+            gap: 0.4rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            flex-shrink: 0; /* Evita que crezca horizontalmente */
+        }
+
+        .viewport { 
+            flex: 1; 
+            position: relative; 
+            background: #fffdf5; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            overflow: auto;
+            padding: 1rem;
+        }
+        
+        .main-image {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            border: 3px solid white;
+            object-fit: contain;
+        }
+
+        .header-title-sub {
+            color: #fef08a;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="branding">
+            <!-- Botón para Menú Principal -->
+            <div onclick="toggleMainMenu()" class="apps-btn" title="Menú de Aplicaciones">
+                <img src="../MM/Apps.png" alt="Menú" onerror="this.src='https://img.icons8.com/ios-filled/50/ffffff/menu--v1.png'">
+            </div>
+            
+            <!-- Logo de la Aplicación -->
+            <img src="../MM/Bitácora.png" alt="Bitácora" class="app-logo" onerror="this.style.display='none'">
+
+            <div>
+                <h1 class="text-[11px] font-black text-white uppercase tracking-[0.15em] leading-none">Bitácora de rondineros</h1>
+                <p class="text-[7px] font-bold header-title-sub uppercase mt-1 tracking-tighter">Rondines turno día y tarde</p>
+            </div>
+        </div>
+
+        <div class="clock-container">
+            <i class="fa-regular fa-clock text-[10px] opacity-60"></i>
+            <span id="timeDisplay">00:00:00</span>
+        </div>
+    </header>
+
+    <main class="viewport" id="appViewport">
+        <img src="../MM/Rondas.jpeg" alt="Imagen de Rondas" class="main-image" onerror="this.src='https://via.placeholder.com/800x600?text=Vista+Rondas+no+disponible'">
+    </main>
+
+    <script>
+        const dom = {
+            clockText: document.getElementById('timeDisplay')
+        };
+
+        function updateClock() {
+            if (dom.clockText) {
+                const now = new Date();
+                dom.clockText.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
+            }
+        }
+        
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function toggleMainMenu() {
+            if (window.parent) {
+                window.parent.postMessage({ action: 'toggleMenu' }, '*');
+            }
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && typeof e.data.action === 'string') {
+                const action = e.data.action;
+                if (action === 'openApp' || action.includes('Panel')) {
+                    window.parent.postMessage(e.data, '*');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
