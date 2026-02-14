@@ -9,81 +9,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #fffaf8; padding: 1.5rem; color: #431407; }
+        .form-card { background: white; border: 1px solid #fed7aa; border-radius: 24px; padding: 1.5rem; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 25px rgba(124, 45, 18, 0.05); }
+        .input-style { width: 100%; background: #fffaf8; border: 2px solid #fed7aa; border-radius: 14px; padding: 0.75rem 1rem; font-size: 14px; font-weight: 600; outline: none; transition: all 0.2s; }
+        .input-style:focus { border-color: #f97316; background: white; }
+        .label-mini { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #9a3412; margin-bottom: 0.5rem; display: block; letter-spacing: 0.05em; }
         
-        .form-card { 
-            background: white; 
-            border: 1px solid #fed7aa; 
-            border-radius: 24px; 
-            padding: 2rem; 
-            max-width: 600px; 
-            margin: 0 auto;
-            box-shadow: 0 10px 25px -5px rgba(124, 45, 18, 0.05);
-        }
+        /* Mapa Estilos */
+        .map-container { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 20px; padding: 1rem; margin-top: 1rem; overflow: hidden; }
+        .map-svg { width: 100%; height: auto; max-height: 400px; }
+        .map-zone { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1; cursor: pointer; transition: all 0.2s; }
+        .map-zone:hover { fill: #fed7aa; stroke: #f97316; }
+        .map-zone.selected { fill: #f97316; stroke: #ea580c; }
+        .map-text { font-size: 8px; font-weight: bold; pointer-events: none; fill: #475569; text-anchor: middle; }
 
-        .input-group { margin-bottom: 1.5rem; }
-        .label-style { 
-            display: block; 
-            font-size: 10px; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            color: #9a3412; 
-            margin-bottom: 0.5rem; 
-            margin-left: 0.5rem;
-            letter-spacing: 0.05em;
-        }
-
-        .input-style { 
-            width: 100%; 
-            background: #fffaf8; 
-            border: 2px solid #fed7aa; 
-            border-radius: 14px; 
-            padding: 0.85rem 1rem; 
-            font-size: 14px; 
-            font-weight: 600;
-            outline: none; 
-            transition: all 0.2s; 
-        }
-        .input-style:focus { border-color: #f97316; background: white; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1); }
-
-        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
-        .category-btn { 
-            padding: 1rem 0.5rem; 
-            border: 2px solid #fed7aa; 
-            border-radius: 16px; 
-            text-align: center; 
-            cursor: pointer; 
-            transition: all 0.2s;
-            background: white;
-        }
-        .category-btn i { font-size: 1.25rem; margin-bottom: 0.5rem; color: #fdba74; display: block; }
-        .category-btn span { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #9a3412; }
+        .category-btn { border: 2px solid #fed7aa; border-radius: 16px; padding: 0.75rem; text-align: center; cursor: pointer; background: white; transition: all 0.2s; }
         .category-btn.active { border-color: #f97316; background: #fff7ed; }
-        .category-btn.active i { color: #f97316; }
+        
+        .photo-preview { width: 100%; height: 200px; border: 2px dashed #fed7aa; border-radius: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: #fffaf8; }
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-        .btn-submit { 
-            width: 100%; 
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
-            color: white; 
-            padding: 1.1rem; 
-            border-radius: 16px; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 0.1em;
-            box-shadow: 0 10px 20px -5px rgba(234, 88, 12, 0.3);
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-submit:hover { transform: translateY(-2px); filter: brightness(1.05); }
-        .btn-submit:active { transform: translateY(0); }
-
-        #msg-box { 
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
-            padding: 1rem 2rem; border-radius: 14px; font-size: 12px; font-weight: 800; 
-            text-transform: uppercase; display: none; z-index: 3000; box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-        }
-
-        #auth-lock { position: fixed; inset: 0; background: #fffaf8; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #auth-lock { position: fixed; inset: 0; background: #fffaf8; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -93,71 +38,106 @@
         <p class="text-[10px] font-black uppercase tracking-widest text-orange-800/40">Iniciando Formulario...</p>
     </div>
 
-    <div id="msg-box"></div>
-
     <div class="form-card">
-        <div class="mb-8 border-b border-orange-50 pb-4">
-            <h2 class="text-xl font-black uppercase text-indigo-950 leading-none">Recepción de Objeto</h2>
-            <p class="text-[9px] font-bold text-slate-400 uppercase mt-2 tracking-widest">Ingrese los detalles del hallazgo</p>
-        </div>
+        <header class="mb-6 border-b border-orange-50 pb-4">
+            <h2 class="text-xl font-black uppercase text-indigo-950">Recepción de Objeto</h2>
+            <p class="text-[9px] font-bold text-slate-400 uppercase">Gestión de Inventario y Resguardo</p>
+        </header>
 
-        <form id="lostForm">
-            <div class="input-group">
-                <label class="label-style">Categoría del Objeto</label>
-                <div class="category-grid">
-                    <div class="category-btn" onclick="selectCategory('Electrónica', this)">
-                        <i class="fa-solid fa-laptop"></i><span>Electrónica</span>
+        <form id="lostForm" class="space-y-6">
+            <!-- SECCIÓN 1: FOTO -->
+            <div>
+                <label class="label-mini">Fotografía del Objeto</label>
+                <div class="photo-preview" onclick="document.getElementById('fileInput').click()">
+                    <div id="photo-placeholder" class="text-center">
+                        <i class="fa-solid fa-camera text-3xl text-orange-200 mb-2"></i>
+                        <p class="text-[9px] font-black text-orange-300 uppercase">Tocar para capturar</p>
                     </div>
-                    <div class="category-btn" onclick="selectCategory('Ropa', this)">
-                        <i class="fa-solid fa-shirt"></i><span>Ropa</span>
-                    </div>
-                    <div class="category-btn" onclick="selectCategory('Llaves', this)">
-                        <i class="fa-solid fa-key"></i><span>Llaves</span>
-                    </div>
-                    <div class="category-btn" onclick="selectCategory('Cartera', this)">
-                        <i class="fa-solid fa-wallet"></i><span>Cartera</span>
-                    </div>
-                    <div class="category-btn" onclick="selectCategory('Documentos', this)">
-                        <i class="fa-solid fa-id-card"></i><span>Documentos</span>
-                    </div>
-                    <div class="category-btn" onclick="selectCategory('Otro', this)">
-                        <i class="fa-solid fa-box-open"></i><span>Otro</span>
-                    </div>
+                    <img id="img-output" class="hidden">
                 </div>
-                <input type="hidden" id="categoria" required>
+                <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(this)">
             </div>
 
-            <div class="input-group">
-                <label class="label-style">Nombre del Objeto</label>
-                <input type="text" id="nombre" class="input-style" placeholder="Ej. iPhone 13, Mochila Azul, Llaves Toyota..." required>
-            </div>
-
-            <div class="input-group">
-                <label class="label-style">Descripción Detallada</label>
-                <textarea id="descripcion" class="input-style h-24 resize-none" placeholder="Indique color, marca, señas particulares..."></textarea>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="input-group">
-                    <label class="label-style">Lugar del Hallazgo</label>
-                    <input type="text" id="lugar" class="input-style" placeholder="Ej. Comedor, Piso 4..." required>
+            <!-- SECCIÓN 2: DATOS BÁSICOS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label-mini">Estado del Objeto</label>
+                    <select id="estado" class="input-style" onchange="toggleFoundDetails()">
+                        <option value="Resguardado">Resguardado (Encontrado)</option>
+                        <option value="Extraviado">Reporte de Extravío</option>
+                    </select>
                 </div>
-                <div class="input-group">
-                    <label class="label-style">Fecha</label>
-                    <input type="date" id="fecha" class="input-style" required>
+                <div>
+                    <label class="label-mini">Categoría</label>
+                    <select id="categoria" class="input-style">
+                        <option value="Electrónica">Electrónica</option>
+                        <option value="Ropa">Ropa</option>
+                        <option value="Llaves">Llaves</option>
+                        <option value="Cartera">Cartera</option>
+                        <option value="Documentos">Documentos</option>
+                        <option value="Otro">Otro</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="input-group">
-                <label class="label-style">Estado Inicial</label>
-                <select id="estado" class="input-style">
-                    <option value="Resguardado">Resguardado (Encontrado)</option>
-                    <option value="Extraviado">Reporte de Extravío (Buscado)</option>
-                </select>
+            <!-- SECCIÓN 3: DATOS DE ENTREGA (CONDICIONAL) -->
+            <div id="found-details" class="p-4 bg-orange-50 rounded-2xl border border-orange-100 space-y-4">
+                <p class="text-[10px] font-black text-orange-600 uppercase mb-2">Datos de quien entrega</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-mini">Número de Socio</label>
+                        <input type="text" id="entrega_socio" class="input-style" placeholder="ID Socio">
+                    </div>
+                    <div>
+                        <label class="label-mini">Nombre Completo</label>
+                        <input type="text" id="entrega_nombre" class="input-style" placeholder="Nombre de quien encontró">
+                    </div>
+                </div>
             </div>
 
-            <button type="submit" id="btnSave" class="btn-submit mt-4">
-                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar en Inventario
+            <!-- SECCIÓN 4: UBICACIÓN Y MAPA -->
+            <div class="space-y-4">
+                <div>
+                    <label class="label-mini">Edificio / Ubicación General</label>
+                    <select id="edificio" class="input-style" onchange="handleBuildingChange()">
+                        <option value="Complejo OS">Complejo OS</option>
+                        <option value="Michelena">Michelena</option>
+                        <option value="Simón Bolívar">Simón Bolívar</option>
+                        <option value="Estacionamiento">Estacionamiento</option>
+                    </select>
+                </div>
+
+                <div id="map-section" class="hidden">
+                    <label class="label-mini">Punto exacto del hallazgo (Michelena)</label>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" onclick="setMapLevel('PB')" id="btn-pb" class="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black">Planta Baja</button>
+                        <button type="button" onclick="setMapLevel('PISOS')" id="btn-pisos" class="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black">Pisos 1-4</button>
+                    </div>
+                    
+                    <div class="map-container" id="map-render">
+                        <!-- SVG Map for Michelena -->
+                    </div>
+                    <input type="hidden" id="lugar_exacto">
+                </div>
+
+                <div>
+                    <label class="label-mini">Referencia Manual (Lugar)</label>
+                    <input type="text" id="lugar" class="input-style" placeholder="Ej. Sala de juntas 3, Comedor..." required>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 5: DESCRIPCIÓN -->
+            <div>
+                <label class="label-mini">Nombre del Objeto</label>
+                <input type="text" id="nombre" class="input-style" placeholder="Ej. iPhone 13 Pro color Negro" required>
+            </div>
+            <div>
+                <label class="label-mini">Descripción Detallada</label>
+                <textarea id="descripcion" class="input-style h-24 resize-none" placeholder="Indique marcas, daños, o señas particulares..."></textarea>
+            </div>
+
+            <button type="submit" id="btnSave" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg shadow-orange-200 transition-all">
+                Guardar Registro
             </button>
         </form>
     </div>
@@ -173,7 +153,6 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
 
-        // --- REGLA 3: AUTENTICACIÓN ESTRICTA (Sin anónimos) ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById('auth-lock').style.display = 'none';
@@ -182,80 +161,144 @@
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
-                        // Bloqueo total si no hay sesión ni token
-                        document.getElementById('auth-lock').innerHTML = `
-                            <i class="fa-solid fa-lock text-red-500 text-2xl mb-4"></i>
-                            <p class="text-[10px] font-black uppercase text-slate-600">Acceso restringido: Inicie sesión</p>
-                        `;
+                        document.getElementById('auth-lock').innerHTML = `<p class="text-xs font-black text-red-500">SESIÓN REQUERIDA</p>`;
                     }
-                } catch (e) {
-                    console.error("Auth Fail:", e);
-                    document.getElementById('auth-lock').innerHTML = `<p class="text-[10px] font-black uppercase text-red-500">Error de Sesión</p>`;
-                }
+                } catch (e) { console.error(e); }
             }
         });
 
-        // Establecer fecha de hoy por defecto
-        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-
-        window.selectCategory = (cat, el) => {
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('categoria').value = cat;
+        window.previewImage = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('img-output').src = e.target.result;
+                    document.getElementById('img-output').classList.remove('hidden');
+                    document.getElementById('photo-placeholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
         };
 
-        const showMsg = (text, type = 'success') => {
-            const box = document.getElementById('msg-box');
-            box.textContent = text;
-            box.style.display = 'block';
-            box.style.backgroundColor = type === 'success' ? '#dcfce7' : '#fee2e2';
-            box.style.color = type === 'success' ? '#166534' : '#991b1b';
-            setTimeout(() => box.style.display = 'none', 3000);
+        window.toggleFoundDetails = () => {
+            const estado = document.getElementById('estado').value;
+            document.getElementById('found-details').classList.toggle('hidden', estado !== 'Resguardado');
+        };
+
+        window.handleBuildingChange = () => {
+            const edificio = document.getElementById('edificio').value;
+            const mapSection = document.getElementById('map-section');
+            mapSection.classList.toggle('hidden', edificio !== 'Michelena');
+            if(edificio === 'Michelena') setMapLevel('PB');
+        };
+
+        window.setMapLevel = (level) => {
+            const render = document.getElementById('map-render');
+            const btnPb = document.getElementById('btn-pb');
+            const btnPisos = document.getElementById('btn-pisos');
+
+            btnPb.className = level === 'PB' ? 'px-3 py-1 bg-orange-600 text-white rounded-lg text-[10px] font-black' : 'px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black';
+            btnPisos.className = level === 'PISOS' ? 'px-3 py-1 bg-orange-600 text-white rounded-lg text-[10px] font-black' : 'px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black';
+
+            if(level === 'PB') {
+                render.innerHTML = `
+                    <svg viewBox="0 0 200 150" class="map-svg">
+                        <rect x="10" y="10" width="180" height="130" fill="none" stroke="#ccc" />
+                        <!-- Ramp -->
+                        <path d="M 120 40 Q 180 40 180 80 Q 180 120 120 120 L 120 110" fill="none" stroke="#f97316" stroke-width="8" opacity="0.2"/>
+                        
+                        <!-- Zones -->
+                        <rect x="20" y="100" width="40" height="30" class="map-zone" data-name="PB - Puerta Emergencia" onclick="selectZone(this)"/>
+                        <text x="40" y="118" class="map-text">Emerge.</text>
+
+                        <rect x="70" y="100" width="60" height="30" class="map-zone" data-name="PB - Entrada Principal" onclick="selectZone(this)"/>
+                        <text x="100" y="118" class="map-text">Entrada</text>
+
+                        <rect x="80" y="50" width="40" height="30" class="map-zone" data-name="PB - Recepción" onclick="selectZone(this)"/>
+                        <text x="100" y="68" class="map-text">Recep.</text>
+
+                        <circle cx="100" cy="25" r="10" class="map-zone" data-name="PB - Elevadores" onclick="selectZone(this)"/>
+                        <text x="100" y="28" class="map-text">Elev.</text>
+
+                        <rect x="20" y="20" width="50" height="60" class="map-zone" data-name="PB - Oficinas Posteriores" onclick="selectZone(this)"/>
+                        <text x="45" y="55" class="map-text">Oficinas</text>
+                        
+                        <rect x="10" y="10" width="30" height="15" class="map-zone" data-name="PB - Entrada Secundaria" onclick="selectZone(this)"/>
+                        <text x="25" y="20" class="map-text" style="font-size:5px">Snd. Ent.</text>
+                    </svg>
+                `;
+            } else {
+                render.innerHTML = `
+                    <svg viewBox="0 0 200 150" class="map-svg">
+                        <rect x="10" y="10" width="180" height="130" fill="none" stroke="#ccc" />
+                        <!-- Central Core -->
+                        <circle cx="100" cy="75" r="12" class="map-zone" data-name="Pisos - Lobby Elevadores" onclick="selectZone(this)"/>
+                        <text x="100" y="78" class="map-text">Elev.</text>
+
+                        <!-- Corridors -->
+                        <rect x="20" y="30" width="70" height="90" class="map-zone" data-name="Pisos - Pasillo Izquierdo" onclick="selectZone(this)"/>
+                        <text x="55" y="78" class="map-text">Pasillo A</text>
+
+                        <rect x="110" y="30" width="70" height="90" class="map-zone" data-name="Pisos - Pasillo Derecho" onclick="selectZone(this)"/>
+                        <text x="145" y="78" class="map-text">Pasillo B</text>
+
+                        <!-- Emergency -->
+                        <rect x="10" y="65" width="10" height="20" class="map-zone" data-name="Pisos - Emergencia Izq" onclick="selectZone(this)"/>
+                        <rect x="180" y="65" width="10" height="20" class="map-zone" data-name="Pisos - Emergencia Der" onclick="selectZone(this)"/>
+                    </svg>
+                `;
+            }
+        };
+
+        window.selectZone = (el) => {
+            document.querySelectorAll('.map-zone').forEach(z => z.classList.remove('selected'));
+            el.classList.add('selected');
+            const zoneName = el.getAttribute('data-name');
+            document.getElementById('lugar_exacto').value = zoneName;
+            document.getElementById('lugar').value = zoneName;
         };
 
         document.getElementById('lostForm').onsubmit = async (e) => {
             e.preventDefault();
-            
-            // Verificación extra de seguridad antes de procesar
-            if (!auth.currentUser) {
-                showMsg('Error: Debe estar autenticado para guardar', 'error');
-                return;
-            }
-
             const btn = document.getElementById('btnSave');
-            const cat = document.getElementById('categoria').value;
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
 
-            if (!cat) {
-                showMsg('Por favor seleccione una categoría', 'error');
-                return;
+        const data = {
+                nombre: document.getElementById('nombre').value.trim(),
+                categoria: document.getElementById('categoria').value,
+                descripcion: document.getElementById('descripcion').value.trim(),
+                edificio: document.getElementById('edificio').value,
+                lugar: document.getElementById('lugar').value.trim(),
+                lugar_exacto: document.getElementById('lugar_exacto').value,
+                estado: document.getElementById('estado').value,
+                fecha: new Date().toISOString().split('T')[0],
+                creado_en: serverTimestamp(),
+                registrado_por: auth.currentUser.email
+            };
+
+            // Datos de entrega si aplica
+            if (data.estado === 'Resguardado') {
+                data.entrega_socio = document.getElementById('entrega_socio').value.trim();
+                data.entrega_nombre = document.getElementById('entrega_nombre').value.trim();
             }
 
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
-
-            const data = {
-                nombre: document.getElementById('nombre').value.trim(),
-                categoria: cat,
-                descripcion: document.getElementById('descripcion').value.trim(),
-                lugar: document.getElementById('lugar').value.trim(),
-                fecha: document.getElementById('fecha').value,
-                estado: document.getElementById('estado').value,
-                createdAt: serverTimestamp(),
-                registradoPor: auth.currentUser?.email || 'Sistema'
-            };
+            // Manejo de Foto (Simulado para este entorno, se guardaría en Storage)
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                // Aquí iría el upload a Firebase Storage
+                // uploadBytes(ref(storage, ...), file)
+                data.has_photo = true;
+            }
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'RegLost'), data);
-                showMsg('Objeto registrado correctamente');
-                document.getElementById('lostForm').reset();
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+                alert("Objeto registrado con éxito.");
+                location.reload();
             } catch (err) {
                 console.error(err);
-                showMsg('Error al guardar el registro', 'error');
-            } finally {
+                alert("Error al guardar.");
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar en Inventario';
+                btn.textContent = 'Guardar Registro';
             }
         };
     </script>

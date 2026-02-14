@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Maestro Excel - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librerías para generación de Excel y Captura -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --metal-fuchsia-dark: #1a031c;
+            --metal-fuchsia-mid: #4a044e;
+            --metal-fuchsia-light: #701a75;
+            --md-outline: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 1.5rem;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid var(--md-outline);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, var(--metal-fuchsia-dark) 0%, var(--metal-fuchsia-mid) 100%);
+            padding: 24px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- FILTROS CONFIGURACIÓN --- */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 16px;
+            padding: 20px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--md-outline);
+        }
+
+        @media (min-width: 768px) {
+            .filter-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (min-width: 1024px) {
+            .filter-grid { grid-template-columns: repeat(4, 1fr) 160px; }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            justify-content: flex-end;
+        }
+
+        .input-group label {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.08em;
+            margin-left: 4px;
+        }
+
+        /* --- TOGGLE LOGICO --- */
+        .logic-switch {
+            width: 32px; height: 18px; background: var(--metal-fuchsia-mid);
+            border-radius: 20px; display: flex; align-items: center; padding: 2px;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; user-select: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .logic-switch.or-mode { background: #1e1b4b; }
+        .logic-switch::after { content: 'Y'; position: absolute; right: 6px; font-size: 8px; font-weight: 900; color: white; opacity: 0.8; }
+        .logic-switch.or-mode::after { content: 'O'; left: 6px; right: auto; }
+        .logic-switch .dot { width: 14px; height: 14px; background: white; border-radius: 50%; transition: all 0.3s; z-index: 2; }
+        .logic-switch.or-mode .dot { transform: translateX(14px); }
+
+        .form-control {
+            background: #f1f5f9; border: 2px solid transparent; border-radius: 12px;
+            padding: 8px 12px; font-size: 11px; font-weight: 600; outline: none;
+            transition: all 0.2s ease; width: 100%; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; height: 40px; color: #334155;
+        }
+
+        .form-control:hover { background: #e2e8f0; }
+        .form-control:focus, .form-control.active { background: white; border-color: var(--metal-fuchsia-mid); box-shadow: 0 4px 15px rgba(74, 4, 78, 0.08); }
+
+        /* --- CUSTOM COMBOBOX --- */
+        .combobox-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: white; border: 1px solid var(--md-outline);
+            border-radius: 16px; margin-top: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            z-index: 100; display: none; max-height: 260px; overflow-y: auto; padding: 10px;
+        }
+        .combobox-dropdown.show { display: block; animation: fadeInScale 0.15s ease-out; }
+
+        @keyframes fadeInScale { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8fafc; border-radius: 10px; margin-bottom: 8px; border: 1px solid #f1f5f9; }
+        .btn-toggle-all { background: white; color: var(--metal-fuchsia-mid); font-size: 8px; font-weight: 900; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; cursor: pointer; border: 1px solid var(--md-outline); }
+
+        .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #475569; }
+        .dropdown-item:hover { background: #fdf2f8; color: var(--metal-fuchsia-mid); }
+        .dropdown-item input { accent-color: var(--metal-fuchsia-mid); width: 14px; height: 14px; }
+
+        /* --- TABLA DE RESULTADOS --- */
+        .results-container { padding: 0; overflow-x: auto; max-height: calc(100vh - 420px); min-height: 200px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1200px; }
+        thead { position: sticky; top: 0; z-index: 10; }
+        th { background: #f8fafc; padding: 14px; text-align: left; font-weight: 800; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #f1f5f9; font-size: 9px; letter-spacing: 0.08em; }
+        td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 500; }
+        tr:hover td { background-color: #fdf4ff; }
+
+        /* --- BOTONES PRINCIPALES --- */
+        .btn-search {
+            background: var(--metal-fuchsia-mid); color: white; font-weight: 800; text-transform: uppercase;
+            padding: 10px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            gap: 10px; transition: all 0.2s; box-shadow: 0 8px 15px rgba(74, 4, 78, 0.15); height: 40px;
+        }
+        .btn-search:hover { transform: translateY(-1px); background: var(--metal-fuchsia-dark); }
+
+        .btn-secondary-action {
+            height: 40px; border-radius: 12px; font-size: 8px; font-weight: 900;
+            text-transform: uppercase; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 2px; transition: all 0.2s; color: white;
+        }
+        .btn-export-style { background: #10b981; }
+        .btn-email-style { background: var(--metal-fuchsia-dark); }
+
+        .badge { font-size: 8px; font-weight: 800; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
+        .bg-mat { background: #fef9c3; color: #854d0e; }
+        .bg-ves { background: #dbeafe; color: #1e40af; }
+        .bg-noc { background: #1e1b4b; color: white; }
+        .bg-aus { background: #f1f5f9; color: #475569; }
+
+        #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <div id="loading-overlay">
+        <div class="w-12 h-12 border-4 border-fuchsia-200 border-t-fuchsia-700 rounded-full animate-spin"></div>
+        <p class="text-[9px] font-black uppercase mt-4 tracking-widest text-fuchsia-950">Optimizando Reporte...</p>
+        <span id="load-progress" class="text-[9px] font-bold text-slate-400 mt-1">0%</span>
+    </div>
+
+    <!-- Modal Correo -->
+    <div id="email-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-paper-plane text-3xl text-fuchsia-700 mb-4"></i>
+                <h3 class="text-lg font-black uppercase">Consolidado Digital</h3>
+            </div>
+            <div class="flex gap-2 mb-6">
+                <button onclick="setEmailPreset('prueba')" class="flex-1 py-2 bg-slate-100 rounded-xl text-[9px] font-black uppercase">Prueba</button>
+                <button onclick="setEmailPreset('default')" class="flex-1 py-2 bg-fuchsia-50 rounded-xl text-[9px] font-black uppercase text-fuchsia-950">Oficial</button>
+            </div>
+            <div class="space-y-4 mb-6">
+                <div class="input-group">
+                    <label>Para:</label>
+                    <input type="text" id="email-to" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-[12px] font-semibold outline-none" placeholder="destinatarios@ejemplo.com">
+                </div>
+                <div class="input-group">
+                    <label>CC:</label>
+                    <input type="text" id="email-cc" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-[12px] font-semibold outline-none" placeholder="copia@ejemplo.com">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('email-modal').style.display='none'" class="flex-1 py-3 text-[10px] font-black uppercase text-slate-400">Cerrar</button>
+                <button id="btn-confirm-send" onclick="prepareAndSend()" class="flex-[2] bg-slate-900 text-white rounded-xl py-3 text-[10px] font-black uppercase shadow-lg">Enviar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <header class="panel-header">
+            <div>
+                <h1 class="text-xl font-black uppercase tracking-tight">Reporte Maestro de Operaciones</h1>
+                <p class="text-[10px] font-bold text-fuchsia-200/50 uppercase tracking-widest mt-1">Inteligencia de Datos • CIC 7.1</p>
+            </div>
+            <i class="fa-solid fa-file-excel text-3xl opacity-20"></i>
+        </header>
+
+        <div class="filter-grid" id="filter-panel">
+            <div class="input-group">
+                <label>Periodo Sugerido</label>
+                <select id="filter-preset" class="form-control" onchange="applyDatePreset(this.value)">
+                    <option value="custom">PERSONALIZADO</option>
+                    <option value="curr_week">ESTA SEMANA</option>
+                    <option value="last_week">SEMANA PASADA</option>
+                    <option value="curr_month">ESTE MES</option>
+                    <option value="last_month">MES PASADO</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Desde</label>
+                <input type="date" id="filter-start" class="form-control">
+            </div>
+            <div class="input-group">
+                <label>Hasta</label>
+                <input type="date" id="filter-end" class="form-control">
+            </div>
+            <div class="input-group">
+                <label>Turnos Operativos</label>
+                <div class="form-control" onclick="toggleDropdown('shift-dropdown')">
+                    <span id="shift-label" class="truncate">Todos</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+                <div id="shift-dropdown" class="combobox-dropdown no-scrollbar">
+                    <div class="dropdown-header">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Turnos Base</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('shift', event)">Alternar</span>
+                    </div>
+                    <div id="shift-options">
+                        <label class="dropdown-item"><input type="checkbox" class="shift-checkbox" value="matutino" checked onchange="updateLabels()"> MATUTINO</label>
+                        <label class="dropdown-item"><input type="checkbox" class="shift-checkbox" value="vespertino" checked onchange="updateLabels()"> VESPERTINO</label>
+                        <label class="dropdown-item"><input type="checkbox" class="shift-checkbox" value="nocturno" checked onchange="updateLabels()"> NOCTURNO</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones Acción -->
+            <div class="input-group row-span-2 flex flex-col gap-2">
+                <button onclick="runQuery()" class="btn-search w-full">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="text-[10px] tracking-widest font-black uppercase">Filtrar</span>
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="openEmailModal()" class="btn-secondary-action btn-email-style">
+                        <i class="fa-solid fa-envelope mb-1"></i><span>Mail</span>
+                    </button>
+                    <button onclick="exportToExcel()" class="btn-secondary-action btn-export-style">
+                        <i class="fa-solid fa-file-excel mb-1"></i><span>Excel</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Elementos</label>
+                <div class="form-control" onclick="toggleDropdown('user-dropdown')">
+                    <span id="user-label" class="truncate">Todos</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+                <div id="user-dropdown" class="combobox-dropdown no-scrollbar">
+                    <div class="dropdown-header">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Personal Operativo</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('user', event)">Alternar</span>
+                    </div>
+                    <div id="user-options"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="flex justify-between items-center pr-1">
+                    <label>Zonas / Casetas</label>
+                    <div id="op-caseta" onclick="toggleLogic('caseta')" class="logic-switch" title="Operador lógico"><div class="dot"></div></div>
+                </div>
+                <div class="form-control" onclick="toggleDropdown('caseta-dropdown')">
+                    <span id="caseta-label" class="truncate">Todas</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+                <div id="caseta-dropdown" class="combobox-dropdown no-scrollbar">
+                    <div class="dropdown-header">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Ubicaciones</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('caseta', event)">Alternar</span>
+                    </div>
+                    <div id="caseta-options"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="flex justify-between items-center pr-1">
+                    <label>Motivos</label>
+                    <div id="op-motive" onclick="toggleLogic('motive')" class="logic-switch" title="Operador lógico"><div class="dot"></div></div>
+                </div>
+                <div class="form-control" onclick="toggleDropdown('motive-dropdown')">
+                    <span id="motive-label" class="truncate">Todos</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+                <div id="motive-dropdown" class="combobox-dropdown no-scrollbar">
+                    <div class="dropdown-header">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Ausentismos</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('motive', event)">Alternar</span>
+                    </div>
+                    <div id="motive-options">
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Descanso" checked onchange="updateLabels()"> DESCANSO</label>
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Vacaciones" checked onchange="updateLabels()"> VACACIONES</label>
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Falta" checked onchange="updateLabels()"> FALTA</label>
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Incapacidad" checked onchange="updateLabels()"> INCAPACIDAD</label>
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Suspension" checked onchange="updateLabels()"> SUSPENDIDO</label>
+                        <label class="dropdown-item"><input type="checkbox" class="motive-checkbox" value="Permiso" checked onchange="updateLabels()"> PERMISO</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="flex justify-between items-center pr-1">
+                    <label>Incidencias</label>
+                    <div id="op-incidence" onclick="toggleLogic('incidence')" class="logic-switch" title="Operador lógico"><div class="dot"></div></div>
+                </div>
+                <div class="form-control" onclick="toggleDropdown('incidence-dropdown')">
+                    <span id="incidence-label" class="truncate">Cualquiera</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+                <div id="incidence-dropdown" class="combobox-dropdown no-scrollbar">
+                    <div class="dropdown-header">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Alertas</span>
+                        <span class="btn-toggle-all" onclick="toggleAll('incidence', event)">Alternar</span>
+                    </div>
+                    <div id="incidence-options">
+                        <label class="dropdown-item"><input type="checkbox" class="incidence-checkbox" value="retardo" checked onchange="updateLabels()"> RETARDOS</label>
+                        <label class="dropdown-item"><input type="checkbox" class="incidence-checkbox" value="es_extra" checked onchange="updateLabels()"> TIEMPO EXTRA</label>
+                        <label class="dropdown-item"><input type="checkbox" class="incidence-checkbox" value="es_recuperacion" checked onchange="updateLabels()"> RECUPERACIONES</label>
+                        <label class="dropdown-item"><input type="checkbox" class="incidence-checkbox" value="es_festivo" checked onchange="updateLabels()"> FESTIVOS</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="capture-area">
+            <div class="results-container no-scrollbar">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Fecha</th>
+                            <th style="width: 80px;">ID</th>
+                            <th style="width: 250px;">Nombre</th>
+                            <th style="width: 100px;">Turno</th>
+                            <th style="width: 220px;">Caseta / Motivo</th>
+                            <th style="width: 80px;">Entrada</th>
+                            <th style="width: 80px;">Salida</th>
+                            <th style="width: 150px;">Incidencias</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="9" class="text-center py-20 text-slate-300 font-bold uppercase tracking-[0.2em]">Configure los filtros y ejecute la consulta</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-6 py-3 bg-slate-50 border-t flex justify-between items-center">
+            <span id="results-count" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">0 Registros encontrados</span>
+            <span class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">CIC 7.1 Analytics</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const casetasPrioridad = ["Centro de Control", "Encargado", "Edison", "Recepción Edison", "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero", "Otro"];
+        const POWER_AUTOMATE_API = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/507bea91c30c4743b4749a474f92ad3f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PzEbbL5wNoHu-b78wQtE7JP0H-RKDb3btp2iHGbM6vU";
+
+        let personnelMap = {};
+        let rawResults = [];
+        let filterLogic = { caseta: 'AND', motive: 'AND', incidence: 'AND' };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await loadPersonnel();
+                await setupComboboxes();
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+            }
+        });
+
+        async function loadPersonnel() {
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'Usuarios', 'ElementosPP'));
+            if (snap.exists()) personnelMap = snap.data();
+        }
+
+        async function setupComboboxes() {
+            const userOptions = document.getElementById('user-options');
+            const casetaOptions = document.getElementById('caseta-options');
+
+            Object.entries(personnelMap).forEach(([uid, u]) => {
+                if ((u.operativa?.estatus || u.status || "").toLowerCase() === 'baja') return;
+                const label = document.createElement('label');
+                label.className = "dropdown-item";
+                label.innerHTML = `<input type="checkbox" class="user-checkbox" value="${uid}" checked onchange="updateLabels()"> ${u.nombre.toUpperCase()}`;
+                userOptions.appendChild(label);
+            });
+
+            casetasPrioridad.forEach(c => {
+                const label = document.createElement('label');
+                label.className = "dropdown-item";
+                label.innerHTML = `<input type="checkbox" class="caseta-checkbox" value="${c}" checked onchange="updateLabels()"> ${c.toUpperCase()}`;
+                casetaOptions.appendChild(label);
+            });
+
+            const today = new Date();
+            document.getElementById('filter-start').value = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('filter-end').value = today.toISOString().split('T')[0];
+            updateLabels();
+        }
+
+        window.toggleLogic = (key) => {
+            const el = document.getElementById(`op-${key}`);
+            filterLogic[key] = filterLogic[key] === 'AND' ? 'OR' : 'AND';
+            el.classList.toggle('or-mode', filterLogic[key] === 'OR');
+        };
+
+        window.toggleDropdown = (id) => {
+            document.querySelectorAll('.combobox-dropdown').forEach(d => { if(d.id !== id) d.classList.remove('show'); });
+            document.getElementById(id).classList.toggle('show');
+        };
+
+        window.toggleAll = (type, e) => {
+            if(e) e.stopPropagation();
+            const checks = document.querySelectorAll(`.${type}-checkbox`);
+            const allChecked = Array.from(checks).every(c => c.checked);
+            checks.forEach(c => c.checked = !allChecked);
+            updateLabels();
+        };
+
+        window.updateLabels = () => {
+            ['user', 'caseta', 'motive', 'incidence', 'shift'].forEach(t => {
+                const checks = document.querySelectorAll(`.${t}-checkbox`);
+                const checked = document.querySelectorAll(`.${t}-checkbox:checked`).length;
+                const el = document.getElementById(`${t}-label`);
+                if (checked === 0) el.innerText = "Ninguno";
+                else if (checked === checks.length) el.innerText = (t === 'incidence' ? "Cualquiera" : "Todos");
+                else el.innerText = `${checked} Seleccionados`;
+            });
+        };
+
+        window.applyDatePreset = (preset) => {
+            const now = new Date();
+            let start = new Date(), end = new Date();
+            if (preset === 'curr_week') {
+                const day = now.getDay();
+                start = new Date(new Date().setDate(now.getDate() - day + (day === 0 ? -6 : 1)));
+            } else if (preset === 'last_week') {
+                start = new Date(new Date().setDate(now.getDate() - (now.getDay() || 7) - 6));
+                end = new Date(new Date().setDate(now.getDate() - (now.getDay() || 7)));
+            } else if (preset === 'curr_month') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (preset === 'last_month') {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+            }
+            document.getElementById('filter-start').value = start.toISOString().split('T')[0];
+            document.getElementById('filter-end').value = end.toISOString().split('T')[0];
+        };
+
+        window.runQuery = async () => {
+            const startStr = document.getElementById('filter-start').value;
+            const endStr = document.getElementById('filter-end').value;
+            if (!startStr || !endStr) return;
+
+            const overlay = document.getElementById('loading-overlay');
+            const progress = document.getElementById('load-progress');
+            overlay.style.display = 'flex';
+
+            const startDate = new Date(startStr + "T12:00:00");
+            const endDate = new Date(endStr + "T12:00:00");
+            
+            const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(c => c.value);
+            const selectedCasetas = Array.from(document.querySelectorAll('.caseta-checkbox:checked')).map(c => c.value);
+            const selectedMotives = Array.from(document.querySelectorAll('.motive-checkbox:checked')).map(c => c.value);
+            const selectedIncidences = Array.from(document.querySelectorAll('.incidence-checkbox:checked')).map(c => c.value);
+            const selectedShifts = Array.from(document.querySelectorAll('.shift-checkbox:checked')).map(c => c.value);
+
+            const allMotivesChecked = selectedMotives.length === document.querySelectorAll('.motive-checkbox').length;
+            const allIncChecked = selectedIncidences.length === document.querySelectorAll('.incidence-checkbox').length;
+
+            const isFilteringMotive = filterLogic.motive === 'AND' && !allMotivesChecked;
+            const isFilteringIncidence = filterLogic.incidence === 'AND' && !allIncChecked;
+
+            const trimIds = new Set();
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                trimIds.add(`Trim${Math.ceil((d.getMonth() + 1) / 3)}-${d.getFullYear()}`);
+            }
+
+            rawResults = [];
+            const trimesters = Array.from(trimIds);
+            
+            for (let i = 0; i < trimesters.length; i++) {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'RegAs', trimesters[i]));
+                const fullData = snap.exists() ? snap.data() : {};
+
+                Object.keys(fullData).forEach(dateId => {
+                    const d = parseInt(dateId.substring(0, 2)), m = parseInt(dateId.substring(2, 4)) - 1, y = parseInt(dateId.substring(4, 8));
+                    const currentDay = new Date(y, m, d, 12, 0, 0, 0);
+
+                    if (currentDay >= startDate && currentDay <= endDate) {
+                        const dayData = fullData[dateId];
+                        Object.entries(dayData).forEach(([sid, uShifts]) => {
+                            const personnelKey = Object.keys(personnelMap).find(k => (personnelMap[k].socioId === sid || k === sid));
+                            if (!personnelKey || !selectedUsers.includes(personnelKey)) return;
+
+                            Object.entries(uShifts).forEach(([shiftKey, info]) => {
+                                if (shiftKey !== 'ausentismo' && !selectedShifts.includes(shiftKey)) return;
+
+                                const caseta = info.Caseta || "Otro";
+                                const isCasetaMatch = selectedCasetas.includes(caseta);
+
+                                const isIncMatch = (selectedIncidences.includes('retardo') && info.retardo) || (selectedIncidences.includes('es_extra') && info.es_extra) || (selectedIncidences.includes('es_recuperacion') && info.es_recuperacion) || (selectedIncidences.includes('es_festivo') && info.es_festivo);
+                                const isMotiveMatch = selectedMotives.includes(info.motivo || info.Motivo);
+
+                                let passCategory = true;
+                                if (shiftKey === 'ausentismo') {
+                                    if (isFilteringMotive) passCategory = isMotiveMatch;
+                                    if (isFilteringIncidence && !isFilteringMotive) passCategory = false;
+                                } else {
+                                    if (isFilteringIncidence) passCategory = isIncMatch;
+                                    if (isFilteringMotive && !isFilteringIncidence) passCategory = false;
+                                }
+
+                                const passCaseta = filterLogic.caseta === 'OR' || isCasetaMatch;
+
+                                if (passCaseta && passCategory) {
+                                    rawResults.push({
+                                        dateObj: currentDay,
+                                        fecha: currentDay.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }),
+                                        id: personnelMap[personnelKey]?.socioId || sid,
+                                        nombre: personnelMap[personnelKey]?.nombre || "S/N",
+                                        turno: shiftKey.toUpperCase(),
+                                        lugar: shiftKey === 'ausentismo' ? `AUS • ${info.motivo || 'FALTA'}` : caseta,
+                                        entrada: info.entrada_real || "--:--", salida: info.salida_real || "--:--",
+                                        incidencias: formatIncidences(info, shiftKey),
+                                        nota: info.comentario || ''
+                                    });
+                                }
+                            });
+                        });
+                    }
+                });
+                progress.innerText = `${Math.round(((i + 1) / trimesters.length) * 100)}%`;
+            }
+
+            rawResults.sort((a, b) => b.dateObj - a.dateObj);
+            renderTable();
+            overlay.style.display = 'none';
+        };
+
+        function formatIncidences(d, s) {
+            let res = [];
+            if (d.es_extra) res.push("EXTRA");
+            if (d.es_recuperacion) res.push("RECUP");
+            if (d.retardo) res.push("RETARDO");
+            if (d.es_festivo) res.push("FESTIVO");
+            if (s === 'ausentismo') res.push("AUSENCIA");
+            return res.join(", ");
+        }
+
+        function renderTable() {
+            const body = document.getElementById('table-body');
+            document.getElementById('results-count').innerText = `${rawResults.length} Registros encontrados`;
+            body.innerHTML = rawResults.length ? '' : '<tr><td colspan="9" class="text-center py-20 text-slate-300 font-bold">No se encontraron coincidencias</td></tr>';
+            rawResults.forEach(r => {
+                const s = r.turno.toLowerCase();
+                const sCls = s.includes('mat') ? 'bg-mat' : s.includes('ves') ? 'bg-ves' : s.includes('noc') ? 'bg-noc' : 'bg-aus';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="font-bold text-slate-400">${r.fecha}</td><td class="font-mono text-slate-400">${r.id}</td><td class="font-bold uppercase">${r.nombre}</td><td><span class="badge ${sCls}">${r.turno}</span></td><td class="font-black text-slate-600 text-[10px]">${r.lugar}</td><td class="font-mono font-bold">${r.entrada}</td><td class="font-mono font-bold">${r.salida}</td><td class="font-black text-red-600 text-[9px]">${r.incidencias}</td><td class="italic text-slate-400 text-[10px]">${r.nota}</td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        window.exportToExcel = () => {
+            if (!rawResults.length) return;
+            const ws = XLSX.utils.json_to_sheet(rawResults.map(r => ({'FECHA':r.fecha,'ID':r.id,'NOMBRE':r.nombre,'TURNO':r.turno,'LUGAR/MOTIVO':r.lugar,'ENTRADA':r.entrada,'SALIDA':r.salida,'INCIDENCIAS':r.incidencias,'OBSERVACIONES':r.nota})));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+            XLSX.writeFile(wb, `Reporte_CIC7_${new Date().getTime()}.xlsx`);
+        };
+
+        window.openEmailModal = () => document.getElementById('email-modal').style.display = 'flex';
+        window.setEmailPreset = (m) => {
+            const to = document.getElementById('email-to'), cc = document.getElementById('email-cc');
+            if(m === 'prueba') { to.value = "proteccion.instalaciones@armur.com"; cc.value = ""; }
+            else { to.value = "juan.paniagua@armur.com;jesuseduardo.gutierrez@armur.com"; cc.value = "josedavid.montano@armur.com;roberto.rodriguez@armur.com"; }
+        };
+
+        window.prepareAndSend = async () => {
+            const to = document.getElementById('email-to').value.trim();
+            const btn = document.getElementById('btn-confirm-send');
+            if (!to || !rawResults.length) return;
+            btn.disabled = true; btn.innerText = "CAPTURANDO...";
+            try {
+                const canvas = await html2canvas(document.getElementById('results-table'), { scale: 2.0, backgroundColor: '#ffffff', useCORS: true, onclone: (cloned) => { cloned.querySelector('.results-container').style.maxHeight = 'none'; }});
+                const base64 = canvas.toDataURL('image/png', 0.8).split(',')[1];
+                btn.innerText = "ENVIANDO...";
+                await fetch(POWER_AUTOMATE_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, cc: document.getElementById('email-cc').value.trim(), subject: `CONSOLIDADO ASISTENCIA CIC 7.1`, body: `<div style="font-family:sans-serif;padding:20px;background:#f8fafc;"><p style="font-weight:bold;color:#4a044e;text-transform:uppercase;font-size:12px;">Reporte Maestro Generado</p><img src="data:image/png;base64,${base64}" style="width:100%;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,0.1);" /></div>` })});
+                btn.innerText = "¡ENVIADO!";
+                setTimeout(() => { document.getElementById('email-modal').style.display='none'; btn.disabled = false; btn.innerText = "Enviar Reporte"; }, 2000);
+            } catch (err) { btn.disabled = false; btn.innerText = "ERROR"; }
+        };
+
+        document.addEventListener('click', (e) => { if (!e.target.closest('.input-group')) document.querySelectorAll('.combobox-dropdown').forEach(d => d.classList.remove('show')); });
+    </script>
+</body>
+</html>

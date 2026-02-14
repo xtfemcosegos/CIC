@@ -267,8 +267,11 @@
                 { label: 'Ausentismos', type: 'ausentismo' }
             ],
             'reporte': [
-                { label: 'WhatsApp', action: 'whatsapp', id: 'wa' },
-                { label: 'Diario', action: 'diario', id: 'diario', active: true }
+                { label: 'WhatsApp', id: 'wa' },
+                { label: 'Diario', id: 'diario', active: true },
+                { label: 'Excel', id: 'excel' },
+                { label: 'Distribución Semanal', id: 'dist_semanal' },
+                { label: 'Incidencias Semanales', id: 'inc_semanal' }
             ]
         };
 
@@ -276,7 +279,10 @@
             'diaria': '../Complementos/RegAs/Día.html',
             'planeacion': '../Complementos/RegAs/Planeación.html',
             'wa': '../Complementos/RegAs/Wa.html',
-            'diario': '../Complementos/RegAs/Reporte_Diario.html'
+            'diario': '../Complementos/RegAs/Reporte_Diario.html',
+            'excel': '../Complementos/RegAs/Excel.html',
+            'dist_semanal': '../Complementos/RegAs/Distribucion_Semanal.html',
+            'inc_semanal': '../Complementos/RegAs/Incidencias_Semanales.html'
         };
 
         function updateClock() { dom.clockText.textContent = new Date().toLocaleTimeString('es-MX', { hour12: false }); }
@@ -416,7 +422,7 @@
             if (e.data.action && (e.data.action.includes('Panel') || e.data.action.includes('Nav') || e.data.action === 'toggleMenu' || e.data.action === 'openApp')) window.parent.postMessage(e.data, '*');
             
             if (e.data.action === 'internalNav') {
-                const subView = e.data.subview === 'diario' ? 'diario' : (e.data.subview === 'whatsapp' ? 'wa' : null);
+                const subView = e.data.subview === 'diario' ? 'diario' : (e.data.subview === 'whatsapp' ? 'wa' : (e.data.subview === 'excel' ? 'excel' : (e.data.subview === 'dist_semanal' ? 'dist_semanal' : (e.data.subview === 'inc_semanal' ? 'inc_semanal' : null))));
                 setTab(e.data.tab, null, subView);
             }
 

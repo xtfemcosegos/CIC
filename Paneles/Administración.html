@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Administración - CIC 7.1</title>
+    <title>Administración - CIC 7.21</title>
     
     <!-- Etiquetas Meta para Comportamiento de Aplicación -->
     <meta name="theme-color" content="#111827">
@@ -19,7 +19,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
 
         body {
             background: #f3f4f6;
@@ -32,8 +32,9 @@
             overflow: hidden;
         }
 
+        /* --- BARRA DE PESTAÑAS --- */
         .tab-bar {
-            height: 28px;
+            height: 32px; /* Incrementado para touch */
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
             display: flex;
@@ -52,57 +53,58 @@
             flex: 1;
             overflow-x: auto;
             scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         .tab-container::-webkit-scrollbar { display: none; }
 
         .tab-item {
-            height: 22px;
-            padding: 0 12px;
-            font-size: 10px;
+            height: 26px; /* Más alto para móvil */
+            padding: 0 14px;
+            font-size: 9px;
             text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.02em;
+            font-weight: 800;
+            letter-spacing: 0.03em;
             display: flex;
             align-items: center;
             cursor: pointer;
-            border-radius: 6px 6px 0 0;
+            border-radius: 8px 8px 0 0;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             color: #6b7280;
             background: #e5e7eb;
             border: 1px solid #d1d5db;
             border-bottom: none;
-            margin-right: 3px;
+            margin-right: 4px;
             white-space: nowrap;
             position: relative;
         }
 
         .tab-active {
             color: white !important;
-            height: 25px;
+            height: 29px;
             margin-bottom: -1px;
             z-index: 10;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             border-color: transparent;
         }
 
         .close-tab {
-            margin-left: 8px;
-            width: 14px;
-            height: 14px;
+            margin-left: 10px;
+            width: 16px;
+            height: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            font-size: 12px;
-            background: rgba(0,0,0,0.1);
+            font-size: 14px;
+            background: rgba(0,0,0,0.08);
             transition: background 0.2s;
         }
 
         .version-badge {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 8px;
+            font-size: 7px;
             color: #9ca3af;
-            padding: 0 12px 4px 12px;
+            padding: 0 12px 6px 12px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             white-space: nowrap;
@@ -110,16 +112,17 @@
             pointer-events: none;
         }
 
+        /* --- HEADER --- */
         .shell-header {
-            height: 55px;
+            height: 60px; /* Un poco más alto para touch */
             background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
-            padding: 0 1rem;
+            padding: 0 0.75rem;
             color: white;
             position: fixed;
-            top: 28px; 
+            top: 32px; 
             width: 100%;
             z-index: 50;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
@@ -132,23 +135,23 @@
         }
 
         .glass-sidebar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            z-index: 110;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            z-index: 180;
         }
 
         #mainLayout {
-            padding-top: 28px;
+            padding-top: 32px;
             transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #mainLayout.with-shell { padding-top: 83px; }
+        #mainLayout.with-shell { padding-top: 92px; }
 
         .sidebar-transition {
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* --- ARQUITECTURA DE PERSISTENCIA POR Z-INDEX --- */
+        /* --- CONTENEDOR DE APPS --- */
         #appsViewport {
             width: 100%;
             height: 100%;
@@ -165,9 +168,8 @@
             border: none;
             z-index: 1;
             pointer-events: none;
-            /* Mantener cargado pero invisible para el usuario */
             opacity: 0;
-            transition: opacity 0.1s ease;
+            transition: opacity 0.15s ease;
         }
 
         .app-instance.active {
@@ -191,8 +193,44 @@
         }
         #noApp.visible { opacity: 1; }
 
+        /* --- PANEL DERECHO RESPONSIVO --- */
+        #rightSidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            background: white;
+            z-index: 200;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.15);
+        }
+
         @media (max-width: 640px) {
-            .header-title { font-size: 9px !important; letter-spacing: 0.2em !important; }
+            .header-title { font-size: 8px !important; letter-spacing: 0.15em !important; }
+            
+            /* Sidebar izquierda cerrada por defecto */
+            #leftSidebar { 
+                width: 100% !important; 
+                transform: translateX(-100%); 
+            }
+            
+            /* Sidebar derecha cerrada por defecto */
+            #rightSidebar {
+                width: 100% !important;
+                transform: translateX(100%);
+            }
+
+            #navFrame-container { width: 100% !important; }
+            #clock { font-size: 14px !important; }
+        }
+
+        @media (min-width: 641px) {
+            #rightSidebar { 
+                position: relative; 
+                z-index: 100; 
+                box-shadow: none; 
+                border-left: 1px solid #e5e7eb;
+                transform: none !important; /* Desactivar traslación en desktop */
+            }
         }
     </style>
 </head>
@@ -205,54 +243,57 @@
 
     <header id="shellHeader" class="shell-header">
         <div class="flex-1 flex items-center">
-            <button id="appsBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all active:scale-95 group">
-                <i data-lucide="layout-grid" class="w-5 h-5 text-blue-400 group-hover:rotate-90 transition-transform"></i>
-                <span class="text-[10px] font-extrabold uppercase tracking-widest text-gray-200 hidden sm:block">Menú</span>
+            <button id="appsBtn" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 transition-all active:scale-90 group">
+                <i data-lucide="layout-grid" class="w-6 h-6 text-blue-400 group-hover:rotate-90 transition-transform"></i>
+                <span class="text-[10px] font-black uppercase tracking-widest text-gray-200 hidden sm:block">Menú</span>
             </button>
         </div>
 
         <div class="flex-[2] text-center">
-            <h2 class="header-title text-[11px] uppercase tracking-[0.4em] font-black text-white/90">
+            <h2 class="header-title text-[10px] sm:text-[11px] uppercase tracking-[0.3em] sm:tracking-[0.4em] font-black text-white/90">
                 <span class="text-blue-500">CIC</span> Protección Patrimonial
             </h2>
         </div>
 
-        <div class="flex-1 flex items-center justify-end gap-3">
+        <div class="flex-1 flex items-center justify-end gap-2 sm:gap-4">
             <div class="text-right hidden xs:block">
-                <div id="clock" class="text-base font-bold font-mono text-white leading-none">00:00:00</div>
-                <div id="date" class="text-[8px] text-gray-500 uppercase tracking-widest font-bold">-- --- ----</div>
+                <div id="clock" class="text-sm sm:text-base font-bold font-mono text-white leading-none">00:00:00</div>
+                <div id="date" class="text-[7px] sm:text-[8px] text-gray-500 uppercase tracking-widest font-bold">-- --- ----</div>
             </div>
-            <button id="configBtn" class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
-                <i data-lucide="settings" class="w-4 h-4"></i>
+            <button id="configBtn" class="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white active:scale-90">
+                <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
         </div>
     </header>
 
     <main id="mainLayout" class="flex h-screen w-full with-shell bg-gray-100">
-        <!-- Sidebar Izquierda -->
-        <aside id="leftSidebar" class="h-full w-0 overflow-hidden glass-sidebar sidebar-transition absolute left-0 z-[120] shadow-2xl border-r" style="top: 83px;">
-            <div class="w-[280px] h-full">
+        <!-- Sidebar Izquierda (Menú de Apps) -->
+        <aside id="leftSidebar" class="h-full w-0 overflow-hidden glass-sidebar sidebar-transition absolute left-0 z-[180] shadow-2xl border-r" style="top: 92px;">
+            <div id="navFrame-container" class="w-[280px] h-full">
                 <iframe src="Nav.html" class="w-full h-full border-none" id="navFrame"></iframe>
             </div>
         </aside>
 
-        <!-- Contenido Central -->
+        <!-- Contenido Central (Viewport de Iframes) -->
         <section id="mainContent" class="flex-1 h-full relative overflow-hidden bg-white shadow-inner">
             <div id="appsViewport"></div>
             
             <div id="noApp">
-                <i data-lucide="shield-check" class="w-16 h-16 text-gray-200 mb-4"></i>
-                <p class="text-[9px] uppercase tracking-[0.6em] font-bold text-gray-400 animate-pulse">Inicie una aplicación</p>
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                    <i data-lucide="shield-check" class="w-10 h-10 text-blue-500/20"></i>
+                </div>
+                <p class="text-[10px] uppercase tracking-[0.6em] font-black text-gray-400 animate-pulse">Inicie una aplicación</p>
             </div>
         </section>
 
-        <!-- Panel Derecho -->
-        <aside id="rightSidebar" class="h-full w-0 overflow-hidden bg-white sidebar-transition border-l relative z-[100]">
+        <!-- Panel Derecho (Detalles / Gestión) -->
+        <aside id="rightSidebar" class="h-full w-0 overflow-hidden sidebar-transition border-l relative">
             <div id="rightContent" class="w-full h-full overflow-hidden"></div>
         </aside>
     </main>
 
-    <div id="overlay" class="fixed inset-0 bg-black/50 hidden z-[115] backdrop-blur-sm opacity-0 transition-opacity"></div>
+    <!-- Overlay para cerrar paneles en móvil -->
+    <div id="overlay" class="fixed inset-0 bg-black/60 hidden z-[170] backdrop-blur-sm opacity-0 transition-opacity"></div>
 
     <script type="module">
         const dom = {
@@ -275,18 +316,14 @@
 
         lucide.createIcons();
 
-        // --- REGISTRO DEL SERVICE WORKER (APP MODE) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('../sw.js').catch(err => console.log('SW fail', err));
-            });
-        }
-
+        // --- RELOJ ---
         function updateClock() {
             const now = new Date();
             dom.clock.textContent = now.toLocaleTimeString('es-ES', { hour12: false });
             dom.date.textContent = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
         }
+        setInterval(updateClock, 1000);
+        updateClock();
 
         const normalizeUrl = (url) => {
             if (!url) return "";
@@ -296,37 +333,58 @@
 
         const saveUIState = () => {
             const state = JSON.parse(localStorage.getItem('cic_shell_state') || '{}');
-            state.leftSidebarOpen = dom.leftSidebar.style.width === '280px';
-            state.rightSidebarOpen = dom.rightSidebar.style.width === '35%';
-            state.rightContentHtml = dom.rightContent.innerHTML;
             state.openTabs = openTabs;
             state.activeTabIndex = activeTabIndex;
             localStorage.setItem('cic_shell_state', JSON.stringify(state));
         };
 
         const toggleLeftSidebar = (forceClose = false) => {
-            const isClosing = forceClose || dom.leftSidebar.style.width === '280px';
+            const isClosing = forceClose || dom.leftSidebar.style.width === '100%' || dom.leftSidebar.style.width === '280px';
+            const isMobile = window.innerWidth <= 640;
+            
             const headerHidden = dom.shellHeader.classList.contains('hidden-header');
-            dom.leftSidebar.style.top = headerHidden ? '28px' : '83px';
-            dom.leftSidebar.style.width = isClosing ? '0' : '280px';
-            dom.leftSidebar.style.transform = isClosing ? 'translateX(-100%)' : 'translateX(0)';
+            dom.leftSidebar.style.top = (headerHidden && isMobile) ? '32px' : '92px';
             
             if (isClosing) {
+                dom.leftSidebar.style.width = '0';
+                dom.leftSidebar.style.transform = 'translateX(-100%)';
                 dom.overlay.classList.add('opacity-0');
                 setTimeout(() => dom.overlay.classList.add('hidden'), 300);
             } else {
+                dom.leftSidebar.style.width = isMobile ? '100%' : '280px';
+                dom.leftSidebar.style.transform = 'translateX(0)';
                 dom.overlay.classList.remove('hidden');
                 setTimeout(() => dom.overlay.classList.remove('opacity-0'), 10);
             }
-            saveUIState();
         };
 
         const toggleRightSidebar = (forceOpen = null) => {
             const currentWidth = dom.rightSidebar.style.width;
             const isCurrentlyClosed = !currentWidth || currentWidth === '0px' || currentWidth === '0';
-            let targetWidth = forceOpen === true ? '35%' : (forceOpen === false ? '0px' : (isCurrentlyClosed ? '35%' : '0px'));
+            const isMobile = window.innerWidth <= 640;
+            
+            let shouldOpen = forceOpen === true ? true : (forceOpen === false ? false : isCurrentlyClosed);
+            let targetWidth = shouldOpen ? (isMobile ? '100%' : '35%') : '0px';
+            
             dom.rightSidebar.style.width = targetWidth;
-            saveUIState();
+
+            if (isMobile) {
+                dom.rightSidebar.style.transform = shouldOpen ? 'translateX(0)' : 'translateX(100%)';
+            } else {
+                dom.rightSidebar.style.transform = 'none';
+            }
+            
+            if (shouldOpen && isMobile) {
+                dom.overlay.classList.remove('hidden');
+                dom.overlay.style.zIndex = '190';
+                setTimeout(() => dom.overlay.classList.remove('opacity-0'), 10);
+            } else if (!shouldOpen && isMobile) {
+                dom.overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    dom.overlay.classList.add('hidden');
+                    dom.overlay.style.zIndex = '170';
+                }, 300);
+            }
         };
 
         const renderTabs = () => {
@@ -340,6 +398,9 @@
                 tabEl.onclick = () => switchApp(index);
                 dom.tabBar.appendChild(tabEl);
             });
+            // Auto scroll al tab activo
+            const activeTab = dom.tabBar.querySelector('.tab-active');
+            if(activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         };
 
         const switchApp = (index) => {
@@ -444,10 +505,10 @@
 
         window.addEventListener('closeTab', (e) => closeTab(e.detail));
         dom.appsBtn.addEventListener('click', () => toggleLeftSidebar());
-        dom.overlay.addEventListener('click', () => toggleLeftSidebar(true));
-
-        setInterval(updateClock, 1000);
-        updateClock();
+        dom.overlay.addEventListener('click', () => {
+            toggleLeftSidebar(true);
+            toggleRightSidebar(false);
+        });
 
         const initShell = () => {
             const saved = localStorage.getItem('cic_shell_state');
@@ -461,11 +522,6 @@
                         createIframe(tab.url);
                         openTabs.push(tab);
                     });
-                    
-                    if (data.rightContentHtml) dom.rightContent.innerHTML = data.rightContentHtml;
-                    if (data.rightSidebarOpen) dom.rightSidebar.style.width = '35%';
-                    if (data.leftSidebarOpen) setTimeout(() => toggleLeftSidebar(), 500);
-                    
                     switchApp(savedActiveIndex);
                 } else {
                     openApp('home.html', 'Dashboard', '#0f172a');

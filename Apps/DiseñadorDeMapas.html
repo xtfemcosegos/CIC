@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Mapas Maestro - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fffaf8; user-select: none; }
+        .canvas-area {
+            background-image: 
+                linear-gradient(to right, #f1f5f9 1px, transparent 1px),
+                linear-gradient(to bottom, #f1f5f9 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .sidebar { height: calc(100vh - 80px); }
+        
+        .shape-selected { stroke: #f97316 !important; stroke-width: 2.5px !important; stroke-dasharray: 5; }
+        .handle { fill: white; stroke: #f97316; stroke-width: 2px; cursor: pointer; pointer-events: all; }
+        .handle:hover { fill: #f97316; }
+        .handle-curve { stroke: #8b5cf6; fill: #f5f3ff; }
+        
+        .btn-tool { transition: all 0.2s; border: 2px solid #fed7aa; background: white; }
+        .btn-tool.active { background-color: #f97316; color: white; border-color: #ea580c; transform: scale(1.05); }
+        .btn-asset { border: 1px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; }
+        .btn-asset:hover { border-color: #f97316; background: #fff7ed; transform: translateY(-2px); }
+        
+        .map-zone { cursor: move; pointer-events: all; transition: fill 0.2s; }
+        .canvas-container { cursor: crosshair; }
+        .canvas-container.select-mode { cursor: default; }
+
+        .label-container {
+            display: flex; align-items: center; justify-content: center;
+            height: 100%; width: 100%; text-align: center; padding: 4px;
+            box-sizing: border-box; overflow: hidden; word-break: break-word;
+            pointer-events: none;
+        }
+
+        .label-text { font-size: 9px; font-weight: 900; text-transform: uppercase; line-height: 1.1; }
+
+        .project-input {
+            background: white;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #9a3412;
+            text-transform: uppercase;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .project-input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <header class="h-20 bg-gradient-to-r from-orange-600 to-orange-800 flex items-center justify-between px-8 shadow-lg z-50 relative">
+        <div class="flex items-center gap-4">
+            <div class="bg-white/10 p-2 rounded-xl border border-white/20">
+                <i class="fa-solid fa-map-location-dot text-white text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-white font-black uppercase tracking-widest text-sm leading-none">Diseñador de Mapas Maestro</h1>
+                <p class="text-orange-200 text-[10px] font-bold uppercase mt-1">Configuración Completa CIC 7.1</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="exportCode()" class="bg-white text-orange-700 font-black px-6 py-2 rounded-xl text-xs uppercase shadow-xl hover:bg-orange-50 transition-all">
+                <i class="fa-solid fa-code mr-2"></i> Exportar Código
+            </button>
+        </div>
+    </header>
+
+    <div class="flex">
+        <aside class="w-80 bg-white border-r border-orange-100 sidebar p-5 overflow-y-auto">
+            
+            <!-- SECCIÓN 1: HERRAMIENTAS -->
+            <section class="mb-4">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Herramientas</h3>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="setTool('select')" id="tool-select" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1 active">
+                        <i class="fa-solid fa-arrow-pointer text-xs"></i><span class="text-[7px] font-bold uppercase">Mover</span>
+                    </button>
+                    <button onclick="setTool('rect')" id="tool-rect" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-vector-square text-xs"></i><span class="text-[7px] font-bold uppercase">Rect</span>
+                    </button>
+                    <button onclick="setTool('circle')" id="tool-circle" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-regular fa-circle text-xs"></i><span class="text-[7px] font-bold uppercase">Circ</span>
+                    </button>
+                    <button onclick="setTool('line')" id="tool-line" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-minus rotate-45 text-xs"></i><span class="text-[7px] font-bold uppercase">Línea</span>
+                    </button>
+                    <button onclick="setTool('curve')" id="tool-curve" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-bezier-curve text-xs"></i><span class="text-[7px] font-bold uppercase">Curva</span>
+                    </button>
+                    <button onclick="setTool('image')" id="tool-image" class="btn-tool p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-regular fa-image text-xs"></i><span class="text-[7px] font-bold uppercase">Imagen</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: LIBRERÍA -->
+            <section class="mb-4 border-t border-orange-50 pt-3">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Activos</h3>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="addPredefined('door')" class="btn-asset p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-door-open text-xs"></i><span class="text-[7px] font-bold uppercase">Puerta</span>
+                    </button>
+                    <button onclick="addPredefined('elevator')" class="btn-asset p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-elevator text-xs"></i><span class="text-[7px] font-bold uppercase">Elev.</span>
+                    </button>
+                    <button onclick="addPredefined('stairs')" class="btn-asset p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-stairs text-xs"></i><span class="text-[7px] font-bold uppercase">Esc.</span>
+                    </button>
+                    <button onclick="addPredefined('vehicle')" class="btn-asset p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-car text-xs"></i><span class="text-[7px] font-bold uppercase">Auto</span>
+                    </button>
+                    <button onclick="addPredefined('emergency')" class="btn-asset p-2 rounded-lg flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-person-running text-xs"></i><span class="text-[7px] font-bold uppercase">S. Emer.</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3: PROPIEDADES -->
+            <div id="properties-panel" class="hidden border-t border-orange-50 pt-3">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Propiedades</h3>
+                
+                <div class="space-y-3">
+                    <div class="bg-orange-50/50 p-3 rounded-xl space-y-2 border border-orange-100">
+                        <input type="text" id="prop-general" oninput="updateSelected()" class="w-full bg-white border border-orange-200 rounded-lg p-2 text-[10px] font-bold" placeholder="Lugar General">
+                        <input type="text" id="prop-specific" oninput="updateSelected()" class="w-full bg-white border border-orange-200 rounded-lg p-2 text-[10px] font-bold" placeholder="Zona Específica">
+                        <input type="text" id="prop-id" oninput="updateSelected()" class="w-full bg-white border border-orange-200 rounded-lg p-2 text-[10px] font-mono" placeholder="ID Único">
+                    </div>
+
+                    <textarea id="prop-label" oninput="updateSelected()" class="w-full bg-orange-50 border border-orange-100 rounded-lg p-2 text-[11px] font-bold h-14 resize-none" placeholder="Etiqueta..."></textarea>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Rot. Texto</label>
+                            <input type="range" id="prop-rotation" min="0" max="360" value="0" oninput="updateSelected()" class="w-full h-1 accent-orange-600">
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Color Texto</label>
+                            <input type="color" id="prop-text-color" oninput="updateSelected()" class="w-full h-6 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div id="prop-image-group" class="hidden space-y-2">
+                        <label class="text-[8px] font-black uppercase text-orange-800 ml-1">PNG</label>
+                        <input type="text" id="prop-image-url" oninput="updateSelected()" class="w-full bg-orange-50 border border-orange-100 rounded-lg p-2 text-[9px]" placeholder="URL...">
+                        <button onclick="document.getElementById('prop-image-file').click()" class="w-full py-1.5 bg-slate-100 rounded-lg text-[8px] font-black uppercase">Cargar Local</button>
+                        <input type="file" id="prop-image-file" accept="image/png" onchange="handleImageUpload(this)" class="hidden">
+                    </div>
+
+                    <div id="prop-shape-group" class="space-y-3 pt-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Color Fondo</label>
+                                <input type="color" id="prop-color" oninput="updateSelected()" class="w-full h-6 rounded-lg cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Trama</label>
+                                <select id="prop-texture" onchange="updateSelected()" class="w-full bg-orange-50 border border-orange-100 rounded-lg p-1 text-[9px] font-bold">
+                                    <option value="none">Sólido</option>
+                                    <option value="stripes">Rayas</option>
+                                    <option value="dots">Puntos</option>
+                                    <option value="grid">Rejilla</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Grosor Trama</label>
+                                <input type="range" id="prop-tex-thickness" min="1" max="10" value="2" oninput="updateSelected()" class="w-full h-1 accent-orange-600">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-orange-800 ml-1">Rot. Trama</label>
+                                <input type="range" id="prop-tex-rotation" min="0" max="360" value="0" oninput="updateSelected()" class="w-full h-1 accent-orange-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="deleteSelected()" class="w-full bg-red-50 text-red-600 font-black py-2 rounded-lg text-[9px] uppercase border border-red-100">
+                        Eliminar Objeto
+                    </button>
+                </div>
+            </div>
+
+            <div id="empty-hint" class="text-center py-10 opacity-30">
+                <i class="fa-solid fa-pen-ruler text-3xl mb-4"></i>
+                <p class="text-[9px] font-bold uppercase">Seleccione una zona para editar</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-slate-100 relative overflow-hidden flex flex-col items-center justify-center p-6">
+            
+            <!-- BARRA DE UBICACIÓN DEL PROYECTO -->
+            <div class="w-full max-w-[800px] mb-4 flex items-center gap-3 bg-orange-100/50 p-2.5 rounded-xl border border-orange-200 shadow-sm">
+                <div class="flex items-center gap-2 px-2 border-r border-orange-200 mr-1">
+                    <i class="fa-solid fa-building-circle-check text-orange-600 text-xs"></i>
+                    <span class="text-[9px] font-black text-orange-800 uppercase tracking-widest">Proyecto:</span>
+                </div>
+                <div class="flex-1 flex gap-2">
+                    <div class="flex-1 flex flex-col">
+                        <label class="text-[7px] font-black uppercase text-orange-400 ml-1 mb-0.5">Complejo</label>
+                        <input type="text" id="project-complex" class="project-input w-full" placeholder="Ej. Corporativo">
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <label class="text-[7px] font-black uppercase text-orange-400 ml-1 mb-0.5">Edificio</label>
+                        <input type="text" id="project-building" class="project-input w-full" placeholder="Ej. Michelena">
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <label class="text-[7px] font-black uppercase text-orange-400 ml-1 mb-0.5">Nivel</label>
+                        <input type="text" id="project-level" class="project-input w-full" placeholder="Ej. PB / Piso 1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIENZO -->
+            <div id="canvas-container" class="bg-white shadow-2xl relative overflow-hidden select-mode" style="width: 800px; height: 600px;">
+                <svg id="svg-canvas" width="800" height="600" viewBox="0 0 800 600" class="canvas-area w-full h-full">
+                    <defs id="svg-defs"></defs>
+                    <g id="shapes-group"></g>
+                    <g id="interaction-group"></g>
+                </svg>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Exportación -->
+    <div id="export-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[5000] hidden items-center justify-center p-8">
+        <div class="bg-white w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 p-6 flex justify-between items-center text-white">
+                <h2 class="font-black uppercase tracking-widest text-xs">Código SVG Maestro CIC</h2>
+                <button onclick="toggleExport(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto bg-slate-50 flex-1">
+                <pre id="code-output" class="text-[11px] font-mono text-slate-700 bg-white p-6 border rounded-xl overflow-x-auto"></pre>
+            </div>
+            <div class="p-6 bg-white border-t flex justify-end gap-3">
+                <button onclick="copyCode()" class="bg-orange-600 text-white font-black px-8 py-3 rounded-xl text-xs uppercase shadow-lg">Copiar Código</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const svg = document.getElementById('svg-canvas');
+        const defs = document.getElementById('svg-defs');
+        const shapesGroup = document.getElementById('shapes-group');
+        const interactionGroup = document.getElementById('interaction-group');
+        const container = document.getElementById('canvas-container');
+
+        let currentTool = 'select';
+        let shapes = [];
+        let selectedIndex = null;
+        let isMouseDown = false;
+        let dragMode = null; 
+        let activeHandle = null;
+        let startX, startY;
+        let initialShapeState = null;
+
+        const assetsTemplates = {
+            door: { w: 40, h: 40, path: "M 0 40 V 0 H 40 M 40 0 A 40 40 0 0 1 0 40", label: "PUERTA" },
+            elevator: { w: 45, h: 45, path: "M 5 5 H 40 V 40 H 5 Z M 15 15 L 22.5 7.5 L 30 15 M 15 30 L 22.5 37.5 L 30 30", label: "ELEV" },
+            stairs: { w: 50, h: 40, path: "M 0 40 H 10 V 30 H 20 V 20 H 30 V 10 H 40 V 0 H 50 V 40 Z", label: "ESC" },
+            vehicle: { w: 30, h: 60, path: "M 5 0 H 25 A 5 5 0 0 1 30 5 V 55 A 5 5 0 0 1 25 60 H 5 A 5 5 0 0 1 0 55 V 5 Z M 0 15 H 30 M 0 45 H 30", label: "AUTO" },
+            emergency: { w: 35, h: 35, path: "M 2 2 H 33 V 33 H 2 Z M 12 17.5 H 23 M 18 12 L 23 17.5 L 18 23", label: "SALIDA" }
+        };
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+            if(document.getElementById(`tool-${tool}`)) document.getElementById(`tool-${tool}`).classList.add('active');
+            container.className = `bg-white shadow-2xl relative overflow-hidden ${tool === 'select' ? 'select-mode' : ''}`;
+        }
+
+        window.addPredefined = (type) => {
+            const template = assetsTemplates[type];
+            const newShape = {
+                type: 'asset', assetType: type, id: `${type}-${shapes.length + 1}`,
+                generalLocation: '', specificZone: '', label: template.label,
+                color: '#e2e8f0', textColor: '#475569', textRotation: 0,
+                x: 380, y: 280, w: template.w, h: template.h
+            };
+            shapes.push(newShape);
+            selectedIndex = shapes.length - 1;
+            setTool('select');
+            render();
+            updatePropertiesPanel();
+        };
+
+        function getMousePos(e) {
+            const rect = svg.getBoundingClientRect();
+            return { x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) };
+        }
+
+        container.onmousedown = (e) => {
+            const pos = getMousePos(e);
+            startX = pos.x; startY = pos.y;
+            isMouseDown = true;
+
+            if (e.target.classList.contains('handle')) {
+                dragMode = 'resize'; activeHandle = e.target.dataset.handle;
+                initialShapeState = JSON.parse(JSON.stringify(shapes[selectedIndex]));
+                return;
+            }
+
+            const zoneTarget = e.target.closest('.map-zone');
+            if (zoneTarget && currentTool === 'select') {
+                selectedIndex = parseInt(zoneTarget.dataset.index);
+                dragMode = 'move';
+                initialShapeState = JSON.parse(JSON.stringify(shapes[selectedIndex]));
+                render();
+                updatePropertiesPanel();
+                return;
+            }
+
+            if (currentTool !== 'select') {
+                dragMode = 'create';
+                const newShape = {
+                    type: currentTool, id: `zona-${shapes.length + 1}`,
+                    generalLocation: '', specificZone: '', label: `ZONA ${shapes.length + 1}`,
+                    color: (currentTool==='line'||currentTool==='curve') ? '#f97316' : '#e2e8f0',
+                    textColor: '#475569', texture: 'none', texRotation: 0, texThickness: 2, textRotation: 0,
+                    imageUrl: currentTool === 'image' ? 'https://via.placeholder.com/150?text=PNG' : '',
+                    x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y, qx: pos.x, qy: pos.y,
+                    x: pos.x, y: pos.y, w: 0, h: 0, r: 0, cx: pos.x, cy: pos.y
+                };
+                shapes.push(newShape);
+                selectedIndex = shapes.length - 1;
+            } else { selectedIndex = null; }
+            render();
+            updatePropertiesPanel();
+        };
+
+        window.onmousemove = (e) => {
+            if (!isMouseDown || selectedIndex === null) return;
+            const pos = getMousePos(e);
+            const dx = pos.x - startX; const dy = pos.y - startY;
+            const shape = shapes[selectedIndex];
+
+            if (dragMode === 'create') {
+                if (shape.type === 'rect' || shape.type === 'image') { shape.w = dx; shape.h = dy; }
+                else if (shape.type === 'circle') { shape.r = Math.sqrt(dx*dx + dy*dy); }
+                else if (shape.type === 'line' || shape.type === 'curve') { shape.x2 = pos.x; shape.y2 = pos.y; shape.qx = (shape.x1 + shape.x2) / 2; shape.qy = (shape.y1 + shape.y2) / 2; }
+            } else if (dragMode === 'move') {
+                if (shape.type === 'rect' || shape.type === 'asset' || shape.type === 'image') { shape.x = initialShapeState.x + dx; shape.y = initialShapeState.y + dy; }
+                else if (shape.type === 'circle') { shape.cx = initialShapeState.cx + dx; shape.cy = initialShapeState.cy + dy; }
+                else { shape.x1 = initialShapeState.x1 + dx; shape.y1 = initialShapeState.y1 + dy; shape.x2 = initialShapeState.x2 + dx; shape.y2 = initialShapeState.y2 + dy; shape.qx = initialShapeState.qx + dx; shape.qy = initialShapeState.qy + dy; }
+            } else if (dragMode === 'resize') {
+                resizeShape(shape, initialShapeState, pos);
+            }
+            render();
+        };
+
+        window.onmouseup = () => {
+            if (dragMode === 'create' && shapes[selectedIndex]) {
+                const s = shapes[selectedIndex];
+                if (s.type === 'rect' || s.type === 'image') { if (s.w < 0) { s.x += s.w; s.w = Math.abs(s.w); } if (s.h < 0) { s.y += s.h; s.h = Math.abs(s.h); } }
+            }
+            isMouseDown = false; dragMode = null; activeHandle = null;
+            render();
+        };
+
+        function resizeShape(shape, init, pos) {
+            if (shape.type === 'rect' || shape.type === 'asset' || shape.type === 'image') {
+                if (activeHandle.includes('e')) shape.w = pos.x - init.x;
+                if (activeHandle.includes('s')) shape.h = pos.y - init.y;
+                if (activeHandle.includes('w')) { shape.x = pos.x; shape.w = init.x + init.w - pos.x; }
+                if (activeHandle.includes('n')) { shape.y = pos.y; shape.h = init.y + init.h - pos.y; }
+            } else if (shape.type === 'circle') {
+                shape.r = Math.sqrt(Math.pow(pos.x - shape.cx, 2) + Math.pow(pos.y - shape.cy, 2));
+            } else if (shape.type === 'line' || shape.type === 'curve') {
+                if (activeHandle === 'p1') { shape.x1 = pos.x; shape.y1 = pos.y; }
+                if (activeHandle === 'p2') { shape.x2 = pos.x; shape.y2 = pos.y; }
+                if (activeHandle === 'pq') { shape.qx = pos.x; shape.qy = pos.y; }
+            }
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) { document.getElementById('prop-image-url').value = e.target.result; updateSelected(); };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function render() {
+            defs.innerHTML = '';
+            shapesGroup.innerHTML = shapes.map((s, i) => {
+                const isSel = selectedIndex === i;
+                const cls = `map-zone ${isSel ? 'shape-selected' : ''}`;
+                const rot = s.textRotation || 0;
+                
+                let fill = s.color;
+                if (s.texture && s.texture !== 'none') {
+                    const patId = `pat-${i}`; fill = `url(#${patId})`;
+                    let patContent = ''; const thick = s.texThickness || 2; const tr = s.texRotation || 0;
+                    if (s.texture === 'stripes') patContent = `<pattern id="${patId}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><line x1="0" y1="0" x2="0" y2="10" stroke="rgba(0,0,0,0.15)" stroke-width="${thick}" /></pattern>`;
+                    else if (s.texture === 'dots') patContent = `<pattern id="${patId}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><circle cx="3" cy="3" r="${thick/2}" fill="rgba(0,0,0,0.2)" /></pattern>`;
+                    else if (s.texture === 'grid') patContent = `<pattern id="${patId}" width="15" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><path d="M 15 0 L 0 0 0 15" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="${thick/2}"/></pattern>`;
+                    defs.innerHTML += patContent;
+                }
+                
+                let lx = s.x, ly = s.y, lw = Math.abs(s.w || 0), lh = Math.abs(s.h || 0);
+                if(s.type === 'circle') { lx = s.cx - s.r; ly = s.cy - s.r; lw = s.r*2; lh = s.r*2; }
+                const labelHtml = `<foreignObject x="${lx}" y="${ly}" width="${lw}" height="${lh}" style="pointer-events:none;"><div class="label-container" style="transform: rotate(${rot}deg); color: ${s.textColor};"><span class="label-text">${s.label.replace(/\n/g, '<br>')}</span></div></foreignObject>`;
+
+                if (s.type === 'rect') return `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="${fill}" stroke="#94a3b8" class="${cls}" data-index="${i}" />${labelHtml}`;
+                if (s.type === 'circle') return `<circle cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="${fill}" stroke="#94a3b8" class="${cls}" data-index="${i}" />${labelHtml}`;
+                if (s.type === 'line') return `<line x1="${s.x1}" y1="${s.y1}" x2="${s.x2}" y2="${s.y2}" stroke="${s.color}" stroke-width="8" class="${cls}" data-index="${i}" />`;
+                if (s.type === 'curve') return `<path d="M ${s.x1} ${s.y1} Q ${s.qx} ${s.qy} ${s.x2} ${s.y2}" fill="none" stroke="${s.color}" stroke-width="8" class="${cls}" data-index="${i}" />`;
+                if (s.type === 'image') return `<image href="${s.imageUrl}" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" class="${cls}" data-index="${i}" preserveAspectRatio="none" />${labelHtml}`;
+                if (s.type === 'asset') {
+                    const t = assetsTemplates[s.assetType]; const sx = s.w / t.w, sy = s.h / t.h;
+                    return `<g class="${cls}" data-index="${i}" transform="translate(${s.x}, ${s.y}) scale(${sx}, ${sy})"><rect x="0" y="0" width="${t.w}" height="${t.h}" fill="${s.color}" opacity="0.3" /><path d="${t.path}" fill="none" stroke="${s.color}" stroke-width="2" /></g>${labelHtml}`;
+                }
+            }).join('');
+
+            interactionGroup.innerHTML = '';
+            if (selectedIndex !== null && !isMouseDown) {
+                const s = shapes[selectedIndex];
+                if (s.type === 'rect' || s.type === 'asset' || s.type === 'image') {
+                    [{x:s.x, y:s.y, id:'nw'}, {x:s.x+s.w, y:s.y, id:'ne'}, {x:s.x, y:s.y+s.h, id:'sw'}, {x:s.x+s.w, y:s.y+s.h, id:'se'}].forEach(c => { interactionGroup.innerHTML += `<rect x="${c.x-4}" y="${c.y-4}" width="8" height="8" class="handle" data-handle="${c.id}" />`; });
+                } else if (s.type === 'circle') { interactionGroup.innerHTML += `<circle cx="${s.cx + s.r}" cy="${s.cy}" r="5" class="handle" data-handle="radius" />`; }
+                else { interactionGroup.innerHTML += `<circle cx="${s.x1}" cy="${s.y1}" r="6" class="handle" data-handle="p1" /><circle cx="${s.x2}" cy="${s.y2}" r="6" class="handle" data-handle="p2" />`; if (s.type === 'curve') interactionGroup.innerHTML += `<circle cx="${s.qx}" cy="${s.qy}" r="6" class="handle handle-curve" data-handle="pq" />`; }
+            }
+        }
+
+        function updatePropertiesPanel() {
+            const p = document.getElementById('properties-panel'); const h = document.getElementById('empty-hint');
+            if (selectedIndex !== null) {
+                p.classList.remove('hidden'); h.classList.add('hidden');
+                const s = shapes[selectedIndex];
+                document.getElementById('prop-general').value = s.generalLocation || '';
+                document.getElementById('prop-specific').value = s.specificZone || '';
+                document.getElementById('prop-id').value = s.id;
+                document.getElementById('prop-label').value = s.label;
+                document.getElementById('prop-color').value = s.color;
+                document.getElementById('prop-text-color').value = s.textColor || '#475569';
+                document.getElementById('prop-rotation').value = s.textRotation || 0;
+                document.getElementById('prop-texture').value = s.texture || 'none';
+                document.getElementById('prop-tex-thickness').value = s.texThickness || 2;
+                document.getElementById('prop-tex-rotation').value = s.texRotation || 0;
+                document.getElementById('prop-image-group').classList.toggle('hidden', s.type !== 'image');
+                if (s.type === 'image') document.getElementById('prop-image-url').value = s.imageUrl;
+            } else { p.classList.add('hidden'); h.classList.remove('hidden'); }
+        }
+
+        window.updateSelected = () => {
+            const s = shapes[selectedIndex];
+            s.generalLocation = document.getElementById('prop-general').value;
+            s.specificZone = document.getElementById('prop-specific').value;
+            s.id = document.getElementById('prop-id').value;
+            s.label = document.getElementById('prop-label').value;
+            s.color = document.getElementById('prop-color').value;
+            s.textColor = document.getElementById('prop-text-color').value;
+            s.textRotation = parseInt(document.getElementById('prop-rotation').value);
+            s.texture = document.getElementById('prop-texture').value;
+            s.texThickness = parseInt(document.getElementById('prop-tex-thickness').value);
+            s.texRotation = parseInt(document.getElementById('prop-tex-rotation').value);
+            if (s.type === 'image') s.imageUrl = document.getElementById('prop-image-url').value;
+            render();
+        };
+
+        window.deleteSelected = () => { shapes.splice(selectedIndex, 1); selectedIndex = null; updatePropertiesPanel(); render(); };
+
+        window.onkeydown = (e) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) deleteSelected();
+            if (e.key === 'Escape') { selectedIndex = null; updatePropertiesPanel(); render(); }
+        };
+
+        function toggleExport(show) { document.getElementById('export-modal').style.display = show ? 'flex' : 'none'; }
+
+        window.exportCode = () => {
+            const projComplex = document.getElementById('project-complex').value || 'S/C';
+            const projBuilding = document.getElementById('project-building').value || 'S/E';
+            const projLevel = document.getElementById('project-level').value || 'S/N';
+
+            let svgCode = `<!-- PROYECTO: ${projComplex} | EDIFICIO: ${projBuilding} | NIVEL: ${projLevel} -->\n`;
+            svgCode += `<svg viewBox="0 0 800 600" class="map-svg">\n  <defs>\n`;
+            shapes.forEach((s, i) => {
+                if (s.texture && s.texture !== 'none') {
+                    const patId = `pat-${i}`; const thick = s.texThickness || 2; const tr = s.texRotation || 0;
+                    if (s.texture === 'stripes') svgCode += `    <pattern id="${patId}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><line x1="0" y1="0" x2="0" y2="10" stroke="rgba(0,0,0,0.15)" stroke-width="${thick}" /></pattern>\n`;
+                    else if (s.texture === 'dots') svgCode += `    <pattern id="${patId}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><circle cx="3" cy="3" r="${thick/2}" fill="rgba(0,0,0,0.2)" /></pattern>\n`;
+                    else if (s.texture === 'grid') svgCode += `    <pattern id="${patId}" width="15" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(${tr})"><path d="M 15 0 L 0 0 0 15" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="${thick/2}"/></pattern>\n`;
+                }
+            });
+            svgCode += `  </defs>\n`;
+            shapes.forEach((s, i) => {
+                const meta = `data-general="${s.generalLocation}" data-specific="${s.specificZone}" data-name="${s.id}"`;
+                const rot = s.textRotation || 0; const fill = (s.texture && s.texture !== 'none') ? `url(#pat-${i})` : s.color;
+                let lx = s.x, ly = s.y, lw = s.w, lh = s.h; if(s.type === 'circle') { lx = s.cx - s.r; ly = s.cy - s.r; lw = s.r*2; lh = s.r*2; }
+                const lbl = `  <foreignObject x="${lx}" y="${ly}" width="${lw}" height="${lh}" style="pointer-events:none;"><div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;text-align:center;transform:rotate(${rot}deg);color:${s.textColor};font-size:9px;font-weight:900;text-transform:uppercase;line-height:1.1;word-break:break-word;">${s.label.replace(/\n/g, '<br>')}</div></foreignObject>\n`;
+
+                if (s.type === 'rect') svgCode += `  <rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="${fill}" class="map-zone" ${meta} onclick="selectZone(this)" />\n${lbl}`;
+                else if (s.type === 'circle') svgCode += `  <circle cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="${fill}" class="map-zone" ${meta} onclick="selectZone(this)" />\n${lbl}`;
+                else if (s.type === 'line') svgCode += `  <line x1="${s.x1}" y1="${s.y1}" x2="${s.x2}" y2="${s.y2}" stroke="${s.color}" stroke-width="4" />\n`;
+                else if (s.type === 'curve') svgCode += `  <path d="M ${s.x1} ${s.y1} Q ${s.qx} ${s.qy} ${s.x2} ${s.y2}" fill="none" stroke="${s.color}" stroke-width="4" />\n`;
+                else if (s.type === 'image') svgCode += `  <image href="${s.imageUrl}" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" preserveAspectRatio="none" />\n${lbl}`;
+                else if (s.type === 'asset') { const t = assetsTemplates[s.assetType]; const sx = s.w/t.w, sy = s.h/t.h; svgCode += `  <g class="map-zone" ${meta} onclick="selectZone(this)" transform="translate(${s.x}, ${s.y}) scale(${sx}, ${sy})"><rect x="0" y="0" width="${t.w}" height="${t.h}" fill="${s.color}" opacity="0.3" /><path d="${t.path}" fill="none" stroke="${s.color}" stroke-width="2" /></g>\n${lbl}`; }
+            });
+            svgCode += `</svg>`;
+            document.getElementById('code-output').textContent = `// Inserte en setMapLevel en Nuevo.html\nrender.innerHTML = \`\n${svgCode}\n\`;`;
+            toggleExport(true);
+        };
+
+        window.copyCode = () => { const el = document.createElement('textarea'); el.value = document.getElementById('code-output').textContent; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("¡Código copiado!"); };
+
+        render();
+    </script>
+</body>
+</html>

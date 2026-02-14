@@ -8,203 +8,123 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: white; 
-            color: #1e293b; 
-            margin: 0; 
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+        body { font-family: 'Inter', sans-serif; background: #fff; color: #1e293b; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* --- HEADER --- */
+        .detail-header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 1.5rem; color: white; flex-shrink: 0; }
+        .badge-status { padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 900; text-transform: uppercase; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); }
 
-        /* --- HEADER ESTILO MATERIAL --- */
-        .detail-header {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            padding: 2rem 1.5rem;
-            color: white;
-            flex-shrink: 0;
-        }
+        /* --- CONTENT --- */
+        .scroll-area { flex: 1; overflow-y: auto; padding: 1.5rem; }
+        .info-card { background: #fffaf8; border: 1px solid #fed7aa; border-radius: 1.25rem; padding: 1.25rem; margin-bottom: 1rem; }
+        .label-mini { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #9a3412; margin-bottom: 0.25rem; display: block; }
+        .val-text { font-size: 14px; font-weight: 600; color: #431407; }
 
-        .badge-status {
-            padding: 4px 12px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
+        /* --- MODAL --- */
+        #delivery-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-card { background: white; width: 90%; max-width: 400px; border-radius: 24px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .input-style { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem; font-size: 14px; font-weight: 600; margin-bottom: 1rem; outline: none; transition: border-color 0.2s; }
+        .input-style:focus { border-color: #f97316; }
 
-        /* --- CONTENIDO --- */
-        .scroll-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-        }
-
-        .info-card {
-            background: #fffaf8;
-            border: 1px solid #fed7aa;
-            border-radius: 1.25rem;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .label-mini {
-            font-size: 9px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #9a3412;
-            margin-bottom: 0.25rem;
-            letter-spacing: 0.05em;
-            display: block;
-        }
-
-        .val-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #431407;
-        }
-
-        /* --- ACCIONES --- */
-        .action-bar {
-            padding: 1.25rem;
-            border-top: 1px solid #f1f5f9;
-            background: #f8fafc;
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .btn-update {
-            flex: 2;
-            background: #1e293b;
-            color: white;
-            padding: 0.85rem;
-            border-radius: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 11px;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-update:hover { background: #0f172a; transform: translateY(-1px); }
-
-        .btn-close {
-            flex: 1;
-            background: white;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
-            padding: 0.85rem;
-            border-radius: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 11px;
-            cursor: pointer;
-        }
-
-        #auth-lock { 
-            position: fixed; inset: 0; background: white; z-index: 5000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        }
-
-        .input-edit {
-            width: 100%;
-            background: white;
-            border: 2px solid #fed7aa;
-            border-radius: 12px;
-            padding: 0.75rem;
-            font-size: 13px;
-            font-weight: 600;
-            outline: none;
-        }
-        .input-edit:focus { border-color: #f97316; }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+        /* --- BUTTONS --- */
+        .btn { padding: 0.85rem; border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 10px; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-delivered { background: #22c55e; color: white; flex: 2; }
+        .btn-unlink { background: #64748b; color: white; flex: 1; }
+        .btn-delete { background: #ef4444; color: white; width: 100%; margin-top: 1rem; }
+        .btn-cancel { background: #f1f5f9; color: #64748b; width: 100%; }
+        .btn:active { transform: scale(0.98); filter: brightness(0.9); }
+        
+        #auth-lock { position: fixed; inset: 0; background: white; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
     <div id="auth-lock">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
-        <p class="text-[10px] font-black uppercase text-slate-400">Accediendo al expediente...</p>
+        <p class="text-[10px] font-black uppercase text-slate-400">Validando Sesión...</p>
+    </div>
+
+    <!-- MODAL DE ENTREGA -->
+    <div id="delivery-modal">
+        <div class="modal-card">
+            <h2 class="text-lg font-black uppercase text-slate-800 mb-4">Registro de Entrega</h2>
+            
+            <label class="label-mini">Fecha de Entrega</label>
+            <input type="date" id="m-fecha" class="input-style">
+
+            <label class="label-mini">Número de Socio</label>
+            <input type="text" id="m-socio" class="input-style" placeholder="Ej. 123456">
+
+            <label class="label-mini">Nombre del Reclamante</label>
+            <input type="text" id="m-nombre" class="input-style" placeholder="Nombre completo">
+
+            <label class="label-mini">Contacto (Opcional)</label>
+            <input type="tel" id="m-tel" class="input-style" placeholder="Teléfono / Extensión">
+
+            <div class="flex gap-2 mt-4">
+                <button onclick="toggleModal(false)" class="btn btn-cancel">Cancelar</button>
+                <button onclick="confirmDelivery()" class="btn btn-delivered">Confirmar Entrega</button>
+            </div>
+        </div>
     </div>
 
     <header class="detail-header">
-        <div class="flex justify-between items-start mb-4">
-            <span id="obj-status" class="badge-status">Cargando...</span>
-            <button onclick="closeDetail()" class="text-white/60 hover:text-white transition-colors">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
+        <div class="flex justify-between items-start mb-2">
+            <span id="obj-status" class="badge-status">---</span>
+            <button onclick="closeDetail()" class="text-white/60 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        <h1 id="obj-name" class="text-2xl font-black uppercase leading-tight tracking-tight">Objeto</h1>
-        <p id="obj-id-tag" class="text-[9px] font-bold text-white/50 uppercase mt-1">ID: ---</p>
+        <h1 id="obj-name" class="text-xl font-black uppercase tracking-tight truncate">Objeto</h1>
+        <p id="obj-id" class="text-[8px] font-bold text-white/50 uppercase">ID: ---</p>
     </header>
 
     <main class="scroll-area">
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="info-card">
-                <span class="label-mini">Categoría</span>
-                <div class="flex items-center gap-2 mt-1">
-                    <i id="obj-icon" class="fa-solid fa-box text-orange-400"></i>
-                    <span id="obj-cat" class="val-text">---</span>
-                </div>
-            </div>
-            <div class="info-card">
-                <span class="label-mini">Fecha</span>
-                <span id="obj-date" class="val-text block mt-1">---</span>
+        <div class="info-card">
+            <span class="label-mini">Categoría e Icono</span>
+            <div class="flex items-center gap-3 mt-1">
+                <i id="obj-icon" class="fa-solid fa-box text-orange-400 text-xl"></i>
+                <span id="obj-cat" class="val-text">---</span>
             </div>
         </div>
 
-        <div class="info-card">
-            <span class="label-mini">Lugar de Hallazgo</span>
-            <div class="flex items-center gap-2 mt-1">
-                <i class="fa-solid fa-location-dot text-orange-400"></i>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="info-card">
+                <span class="label-mini">Fecha Hallazgo</span>
+                <span id="obj-date" class="val-text">---</span>
+            </div>
+            <div class="info-card">
+                <span class="label-mini">Ubicación</span>
                 <span id="obj-place" class="val-text">---</span>
             </div>
         </div>
 
         <div class="info-card">
-            <span class="label-mini">Descripción Física</span>
-            <p id="obj-desc" class="text-sm font-medium text-slate-600 leading-relaxed mt-1 italic">Sin descripción adicional.</p>
+            <span class="label-mini">Descripción</span>
+            <p id="obj-desc" class="text-sm font-medium text-slate-600 italic">---</p>
         </div>
 
-        <div class="mt-8 pt-4 border-t border-slate-100">
-            <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Gestión de Estatus</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="label-mini">Nuevo Estado</label>
-                    <select id="edit-status" class="input-edit">
-                        <option value="Resguardado">Resguardado (En almacén)</option>
-                        <option value="Extraviado">Extraviado (Reporte activo)</option>
-                        <option value="Entregado">Entregado (Al propietario)</option>
-                    </select>
-                </div>
-
-                <div id="delivery-info" class="hidden animate-fade-in">
-                    <label class="label-mini">Notas de Entrega / Quién Recibe</label>
-                    <textarea id="edit-notes" class="input-edit h-24 resize-none" placeholder="Nombre de quien recibe, gafete, etc..."></textarea>
-                </div>
+        <!-- Panel de Información de Salida (Entrega o Desvinculación) -->
+        <div id="delivery-data" class="info-card hidden border-green-200 bg-green-50">
+            <span id="delivery-label" class="label-mini text-green-700">Datos de Entrega</span>
+            <div class="text-[11px] font-bold text-green-900 space-y-1">
+                <p id="d-fecha">Fecha: ---</p>
+                <p id="d-socio">Socio: ---</p>
+                <p id="d-nombre">Recibe: ---</p>
             </div>
         </div>
-    </main>
 
-    <footer class="action-bar">
-        <button onclick="closeDetail()" class="btn-close">Cerrar</button>
-        <button id="btnSave" onclick="updateObject()" class="btn-update">Guardar Cambios</button>
-    </footer>
+        <div class="flex gap-2 mt-4">
+            <button onclick="toggleModal(true)" class="btn btn-delivered"><i class="fa-solid fa-hand-holding-heart"></i> Entregado</button>
+            <button onclick="unlinkObject()" class="btn btn-unlink" title="El objeto ya no está físicamente con nosotros"><i class="fa-solid fa-link-slash"></i> Desvincular</button>
+        </div>
+
+        <button onclick="deleteObject()" class="btn btn-delete"><i class="fa-solid fa-trash-can"></i> Eliminar Registro</button>
+    </main>
 
     <script type="module">
         import { firebaseConfig } from '../../script.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -214,102 +134,121 @@
         const urlParams = new URLSearchParams(window.location.search);
         const objectId = urlParams.get('id');
 
-        let currentData = null;
-
-        // --- AUTENTICACIÓN ESTRICTA ---
+        // --- AUTH ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById('auth-lock').style.display = 'none';
                 if (objectId) startListening();
-                else alert("Error: ID de objeto no proporcionado.");
             } else {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        document.getElementById('auth-lock').innerHTML = `<p class="text-xs font-black text-red-500 uppercase">Sesión Requerida</p>`;
-                    }
-                } catch (e) { console.error(e); }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    document.getElementById('auth-lock').innerHTML = `<p class="text-xs font-black text-red-500 uppercase">Acceso Restringido</p>`;
+                }
             }
         });
 
         function startListening() {
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegLost', objectId);
             onSnapshot(docRef, (snap) => {
-                if (snap.exists()) {
-                    currentData = snap.data();
-                    renderDetails(currentData);
-                }
+                if (snap.exists()) render(snap.data());
+                else closeDetail();
             });
         }
 
-        function renderDetails(data) {
-            document.getElementById('obj-name').textContent = data.nombre || 'Objeto Sin Nombre';
-            document.getElementById('obj-status').textContent = data.estado || 'S/E';
-            document.getElementById('obj-id-tag').textContent = `ID: ${objectId}`;
+        function render(data) {
+            document.getElementById('obj-name').textContent = data.nombre || 'S/N';
+            document.getElementById('obj-status').textContent = data.estado || '---';
+            document.getElementById('obj-id').textContent = `ID: ${objectId}`;
             document.getElementById('obj-cat').textContent = data.categoria || 'Otro';
-            document.getElementById('obj-date').textContent = data.fecha || 'N/A';
-            document.getElementById('obj-place').textContent = data.lugar || 'Desconocido';
-            document.getElementById('obj-desc').textContent = data.descripcion || 'Sin descripción detallada.';
-            
-            document.getElementById('edit-status').value = data.estado || 'Resguardado';
-            document.getElementById('edit-notes').value = data.comentario_entrega || '';
+            document.getElementById('obj-date').textContent = data.fecha || '---';
+            document.getElementById('obj-place').textContent = data.lugar || '---';
+            document.getElementById('obj-desc').textContent = data.descripcion || 'Sin descripción.';
 
-            // Icono
             const icons = { 'Electrónica': 'fa-laptop', 'Ropa': 'fa-shirt', 'Llaves': 'fa-key', 'Cartera': 'fa-wallet', 'Documentos': 'fa-id-card' };
-            document.getElementById('obj-icon').className = `fa-solid ${icons[data.categoria] || 'fa-box'} text-orange-400`;
+            document.getElementById('obj-icon').className = `fa-solid ${icons[data.categoria] || 'fa-box'} text-orange-400 text-xl`;
 
-            toggleDeliverySection(data.estado);
+            const dPanel = document.getElementById('delivery-data');
+            const dLabel = document.getElementById('delivery-label');
+            
+            if (data.estado === 'Entregado' || data.estado === 'Desvinculado') {
+                dPanel.classList.remove('hidden');
+                dLabel.textContent = data.estado === 'Entregado' ? 'Datos de Entrega' : 'Registro de Desvinculación';
+                
+                document.getElementById('d-fecha').textContent = `Fecha: ${data.entrega_fecha || '---'}`;
+                document.getElementById('d-socio').textContent = data.estado === 'Entregado' ? `Socio: ${data.entrega_socio || '---'}` : `Motivo: Baja física`;
+                document.getElementById('d-nombre').textContent = data.estado === 'Entregado' ? `Recibe: ${data.entrega_nombre || '---'}` : `Estado: Archivado`;
+            } else {
+                dPanel.classList.add('hidden');
+            }
         }
 
-        function toggleDeliverySection(status) {
-            const div = document.getElementById('delivery-info');
-            div.classList.toggle('hidden', status !== 'Entregado');
-        }
+        window.toggleModal = (show) => {
+            const modal = document.getElementById('delivery-modal');
+            modal.style.display = show ? 'flex' : 'none';
+            if (show) {
+                // Fecha actual México
+                const now = new Date();
+                const offset = -6; // CST
+                const mxDate = new Date(now.getTime() + (offset * 3600 * 1000));
+                document.getElementById('m-fecha').value = mxDate.toISOString().split('T')[0];
+            }
+        };
 
-        document.getElementById('edit-status').onchange = (e) => toggleDeliverySection(e.target.value);
+        window.confirmDelivery = async () => {
+            const f = document.getElementById('m-fecha').value;
+            const s = document.getElementById('m-socio').value.trim();
+            const n = document.getElementById('m-nombre').value.trim();
+            const t = document.getElementById('m-tel').value.trim();
 
-        window.updateObject = async () => {
-            if (!objectId || !auth.currentUser) return;
-
-            const btn = document.getElementById('btnSave');
-            const newStatus = document.getElementById('edit-status').value;
-            const notes = document.getElementById('edit-notes').value.trim();
-
-            btn.disabled = true;
-            btn.textContent = 'Actualizando...';
+            if (!s || !n) {
+                alert("Socio y Nombre son obligatorios.");
+                return;
+            }
 
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegLost', objectId);
                 await updateDoc(docRef, {
-                    estado: newStatus,
-                    comentario_entrega: notes,
-                    lastUpdate: serverTimestamp(),
-                    actualizadoPor: auth.currentUser.email
+                    estado: 'Entregado',
+                    entrega_fecha: f,
+                    entrega_socio: s,
+                    entrega_nombre: n,
+                    entrega_tel: t,
+                    fecha_actualizacion: serverTimestamp(),
+                    usuario_gestion: auth.currentUser.email
                 });
-                
-                // Si se entrega, notificamos al usuario
-                if (newStatus === 'Entregado') {
-                    alert("Objeto marcado como ENTREGADO. Se moverá al historial.");
-                    closeDetail();
-                } else {
-                    btn.textContent = '¡Guardado!';
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.textContent = 'Guardar Cambios';
-                    }, 2000);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Error al actualizar el registro.");
-                btn.disabled = false;
-                btn.textContent = 'Reintentar';
-            }
+                toggleModal(false);
+            } catch (e) { console.error(e); }
         };
 
-        window.closeDetail = () => {
-            window.parent.postMessage({ action: 'closeRightPanel' }, '*');
+        window.unlinkObject = async () => {
+            if (!confirm("¿Desea DESVINCULAR este objeto?")) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegLost', objectId);
+                await updateDoc(docRef, {
+                    estado: 'Desvinculado',
+                    entrega_fecha: new Date().toISOString().split('T')[0],
+                    entrega_socio: null,
+                    entrega_nombre: null,
+                    entrega_tel: null,
+                    fecha_actualizacion: serverTimestamp(),
+                    usuario_gestion: auth.currentUser.email
+                });
+                alert("Objeto DESVINCULADO y archivado correctamente.");
+                closeDetail();
+            } catch (e) { console.error(e); }
         };
+
+        window.deleteObject = async () => {
+            if (!confirm("ESTA ACCIÓN ES IRREVERSIBLE.\n¿Desea eliminar definitivamente este registro de la base de datos?")) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegLost', objectId);
+                await deleteDoc(docRef);
+                closeDetail();
+            } catch (e) { console.error(e); }
+        };
+
+        window.closeDetail = () => window.parent.postMessage({ action: 'closeRightPanel' }, '*');
     </script>
 </body>
 </html>
