@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Empresas - Proyectos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --industrial-gray: #334155;
+            --industrial-dark: #1e293b;
+            --industrial-border: #94a3b8;
+        }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; padding: 1.5rem; color: #1e293b; }
+        
+        .industrial-card { 
+            background: white; 
+            border-radius: 12px; 
+            border: 1px solid var(--industrial-border); 
+            padding: 1.5rem; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+        }
+
+        .input-industrial { 
+            width: 100%; 
+            background: #f8fafc; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 8px; 
+            padding: 0.75rem; 
+            font-size: 13px; 
+            font-weight: 700; 
+            outline: none; 
+            transition: all 0.2s;
+        }
+        .input-industrial:focus { border-color: var(--industrial-gray); background: white; }
+
+        .btn-industrial { 
+            background: var(--industrial-gray); 
+            color: white; 
+            width: 100%; 
+            padding: 0.85rem; 
+            border-radius: 8px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            font-size: 11px;
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-industrial:hover { background: var(--industrial-dark); }
+
+        .badge-active { background: #dcfce7; color: #166534; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 4px; }
+        .badge-expired { background: #fee2e2; color: #991b1b; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 4px; }
+
+        /* Estilo para el Modal de Proyectos */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 95%; max-width: 600px; border-radius: 16px; max-height: 90vh; overflow-y: auto; padding: 2rem; border: 2px solid var(--industrial-gray); }
+
+        .risk-option { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px; 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .risk-option:hover { border-color: var(--industrial-border); }
+        .risk-option input { width: 16px; height: 16px; accent-color: var(--industrial-gray); }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 0 1rem;
+            transition: all 0.2s;
+        }
+        .search-container:focus-within { border-color: var(--industrial-gray); box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.1); }
+        .search-input { width: 100%; border: none; outline: none; padding: 0.75rem 0.5rem; font-size: 14px; font-weight: 600; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--industrial-border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- MODAL NUEVO PROYECTO -->
+    <div id="project-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-company-name" class="text-lg font-black uppercase text-slate-800 mb-4 border-b-2 border-slate-100 pb-2">Nuevo Proyecto</h2>
+            
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 mb-1 block">Fecha Inicio</label>
+                        <input type="date" id="p-start" class="input-industrial">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400 mb-1 block">Fecha Fin</label>
+                        <input type="date" id="p-end" class="input-industrial">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 block">Ubicación en el Complejo</label>
+                    <input type="text" id="p-location" class="input-industrial" placeholder="Ej. Almacén Nivel 2, Oficinas Michelena...">
+                </div>
+
+                <!-- Cuestionario Alarma -->
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                    <p class="text-[11px] font-bold text-amber-900 leading-tight mb-3">
+                        ¿Existe riesgo de que las actividades activen el sistema de alarma contra incendio?
+                        <br><span class="text-[9px] font-normal text-amber-700 italic">(Polvo, humo, calor, sensores de almacén)</span>
+                    </p>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="p-risk-fire-alarm" class="w-5 h-5 accent-amber-600">
+                        <span class="text-[10px] font-black uppercase text-amber-800">Sí, requiere anulación por Patrimonial</span>
+                    </label>
+                </div>
+
+                <!-- Riesgos Específicos -->
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Riesgos Específicos de la Actividad</label>
+                    <div class="space-y-2">
+                        <label class="risk-option"><input type="checkbox" class="risk-check" value="incendio"> <span class="text-[10px] font-bold uppercase">Corte, soldadura y/o flama abierta</span></label>
+                        <label class="risk-option"><input type="checkbox" class="risk-check" value="altura"> <span class="text-[10px] font-bold uppercase">Trabajo en altura (+1.8m)</span></label>
+                        <label class="risk-option"><input type="checkbox" class="risk-check" value="electrico"> <span class="text-[10px] font-bold uppercase">Trabajos eléctricos</span></label>
+                        <label class="risk-option"><input type="checkbox" class="risk-check" value="confinado"> <span class="text-[10px] font-bold uppercase">Espacios confinados</span></label>
+                        <label class="risk-option"><input type="checkbox" id="no-risk-check" onchange="toggleRisks(this.checked)"> <span class="text-[10px] font-bold uppercase text-slate-400">Sin riesgos específicos</span></label>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeProjectModal()" class="flex-1 py-3 text-[10px] font-black uppercase text-slate-400">Cancelar</button>
+                    <button onclick="saveProject()" class="flex-2 btn-industrial">Guardar Proyecto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA PRINCIPAL -->
+    <div class="max-w-5xl mx-auto space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Registrar Empresa -->
+            <div class="industrial-card">
+                <h2 class="text-xs font-black uppercase text-slate-400 mb-4 border-b-2 border-slate-100 pb-2">Registro</h2>
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="compName" class="input-industrial" placeholder="Nombre de la razón social...">
+                    <button onclick="addCompany()" class="btn-industrial"><i class="fa-solid fa-plus"></i> Registrar Empresa</button>
+                </div>
+            </div>
+
+            <!-- Buscador -->
+            <div class="industrial-card">
+                <h2 class="text-xs font-black uppercase text-slate-400 mb-4 border-b-2 border-slate-100 pb-2">Búsqueda</h2>
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    <input type="text" id="companySearch" oninput="render()" class="search-input" placeholder="Buscar empresa por nombre...">
+                </div>
+            </div>
+        </div>
+
+        <div id="company-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dinámico -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const catalogRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'Prestadores');
+        const projectsRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'ProyectosPrestadores');
+
+        let catalogData = {}, projectsData = {}, activeCompany = null;
+
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                onSnapshot(catalogRef, s => { catalogData = s.data() || {}; render(); });
+                onSnapshot(projectsRef, s => { projectsData = s.data() || {}; render(); });
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+            }
+        });
+
+        window.render = () => {
+            const grid = document.getElementById('company-grid');
+            const query = document.getElementById('companySearch').value.toLowerCase().trim();
+            grid.innerHTML = '';
+            
+            const companies = Object.keys(catalogData).sort().filter(c => c.toLowerCase().includes(query));
+
+            if (companies.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center">
+                    <i class="fa-solid fa-folder-open text-4xl text-slate-200 mb-3"></i>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">No se encontraron empresas</p>
+                </div>`;
+                return;
+            }
+
+            companies.forEach(c => {
+                const projects = projectsData[c] || [];
+                const now = new Date().toISOString().split('T')[0];
+                const activeProject = projects.find(p => now >= p.start && now <= p.end);
+
+                grid.innerHTML += `
+                    <div class="industrial-card flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <h4 class="font-black uppercase text-xs text-slate-800 truncate pr-2" title="${c}">${c}</h4>
+                                ${activeProject ? '<span class="badge-active">Proyecto Vigente</span>' : '<span class="badge-expired">Sin Proyecto Activo</span>'}
+                            </div>
+                            <div class="space-y-2 mb-6">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Personal: ${catalogData[c].length}</p>
+                                ${activeProject ? `
+                                    <p class="text-[9px] font-bold text-slate-600 uppercase italic truncate">
+                                        <i class="fa-solid fa-location-dot mr-1"></i> ${activeProject.location}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openNewProject('${c}')" class="flex-1 btn-industrial">
+                                <i class="fa-solid fa-file-signature"></i> ${activeProject ? 'Extender' : 'Crear Proyecto'}
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        };
+
+        window.addCompany = async () => {
+            const n = document.getElementById('compName').value.trim();
+            if(!n) return;
+            try { await setDoc(catalogRef, { [n]: [] }, { merge: true }); document.getElementById('compName').value = ''; } catch(e){}
+        };
+
+        window.openNewProject = (company) => {
+            activeCompany = company;
+            document.getElementById('modal-company-name').innerText = company;
+            document.getElementById('project-modal').style.display = 'flex';
+        };
+
+        window.closeProjectModal = () => {
+            document.getElementById('project-modal').style.display = 'none';
+            activeCompany = null;
+        };
+
+        window.toggleRisks = (noRisk) => {
+            document.querySelectorAll('.risk-check').forEach(c => {
+                c.disabled = noRisk;
+                if(noRisk) c.checked = false;
+            });
+        };
+
+        window.saveProject = async () => {
+            const start = document.getElementById('p-start').value;
+            const end = document.getElementById('p-end').value;
+            const location = document.getElementById('p-location').value.trim();
+            const fireRisk = document.getElementById('p-risk-fire-alarm').checked;
+            
+            const selectedRisks = [];
+            document.querySelectorAll('.risk-check:checked').forEach(c => selectedRisks.push(c.value));
+            const isNoRisk = document.getElementById('no-risk-check').checked;
+
+            if(!start || !end || !location || (!isNoRisk && selectedRisks.length === 0)) {
+                return alert("Por favor complete todos los datos y especifique los riesgos.");
+            }
+
+            const newProject = {
+                start, end, location, 
+                fireAlarmRisk: fireRisk,
+                risks: isNoRisk ? ['Ninguno'] : selectedRisks,
+                timestamp: Date.now()
+            };
+
+            const existingProjects = projectsData[activeCompany] || [];
+            existingProjects.push(newProject);
+
+            try {
+                await setDoc(projectsRef, { [activeCompany]: existingProjects }, { merge: true });
+                closeProjectModal();
+            } catch(e) { console.error(e); }
+        };
+    </script>
+</body>
+</html>

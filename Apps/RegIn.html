@@ -102,7 +102,7 @@
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
         }
 
-        /* Reloj Derecha - Color Blanco */
+        /* Reloj Derecha */
         .clock-wrapper {
             flex: 1;
             display: flex;
@@ -116,7 +116,7 @@
             border-radius: 12px; 
             font-size: 16px; 
             font-weight: 600;
-            color: #ffffff; /* Fuente Blanca */
+            color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.1); 
             display: flex; 
             align-items: center; 
@@ -164,7 +164,7 @@
         <!-- IZQUIERDA: Menú y Título -->
         <div class="branding-section">
             <div onclick="window.parent.postMessage({action:'toggleMenu'}, '*')" class="apps-drawer-btn" title="Menú de Aplicaciones">
-                <img src="../MM/Apps.png" alt="Apps">
+                <img src="../MM/Apps.png" alt="Apps" onerror="this.src='https://img.icons8.com/ios-filled/50/ffffff/grid-menu.png'">
             </div>
             <div>
                 <h1 class="text-[12px] font-black text-white uppercase tracking-[0.2em] leading-none">Registro de ingresos</h1>
@@ -190,7 +190,7 @@
     </header>
 
     <main class="content-area" id="viewport">
-        <!-- Los iframes se inyectarán aquí mediante JS -->
+        <!-- Los iframes se inyectan dinámicamente -->
     </main>
 
     <script>
@@ -199,9 +199,15 @@
             clockText: document.getElementById('timeDisplay')
         };
 
-        const flowTypes = ['colaboradores', 'visitas', 'consultores', 'prestadores'];
+        // Mapeo de tipos a sus archivos correspondientes
+        const flowViews = [
+            { id: 'colaboradores', file: 'Colaboradores.html' },
+            { id: 'visitas', file: 'Visitas.html' },
+            { id: 'consultores', file: 'Consultores.html' },
+            { id: 'prestadores', file: 'Prestadores.html' }
+        ];
 
-        // 1. Reloj
+        // 1. Reloj de precisión
         function updateClock() {
             const now = new Date();
             dom.clockText.textContent = now.toLocaleTimeString('es-MX', { hour12: false });
@@ -209,31 +215,31 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. Inicialización de Instancias (Pre-carga)
+        // 2. Inicialización de Instancias (Persistencia por Z-Index)
         function initInstances() {
-            flowTypes.forEach(type => {
+            flowViews.forEach(view => {
                 const iframe = document.createElement('iframe');
                 iframe.className = 'flow-instance';
-                iframe.id = `frame-${type}`;
-                iframe.dataset.type = type;
-                // Cargamos cada contador con su tipo correspondiente
-                iframe.src = `../Complementos/RegFlow/Contador.html?type=${type}`;
+                iframe.id = `frame-${view.id}`;
+                iframe.dataset.type = view.id;
+                // Apuntamos a cada archivo específico en la carpeta RegFlow
+                iframe.src = `../Complementos/RegFlow/${view.file}`;
                 dom.viewport.appendChild(iframe);
             });
             
-            // Activar la primera por defecto
+            // Activar Colaboradores por defecto
             document.getElementById('frame-colaboradores').classList.add('active');
         }
 
-        // 3. Cambio de Tab (Persistencia real)
-        window.setFlowTab = (type, el) => {
-            // Actualizar estilo de botones
+        // 3. Gestión de Navegación de Pestañas
+        window.setFlowTab = (id, el) => {
+            // Actualizar estilo visual de los botones
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
             
-            // Alternar visibilidad de instancias mediante Z-Index / Opacity
+            // Alternar visibilidad de instancias sin recargar
             document.querySelectorAll('.flow-instance').forEach(iframe => {
-                if (iframe.dataset.type === type) {
+                if (iframe.dataset.type === id) {
                     iframe.classList.add('active');
                 } else {
                     iframe.classList.remove('active');
@@ -241,14 +247,13 @@
             });
         };
 
-        // Escuchar mensajes para el shell principal (Administración)
+        // Escuchar mensajes para el shell principal
         window.addEventListener('message', (e) => {
             if (e.data.action && (e.data.action.includes('Panel') || e.data.action === 'toggleMenu')) {
                 window.parent.postMessage(e.data, '*');
             }
         });
 
-        // Ejecutar carga al inicio
         window.onload = initInstances;
     </script>
 </body>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Acceso Validado - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --industrial-gray: #334155;
+            --industrial-dark: #1e293b;
+            --industrial-border: #94a3b8;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; padding: 1.5rem; color: #1e293b; }
+        
+        .glass-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        .worker-card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem; display: flex; align-items: center; justify-content: space-between; background: white; transition: all 0.2s; }
+        .worker-card.inside { border-left: 4px solid #10b981; background: #f0fdf4; }
+        .worker-card.banned { border-left: 4px solid #ef4444; background: #fef2f2; opacity: 0.8; }
+        .worker-card.not-integrated { border-left: 4px solid #f59e0b; background: #fffbeb; }
+
+        .btn-entry { background: #10b981; color: white; padding: 0.6rem 1.25rem; border-radius: 10px; font-size: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .btn-exit { background: #ef4444; color: white; padding: 0.6rem 1.25rem; border-radius: 10px; font-size: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .btn-disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; border: none; }
+
+        .badge-status { font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .badge-banned { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
+        .modal-card { background: white; border-radius: 24px; width: 100%; max-width: 450px; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; }
+        
+        .input-standard { width: 100%; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; font-size: 13px; font-weight: 700; outline: none; transition: all 0.2s; }
+        .input-standard:focus { border-color: var(--industrial-gray); background: white; }
+
+        .project-pill { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 12px; display: flex; flex-direction: column; min-width: 180px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- MODAL DE ENTRADA (CON HERRAMIENTAS) -->
+    <div id="entry-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="entry-worker-name" class="text-lg font-black uppercase text-slate-800 mb-1">Nombre Elemento</h3>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Autorización de Ingreso</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase block mb-1 ml-1">Número de Marbete</label>
+                    <input type="text" id="entry-marbete" class="input-standard" placeholder="Ej. 102">
+                </div>
+
+                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="entry-gafete" onchange="document.getElementById('entry-marbete').disabled = this.checked;" class="w-4 h-4">
+                    <span class="text-[10px] font-black uppercase text-slate-600">Gafete de gestión</span>
+                </label>
+
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase block mb-1 ml-1">Registro de Herramientas / Equipo</label>
+                    <textarea id="entry-tools" class="input-standard h-24 resize-none" placeholder="Taladro, caja de herramientas, escalera, laptop..."></textarea>
+                    <p class="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">* Se validará este listado al momento de la salida</p>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeModals()" class="flex-1 py-3 text-[10px] font-black uppercase text-slate-400">Cancelar</button>
+                    <button onclick="confirmEntry()" class="flex-[2] btn-entry">Confirmar Acceso</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE SALIDA (VALIDACIÓN DE HERRAMIENTAS) -->
+    <div id="exit-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="exit-worker-name" class="text-lg font-black uppercase text-slate-800 mb-1">Nombre Elemento</h3>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Confirmación de Salida</p>
+            
+            <div id="exit-tools-container" class="space-y-4">
+                <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                    <label class="text-[9px] font-black text-emerald-700 uppercase block mb-3 text-center">Verificar Herramientas Ingresadas</label>
+                    <div id="tools-checklist" class="space-y-2">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeModals()" class="flex-1 py-3 text-[10px] font-black uppercase text-slate-400">Volver</button>
+                    <button onclick="confirmExit()" class="flex-[2] btn-exit">Registrar Salida</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- PROYECTOS ACTIVOS -->
+        <div class="space-y-3">
+            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Frentes de Trabajo Activos (Hoy)</h3>
+            <div id="active-projects-list" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                <!-- Dinámico -->
+            </div>
+        </div>
+
+        <div class="glass-card flex items-center gap-3 p-3">
+            <i class="fa-solid fa-magnifying-glass text-slate-300 ml-2"></i>
+            <input type="text" id="searchInput" oninput="render()" class="flex-1 outline-none font-bold text-sm" placeholder="Buscar por nombre de prestador o empresa...">
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Personal Autorizable</h3>
+                <div id="available-list" class="space-y-3"></div>
+            </div>
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-black uppercase text-indigo-500 tracking-widest ml-2">En Unidad</h3>
+                <div id="inside-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const catalogRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'Prestadores');
+        const activeRef = doc(db, 'artifacts', appId, 'public', 'data', 'RegFlow', 'PrestadoresActivos');
+        const projectsRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'ProyectosPrestadores');
+
+        let catalogData = {}, activeData = {}, projectsData = {}, pendingId = null;
+
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                onSnapshot(catalogRef, s => { catalogData = s.data() || {}; render(); });
+                onSnapshot(activeRef, s => { activeData = s.data() || {}; render(); });
+                onSnapshot(projectsRef, s => { projectsData = s.data() || {}; renderProjects(); render(); });
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+            }
+        });
+
+        function renderProjects() {
+            const list = document.getElementById('active-projects-list');
+            list.innerHTML = '';
+            const now = new Date().toISOString().split('T')[0];
+            let found = false;
+
+            Object.entries(projectsData).forEach(([company, projects]) => {
+                const active = projects.filter(p => now >= p.start && now <= p.end);
+                active.forEach(p => {
+                    found = true;
+                    list.innerHTML += `
+                        <div class="project-pill shrink-0">
+                            <span class="text-[8px] font-black text-indigo-600 uppercase mb-1">${company}</span>
+                            <span class="text-[10px] font-bold text-slate-800 uppercase truncate">${p.location}</span>
+                            <span class="text-[7px] font-bold text-slate-400 uppercase mt-1">Vence: ${p.end}</span>
+                        </div>
+                    `;
+                });
+            });
+
+            if (!found) list.innerHTML = `<p class="text-[9px] font-bold text-slate-300 uppercase ml-2 italic">No hay proyectos activos registrados para hoy</p>`;
+        }
+
+        window.render = () => {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const av = document.getElementById('available-list'), ins = document.getElementById('inside-list');
+            av.innerHTML = ''; ins.innerHTML = '';
+            
+            const now = new Date().toISOString().split('T')[0];
+
+            Object.entries(catalogData).forEach(([company, workers]) => {
+                const projects = projectsData[company] || [];
+                const activeProject = projects.find(p => now >= p.start && now <= p.end);
+                
+                workers.forEach(w => {
+                    const worker = typeof w === 'string' ? { name: w, status: 'active' } : w;
+                    const id = `${worker.name}|${company}`;
+                    
+                    if (!worker.name.toLowerCase().includes(query) && !company.toLowerCase().includes(query)) return;
+                    
+                    const isInside = activeData[id];
+                    const isBanned = worker.status === 'banned';
+                    const hasProject = !!worker.projectLocation && activeProject;
+
+                    let statusClass = isInside ? 'inside' : (isBanned ? 'banned' : (!hasProject ? 'not-integrated' : ''));
+                    let badgeHtml = isBanned ? `<span class="badge-status badge-banned ml-2">VETADO</span>` : (!hasProject ? `<span class="badge-status badge-pending ml-2">NO INTEGRADO</span>` : '');
+
+                    let buttonHtml = '';
+                    if (isInside) {
+                        buttonHtml = `<button onclick="handleExitClick('${id}')" class="btn-exit">Salida</button>`;
+                    } else if (isBanned || !hasProject) {
+                        buttonHtml = `<button class="btn-disabled" disabled>${isBanned ? 'BLOQUEADO' : 'SIN PROYECTO'}</button>`;
+                    } else {
+                        buttonHtml = `<button onclick="handleEntryClick('${id}')" class="btn-entry">Entrada</button>`;
+                    }
+
+                    const card = `
+                        <div class="worker-card ${statusClass}">
+                            <div class="flex-1 overflow-hidden pr-4">
+                                <div class="flex items-center">
+                                    <h4 class="font-black text-slate-800 text-[10px] uppercase truncate">${worker.name}</h4>
+                                    ${badgeHtml}
+                                </div>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase truncate">${company} ${isInside ? ' • '+(isInside.gafeteGestion?'Gestion':isInside.marbete) : ''}</p>
+                                ${!isInside && hasProject ? `<p class="text-[7px] text-emerald-600 font-black uppercase mt-1 leading-none"><i class="fa-solid fa-location-dot"></i> ${worker.projectLocation}</p>` : ''}
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                ${buttonHtml}
+                            </div>
+                        </div>`;
+                    
+                    if (isInside) ins.innerHTML += card; else av.innerHTML += card;
+                });
+            });
+        };
+
+        // --- MANEJO DE ENTRADA ---
+        window.handleEntryClick = (id) => {
+            pendingId = id;
+            document.getElementById('entry-worker-name').innerText = id.split('|')[0];
+            document.getElementById('entry-marbete').value = '';
+            document.getElementById('entry-gafete').checked = false;
+            document.getElementById('entry-tools').value = '';
+            document.getElementById('entry-modal').style.display = 'flex';
+        };
+
+        window.confirmEntry = async () => {
+            const m = document.getElementById('entry-marbete').value.trim();
+            const g = document.getElementById('entry-gafete').checked;
+            const t = document.getElementById('entry-tools').value.trim();
+            
+            if(!m && !g) return alert("Debe asignar un marbete o marcar Gafete de Gestión");
+
+            const now = new Date(), time = now.toLocaleTimeString('es-MX', {hour12:false, hour:'2-digit', minute:'2-digit'});
+            const dateId = now.toISOString().split('T')[0].replace(/-/g,'');
+            const sid = `${pendingId.replace(/\|/g,'_')}_${Date.now()}`;
+            
+            const entryData = { 
+                time, timestamp: Date.now(), 
+                marbete: m || '---', 
+                gafeteGestion: g, 
+                tools: t,
+                sessionId: sid 
+            };
+
+            try {
+                await updateDoc(activeRef, { [pendingId]: entryData });
+                const histRef = doc(db, 'artifacts', appId, 'public', 'data', 'HistorialPrestadores', dateId);
+                await setDoc(histRef, { [sid]: { worker: pendingId.split('|')[0], company: pendingId.split('|')[1], entry: time, exit: null, marbete: m||'---', gafeteGestion: g, tools: t } }, { merge: true });
+                closeModals();
+            } catch (e) { console.error(e); }
+        };
+
+        // --- MANEJO DE SALIDA ---
+        window.handleExitClick = (id) => {
+            pendingId = id;
+            const data = activeData[id];
+            document.getElementById('exit-worker-name').innerText = id.split('|')[0];
+            
+            const checklist = document.getElementById('tools-checklist');
+            checklist.innerHTML = '';
+            
+            if (data.tools) {
+                const toolItems = data.tools.split('\n').filter(line => line.trim() !== '');
+                if (toolItems.length > 0) {
+                    toolItems.forEach((tool, idx) => {
+                        checklist.innerHTML += `
+                            <label class="flex items-center gap-3 p-3 bg-white border border-emerald-100 rounded-xl cursor-pointer hover:bg-emerald-100/50 transition-all">
+                                <input type="checkbox" class="w-4 h-4 accent-emerald-600">
+                                <span class="text-[10px] font-bold uppercase text-emerald-900">${tool}</span>
+                            </label>`;
+                    });
+                } else {
+                    // Si el texto no tiene saltos de linea, tratarlo como bloque unico
+                    checklist.innerHTML = `
+                        <label class="flex items-center gap-3 p-3 bg-white border border-emerald-100 rounded-xl cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 accent-emerald-600">
+                            <span class="text-[10px] font-bold uppercase text-emerald-900">${data.tools}</span>
+                        </label>`;
+                }
+                document.getElementById('exit-modal').style.display = 'flex';
+            } else {
+                confirmExit(); // Salida directa si no hay herramientas
+            }
+        };
+
+        window.confirmExit = async () => {
+            const data = activeData[pendingId];
+            if (!data) return;
+
+            const now = new Date(), time = now.toLocaleTimeString('es-MX', {hour12:false, hour:'2-digit', minute:'2-digit'});
+            try {
+                const dId = new Date(data.timestamp).toISOString().split('T')[0].replace(/-/g,'');
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'HistorialPrestadores', dId), { [`${data.sessionId}.exit`]: time });
+                await updateDoc(activeRef, { [pendingId]: deleteField() });
+                closeModals();
+            } catch (e) { console.error(e); }
+        };
+
+        window.closeModals = () => {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            pendingId = null;
+        };
+
+    </script>
+</body>
+</html>

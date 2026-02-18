@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Accesos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; padding: 1.5rem; }
+        .table-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        th { background: #f1f5f9; padding: 12px 16px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; text-align: left; }
+        td { padding: 12px 16px; font-size: 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        .input-date { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 8px 16px; font-size: 12px; font-weight: 800; outline: none; }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        <div class="flex justify-between items-center">
+            <h2 class="text-lg font-black uppercase text-slate-800">Bitácora de Prestadores</h2>
+            <input type="date" id="histDate" onchange="fetchLogs()" class="input-date">
+        </div>
+
+        <div class="table-card">
+            <table class="w-full">
+                <thead>
+                    <tr><th>Elemento</th><th>Empresa</th><th>Marbete / Gafete</th><th>Entrada</th><th>Salida</th></tr>
+                </thead>
+                <tbody id="histBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        document.getElementById('histDate').value = new Date().toISOString().split('T')[0];
+        let unsub = null;
+
+        onAuthStateChanged(auth, async (u) => {
+            if (u) fetchLogs();
+            else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+            }
+        });
+
+        window.fetchLogs = () => {
+            if (unsub) unsub();
+            const dId = document.getElementById('histDate').value.replace(/-/g,'');
+            unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'HistorialPrestadores', dId), s => {
+                const body = document.getElementById('histBody'); body.innerHTML = '';
+                const data = s.data() || {};
+                Object.values(data).sort((a,b)=>b.entry.localeCompare(a.entry)).forEach(l => {
+                    body.innerHTML += `<tr>
+                        <td class="font-bold uppercase">${l.worker}</td>
+                        <td class="text-slate-400 font-bold uppercase text-[10px]">${l.company}</td>
+                        <td class="font-black text-indigo-600">${l.gafeteGestion ? 'GESTIÓN' : l.marbete}</td>
+                        <td class="font-mono font-bold text-emerald-600">${l.entry}</td>
+                        <td class="font-mono font-bold text-rose-600">${l.exit || '--:--'}</td>
+                    </tr>`;
+                });
+                if(!Object.keys(data).length) body.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-300 uppercase font-black">Sin registros</td></tr>';
+            });
+        };
+    </script>
+</body>
+</html>

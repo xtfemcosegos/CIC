@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Personal - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --industrial-gray: #334155;
+            --industrial-dark: #1e293b;
+            --industrial-light: #f1f5f9;
+            --industrial-border: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--industrial-light);
+            color: var(--industrial-dark);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- PANEL LATERAL (EMPRESAS) --- */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 2px solid var(--industrial-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            background: var(--industrial-gray);
+            color: white;
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+        }
+
+        .company-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-item:hover { background: #f8fafc; }
+        .company-item.active {
+            background: #f1f5f9;
+            border-left: 4px solid var(--industrial-gray);
+            font-weight: 800;
+        }
+
+        /* --- ÁREA PRINCIPAL --- */
+        .main-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .workspace-header {
+            padding: 1.25rem 2rem;
+            background: white;
+            border-bottom: 1px solid var(--industrial-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        /* --- TARJETAS PERSONAL --- */
+        .person-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .person-card:hover { border-color: var(--industrial-gray); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .person-card.banned { border-left: 4px solid #ef4444; opacity: 0.8; }
+        .person-card.banned .status-icon { color: #ef4444; }
+
+        .avatar-box {
+            width: 48px; height: 48px; border-radius: 12px; background: var(--industrial-light);
+            display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--industrial-border);
+            overflow: hidden; flex-shrink: 0;
+        }
+        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- MODALES --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px); z-index: 2000; display: none;
+            align-items: center; justify-content: center; padding: 1.5rem;
+        }
+
+        .modal-card {
+            background: white; width: 100%; max-width: 450px; border-radius: 20px;
+            padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 90vh; overflow-y: auto;
+        }
+
+        .action-btn {
+            width: 100%; padding: 1rem; border-radius: 12px; font-size: 11px; font-weight: 800;
+            text-transform: uppercase; display: flex; align-items: center; gap: 12px;
+            transition: all 0.2s; cursor: pointer;
+        }
+
+        .btn-integrate { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .btn-integrate:hover { background: #dcfce7; }
+        .btn-photo { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .btn-photo:hover { background: #dbeafe; }
+        .btn-ban { background: #fff1f2; color: #991b1b; border: 1px solid #fecaca; }
+        .btn-ban:hover { background: #fee2e2; }
+        .btn-delete { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+        .btn-delete:hover { background: #f1f5f9; color: #ef4444; }
+
+        .input-industrial {
+            width: 100%; background: #f8fafc; border: 2px solid #cbd5e1;
+            border-radius: 10px; padding: 0.75rem; font-size: 13px; font-weight: 700; outline: none;
+        }
+
+        .upload-loading { font-size: 9px; font-weight: 900; color: #6366f1; text-transform: uppercase; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--industrial-border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- MODAL DE ACCIONES DE ELEMENTO -->
+    <div id="action-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="flex items-center gap-4 mb-6">
+                <div id="modal-avatar" class="avatar-box w-16 h-16 text-2xl">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <h3 id="target-name" class="text-lg font-black uppercase text-slate-800 mb-0.5 leading-tight">Nombre Elemento</h3>
+                    <p id="target-company" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Empresa</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="openIntegrate()" class="action-btn btn-integrate">
+                    <i class="fa-solid fa-briefcase"></i> Integrar a Proyecto
+                </button>
+
+                <!-- Opción Foto -->
+                <button onclick="document.getElementById('photo-input').click()" class="action-btn btn-photo">
+                    <i class="fa-solid fa-camera"></i> <span id="photo-btn-text">Subir Fotografía</span>
+                    <div id="upload-status" class="hidden upload-loading ml-auto">Cargando...</div>
+                </button>
+                <input type="file" id="photo-input" class="hidden" accept="image/*" onchange="handlePhotoUpload(this)">
+
+                <button onclick="handleBan()" class="action-btn btn-ban">
+                    <i class="fa-solid fa-user-slash"></i> <span id="ban-text">Betar Elemento</span>
+                </button>
+                <button onclick="handleDelete()" class="action-btn btn-delete">
+                    <i class="fa-solid fa-trash"></i> Eliminar Definitivamente
+                </button>
+            </div>
+            
+            <button onclick="closeModals()" class="w-full mt-6 py-3 text-[10px] font-black uppercase text-slate-400">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL INTEGRAR A PROYECTO -->
+    <div id="integrate-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="text-sm font-black uppercase text-slate-800 mb-4 border-b pb-2">Asignar a Proyecto</h3>
+            <div class="space-y-4">
+                <div id="project-selection-box">
+                    <label class="text-[9px] font-black text-slate-400 uppercase block mb-1">Proyectos Vigentes</label>
+                    <select id="project-select" class="input-industrial cursor-pointer">
+                        <!-- Dinámico -->
+                    </select>
+                </div>
+
+                <div id="no-project-warning" class="hidden p-4 bg-amber-50 border border-amber-100 rounded-xl mb-4 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mb-2"></i>
+                    <p class="text-[10px] font-bold text-amber-800 uppercase leading-tight">Sin proyectos vigentes registrados.</p>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button id="btn-save-integration" onclick="confirmIntegration()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Guardar Cambios</button>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="closeModals()" class="flex-1 py-3 bg-slate-100 rounded-xl font-black uppercase text-[10px] text-slate-500">Cancelar</button>
+                        <button id="btn-go-to-projects" onclick="goToEmpresas()" class="flex-1 bg-indigo-50 text-indigo-700 border border-indigo-100 py-3 rounded-xl font-black uppercase text-[10px] hover:bg-indigo-100">
+                            <i class="fa-solid fa-building-circle-plus mr-1"></i> Ir a Proyectos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTRUCTURA SPLIT -->
+    <aside class="sidebar">
+        <div class="sidebar-header">Empresas Prestadoras</div>
+        <div class="p-3">
+            <input type="text" id="companySearch" oninput="renderSidebar()" placeholder="Buscar empresa..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-bold outline-none">
+        </div>
+        <div id="company-list" class="flex-1 overflow-y-auto no-scrollbar">
+            <!-- Dinámico -->
+        </div>
+    </aside>
+
+    <main class="main-workspace">
+        <header class="workspace-header">
+            <div>
+                <h2 id="view-company-name" class="text-sm font-black uppercase tracking-tight text-slate-800">Seleccione una empresa</h2>
+                <p id="view-project-status" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Control de Catálogo</p>
+            </div>
+            
+            <div id="add-tools" class="hidden flex items-center gap-3">
+                <input type="text" id="newWorkerName" placeholder="Nombre completo del prestador..." class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-bold outline-none w-72">
+                <button onclick="addWorker()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg active:scale-95">
+                    <i class="fa-solid fa-user-plus mr-2"></i> Registrar
+                </button>
+            </div>
+        </header>
+
+        <div class="content-scroll">
+            <div id="personal-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <!-- Dinámico -->
+            </div>
+
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full opacity-30">
+                <i class="fa-solid fa-users-gear text-5xl mb-4"></i>
+                <p class="text-xs font-black uppercase tracking-widest text-center leading-relaxed">Gestione el personal y<br>sus acreditaciones de acceso</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { firebaseConfig } from '../../script.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cic-71';
+
+        const catalogRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'Prestadores');
+        const projectsRef = doc(db, 'artifacts', appId, 'public', 'data', 'Catalogos', 'ProyectosPrestadores');
+
+        let catalogData = {}, projectsData = {};
+        let selectedCompany = null;
+        let selectedWorkerIndex = null;
+
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                onSnapshot(catalogRef, s => { catalogData = s.data() || {}; renderSidebar(); if(selectedCompany) renderPersonal(); });
+                onSnapshot(projectsRef, s => { projectsData = s.data() || {}; });
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+            }
+        });
+
+        window.renderSidebar = () => {
+            const list = document.getElementById('company-list');
+            const query = document.getElementById('companySearch').value.toLowerCase();
+            list.innerHTML = '';
+            
+            Object.keys(catalogData).sort().forEach(c => {
+                if (!c.toLowerCase().includes(query)) return;
+                const count = catalogData[c].length;
+                const item = document.createElement('div');
+                item.className = `company-item ${selectedCompany === c ? 'active' : ''}`;
+                item.onclick = () => selectCompany(c);
+                item.innerHTML = `
+                    <span class="text-[11px] uppercase">${c}</span>
+                    <span class="text-[9px] font-bold text-slate-400">${count}</span>
+                `;
+                list.appendChild(item);
+            });
+        };
+
+        window.selectCompany = (company) => {
+            selectedCompany = company;
+            document.getElementById('view-company-name').innerText = company;
+            document.getElementById('add-tools').classList.remove('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            renderSidebar();
+            renderPersonal();
+        };
+
+        window.renderPersonal = () => {
+            const grid = document.getElementById('personal-grid');
+            grid.innerHTML = '';
+            const workers = catalogData[selectedCompany] || [];
+
+            workers.forEach((w, index) => {
+                const worker = typeof w === 'string' ? { name: w, status: 'active' } : w;
+                const isBanned = worker.status === 'banned';
+                
+                grid.innerHTML += `
+                    <div class="person-card ${isBanned ? 'banned' : ''}" onclick="openActions(${index})">
+                        <div class="avatar-box">
+                            ${worker.photoUrl ? `<img src="${worker.photoUrl}">` : `<i class="fa-solid ${isBanned ? 'fa-user-lock' : 'fa-user'} status-icon"></i>`}
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h4 class="text-[11px] font-black uppercase truncate">${worker.name}</h4>
+                            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
+                                ${worker.projectLocation ? `<i class="fa-solid fa-location-dot"></i> ${worker.projectLocation}` : 'Sin área asignada'}
+                            </p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-200"></i>
+                    </div>
+                `;
+            });
+        };
+
+        window.addWorker = async () => {
+            const name = document.getElementById('newWorkerName').value.trim();
+            if (!name || !selectedCompany) return;
+
+            const workers = catalogData[selectedCompany] || [];
+            workers.push({ name, status: 'active', timestamp: Date.now() });
+
+            try {
+                await setDoc(catalogRef, { [selectedCompany]: workers }, { merge: true });
+                document.getElementById('newWorkerName').value = '';
+            } catch (e) { console.error(e); }
+        };
+
+        window.openActions = (index) => {
+            selectedWorkerIndex = index;
+            const w = catalogData[selectedCompany][index];
+            const worker = typeof w === 'string' ? { name: w, status: 'active' } : w;
+            
+            document.getElementById('target-name').innerText = worker.name;
+            document.getElementById('target-company').innerText = selectedCompany;
+            document.getElementById('ban-text').innerText = worker.status === 'banned' ? 'Quitar Restricción' : 'Betar Elemento';
+            
+            const avatarBox = document.getElementById('modal-avatar');
+            avatarBox.innerHTML = worker.photoUrl ? `<img src="${worker.photoUrl}">` : '<i class="fa-solid fa-user"></i>';
+            document.getElementById('photo-btn-text').innerText = worker.photoUrl ? 'Actualizar Foto' : 'Subir Fotografía';
+
+            document.getElementById('action-modal').style.display = 'flex';
+        };
+
+        // --- GESTIÓN DE FOTOGRAFÍA ---
+        window.handlePhotoUpload = async (input) => {
+            const file = input.files[0];
+            if (!file || selectedWorkerIndex === null) return;
+
+            const status = document.getElementById('upload-status');
+            status.classList.remove('hidden');
+
+            const worker = catalogData[selectedCompany][selectedWorkerIndex];
+            const workerName = typeof worker === 'string' ? worker : worker.name;
+            
+            // Ruta: prestadores/{empresa}/{nombre_elemento}.png
+            const storagePath = `prestadores/${selectedCompany.replace(/\s+/g, '_')}/${workerName.replace(/\s+/g, '_')}_${Date.now()}`;
+            const fileRef = ref(storage, storagePath);
+
+            try {
+                const snapshot = await uploadBytes(fileRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+
+                const workers = [...catalogData[selectedCompany]];
+                const current = typeof workers[selectedWorkerIndex] === 'string' 
+                    ? { name: workers[selectedWorkerIndex], status: 'active' } 
+                    : workers[selectedWorkerIndex];
+
+                workers[selectedWorkerIndex] = { ...current, photoUrl: url };
+                await setDoc(catalogRef, { [selectedCompany]: workers }, { merge: true });
+
+                // Actualizar modal inmediatamente
+                document.getElementById('modal-avatar').innerHTML = `<img src="${url}">`;
+                document.getElementById('photo-btn-text').innerText = 'Actualizar Foto';
+            } catch (e) {
+                console.error("Error al subir foto:", e);
+                alert("Error al cargar la imagen. Intente nuevamente.");
+            } finally {
+                status.classList.add('hidden');
+                input.value = '';
+            }
+        };
+
+        window.openIntegrate = () => {
+            const select = document.getElementById('project-select');
+            const selectionBox = document.getElementById('project-selection-box');
+            const warningBox = document.getElementById('no-project-warning');
+            const saveBtn = document.getElementById('btn-save-integration');
+            
+            const projects = projectsData[selectedCompany] || [];
+            const now = new Date().toISOString().split('T')[0];
+            const activeProjects = projects.filter(p => now >= p.start && now <= p.end);
+
+            if (activeProjects.length > 0) {
+                selectionBox.classList.remove('hidden');
+                warningBox.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+                select.innerHTML = activeProjects.map(p => `<option value="${p.location}">${p.location} (Vence: ${p.end})</option>`).join('');
+            } else {
+                selectionBox.classList.add('hidden');
+                warningBox.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+            }
+
+            document.getElementById('integrate-modal').style.display = 'flex';
+        };
+
+        window.confirmIntegration = async () => {
+            const loc = document.getElementById('project-select').value;
+            if (!loc) return;
+
+            const workers = [...catalogData[selectedCompany]];
+            const current = typeof workers[selectedWorkerIndex] === 'string' 
+                ? { name: workers[selectedWorkerIndex] } 
+                : workers[selectedWorkerIndex];
+
+            workers[selectedWorkerIndex] = { ...current, projectLocation: loc };
+
+            try {
+                await setDoc(catalogRef, { [selectedCompany]: workers }, { merge: true });
+                closeModals();
+            } catch (e) { console.error(e); }
+        };
+
+        window.handleBan = async () => {
+            const workers = [...catalogData[selectedCompany]];
+            const current = typeof workers[selectedWorkerIndex] === 'string' 
+                ? { name: workers[selectedWorkerIndex], status: 'active' } 
+                : workers[selectedWorkerIndex];
+
+            const newStatus = current.status === 'banned' ? 'active' : 'banned';
+            workers[selectedWorkerIndex] = { ...current, status: newStatus };
+
+            try {
+                await setDoc(catalogRef, { [selectedCompany]: workers }, { merge: true });
+                closeModals();
+            } catch (e) { console.error(e); }
+        };
+
+        window.handleDelete = async () => {
+            if (!confirm("⚠️ ATENCIÓN: Se eliminará definitivamente al colaborador del catálogo. ¿Desea continuar?")) return;
+            
+            const workers = [...catalogData[selectedCompany]];
+            workers.splice(selectedWorkerIndex, 1);
+
+            try {
+                await setDoc(catalogRef, { [selectedCompany]: workers }, { merge: true });
+                closeModals();
+            } catch (e) { console.error(e); }
+        };
+
+        window.closeModals = () => {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            selectedWorkerIndex = null;
+        };
+
+        window.goToEmpresas = () => {
+            window.parent.postMessage({ action: 'switchView', id: 'empresas' }, '*');
+            closeModals();
+        };
+
+    </script>
+</body>
+</html>

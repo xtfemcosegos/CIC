@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestión de Prestadores - CIC 7.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* --- ENCABEZADO GRIS AZULADO (SUB-SHELL) --- */
+        .app-header {
+            background: linear-gradient(180deg, 
+                #475569 0%, 
+                #334155 25%, 
+                #1e293b 50%, 
+                #334155 75%, 
+                #475569 100%
+            );
+            height: 55px;
+            border-bottom: 1px solid #1e293b;
+            display: flex; 
+            align-items: center; 
+            padding: 0 1rem; 
+            flex: none; 
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+            gap: 1.5rem;
+        }
+
+        /* Botón de retorno minimalista */
+        .sub-back-btn {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1; transition: all 0.2s;
+        }
+        .sub-back-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+
+        .nav-tabs {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 3px;
+            border-radius: 10px;
+            display: flex;
+            gap: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            flex: none;
+        }
+
+        .tab-btn {
+            padding: 0.4rem 1.2rem;
+            border-radius: 7px;
+            font-size: 9px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.05em;
+        }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- ÁREA DE PERSISTENCIA --- */
+        .content-area {
+            flex: 1;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        .view-instance {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: none; z-index: 1; pointer-events: none; opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .view-instance.active {
+            z-index: 10; opacity: 1; pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+            .app-header { height: auto; padding: 0.75rem; flex-wrap: wrap; gap: 0.75rem; }
+            .nav-tabs { width: 100%; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <!-- Selector a la izquierda con botón de retorno -->
+        <div onclick="window.parent.postMessage({action:'toggleMenu'}, '*')" class="sub-back-btn" title="Menú">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+
+        <nav class="nav-tabs" id="tabContainer">
+            <div onclick="setView('acceso', this)" class="tab-btn active" data-view="acceso">Acceso</div>
+            <div onclick="setView('historial', this)" class="tab-btn" data-view="historial">Historial</div>
+            <div onclick="setView('empresas', this)" class="tab-btn" data-view="empresas">Empresas</div>
+            <div onclick="setView('catalogo', this)" class="tab-btn" data-view="catalogo">Personal</div>
+        </nav>
+    </header>
+
+    <main class="content-area" id="viewport"></main>
+
+    <script>
+        const views = [
+            { id: 'acceso', file: 'Prestadores_Acceso.html' },
+            { id: 'historial', file: 'Prestadores_Historial.html' },
+            { id: 'empresas', file: 'Prestadores_Empresas.html' },
+            { id: 'catalogo', file: 'Prestadores_Catalogo.html' }
+        ];
+
+        function init() {
+            const viewport = document.getElementById('viewport');
+            views.forEach(v => {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'view-instance';
+                iframe.id = `view-${v.id}`;
+                iframe.dataset.id = v.id;
+                iframe.src = v.file;
+                viewport.appendChild(iframe);
+            });
+            document.getElementById('view-acceso').classList.add('active');
+        }
+
+        window.setView = (id, el) => {
+            // Si no se proporciona elemento, buscarlo por el atributo data-view
+            const targetEl = el || document.querySelector(`.tab-btn[data-view="${id}"]`);
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (targetEl) targetEl.classList.add('active');
+            
+            document.querySelectorAll('.view-instance').forEach(iframe => {
+                iframe.classList.toggle('active', iframe.dataset.id === id);
+            });
+        };
+
+        // Escuchar mensajes para navegación interna solicitada por los hijos
+        window.addEventListener('message', (e) => {
+            if (e.data.action === 'switchView' && e.data.id) {
+                window.setView(e.data.id);
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
