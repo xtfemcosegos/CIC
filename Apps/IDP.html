@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador IDP - CIC 7.1</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --md-background: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--md-background);
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-material {
+            background: white;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem;
+            box-sizing: border-box;
+            gap: 1rem;
+        }
+
+        .mini-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        /* --- CLASES DINÁMICAS PARA BOTONES --- */
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Estado 1: Destacado (Llamativo) */
+        .state-prominent {
+            background: linear-gradient(135deg, #3b82f6 0%, #d946ef 100%);
+            color: white;
+            padding: 1.5rem 1rem;
+            box-shadow: 0 10px 25px -5px rgba(217, 70, 239, 0.4), inset 0 2px 4px rgba(255,255,255,0.2);
+            transform: scale(1.02);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .state-prominent:hover:not(:disabled) {
+            filter: brightness(1.15);
+            transform: scale(1.05);
+            box-shadow: 0 15px 30px -5px rgba(217, 70, 239, 0.5);
+        }
+
+        /* Estado 2: Secundario (Grisáceo) */
+        .state-subtle {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+            box-shadow: none;
+            padding: 1rem 0.5rem;
+            transform: scale(1);
+        }
+        .state-subtle:hover:not(:disabled) {
+            background: #e2e8f0;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        /* Estado 3: Apagado / Deshabilitado */
+        .state-disabled {
+            background: #f8fafc;
+            color: #cbd5e1;
+            border: 2px dashed #e2e8f0;
+            cursor: not-allowed;
+            padding: 1.5rem 1rem;
+            opacity: 0.7;
+        }
+
+        /* Cuadro de texto que se adapta */
+        .report-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            /* Clave para adaptarse al texto interno pero mantener un mínimo para no colapsar */
+            min-width: 100%;
+            min-height: 100%;
+            width: fit-content;
+            height: fit-content;
+            white-space: pre; /* Permite crecimiento horizontal sin forzar salto de línea */
+            margin: 0;
+            outline: none;
+        }
+
+        /* Toast de notificación */
+        .toast { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: #10b981; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 10px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            display: none; 
+            z-index: 1000; 
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translate(-50%, 20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Animación de carga (Spinner) */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-bottom: 0.5rem;
+        }
+        
+        .loading .spinner { display: block; }
+        .loading .btn-icon { display: none; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbars personalizados */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .custom-scrollbar::-webkit-scrollbar-corner { background: transparent; }
+    </style>
+</head>
+<body>
+
+    <div class="card-material">
+        <!-- Encabezado -->
+        <div class="mini-header">
+            <i class="fa-solid fa-bolt text-blue-500 text-xl"></i>
+            <div class="flex-1">
+                <h2 class="text-[13px] font-black text-slate-900 uppercase tracking-widest">Reporte de Ingresos de Personal (IDP)</h2>
+                <p class="text-[10px] text-slate-500 font-bold mt-0.5 uppercase tracking-wider">Reporte generado de forma segura mediante <span class="text-blue-500">• Power Automate</span></p>
+            </div>
+            
+            <button onclick="closePanel()" class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors border border-transparent hover:border-red-100" title="Cerrar">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Diseño Lateral (Izquierda: Texto / Derecha: Botones) -->
+        <div class="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden mt-1">
+            
+            <!-- Zona del Reporte (Adaptable) -->
+            <div class="flex-1 bg-[#0f172a] rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] border-2 border-slate-800 overflow-auto custom-scrollbar relative p-5 group">
+                <!-- Se usa 'pre' para que respete el formato y se adapte al contenido -->
+                <pre id="result-area" class="report-box">El informe aparecerá aquí. Presiona el botón "Generar Reporte IDP" para comenzar la sincronización.</pre>
+            </div>
+
+            <!-- Zona de Botones de Acción (Lateral Derecho) -->
+            <div class="w-full md:w-[180px] flex flex-col gap-5 shrink-0 justify-center">
+                
+                <!-- Botón Generar / Actualizar -->
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center" id="lbl-fetch">Paso 1</span>
+                    <button id="btn-fetch" class="action-btn state-prominent" onclick="fetchIDPData()">
+                        <div class="spinner"></div>
+                        <i id="icon-fetch" class="fa-solid fa-cloud-arrow-down text-2xl btn-icon mb-1.5"></i>
+                        <span id="text-fetch">Generar Reporte IDP</span>
+                    </button>
+                </div>
+
+                <!-- Botón Copiar -->
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center" id="lbl-copy">Paso 2</span>
+                    <button id="btn-copy" class="action-btn state-disabled" onclick="copyToClipboard()" disabled>
+                        <i class="fa-regular fa-copy text-2xl mb-1.5"></i>
+                        <span id="text-copy">Copiar al Portapapeles</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-check-circle mr-1"></i> ¡Texto Copiado con Éxito!
+    </div>
+
+    <script>
+        // URL de la API de Power Automate
+        const API_URL = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3f23e918902c468885d1e877eb07e296/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GIyDP7RSVK1J11YXON9nlcTRfui3GE0fTgfmMkHHSPI";
+
+        const btnFetch = document.getElementById('btn-fetch');
+        const textFetch = document.getElementById('text-fetch');
+        const iconFetch = document.getElementById('icon-fetch');
+        
+        const btnCopy = document.getElementById('btn-copy');
+        const resultArea = document.getElementById('result-area');
+        const toast = document.getElementById('toast');
+
+        // Cerrar panel comunicándose con el iframe padre
+        window.closePanel = () => {
+            try {
+                window.parent.postMessage({ action: 'closeRightPanel' }, '*');
+            } catch(e) {
+                console.log("No se pudo cerrar el panel. Ejecutando de forma independiente.");
+            }
+        };
+
+        // Función principal de carga
+        async function fetchIDPData() {
+            // --- ESTADO DE CARGA ---
+            btnFetch.disabled = true;
+            btnFetch.classList.add('loading');
+            textFetch.textContent = "Procesando...";
+            btnCopy.disabled = true;
+            btnCopy.className = "action-btn state-disabled";
+            resultArea.textContent = "Conectando con el servidor de Power Automate...\nPor favor, espere...";
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    body: JSON.stringify({}) 
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error de conexión: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.text();
+                
+                // Formateo del texto recibido
+                try {
+                    const jsonData = JSON.parse(data);
+                    resultArea.textContent = JSON.stringify(jsonData, null, 2);
+                } catch(e) {
+                    resultArea.textContent = data;
+                }
+
+                // --- ESTADO DE ÉXITO (Cambio visual de botones) ---
+                
+                // 1. Apagar el botón de generar (hacerlo grisáceo)
+                btnFetch.className = "action-btn state-subtle";
+                textFetch.textContent = "Actualizar Reporte";
+                iconFetch.className = "fa-solid fa-rotate-right text-xl btn-icon mb-1";
+                
+                // 2. Encender el botón de copiar (hacerlo llamativo)
+                btnCopy.disabled = false;
+                btnCopy.className = "action-btn state-prominent";
+
+            } catch (error) {
+                console.error("Error al obtener IDP:", error);
+                resultArea.textContent = `[!] Error de Comunicación\n\nNo se pudo obtener la información.\nDetalle técnico: ${error.message}`;
+                
+                // Restaurar botón de generar a su estado llamativo si falla
+                btnFetch.className = "action-btn state-prominent";
+                textFetch.textContent = "Reintentar Conexión";
+                iconFetch.className = "fa-solid fa-triangle-exclamation text-2xl btn-icon mb-1.5";
+
+            } finally {
+                // Quitar indicador de carga
+                btnFetch.disabled = false;
+                btnFetch.classList.remove('loading');
+            }
+        }
+
+        // Función para copiar el contenido al portapapeles
+        function copyToClipboard() {
+            const textToCopy = resultArea.textContent;
+            if (!textToCopy || textToCopy.includes("Presiona el botón")) return;
+
+            // Método universal compatible con iframes usando un textarea temporal
+            const tempTA = document.createElement('textarea');
+            tempTA.value = textToCopy;
+            // Estilos para que no afecte el layout al insertarlo
+            tempTA.style.position = 'absolute';
+            tempTA.style.left = '-9999px';
+            document.body.appendChild(tempTA);
+            
+            tempTA.select();
+            tempTA.setSelectionRange(0, 99999);
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast();
+                    
+                    // Notificar al padre (Panel principal) que la tarea se puede marcar como hecha
+                    try {
+                        window.parent.postMessage({ action: 'idpCopied' }, '*');
+                    } catch(e) {}
+                } else {
+                    alert("No se pudo copiar el texto automáticamente.");
+                }
+            } catch (err) {
+                console.error("Fallo al ejecutar copy:", err);
+                alert("Tu navegador no soporta el copiado automático en este contexto.");
+            }
+            
+            document.body.removeChild(tempTA);
+            window.getSelection().removeAllRanges();
+        }
+
+        function showToast() {
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

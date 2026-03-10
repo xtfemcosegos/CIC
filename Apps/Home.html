@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Home - CIC 7.1 (Shell Mode)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* --- ENCABEZADO METÁLICO CLARO (5 NIVELES) --- */
+        .metallic-header {
+            background: linear-gradient(180deg, 
+                #f8fafc 0%, 
+                #e2e8f0 25%, 
+                #ffffff 50%, 
+                #cbd5e1 75%, 
+                #f1f5f9 100%
+            );
+            height: 50px; 
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 100;
+        }
+
+        .metallic-header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                rgba(0, 0, 0, 0.03) 1px,
+                rgba(0, 0, 0, 0.03) 2px
+            );
+            pointer-events: none;
+        }
+
+        /* Branding Izquierda */
+        .branding-section { 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem; 
+            flex: 1;
+            z-index: 10;
+        }
+
+        .apps-drawer-btn {
+            width: 32px; 
+            height: 32px; 
+            border-radius: 8px; 
+            background: rgba(0, 0, 0, 0.03);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer; 
+            border: 1px solid rgba(0, 0, 0, 0.1); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .apps-drawer-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            transform: rotate(90deg);
+            border-color: #3b82f6;
+        }
+
+        /* Selector de Vistas Centro (Tabs Toggle) */
+        .nav-tabs {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 3px;
+            border-radius: 12px;
+            display: flex;
+            gap: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            flex: none;
+            z-index: 10;
+        }
+
+        .tab-btn {
+            padding: 0.35rem 1rem;
+            border-radius: 9px;
+            font-size: 9px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 0.05em;
+        }
+        .tab-btn:hover {
+            color: #1e293b;
+            background: rgba(0, 0, 0, 0.02);
+        }
+        .tab-btn.active {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Reloj Derecha con Gloss */
+        .clock-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            z-index: 10;
+        }
+
+        .clock-container {
+            font-family: 'Orbitron', sans-serif;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 0.2rem 0.75rem; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 700;
+            color: #2563eb;
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem;
+            box-shadow: inset 0 1px 4px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0,0,0,0.05);
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+
+        /* --- LAYOUT PRINCIPAL (TRIPLE PANEL) --- */
+        .shell-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background-color: #f1f5f9;
+        }
+
+        .iframe-shell {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Pantalla de Carga */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 900px) {
+            .branding-section h1, .branding-section p { display: none; }
+            .nav-tabs { transform: scale(0.9); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Carga Inicial -->
+    <div id="loadingOverlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-slate-600 font-medium tracking-widest uppercase text-[10px]">Sincronizando Protección Patrimonial...</p>
+    </div>
+
+    <!-- ENCABEZADO SUPERIOR -->
+    <header class="metallic-header">
+        <!-- Izquierda: Branding y Cajón -->
+        <div class="branding-section">
+            <div onclick="window.parent.postMessage({action:'toggleMenu'}, '*')" class="apps-drawer-btn" title="Menú de Aplicaciones">
+                <img src="../MM/Apps.png" alt="Apps" class="w-4 h-4 opacity-50">
+            </div>
+            <div class="hidden md:block">
+                <h1 class="text-[11px] font-black text-slate-700 uppercase tracking-tighter leading-none">CIC 7.1</h1>
+                <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Protección Patrimonial</p>
+            </div>
+        </div>
+
+        <!-- Centro: Navegación Toggle -->
+        <nav class="nav-tabs">
+            <div onclick="changeSubshellTab('Tareas', this)" class="tab-btn active">Tareas</div>
+            <div onclick="changeSubshellTab('Bitácora', this)" class="tab-btn">Bitácora</div>
+            <div onclick="changeSubshellTab('Reportes', this)" class="tab-btn">Reportes</div>
+        </nav>
+
+        <!-- Derecha: Reloj Gloss -->
+        <div class="clock-wrapper">
+            <div class="clock-container">
+                <i class="fa-regular fa-clock text-[10px] opacity-70"></i>
+                <span id="clock">00:00:00</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Layout Principal -->
+    <div class="shell-container flex-1">
+        
+        <!-- PANEL IZQUIERDO: Listado -->
+        <aside class="w-80 md:w-96 bg-white border-r flex flex-col h-full shadow-lg relative z-40">
+            <div class="flex-grow h-full">
+                <iframe id="listFrame" src="../Complementos/Home/Listado_Tareas.html" class="iframe-shell"></iframe>
+            </div>
+            
+            <!-- Botón FAB -->
+            <button onclick="navigateCenter('nueva')" 
+                class="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all transform hover:scale-110 active:scale-95 z-20 group" 
+                title="Nueva Entrada">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        </aside>
+
+        <!-- PANEL CENTRAL -->
+        <main class="flex-grow bg-white flex flex-col h-full relative z-30">
+            <header class="h-10 px-4 border-b flex justify-between items-center bg-slate-50/50 backdrop-blur-sm z-10 shadow-sm">
+                <h1 id="viewTitle" class="text-[10px] font-black uppercase tracking-widest text-slate-500">Panel de Control Central</h1>
+                <div class="flex items-center gap-2">
+                    <span class="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase">Sistema Activo</span>
+                </div>
+            </header>
+            
+            <div id="centerContent" class="flex-grow relative overflow-hidden bg-gray-50/50">
+                <div id="centerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300 p-8 text-center">
+                    <i class="fa-solid fa-layer-group text-4xl mb-4 opacity-5"></i>
+                    <p class="italic text-[10px] font-medium tracking-widest uppercase">Seleccione un elemento para visualizar</p>
+                </div>
+                <iframe id="mainFrame" class="iframe-shell hidden"></iframe>
+            </div>
+        </main>
+
+        <!-- PANEL DERECHO -->
+        <aside class="w-64 bg-slate-50 border-l p-4 hidden lg:flex flex-col h-full z-20">
+            <h2 class="font-black text-slate-700 text-[10px] uppercase tracking-[0.2em] border-b border-slate-200 pb-3 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-microchip text-blue-500"></i> Monitor Operativo
+            </h2>
+            <div id="statusArea" class="space-y-4">
+                <div class="flex flex-col gap-1 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+                    <div class="flex items-center gap-2">
+                        <span class="h-1.5 w-1.5 bg-green-500 rounded-full"></span>
+                        <span class="text-[10px] font-black text-green-700 uppercase">Online</span>
+                    </div>
+                    <p class="text-[9px] text-green-600/70 font-medium italic leading-tight">Sincronización en tiempo real habilitada.</p>
+                </div>
+            </div>
+            
+            <div class="mt-auto bg-slate-800 p-4 rounded-xl">
+                <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-1">Versión de Sistema</p>
+                <p class="text-white text-[10px] font-black">7.1.22 RELEASE</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Alerta Global -->
+    <div id="globalAlert" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl transition-all duration-500 opacity-0 pointer-events-none z-[500] font-bold text-[9px] uppercase tracking-widest scale-95 border border-white/10">
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        let firebaseConfig;
+        try {
+            const module = await import('../script.js');
+            firebaseConfig = module.firebaseConfig;
+        } catch (e) {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Reloj Gloss
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', { hour12: false });
+            const el = document.getElementById('clock');
+            if (el) el.innerText = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 1. Verificación Estricta de Sesión (No anónimos)
+        onAuthStateChanged(auth, (user) => {
+            const loader = document.getElementById('loadingOverlay');
+            if (user && !user.isAnonymous) {
+                if (loader) loader.classList.add('hidden');
+            } else {
+                window.location.href = "../index.html";
+            }
+        });
+
+        // 2. Cambio de Subshell vía Tabs
+        window.changeSubshellTab = (name, el) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+
+            const listFrame = document.getElementById('listFrame');
+            const paths = {
+                'Tareas': '../Complementos/Home/Listado_Tareas.html',
+                'Bitácora': '../Subshell/Bitácora.html',
+                'Reportes': '../Subshell/Reportes.html'
+            };
+            
+            const newPath = paths[name] || paths['Tareas'];
+            if (listFrame) listFrame.src = newPath;
+            
+            navigateCenter('placeholder');
+            showGlobalAlert(`Módulo ${name} Activado`);
+        };
+
+        // 3. Navegación Workspace
+        window.navigateCenter = (view, data = null) => {
+            const frame = document.getElementById('mainFrame');
+            const placeholder = document.getElementById('centerPlaceholder');
+            const title = document.getElementById('viewTitle');
+
+            if (view === 'placeholder') {
+                if (frame) frame.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+                if (title) title.innerText = "Panel de Control Central";
+                return;
+            }
+
+            if (placeholder) placeholder.classList.add('hidden');
+            if (frame) {
+                frame.classList.remove('hidden');
+                switch(view) {
+                    case 'nueva':
+                        if (title) title.innerText = "Nueva Actividad Operativa";
+                        frame.src = "../Complementos/Home/Nueva_Tarea.html";
+                        break;
+                    case 'detalle':
+                        if (title) title.innerText = "Visualización de Registro";
+                        frame.src = `../Complementos/Home/Detalle_Tarea.html?id=${data}`;
+                        break;
+                    default:
+                        frame.classList.add('hidden');
+                        if (placeholder) placeholder.classList.remove('hidden');
+                }
+            }
+        };
+
+        // 4. Comunicación entre Frames
+        window.addEventListener('message', (event) => {
+            const { type, payload } = event.data;
+            if (type === 'TASK_SELECTED') navigateCenter('detalle', payload.id);
+            if (type === 'TASK_CREATED_SUCCESS') {
+                showGlobalAlert("Registro Guardado");
+                navigateCenter('placeholder');
+                const lf = document.getElementById('listFrame');
+                if (lf) lf.contentWindow.location.reload();
+            }
+            if (type === 'TASK_UPDATED_SUCCESS' || type === 'TASK_DELETED_SUCCESS') {
+                const lf = document.getElementById('listFrame');
+                if (lf) lf.contentWindow.location.reload();
+            }
+            if (type === 'CLOSE_DETAIL') navigateCenter('placeholder');
+            if (type === 'SHOW_MESSAGE') showGlobalAlert(payload.message);
+        });
+
+        function showGlobalAlert(msg) {
+            const alert = document.getElementById('globalAlert');
+            if (!alert) return;
+            alert.innerText = msg;
+            alert.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            alert.classList.add('opacity-100', 'scale-100');
+            setTimeout(() => {
+                alert.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                alert.classList.remove('opacity-100', 'scale-100');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navegación CIC - Aplicaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            margin: 0;
+            height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .app-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .app-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* Aspect Ratio 16:9 */
+            overflow: hidden;
+            border-radius: 1rem;
+            background: #000;
+        }
+
+        /* La miniatura real del archivo mediante iframe escalado */
+        .preview-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400%; /* Renderiza a tamaño grande */
+            height: 400%;
+            transform: scale(0.25); /* Escala para que parezca miniatura */
+            transform-origin: 0 0;
+            border: none;
+            pointer-events: none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-8 lg:p-16 flex flex-col items-center">
+
+    <div class="max-w-7xl w-full">
+        <header class="mb-12 flex justify-between items-end">
+            <div>
+                <h1 class="text-5xl font-black tracking-tighter text-white uppercase italic">Menú CIC</h1>
+                <p class="text-blue-400 font-bold uppercase tracking-[0.3em] text-[10px]">Ecosistema de Protección Patrimonial</p>
+            </div>
+            <button onclick="window.parent.postMessage({action: 'closeMenu'}, '*')" class="bg-white/5 hover:bg-white/10 p-4 rounded-full transition-all group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </header>
+
+        <div id="gridApps" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto no-scrollbar pb-20">
+            <!-- Las aplicaciones se cargan dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        const apps = [
+            { id: 'home', name: 'Inicio', url: '../Apps/Home.html', icon: '../MM/Logo.png', color: '#3b82f6', desc: 'Panel de control principal y resumen operativo.' },
+            { id: 'asistencia', name: 'Asistencia', url: '../Apps/RegAs.html', icon: '../MM/RegAs.png', color: '#10b981', desc: 'Registro de entradas, salidas y roles del personal.' },
+            { id: 'usuarios', name: 'Usuarios', url: '../Apps/RegUs.html', icon: '../MM/RegUs.png', color: '#6366f1', desc: 'Gestión de expedientes y funciones operativas.' },
+            { id: 'siniestros', name: 'Siniestros', url: '../Apps/RegSin.html', icon: '../MM/RegSin.png', color: '#f43f5e', desc: 'Control y reporte de incidentes patrimoniales.' },
+            { id: 'inventario', name: 'Inventario', url: '../Apps/RegIn.html', icon: '../MM/RegIn.png', color: '#f59e0b', desc: 'Control de activos e insumos de seguridad.' },
+            { id: 'marbetes', name: 'Marbetes', url: '../Apps/Marbetes.html', icon: '../MM/RegMa.png', color: '#a855f7', desc: 'Gestión de identificadores vehiculares.' },
+            { id: 'rondines', name: 'Rondines', url: '../Apps/Bitacora_Rondinero.html', icon: '../MM/Bitácora.png', color: '#06b6d4', desc: 'Bitácora en tiempo real de recorridos de seguridad.' }
+        ];
+
+        function selectApp(id) {
+            window.parent.postMessage({ action: 'selectApp', id: id }, '*');
+        }
+
+        function renderApps() {
+            const grid = document.getElementById('gridApps');
+            apps.forEach(app => {
+                const card = document.createElement('div');
+                card.className = "app-card bg-white/5 border border-white/10 p-6 rounded-[2rem] cursor-pointer flex flex-col group";
+                card.onclick = () => selectApp(app.id);
+                
+                card.innerHTML = `
+                    <div class="preview-container mb-6 shadow-2xl">
+                        <iframe src="${app.url}" class="preview-iframe"></iframe>
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60"></div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="p-3 rounded-2xl" style="background-color: ${app.color}20">
+                            <img src="${app.icon}" class="h-6 w-6 object-contain" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <h3 class="text-xl font-extrabold uppercase tracking-tighter">${app.name}</h3>
+                    </div>
+                    
+                    <p class="text-slate-400 text-xs leading-relaxed mb-6 flex-grow">${app.desc}</p>
+                    
+                    <div class="flex items-center justify-between mt-auto">
+                        <span class="text-[9px] font-bold px-3 py-1 rounded-full bg-white/5 text-slate-500 group-hover:text-white transition-colors">ESTÁNDAR CIC</span>
+                        <div class="h-8 w-8 rounded-full flex items-center justify-center transition-all group-hover:translate-x-1" style="color: ${app.color}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.onload = renderApps;
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Tarea</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-white p-4 md:p-8">
+
+    <div id="authGuard" class="hidden">
+        <div class="max-w-2xl mx-auto animate-fade-in">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">Registrar Nueva Actividad</h2>
+            </div>
+
+            <form id="taskForm" class="space-y-6">
+                <!-- Título -->
+                <div>
+                    <label for="titulo" class="block text-sm font-medium text-gray-700 mb-1">Título de la actividad</label>
+                    <input type="text" id="titulo" name="titulo" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        placeholder="Ej. Revisión de inventario">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Hora -->
+                    <div>
+                        <label for="hora" class="block text-sm font-medium text-gray-700 mb-1">Hora programada</label>
+                        <input type="time" id="hora" name="hora" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none">
+                    </div>
+
+                    <!-- Prioridad -->
+                    <div>
+                        <label for="prioridad" class="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
+                        <select id="prioridad" name="prioridad"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none">
+                            <option value="baja">Baja</option>
+                            <option value="media" selected>Media</option>
+                            <option value="alta">Alta</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label for="desc" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <textarea id="desc" name="desc" rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none"
+                        placeholder="Escribe detalles adicionales..."></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex items-center justify-end space-x-4 pt-4 border-t">
+                    <button type="button" onclick="window.parent.postMessage({type: 'TASK_CANCELLED'}, '*')"
+                        class="px-6 py-2 text-gray-500 font-medium hover:text-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitBtn"
+                        class="px-6 py-2 bg-blue-600 rounded-lg text-white font-medium hover:bg-blue-700 shadow-lg transition-all transform active:scale-95 disabled:opacity-50">
+                        Guardar Tarea
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mensaje de error de acceso -->
+    <div id="accessDenied" class="hidden h-screen flex items-center justify-center text-center p-6">
+        <div class="max-w-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 class="text-lg font-bold text-gray-800">Acceso Denegado</h3>
+            <p class="text-sm text-gray-500 mt-2">Se requiere una sesión auténtica para registrar tareas. Los usuarios anónimos no están permitidos.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE FIREBASE
+        let firebaseConfig;
+        try {
+            const module = await import('../../script.js');
+            firebaseConfig = module.firebaseConfig;
+        } catch (e) {
+            firebaseConfig = JSON.parse(window.parent.__firebase_config || '{}');
+        }
+
+        const appId = window.parent.__app_id || 'default-app-id';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 1. Verificación de Seguridad
+        onAuthStateChanged(auth, (user) => {
+            if (user && !user.isAnonymous) {
+                document.getElementById('authGuard').classList.remove('hidden');
+                document.getElementById('accessDenied').classList.add('hidden');
+            } else {
+                document.getElementById('authGuard').classList.add('hidden');
+                document.getElementById('accessDenied').classList.remove('hidden');
+            }
+        });
+
+        // 2. Manejo del Formulario
+        const form = document.getElementById('taskForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Guardando...";
+
+            try {
+                // Datos de la tarea
+                const taskData = {
+                    titulo: document.getElementById('titulo').value,
+                    hora: document.getElementById('hora').value,
+                    prioridad: document.getElementById('prioridad').value,
+                    desc: document.getElementById('desc').value,
+                    completada: false, // Por defecto nueva
+                    timestamp: serverTimestamp(),
+                    createdBy: auth.currentUser.uid
+                };
+
+                // Guardar en Firestore siguiendo la ruta obligatoria
+                const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tareas');
+                await addDoc(tasksRef, taskData);
+
+                // Notificar al Shell del éxito
+                window.parent.postMessage({
+                    type: 'TASK_CREATED_SUCCESS',
+                    payload: { title: taskData.titulo }
+                }, '*');
+
+                form.reset();
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                window.parent.postMessage({
+                    type: 'SHOW_MESSAGE',
+                    payload: { message: "Error al guardar la tarea. Intente de nuevo." }
+                }, '*');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Guardar Tarea";
+            }
+        };
+    </script>
+</body>
+</html>

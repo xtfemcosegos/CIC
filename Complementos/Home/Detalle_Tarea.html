@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Tarea</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-white p-4 md:p-8">
+
+    <!-- Protector de Autenticación -->
+    <div id="authGuard" class="hidden">
+        <div id="loadingState" class="flex flex-col items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-500 text-sm">Cargando información detallada...</p>
+        </div>
+
+        <div id="detailContent" class="hidden max-w-3xl mx-auto animate-fade-in">
+            
+            <!-- VISTA DE LECTURA -->
+            <div id="viewMode">
+                <div class="flex items-center justify-between border-b pb-6 mb-6">
+                    <div class="flex flex-col">
+                        <div class="flex items-center space-x-2">
+                            <span id="taskTime" class="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full uppercase tracking-tighter">--:--</span>
+                            <span id="taskPriority" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase border"></span>
+                        </div>
+                        <h2 id="taskTitle" class="text-3xl font-bold text-gray-800 mt-3 leading-tight">Título de la Actividad</h2>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="toggleEditMode(true)" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="Editar tarea">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <button id="deleteBtn" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors" title="Eliminar tarea">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                        <button onclick="window.parent.postMessage({type: 'CLOSE_DETAIL'}, '*')" class="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-6">
+                        <section>
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Descripción de la Actividad</h3>
+                            <div id="taskDesc" class="text-gray-600 leading-relaxed bg-gray-50 p-6 rounded-2xl border-l-4 border-blue-500 min-h-[150px] whitespace-pre-wrap">
+                                Sin descripción disponible.
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="p-4 border border-gray-100 rounded-xl bg-gray-50/50">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Estado Actual</p>
+                            <div id="taskStatus" class="flex items-center space-x-2">
+                                <span class="h-2 w-2 bg-orange-500 rounded-full animate-pulse"></span>
+                                <span class="text-sm font-bold text-orange-600 uppercase tracking-tight">Pendiente</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 border border-gray-100 rounded-xl bg-gray-50/50">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Fecha de Registro</p>
+                            <p id="taskDate" class="text-sm font-medium text-gray-600 italic">--/--/--</p>
+                        </div>
+
+                        <button id="completeBtn" class="w-full py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-100 transition-all flex items-center justify-center space-x-2 transform active:scale-95 disabled:opacity-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Marcar como Realizada</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODO EDICIÓN -->
+            <div id="editMode" class="hidden">
+                <div class="border-b pb-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Editar Actividad</h2>
+                    <p class="text-sm text-gray-500">Modifica los campos necesarios y guarda los cambios.</p>
+                </div>
+
+                <form id="editForm" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Título</label>
+                        <input type="text" id="editTitle" required class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Hora</label>
+                            <input type="time" id="editTime" required class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Prioridad</label>
+                            <select id="editPriority" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="baja">Baja</option>
+                                <option value="media">Media</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descripción</label>
+                        <textarea id="editDesc" rows="5" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="toggleEditMode(false)" class="px-6 py-2 text-gray-500 font-medium">Cancelar</button>
+                        <button type="submit" id="saveBtn" class="px-8 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg transition-all active:scale-95">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Mensaje de error de acceso -->
+    <div id="accessDenied" class="hidden h-screen flex items-center justify-center text-center p-6">
+        <div class="max-w-xs text-center">
+            <div class="bg-red-50 p-4 rounded-full inline-block mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">Acceso Denegado</h3>
+            <p class="text-sm text-gray-500 mt-2">Inicie sesión para gestionar las tareas del sistema.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE FIREBASE
+        let firebaseConfig;
+        try {
+            const module = await import('../../script.js');
+            firebaseConfig = module.firebaseConfig;
+        } catch (e) {
+            firebaseConfig = JSON.parse(window.parent.__firebase_config || '{}');
+        }
+
+        const appId = window.parent.__app_id || 'default-app-id';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentTaskId = new URLSearchParams(window.location.search).get('id');
+        let taskDataCache = null;
+
+        // 1. Verificación de Seguridad
+        onAuthStateChanged(auth, (user) => {
+            if (user && !user.isAnonymous) {
+                document.getElementById('authGuard').classList.remove('hidden');
+                document.getElementById('accessDenied').classList.add('hidden');
+                if (currentTaskId) {
+                    loadTaskDetails(currentTaskId);
+                }
+            } else {
+                document.getElementById('authGuard').classList.add('hidden');
+                document.getElementById('accessDenied').classList.remove('hidden');
+            }
+        });
+
+        // 2. Carga y Renderizado
+        async function loadTaskDetails(taskId) {
+            try {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tareas', taskId);
+                const taskSnap = await getDoc(taskRef);
+
+                if (taskSnap.exists()) {
+                    taskDataCache = taskSnap.data();
+                    renderData(taskDataCache);
+                } else {
+                    document.getElementById('detailContent').innerHTML = `<div class="p-20 text-center text-gray-400 italic">La tarea no existe o fue eliminada.</div>`;
+                    document.getElementById('detailContent').classList.remove('hidden');
+                    document.getElementById('loadingState').classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Error al cargar:", err);
+                window.parent.postMessage({ type: 'SHOW_MESSAGE', payload: { message: "Error al cargar los detalles." } }, '*');
+            }
+        }
+
+        function renderData(data) {
+            // Llenar vista lectura
+            document.getElementById('taskTitle').innerText = data.titulo || 'Sin título';
+            document.getElementById('taskTime').innerText = data.hora || '--:--';
+            document.getElementById('taskDesc').innerText = data.desc || 'Sin descripción adicional.';
+            
+            // Llenar formulario edición
+            document.getElementById('editTitle').value = data.titulo || '';
+            document.getElementById('editTime').value = data.hora || '';
+            document.getElementById('editDesc').value = data.desc || '';
+            document.getElementById('editPriority').value = data.prioridad || 'media';
+
+            // Prioridad badge
+            const pBadge = document.getElementById('taskPriority');
+            pBadge.innerText = data.prioridad || 'Media';
+            const colors = {
+                'alta': 'border-red-200 text-red-600 bg-red-50',
+                'media': 'border-orange-200 text-orange-600 bg-orange-50',
+                'baja': 'border-green-200 text-green-600 bg-green-50'
+            };
+            pBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${colors[data.prioridad?.toLowerCase()] || colors.media}`;
+
+            // Fecha
+            if (data.timestamp) {
+                const date = data.timestamp.toDate();
+                document.getElementById('taskDate').innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+
+            // Estado completado
+            const statusDiv = document.getElementById('taskStatus');
+            const completeBtn = document.getElementById('completeBtn');
+            if (data.completada) {
+                statusDiv.innerHTML = `<span class="h-2 w-2 bg-green-500 rounded-full"></span><span class="text-sm font-bold text-green-600 uppercase tracking-tight">Completada</span>`;
+                completeBtn.disabled = true;
+                completeBtn.className = "w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold cursor-not-allowed flex items-center justify-center space-x-2";
+                completeBtn.innerHTML = `<span>Actividad Finalizada</span>`;
+            } else {
+                statusDiv.innerHTML = `<span class="h-2 w-2 bg-orange-500 rounded-full animate-pulse"></span><span class="text-sm font-bold text-orange-600 uppercase tracking-tight">Pendiente</span>`;
+                completeBtn.disabled = false;
+                completeBtn.className = "w-full py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-100 transition-all flex items-center justify-center space-x-2 transform active:scale-95";
+                completeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>Marcar como Realizada</span>`;
+            }
+
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('detailContent').classList.remove('hidden');
+        }
+
+        // 3. Gestión de Modos
+        window.toggleEditMode = (isEdit) => {
+            const viewMode = document.getElementById('viewMode');
+            const editMode = document.getElementById('editMode');
+            if (isEdit) {
+                viewMode.classList.add('hidden');
+                editMode.classList.remove('hidden');
+            } else {
+                viewMode.classList.remove('hidden');
+                editMode.classList.add('hidden');
+            }
+        };
+
+        // 4. Acciones de Formulario (Guardar)
+        document.getElementById('editForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Guardando...";
+
+            try {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tareas', currentTaskId);
+                const newData = {
+                    titulo: document.getElementById('editTitle').value,
+                    hora: document.getElementById('editTime').value,
+                    prioridad: document.getElementById('editPriority').value,
+                    desc: document.getElementById('editDesc').value,
+                    updatedAt: serverTimestamp()
+                };
+
+                await updateDoc(taskRef, newData);
+                
+                // Notificar al Shell para refrescar listado
+                window.parent.postMessage({ type: 'TASK_UPDATED_SUCCESS', payload: { id: currentTaskId } }, '*');
+                
+                toggleEditMode(false);
+                loadTaskDetails(currentTaskId); // Recargar info
+            } catch (err) {
+                console.error(err);
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Reintentar";
+            }
+        };
+
+        // 5. Otras Acciones (Completar / Eliminar)
+        document.getElementById('completeBtn').onclick = async () => {
+            if (!currentTaskId) return;
+            const btn = document.getElementById('completeBtn');
+            btn.disabled = true;
+            btn.innerText = "Sincronizando...";
+
+            try {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tareas', currentTaskId);
+                await updateDoc(taskRef, {
+                    completada: true,
+                    completedAt: serverTimestamp()
+                });
+                
+                window.parent.postMessage({ type: 'TASK_UPDATED_SUCCESS', payload: { id: currentTaskId } }, '*');
+                loadTaskDetails(currentTaskId);
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById('deleteBtn').onclick = async () => {
+            if (!currentTaskId || !confirm("¿Eliminar esta tarea permanentemente?")) return;
+            
+            try {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tareas', currentTaskId);
+                await deleteDoc(taskRef);
+                
+                window.parent.postMessage({ type: 'TASK_DELETED_SUCCESS', payload: { id: currentTaskId } }, '*');
+                window.parent.postMessage({ type: 'CLOSE_DETAIL' }, '*');
+            } catch (err) {
+                console.error(err);
+                window.parent.postMessage({ type: 'SHOW_MESSAGE', payload: { message: "Error al eliminar la tarea." } }, '*');
+            }
+        };
+    </script>
+</body>
+</html>
