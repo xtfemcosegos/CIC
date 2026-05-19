@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Perfil - CIC OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        .cover-bg {
+            background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%);
+        }
+
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-[300] flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm flex flex-col">
+        <div class="cover-bg h-1.5 w-full shrink-0"></div>
+        
+        <div class="max-w-7xl w-full mx-auto px-4 py-2.5 flex items-center gap-4">
+            <!-- Botón Atrás: Ahora invoca la función closeProfile() del padre (cco.html) -->
+            <button onclick="if(window.parent && window.parent.closeProfile) window.parent.closeProfile();" class="text-gray-400 hover:text-red-600 transition p-1.5 bg-gray-50 hover:bg-red-50 rounded-lg cursor-pointer shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+            
+            <div class="relative shrink-0">
+                <img id="profile-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                <div class="absolute bottom-0 right-0 bg-green-500 w-3 h-3 rounded-full border-2 border-white" title="En línea"></div>
+            </div>
+            
+            <div class="flex flex-col">
+                <h1 id="profile-name" class="text-sm md:text-base font-bold text-gray-900 leading-tight truncate max-w-[200px] sm:max-w-md">Cargando...</h1>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <p id="profile-role" class="text-[9px] font-bold text-red-600 uppercase tracking-widest">Usuario</p>
+                    <span class="text-gray-300 text-[9px]">|</span>
+                    <p id="profile-uid" class="text-[9px] text-gray-400 font-mono"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl w-full mx-auto px-4 py-6 flex-grow flex flex-col">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 flex-grow">
+            
+            <div class="md:col-span-1 flex flex-col gap-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                    
+                    <h2 class="text-xs font-bold text-gray-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Mi Información
+                    </h2>
+                    
+                    <div class="space-y-3 mb-6 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Teléfono</p>
+                            <p id="display-phone" class="text-sm font-semibold text-gray-800">N/A</p>
+                        </div>
+                        <div class="w-full h-px bg-gray-200"></div>
+                        <div>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Correo</p>
+                            <p id="display-email" class="text-sm font-semibold text-gray-800 break-all">N/A</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <button id="btn-open-contact" class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition shadow-sm cursor-pointer border border-transparent hover:border-red-200">
+                            Actualizar Información
+                        </button>
+                        <button id="btn-open-password" class="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300 font-bold py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition shadow-sm cursor-pointer">
+                            Modificar Contraseña
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-3 flex flex-col h-full">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 flex-grow flex flex-col relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 shrink-0">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Mi Calendario de Asistencia
+                        </h2>
+                        
+                        <div class="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200 shadow-inner">
+                            <button id="btn-prev-month" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 hover:text-blue-600 transition cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            <span id="month-label" class="text-xs font-black uppercase tracking-widest text-blue-800 min-w-[120px] text-center">--</span>
+                            <button id="btn-next-month" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 hover:text-blue-600 transition cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col flex-grow bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200 shrink-0">
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Lun</div>
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Mar</div>
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Mié</div>
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Jue</div>
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Vie</div>
+                            <div class="py-2 text-center text-[10px] font-black text-gray-500 uppercase">Sáb</div>
+                            <div class="py-2 text-center text-[10px] font-black text-red-500 uppercase">Dom</div>
+                        </div>
+                        
+                        <div id="calendar-grid" class="grid grid-cols-7 auto-rows-[minmax(70px,1fr)] flex-grow bg-gray-100 gap-px">
+                            <div class="col-span-full py-20 text-center text-xs text-gray-400 uppercase tracking-widest animate-pulse bg-white">Cargando calendario...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 shrink-0 flex items-center justify-between">
+                        <p class="text-[9px] text-gray-400 uppercase tracking-wider">Sujeto a modificaciones operativas.</p>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-[9px] text-gray-500 uppercase">Turno</span></div>
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span><span class="text-[9px] text-gray-500 uppercase">Ausencia</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Modales de Edición -->
+    <div id="modal-contact" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div class="bg-red-50 p-4 border-b border-red-100 flex justify-between items-center">
+                <h3 class="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
+                    Actualizar Información
+                </h3>
+                <button id="btn-cancel-contact-x" class="text-red-400 hover:text-red-600 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Teléfono Móvil</label>
+                    <input type="tel" id="input-phone" placeholder="Ej. 81 1234 5678" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:bg-white transition-colors">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Correo Electrónico</label>
+                    <input type="email" id="input-email" placeholder="correo@ejemplo.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:bg-white transition-colors">
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button id="btn-cancel-contact" class="flex-1 text-gray-500 font-bold hover:bg-gray-200 bg-white border border-gray-200 py-2.5 rounded-xl transition text-[10px] tracking-widest uppercase cursor-pointer">Cancelar</button>
+                <button id="btn-save-contact" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition text-[10px] tracking-widest uppercase shadow-md cursor-pointer">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-password" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div class="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    Cambiar Contraseña
+                </h3>
+                <button id="btn-cancel-password-x" class="text-gray-400 hover:text-red-600 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Nueva Contraseña</label>
+                    <input type="password" id="input-pass-1" placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:bg-white transition-colors">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Confirmar Contraseña</label>
+                    <input type="password" id="input-pass-2" placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:bg-white transition-colors">
+                </div>
+                <div class="bg-orange-50 border-l-2 border-orange-400 p-2 rounded">
+                    <p class="text-[9px] text-orange-700 leading-tight font-semibold">Si tu sesión expiró, el sistema requerirá que cierres sesión y vuelvas a entrar antes de permitir este cambio.</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button id="btn-cancel-password" class="flex-1 text-gray-500 font-bold hover:bg-gray-200 bg-white border border-gray-200 py-2.5 rounded-xl transition text-[10px] tracking-widest uppercase cursor-pointer">Cancelar</button>
+                <button id="btn-save-password" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition text-[10px] tracking-widest uppercase shadow-md cursor-pointer">Actualizar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/",
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        let currentUser = null;
+        let userDataId = null; 
+        
+        let currentNavDate = new Date();
+
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-green-600' : (type === 'error' ? 'bg-red-600' : 'bg-red-500');
+            
+            toast.className = `toast-enter flex items-center px-4 py-3 rounded-xl shadow-lg text-white text-xs font-bold uppercase tracking-widest ${colorClass}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        const modalContact = document.getElementById('modal-contact');
+        const modalPassword = document.getElementById('modal-password');
+
+        document.getElementById('btn-open-contact').onclick = () => modalContact.style.display = 'flex';
+        document.getElementById('btn-cancel-contact').onclick = () => modalContact.style.display = 'none';
+        document.getElementById('btn-cancel-contact-x').onclick = () => modalContact.style.display = 'none';
+
+        document.getElementById('btn-open-password').onclick = () => modalPassword.style.display = 'flex';
+        document.getElementById('btn-cancel-password').onclick = () => modalPassword.style.display = 'none';
+        document.getElementById('btn-cancel-password-x').onclick = () => modalPassword.style.display = 'none';
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('profile-uid').innerText = user.uid;
+                
+                try {
+                    const snap = await get(ref(db, `usuarios/${user.uid}`));
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        userDataId = data.ID || null;
+                        
+                        document.getElementById('profile-name').innerText = data.Nombre || data.nombre || 'Usuario';
+                        document.getElementById('profile-role').innerText = data.Rol || data.Puesto || sessionStorage.getItem('cic_os_role') || 'Colaborador';
+                        
+                        const currentPhone = data.Telefono || data.telefono || '';
+                        const currentEmail = data.Correo || data.emailAlterno || '';
+                        
+                        document.getElementById('input-phone').value = currentPhone;
+                        document.getElementById('input-email').value = currentEmail;
+                        
+                        document.getElementById('display-phone').innerText = currentPhone || 'N/A';
+                        document.getElementById('display-email').innerText = currentEmail || 'N/A';
+
+                        if (userDataId) {
+                            try {
+                                const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${userDataId}.webp`));
+                                document.getElementById('profile-img').src = url;
+                            } catch(e) {}
+                        }
+                    }
+                    renderCalendar();
+                } catch (error) {
+                    showToast("Error al cargar perfil", "error");
+                }
+            } else {
+                document.getElementById('profile-name').innerText = "No Autenticado";
+            }
+        });
+
+        document.getElementById('btn-save-contact').addEventListener('click', async () => {
+            if (!currentUser) return;
+            
+            const btn = document.getElementById('btn-save-contact');
+            const originalText = btn.innerText;
+            const phone = document.getElementById('input-phone').value.trim();
+            const email = document.getElementById('input-email').value.trim();
+
+            btn.innerText = "Guardando...";
+            btn.disabled = true;
+
+            try {
+                await update(ref(db, `usuarios/${currentUser.uid}`), {
+                    Telefono: phone,
+                    Correo: email
+                });
+                
+                document.getElementById('display-phone').innerText = phone || 'N/A';
+                document.getElementById('display-email').innerText = email || 'N/A';
+                
+                showToast("Información actualizada", "success");
+                modalContact.style.display = 'none'; 
+            } catch (error) {
+                showToast("No se guardaron los datos", "error");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('btn-save-password').addEventListener('click', async () => {
+            if (!currentUser) return;
+
+            const pass1 = document.getElementById('input-pass-1').value;
+            const pass2 = document.getElementById('input-pass-2').value;
+
+            if (!pass1) { showToast("Ingresa una contraseña", "error"); return; }
+            if (pass1.length < 6) { showToast("Mínimo 6 caracteres", "error"); return; }
+            if (pass1 !== pass2) { showToast("Las contraseñas no coinciden", "error"); return; }
+
+            const btn = document.getElementById('btn-save-password');
+            const originalText = btn.innerText;
+            btn.innerText = "Actualizando...";
+            btn.disabled = true;
+
+            try {
+                await updatePassword(currentUser, pass1);
+                showToast("Contraseña actualizada", "success");
+                document.getElementById('input-pass-1').value = '';
+                document.getElementById('input-pass-2').value = '';
+                modalPassword.style.display = 'none';
+            } catch (error) {
+                if (error.code === 'auth/requires-recent-login') {
+                    showToast("Por seguridad, vuelve a iniciar sesión.", "error");
+                } else {
+                    showToast("Error al actualizar", "error");
+                }
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        function getMonthNameFromDateKey(dateKey) {
+            const monthIndex = parseInt(dateKey.substring(2, 4), 10) - 1;
+            const year = dateKey.substring(4, 8);
+            const monthName = MONTH_NAMES[monthIndex];
+            
+            if (!monthName) return null;
+            return `${year}_${monthName}`; 
+        }
+
+        function parseShiftData(allRecords, dateKey, userDataId) {
+            const monthKey = getMonthNameFromDateKey(dateKey);
+            let dayData = null;
+
+            if (!monthKey) return null;
+
+            for (const r of allRecords) {
+                if (r.id === monthKey && r[dateKey]) { 
+                    dayData = r[dateKey]; 
+                    break; 
+                }
+                if (r[monthKey] && r[monthKey][dateKey]) { 
+                    dayData = r[monthKey][dateKey]; 
+                    break; 
+                }
+                if (r.data) {
+                    if (r.data[monthKey] && r.data[monthKey][dateKey]) { 
+                        dayData = r.data[monthKey][dateKey]; 
+                        break; 
+                    }
+                    if (r.data[dateKey]) { 
+                        dayData = r.data[dateKey]; 
+                        break; 
+                    }
+                }
+                if (r[dateKey]) { 
+                    dayData = r[dateKey]; 
+                    break; 
+                }
+            }
+
+            if (!dayData || !dayData[userDataId]) return null;
+
+            const userInfo = dayData[userDataId];
+            const turnosValidos = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            
+            for (const t of turnosValidos) {
+                if (userInfo[t]) {
+                    const info = userInfo[t];
+                    if (t === 'ausentismo') {
+                        return { tipo: 'Ausencia', detalle: info.motivo || 'Motivo no especificado', color: 'red' };
+                    } else {
+                        return { tipo: t, detalle: info.entrada_programada || '--:--', color: 'blue' };
+                    }
+                }
+            }
+            return null; 
+        }
+
+        function renderCalendar() {
+            const year = currentNavDate.getFullYear();
+            const month = currentNavDate.getMonth(); 
+            
+            document.getElementById('month-label').innerText = `${MONTH_NAMES[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let startDayIndex = firstDay === 0 ? 6 : firstDay - 1;
+            
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = ''; 
+            
+            for(let i = 0; i < startDayIndex; i++) {
+                grid.innerHTML += `<div class="bg-gray-50/40"></div>`;
+            }
+            
+            const today = new Date();
+            
+            for(let d = 1; d <= daysInMonth; d++) {
+                const dd = String(d).padStart(2, '0');
+                const mm = String(month + 1).padStart(2, '0');
+                const dateKey = `${dd}${mm}${year}`;
+                
+                const isToday = (d === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+                const bgClass = isToday ? 'bg-red-50/30' : 'bg-white';
+                const textClass = isToday ? 'bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center' : 'text-gray-600';
+                
+                grid.innerHTML += `
+                    <div class="${bgClass} p-1.5 sm:p-2 flex flex-col transition-colors hover:bg-gray-50/80">
+                        <div class="flex justify-end mb-1 shrink-0">
+                            <span class="text-xs font-bold ${textClass} leading-none">${d}</span>
+                        </div>
+                        <div id="cal-day-${dateKey}" class="flex flex-col gap-1 flex-grow overflow-hidden content-end justify-end pb-1">
+                        </div>
+                    </div>
+                `;
+            }
+
+            const totalCells = startDayIndex + daysInMonth;
+            const remainingCells = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
+            for(let i = 0; i < remainingCells; i++) {
+                grid.innerHTML += `<div class="bg-gray-50/40"></div>`;
+            }
+
+            populateCalendarData();
+        }
+
+        async function populateCalendarData() {
+            try {
+                if (!userDataId) return; 
+                
+                const request = indexedDB.open("CIC_OS_RegAs", 8); 
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    if (!idb.objectStoreNames.contains("registros")) {
+                        idb.close(); return;
+                    }
+
+                    const tx = idb.transaction("registros", "readonly");
+                    const store = tx.objectStore("registros");
+                    
+                    const reqAll = store.getAll();
+
+                    reqAll.onsuccess = (ev) => {
+                        const allRecords = ev.target.result;
+                        if (!allRecords || allRecords.length === 0) return;
+
+                        const dayContainers = document.querySelectorAll('[id^="cal-day-"]');
+                        
+                        dayContainers.forEach(container => {
+                            const dateKey = container.id.replace('cal-day-', '');
+                            const shiftData = parseShiftData(allRecords, dateKey, userDataId);
+                            
+                            if (shiftData) {
+                                const badgeClass = shiftData.color === 'red' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-blue-100 text-blue-700 border-blue-200';
+                                const subText = shiftData.tipo === 'Ausencia' ? shiftData.detalle : `Hora: ${shiftData.detalle}`;
+                                
+                                container.innerHTML = `
+                                    <div class="border ${badgeClass} px-1.5 py-1 rounded-md flex flex-col w-full shadow-sm">
+                                        <span class="text-[8px] sm:text-[9px] font-black uppercase tracking-wider truncate leading-tight">${shiftData.tipo}</span>
+                                        <span class="text-[7px] sm:text-[8px] opacity-80 leading-none mt-0.5 truncate">${subText}</span>
+                                    </div>
+                                `;
+                            }
+                        });
+                    };
+
+                    tx.oncomplete = () => idb.close();
+                };
+            } catch (err) {
+                console.warn("Error leyendo turnos locales", err);
+            }
+        }
+
+        document.getElementById('btn-prev-month').addEventListener('click', () => {
+            currentNavDate.setMonth(currentNavDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('btn-next-month').addEventListener('click', () => {
+            currentNavDate.setMonth(currentNavDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+    </script>
+</body>
+</html>

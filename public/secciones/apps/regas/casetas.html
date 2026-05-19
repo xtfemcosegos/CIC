@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Casetas - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Open Sans', sans-serif !important; }
+        body { margin: 0; padding: 0; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .fuchsia-gradient { background: linear-gradient(135deg, #701a75 0%, #d946ef 100%); }
+        .modal-overlay { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        
+        /* Ocultar input color por defecto */
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <div id="local-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] bg-slate-900/95 text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 border border-white/10">
+        <span id="local-toast-msg">Mensaje</span>
+    </div>
+
+    <header class="bg-white border-b border-slate-200 px-6 py-4 shrink-0 z-40 relative shadow-sm">
+        <div class="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <i data-lucide="building-2" class="text-fuchsia-600"></i> Catálogo de Casetas
+                </h1>
+                <p class="text-xs text-slate-500 font-medium">Gestión y ordenamiento de ubicaciones de fuerza operativa</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="forceCasetasDownload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all" title="Forzar Sincronización">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="btn-sync-icon"></i>
+                    <span class="hidden sm:inline">Sincronizar</span>
+                </button>
+
+                <div class="relative flex-1 md:w-64">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar caseta..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-fuchsia-500 rounded-xl text-sm transition-all outline-none">
+                </div>
+                
+                <button onclick="openModal()" class="fuchsia-gradient text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-fuchsia-200 flex items-center gap-2 active:scale-95 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nueva
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden relative p-4 md:p-6 gap-6 bg-slate-50/50">
+        
+        <!-- Contenedor scrollable izquierdo -->
+        <div id="casetas-wrapper" class="flex-1 overflow-y-auto custom-scroll pr-2 relative h-full">
+            <div id="casetasGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 w-full content-start">
+                <div class="py-20 text-center col-span-full w-full" id="loadingState">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-fuchsia-500 border-t-transparent"></div>
+                    <p class="mt-4 text-slate-500 font-medium" id="loadingText">Verificando sesión activa...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Detalle Derecho (Oculto por defecto) -->
+        <div id="detail-panel" class="hidden absolute inset-0 lg:relative lg:inset-auto w-full lg:w-[45%] xl:w-[40%] flex-shrink-0 bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden transition-all duration-300 z-50">
+            <iframe id="iframe-detalle" class="w-full h-full border-none" src="about:blank"></iframe>
+        </div>
+    </main>
+
+    <div id="casetaModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div class="fuchsia-gradient px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <div>
+                    <h2 id="modalTitle" class="text-base font-black tracking-tight">Detalles de Caseta</h2>
+                    <p class="text-[9px] text-white/70 font-bold uppercase tracking-widest">Catálogo Maestro</p>
+                </div>
+                <button onclick="closeModal()" class="p-2 hover:bg-white/20 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="casetaForm" class="p-6 space-y-5" onsubmit="event.preventDefault();">
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase">Nombre de la Caseta</label>
+                        <span id="indicator-name" class="text-[10px] font-bold opacity-0 transition-opacity duration-300 flex gap-2">
+                            <span class="text-fuchsia-600 font-bold">✓ Local</span>
+                            <span class="dot-cloud text-emerald-500 font-bold">✓ Nube</span>
+                        </span>
+                    </div>
+                    <input type="text" id="inputCasetaName" required onchange="window.autoSaveCasetaField('name', this.value)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-fuchsia-400 outline-none font-bold text-slate-800 transition-colors">
+                </div>
+                
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase">Índice Numérico (Orden)</label>
+                        <span id="indicator-index" class="text-[10px] font-bold opacity-0 transition-opacity duration-300 flex gap-2">
+                            <span class="text-fuchsia-600 font-bold">✓ Local</span>
+                            <span class="dot-cloud text-emerald-500 font-bold">✓ Nube</span>
+                        </span>
+                    </div>
+                    <input type="number" id="inputCasetaIndex" required onchange="window.autoSaveCasetaField('index', this.value)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-fuchsia-400 outline-none font-bold text-slate-800 transition-colors" min="0" placeholder="Ej. 1">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase">Color de Identidad</label>
+                        <span id="indicator-background" class="text-[10px] font-bold opacity-0 transition-opacity duration-300 flex gap-2">
+                            <span class="text-fuchsia-600 font-bold">✓ Local</span>
+                            <span class="dot-cloud text-emerald-500 font-bold">✓ Nube</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="color" id="inputCasetaBackground" oninput="document.getElementById('inputCasetaBackgroundHex').value = this.value.toUpperCase(); window.autoSaveCasetaField('background', this.value)" onchange="window.autoSaveCasetaField('background', this.value)" class="w-12 h-10 rounded-xl cursor-pointer bg-transparent border-none">
+                        <input type="text" id="inputCasetaBackgroundHex" onchange="window.autoSaveCasetaField('background', this.value)" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-fuchsia-400 outline-none font-mono font-bold text-slate-800 uppercase transition-colors" placeholder="#701A75">
+                    </div>
+                </div>
+            </form>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+                <button onclick="closeModal()" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black transition-all uppercase tracking-widest active:scale-95">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteConfirmModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 relative z-10 animate-in fade-in zoom-in duration-200 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+            </div>
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-tight mb-2">Eliminar Caseta</h3>
+            <p class="text-xs text-gray-500 mb-6 leading-relaxed">¿Seguro que deseas eliminar <span id="deleteTargetName" class="font-black text-slate-800"></span>? Los elementos con este acceso predeterminado quedarán "Sin Asignar".</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 uppercase transition active:scale-95">Cancelar</button>
+                <button onclick="confirmDeleteCaseta()" class="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 uppercase transition shadow-md active:scale-95">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/",
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+        const fs = getFirestore(app);
+        const rtdb = getDatabase(app);
+        
+        let appStarted = false;
+        let allElements = {};
+        let casetasConfig = {};
+        let editingKey = null;
+        let deleteKeyTarget = null;
+        let urlCache = {};
+
+        const DB_NAME = "CIC_OS_RegAs";
+        const STORE_NAME = "catalogos";
+
+        function showLocalToast(message, type = 'success') {
+            const toast = document.getElementById('local-toast');
+            const msgEl = document.getElementById('local-toast-msg');
+            if (!toast) return;
+
+            toast.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 flex items-center gap-2 border border-white/10";
+            toast.classList.add(type === 'success' ? 'bg-green-600' : (type === 'error' ? 'bg-red-600' : 'bg-indigo-600'));
+            
+            msgEl.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'bg-green-600', 'bg-red-600', 'bg-indigo-600');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        async function notifyCatalogUpdate() {
+            localStorage.setItem('thisUpdate', 'true');
+            const ts = Date.now().toString();
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+            } catch(e) {}
+            
+            localUpdates["Catalogos"] = ts;
+            localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+            await set(ref(rtdb, `updates/RegAs/Catalogos`), ts).catch(()=>{});
+        }
+
+        function getIndexedDB() {
+            return new Promise((resolve, reject) => {
+                try {
+                    const request = indexedDB.open(DB_NAME);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                } catch (e) { reject(e); }
+            });
+        }
+
+        async function fetchCatalogosFromIndexedDB() {
+            try {
+                const idb = await getIndexedDB();
+                return new Promise((resolve, reject) => {
+                    const tx = idb.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const reqEl = store.get("ElementosPP");
+                    const reqCas = store.get("Casetas");
+                    
+                    let result = { elementos: {}, casetas: {} };
+                    reqEl.onsuccess = () => {
+                        result.elementos = reqEl.result || {};
+                        if (reqCas.readyState === "done") resolve(result);
+                    };
+                    reqCas.onsuccess = () => {
+                        result.casetas = reqCas.result || {};
+                        if (reqEl.readyState === "done") resolve(result);
+                    };
+                });
+            } catch (err) {
+                return { elementos: {}, casetas: {} };
+            }
+        }
+
+        async function writeToIndexedDB(storeName, data, entryKey) {
+            const idb = await getIndexedDB();
+            return new Promise((resolve, reject) => {
+                const tx = idb.transaction(storeName, "readwrite");
+                const store = tx.objectStore(storeName);
+                const putReq = store.put(data, entryKey);
+                putReq.onsuccess = () => resolve();
+            });
+        }
+
+        // --- SISTEMA DE PANEL DE DETALLE PARA ELEMENTOS ---
+        function getNowUTC6() {
+            const now = new Date();
+            const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utcMillis - (3600000 * 6));
+        }
+
+        window.openDetail = function(id) {
+            const today = getNowUTC6();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            const dayKey = `${dd}${mm}${yyyy}`;
+            
+            const detailPanel = document.getElementById('detail-panel');
+            const iframe = document.getElementById('iframe-detalle');
+            
+            // Construcción segura de la URL con los parámetros exactos
+            const params = new URLSearchParams();
+            params.append('id', id);
+            params.append('fecha', dayKey);
+            params.append('turno', 'matutino');
+            params.append('pestaña', 'perfil');
+            
+            iframe.src = `panel.html?${params.toString()}`;
+            detailPanel.classList.remove('hidden');
+        };
+
+        window.closeDetail = function() {
+            const detailPanel = document.getElementById('detail-panel');
+            const iframe = document.getElementById('iframe-detalle');
+            detailPanel.classList.add('hidden');
+            setTimeout(() => { iframe.src = "about:blank"; }, 300);
+        };
+
+        async function loadCasetasPhotosInBackground(ids) {
+            const uniqueIds = [...new Set(ids)];
+            uniqueIds.forEach(async (id) => {
+                if (urlCache[id] && urlCache[id] !== 'loading') {
+                    updateCasetasAvatarsInDOM(id, urlCache[id]);
+                    return;
+                }
+                urlCache[id] = 'loading'; 
+                try {
+                    const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${id}.webp`));
+                    urlCache[id] = url;
+                    updateCasetasAvatarsInDOM(id, url);
+                } catch (e) {
+                    try {
+                        const url = await getDownloadURL(sRef(storage, `ElementosPP/${id}.webp`));
+                        urlCache[id] = url;
+                        updateCasetasAvatarsInDOM(id, url);
+                    } catch (e2) {
+                        urlCache[id] = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                        updateCasetasAvatarsInDOM(id, urlCache[id]);
+                    }
+                }
+            });
+        }
+
+        function updateCasetasAvatarsInDOM(id, url) {
+            const images = document.querySelectorAll(`img[data-user-id="${id}"]`);
+            images.forEach(img => {
+                if (img.src !== url) {
+                    img.src = url;
+                    img.classList.remove('opacity-0');
+                }
+            });
+        }
+
+        window.openModal = () => {
+            editingKey = null;
+            document.getElementById('casetaForm').reset();
+            document.getElementById('inputCasetaBackground').value = "#701A75";
+            document.getElementById('inputCasetaBackgroundHex').value = "#701A75";
+            document.getElementById('modalTitle').textContent = "Nueva Caseta";
+            document.getElementById('casetaModal').classList.remove('hidden');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('casetaModal').classList.add('hidden');
+        };
+
+        window.editCaseta = (name) => {
+            editingKey = name;
+            const data = casetasConfig[name] || {};
+            
+            document.getElementById('modalTitle').textContent = "Editar Caseta";
+            document.getElementById('inputCasetaName').value = name;
+            document.getElementById('inputCasetaIndex').value = data.index !== undefined ? data.index : '';
+            
+            const bg = data.background || '#701a75';
+            document.getElementById('inputCasetaBackground').value = bg;
+            document.getElementById('inputCasetaBackgroundHex').value = bg.toUpperCase();
+            
+            document.getElementById('casetaModal').classList.remove('hidden');
+        };
+
+        window.deleteCaseta = (name) => {
+            deleteKeyTarget = name;
+            document.getElementById('deleteTargetName').textContent = name;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        };
+
+        window.closeDeleteModal = () => {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            deleteKeyTarget = null;
+        };
+
+        window.confirmDeleteCaseta = async () => {
+            if (!deleteKeyTarget) return;
+            const name = deleteKeyTarget;
+            const updatedCasetas = JSON.parse(JSON.stringify(casetasConfig));
+            delete updatedCasetas[name];
+
+            const updatedElements = JSON.parse(JSON.stringify(allElements));
+            let cascadeChanged = false;
+
+            Object.entries(updatedElements).forEach(([elName, elData]) => {
+                if (elData.Operativa && elData.Operativa.AccesoPredeterminado === name) {
+                    elData.Operativa.AccesoPredeterminado = "";
+                    cascadeChanged = true;
+                }
+            });
+
+            try {
+                const catalogUpdate = { Casetas: { [name]: deleteField() } };
+                if (cascadeChanged) {
+                    catalogUpdate.ElementosPP = {};
+                    Object.entries(updatedElements).forEach(([elName, elData]) => {
+                        catalogUpdate.ElementosPP[elName] = elData;
+                    });
+                }
+
+                await setDoc(doc(fs, "RegAs", "Catalogos"), catalogUpdate, { merge: true });
+                await writeToIndexedDB(STORE_NAME, { id: "Casetas", ...updatedCasetas }, "Casetas");
+                if (cascadeChanged) {
+                    await writeToIndexedDB(STORE_NAME, { id: "ElementosPP", ...updatedElements }, "ElementosPP");
+                }
+
+                await notifyCatalogUpdate();
+                window.closeDeleteModal();
+                showLocalToast("Caseta eliminada exitosamente", "success");
+                await initData();
+            } catch (err) {
+                showLocalToast("Fallo al eliminar caseta de la nube", "error");
+            }
+        };
+
+        window.autoSaveCasetaField = async (field, value) => {
+            const nameInput = document.getElementById('inputCasetaName');
+            const indexInput = document.getElementById('inputCasetaIndex');
+            const bgInput = document.getElementById('inputCasetaBackground');
+            const bgHexInput = document.getElementById('inputCasetaBackgroundHex');
+            
+            const newName = nameInput.value.trim();
+            const indexVal = indexInput.value.trim();
+            let bgVal = bgInput ? bgInput.value : '#701a75';
+
+            if (field === 'background') {
+                bgVal = value;
+                if (!bgVal.startsWith('#')) bgVal = '#' + bgVal;
+                if (bgVal.length === 4 || bgVal.length === 7) {
+                    if (bgInput) bgInput.value = bgVal;
+                    if (bgHexInput) bgHexInput.value = bgVal.toUpperCase();
+                }
+            }
+
+            if (!newName) {
+                showLocalToast("El nombre de la caseta es obligatorio.", "error");
+                return;
+            }
+
+            let indicatorId = 'indicator-name';
+            if (field === 'index') indicatorId = 'indicator-index';
+            if (field === 'background') indicatorId = 'indicator-background';
+            
+            const ind = document.getElementById(indicatorId);
+            if (!ind) return;
+
+            const dotCloud = ind.querySelector('.dot-cloud');
+            ind.style.opacity = '1';
+            dotCloud.innerText = "...";
+
+            const updatedCasetas = JSON.parse(JSON.stringify(casetasConfig));
+            const updatedElements = JSON.parse(JSON.stringify(allElements));
+            let cascadeChanged = false;
+
+            let casetaObj = { 
+                index: parseInt(indexVal || 0, 10),
+                background: bgVal
+            };
+            let previousKey = editingKey;
+
+            if (editingKey) {
+                if (field === 'name' && editingKey !== newName) {
+                    if (updatedCasetas[newName]) {
+                        showLocalToast("Ya existe una caseta con ese nombre.", "error");
+                        nameInput.value = editingKey;
+                        ind.style.opacity = '0';
+                        return;
+                    }
+                    delete updatedCasetas[editingKey];
+                    updatedCasetas[newName] = casetaObj;
+
+                    Object.entries(updatedElements).forEach(([elName, elData]) => {
+                        if (elData.Operativa && elData.Operativa.AccesoPredeterminado === editingKey) {
+                            elData.Operativa.AccesoPredeterminado = newName;
+                            cascadeChanged = true;
+                        }
+                    });
+                    editingKey = newName;
+                } else {
+                    updatedCasetas[editingKey] = casetaObj;
+                }
+            } else {
+                if (updatedCasetas[newName]) {
+                    showLocalToast("Ya existe una caseta con ese nombre.", "error");
+                    ind.style.opacity = '0';
+                    return;
+                }
+                updatedCasetas[newName] = casetaObj;
+                editingKey = newName;
+                previousKey = newName;
+            }
+
+            try {
+                await writeToIndexedDB(STORE_NAME, { id: "Casetas", ...updatedCasetas }, "Casetas");
+                if (cascadeChanged) {
+                    await writeToIndexedDB(STORE_NAME, { id: "ElementosPP", ...updatedElements }, "ElementosPP");
+                }
+                
+                casetasConfig = updatedCasetas;
+                allElements = updatedElements;
+
+                const catalogUpdate = { Casetas: { [editingKey]: casetaObj } };
+
+                if (previousKey && previousKey !== newName && field === 'name') {
+                    catalogUpdate.Casetas[previousKey] = deleteField();
+                }
+
+                if (cascadeChanged) {
+                    catalogUpdate.ElementosPP = {};
+                    Object.entries(updatedElements).forEach(([elName, elData]) => {
+                        catalogUpdate.ElementosPP[elName] = elData;
+                    });
+                }
+
+                await setDoc(doc(fs, "RegAs", "Catalogos"), catalogUpdate, { merge: true });
+                dotCloud.innerText = "✓ Nube";
+                await notifyCatalogUpdate();
+                await initData();
+
+                setTimeout(() => { ind.style.opacity = '0'; }, 2000);
+            } catch (err) {
+                dotCloud.innerText = "✕ Error";
+                setTimeout(() => { ind.style.opacity = '0'; }, 3000);
+            }
+        };
+
+        async function renderGrid() {
+            const container = document.getElementById('casetasGrid');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const casetaNames = Object.keys(casetasConfig).filter(k => k.toLowerCase().includes(search));
+
+            if (casetaNames.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center opacity-40 italic col-span-full">No se hallaron casetas que coincidan.</div>`;
+                return;
+            }
+
+            casetaNames.sort((a, b) => {
+                const idxA = casetasConfig[a].index !== undefined ? Number(casetasConfig[a].index) : 999;
+                const idxB = casetasConfig[b].index !== undefined ? Number(casetasConfig[b].index) : 999;
+                if (idxA !== idxB) return idxA - idxB;
+                return a.localeCompare(b);
+            });
+
+            container.innerHTML = '';
+            const allRenderedIds = [];
+
+            for (const casetaName of casetaNames) {
+                const data = casetasConfig[casetaName] || {};
+                const index = data.index !== undefined ? data.index : 'N/D';
+                const bgHeaderColor = data.background || '#701a75'; 
+
+                const assignedElements = Object.entries(allElements).filter(([name, el]) => {
+                    return el.Operativa?.AccesoPredeterminado === casetaName && el.Operativa?.Estado === "Activo";
+                });
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-[320px] overflow-hidden relative animate-in fade-in slide-in-from-bottom-2 duration-200";
+                
+                let elementsListHtml = '';
+                if (assignedElements.length > 0) {
+                    elementsListHtml = `<div class="space-y-2 overflow-y-auto custom-scroll flex-grow pr-1 mb-2 h-44">`;
+                    for (const [elName, elData] of assignedElements) {
+                        allRenderedIds.push(elData.ID);
+                        const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                        const avatarUrl = urlCache[elData.ID] && urlCache[elData.ID] !== 'loading' ? urlCache[elData.ID] : defaultAvatar;
+                        
+                        elementsListHtml += `
+                            <div onclick="window.openDetail('${elData.ID}')" class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 cursor-pointer hover:bg-fuchsia-50/50 hover:border-fuchsia-200 transition-colors group">
+                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 flex-shrink-0 bg-white">
+                                    <img data-user-id="${elData.ID}" src="${avatarUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" onload="this.classList.remove('opacity-0')">
+                                </div>
+                                <div class="flex-grow min-w-0">
+                                    <p class="text-[10px] font-bold text-slate-800 uppercase leading-none truncate group-hover:text-fuchsia-800 transition-colors">${elName}</p>
+                                    <p class="text-[8px] text-slate-400 font-medium leading-none mt-1.5 truncate">${elData.Operativa?.Puesto || 'Operativo'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    elementsListHtml += `</div>`;
+                } else {
+                    elementsListHtml = `
+                        <div class="flex-grow flex flex-col items-center justify-center opacity-30 italic py-10 animate-in fade-in duration-200">
+                            <i data-lucide="user-minus" class="w-8 h-8 mb-2"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Sin personal</span>
+                        </div>
+                    `;
+                }
+
+                // Inyección del color dinámico en la cabecera superior
+                card.innerHTML = `
+                    <div class="h-2 w-full absolute top-0 left-0" style="background-color: ${bgHeaderColor}"></div>
+                    <div class="flex flex-col h-full justify-between p-5 pt-6">
+                        <div>
+                            <div class="flex items-start justify-between border-b border-slate-100 pb-3 mb-3">
+                                <div class="flex-grow min-w-0 pr-3">
+                                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-wide truncate">${casetaName}</h3>
+                                    <p class="text-[9px] font-bold text-fuchsia-600 uppercase tracking-widest mt-1">Índice: <span class="bg-fuchsia-50 text-fuchsia-700 px-1.5 py-0.5 rounded border border-fuchsia-100">${index}</span></p>
+                                </div>
+                                <div class="flex gap-1 shrink-0 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                                    <button onclick="editCaseta('${casetaName}')" class="p-1.5 text-slate-400 hover:text-fuchsia-600 hover:bg-white rounded-lg transition-all shadow-sm">
+                                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button onclick="deleteCaseta('${casetaName}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-all shadow-sm">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2 flex justify-between items-center">
+                                <span>Predeterminados</span>
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">${assignedElements.length}</span>
+                            </p>
+                        </div>
+                        ${elementsListHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+            lucide.createIcons();
+
+            if (allRenderedIds.length > 0) {
+                loadCasetasPhotosInBackground(allRenderedIds);
+            }
+        }
+
+        window.forceCasetasDownload = async () => {
+            const syncIcon = document.getElementById('btn-sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin-fast');
+            showLocalToast("Descargando catálogos...", "info");
+
+            try {
+                const catDocSnap = await getDoc(doc(fs, "RegAs", "Catalogos"));
+                if (catDocSnap.exists()) {
+                    const dataCatalogos = catDocSnap.data();
+                    const idb = await getIndexedDB();
+                    const tx = idb.transaction(STORE_NAME, "readwrite");
+                    const store = tx.objectStore(STORE_NAME);
+
+                    if (dataCatalogos.ElementosPP) await store.put({ id: "ElementosPP", ...dataCatalogos.ElementosPP });
+                    if (dataCatalogos.Casetas) await store.put({ id: "Casetas", ...dataCatalogos.Casetas });
+                    
+                    let localUpdates = {};
+                    try {
+                        const stored = localStorage.getItem('updates_regas');
+                        if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+                    } catch (e) {}
+
+                    const remoteSnap = await get(ref(rtdb, 'updates/RegAs/Catalogos'));
+                    localUpdates["Catalogos"] = remoteSnap.val() || Date.now().toString();
+                    localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+
+                    await initData();
+                    showLocalToast("Catálogos actualizados", "success");
+                }
+            } catch (err) {
+                showLocalToast("Fallo de red", "error");
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin-fast');
+            }
+        };
+
+        async function checkCatalogVersionAndInit() {
+            try {
+                const remoteSnap = await get(ref(rtdb, 'updates/RegAs/Catalogos'));
+                const remoteTs = remoteSnap.val();
+
+                let localUpdates = {};
+                try {
+                    const stored = localStorage.getItem('updates_regas');
+                    if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+                } catch(e) {}
+
+                if (!localUpdates["Catalogos"] || String(remoteTs) !== String(localUpdates["Catalogos"])) {
+                    const catDocSnap = await getDoc(doc(fs, "RegAs", "Catalogos"));
+                    if (catDocSnap.exists()) {
+                        const dataCatalogos = catDocSnap.data();
+                        const idb = await getIndexedDB();
+                        const tx = idb.transaction(STORE_NAME, "readwrite");
+                        const store = tx.objectStore(STORE_NAME);
+
+                        if (dataCatalogos.ElementosPP) await store.put({ id: "ElementosPP", ...dataCatalogos.ElementosPP });
+                        if (dataCatalogos.Casetas) await store.put({ id: "Casetas", ...dataCatalogos.Casetas });
+
+                        localUpdates["Catalogos"] = remoteTs || Date.now().toString();
+                        localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+                    }
+                }
+            } catch (err) {} finally {
+                await initData();
+            }
+        }
+
+        async function checkSessionAndInit() {
+            const loc = sessionStorage.getItem('cic_os_token') || sessionStorage.getItem('cic_os_config') || sessionStorage.getItem('cic_oc_token'); 
+            if (loc) {
+                if (!appStarted) { appStarted = true; await checkCatalogVersionAndInit(); }
+            } else {
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        if (!appStarted) { appStarted = true; await checkCatalogVersionAndInit(); }
+                    } else {
+                        const lt = document.getElementById('loadingText');
+                        if (lt) lt.textContent = "Esperando sesión activa...";
+                    }
+                });
+            }
+        }
+
+        async function initData() {
+            const localData = await fetchCatalogosFromIndexedDB();
+            
+            let rawElementos = localData.elementos || {};
+            allElements = rawElementos.data && typeof rawElementos.data === 'object' ? { ...rawElementos.data } : { ...rawElementos };
+            delete allElements.id; delete allElements.data;
+
+            let rawCasetas = localData.casetas || {};
+            casetasConfig = rawCasetas.data && typeof rawCasetas.data === 'object' ? { ...rawCasetas.data } : { ...rawCasetas };
+            delete casetasConfig.id; delete casetasConfig.data;
+
+            renderGrid();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', renderGrid);
+        checkSessionAndInit();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

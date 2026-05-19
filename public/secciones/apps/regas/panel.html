@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Detalle - RegAs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            color: #0f172a;
+        }
+
+        /* --- TABS ESTILO iOS (COMPACTO) --- */
+        .tab-btn {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover:not(.active) { color: #334155; }
+        .tab-btn.active {
+            color: #0f172a;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 6px;
+        }
+
+        /* --- SUB-TABS COMPACTOS --- */
+        #shift-sub-tabs-container {
+            background: #ffffff;
+            padding: 6px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 40;
+            position: relative;
+        }
+        .shift-sub-tab {
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 6px;
+            opacity: 0.6;
+        }
+        .shift-sub-tab:hover { opacity: 0.9; }
+        .shift-sub-tab.active {
+            opacity: 1;
+            box-shadow: inset 0 0 0 1px currentColor;
+        }
+        .shift-sub-tab-add {
+            background: #f8fafc;
+            color: #64748b;
+            padding: 4px 12px;
+            font-size: 9px;
+            font-weight: 700;
+            border-radius: 99px;
+            border: 1px dashed #cbd5e1;
+        }
+        .shift-sub-tab-add:hover { border-color: #94a3b8; color: #334155; }
+
+        /* --- TIPOGRAFÍA Y LABELS --- */
+        .info-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- INPUTS COMPACTOS --- */
+        .edit-input, .edit-select {
+            width: 100%;
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 0;
+            background: #f8fafc;
+            color: #1e293b;
+            transition: all 0.2s ease;
+        }
+        .edit-input:focus, .edit-select:focus {
+            background: #ffffff;
+            border-color: #d946ef;
+            box-shadow: 0 0 0 2px rgba(217, 70, 239, 0.15);
+            outline: none;
+        }
+        
+        /* --- SELECTORES TIPO ETIQUETA --- */
+        select.custom-tag-select {
+            appearance: none;
+            background-image: none;
+            text-align: center;
+            text-align-last: center;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        select.custom-tag-select:focus {
+            outline: none;
+            border-color: #d946ef;
+        }
+
+        /* --- TARJETAS DE CONTENIDO --- */
+        .profile-group {
+            background: #ffffff;
+            border-radius: 8px; 
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .group-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .group-title::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 14px;
+            background: #d946ef;
+            border-radius: 2px;
+        }
+
+        .fields-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        @media (min-width: 1280px) {
+            .fields-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* INDICADORES DE GUARDADO */
+        .save-indicator {
+            display: inline-flex;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .save-indicator.active { opacity: 1; }
+        .dot-local { color: #3b82f6; } 
+        .dot-cloud { color: #10b981; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-fast { animation: spin 0.8s linear infinite; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        input[type="time"] { font-variant-numeric: tabular-nums; }
+        input[type="time"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; }
+        input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+        /* COLORES DINÁMICOS */
+        .color-matutino { color: #854d0e; } 
+        .color-vespertino { color: #0369a1; } 
+        .color-nocturno { color: #334155; } 
+        .color-ausentismo { color: #be123c; } 
+        .color-descanso { color: #475569; }
+        
+        /* Clases específicas para el calendario de patrones */
+        .cal-cell {
+            aspect-ratio: 1 / 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CABECERA OSCURA COMPACTA -->
+    <header class="bg-slate-900 relative shrink-0 pt-4 pb-6">
+        <div class="absolute top-0 left-1/4 w-64 h-64 bg-fuchsia-600 rounded-full blur-[80px] opacity-10 pointer-events-none"></div>
+        
+        <div class="relative z-10 px-4 sm:px-6 flex flex-row items-center gap-4">
+            <!-- Avatar -->
+            <div class="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+                <img id="el-photo" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover rounded-full border border-slate-700 bg-slate-800">
+            </div>
+            
+            <!-- Info Elemento -->
+            <div class="flex-grow flex flex-col justify-center">
+                <p class="text-slate-400 font-mono text-[10px] uppercase mb-0.5">ID: <span id="el-id" class="text-fuchsia-400">-------</span></p>
+                <h1 id="el-name" class="text-xl sm:text-2xl font-bold text-white leading-tight truncate">Cargando...</h1>
+                <div id="el-status-container" class="mt-1"></div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex items-center gap-2">
+                <button id="btn-sync-catalog" onclick="syncFullCatalog()" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-md text-[10px] uppercase border border-slate-700 transition-colors">
+                    <svg id="icon-sync" class="w-3 h-3 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span class="hidden sm:inline">Sincronizar</span>
+                </button>
+                <button onclick="window.parent.closeDetail()" class="w-7 h-7 bg-slate-800 hover:bg-rose-500 text-slate-300 hover:text-white rounded-md flex items-center justify-center transition-colors border border-slate-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVEGACIÓN COMPACTA -->
+    <div class="relative z-20 px-4 flex justify-center -mt-3">
+        <nav class="bg-slate-100 border border-slate-200 p-1 rounded-lg inline-flex w-full max-w-sm shadow-sm">
+            <button onclick="switchTab('perfil')" id="tab-perfil" class="tab-btn w-1/3 py-1.5 rounded-md">Perfil</button>
+            <button onclick="switchTab('turno')" id="tab-turno" class="tab-btn w-1/3 py-1.5 rounded-md">Turno</button>
+            <button onclick="switchTab('patrones')" id="tab-patrones" class="tab-btn w-1/3 py-1.5 rounded-md">Patrones</button>
+        </nav>
+    </div>
+        
+    <!-- SUB-TURNOS -->
+    <div id="shift-sub-tabs-container" class="hidden w-full mt-2">
+        <div id="shift-sub-tabs" class="flex overflow-x-auto hide-scrollbar max-w-5xl mx-auto">
+            <!-- Dinámico -->
+        </div>
+    </div>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="flex-grow overflow-y-auto px-2 sm:px-4 py-4">
+        
+        <!-- SECCIÓN PERFIL -->
+        <div id="content-perfil" class="tab-content hidden w-full max-w-5xl mx-auto">
+            <div id="perfil-groups-container" class="flex flex-col"></div>
+        </div>
+
+        <!-- SECCIÓN TURNO -->
+        <div id="content-turno" class="tab-content hidden w-full max-w-5xl mx-auto">
+
+            <div class="profile-group">
+                
+                <!-- Fila 1: Turno y Caseta (En la misma fila como Etiquetas) -->
+                <div class="flex flex-row items-center bg-slate-50 border border-slate-200 rounded-md p-2 mb-4 gap-2">
+                    <div id="turno-select-wrapper" class="flex flex-col flex-1 border-r border-slate-200 pr-2">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">Turno</p>
+                        <select id="shift-turno-select" class="bg-transparent text-xs font-black text-fuchsia-700 uppercase outline-none cursor-pointer w-full" onchange="changeShiftType(this.value)">
+                            <option value="matutino">Matutino</option>
+                            <option value="vespertino">Vespertino</option>
+                            <option value="nocturno">Nocturno</option>
+                        </select>
+                    </div>
+                    <div id="turno-label-wrapper" class="hidden flex-col flex-1 border-r border-slate-200 pr-2">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">Turno</p>
+                        <div class="text-xs font-black text-rose-700 uppercase w-full truncate" id="shift-turno-label">-</div>
+                    </div>
+                    <div class="flex flex-col flex-1 pl-2 overflow-hidden">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">Caseta</p>
+                        <select id="shift-caseta-select" class="bg-transparent text-xs font-bold text-slate-700 uppercase outline-none cursor-pointer w-full truncate" onchange="updateShiftField('Caseta', this.value)">
+                            <option value="">Sin Asignación</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Detalle Ausentismo -->
+                <div id="ausentismo-details" class="hidden mb-4 p-4 bg-rose-50 rounded-lg text-center border border-rose-200">
+                    <p class="text-[10px] font-bold text-rose-500 uppercase">Motivo Registrado</p>
+                    <p id="shift-motivo" class="text-xl font-bold text-rose-700 uppercase">-</p>
+                </div>
+
+                <!-- Fila 2: Relojes -->
+                <div id="grid-entry-exit" class="mb-4">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-slate-50 p-2 rounded-lg text-center border border-slate-200">
+                            <p class="info-label justify-center !mb-1">Prog</p>
+                            <input type="time" id="shift-prog" class="w-full text-center text-sm font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0" onchange="updateShiftField('entrada_programada', this.value)">
+                        </div>
+                        <div class="bg-emerald-50 p-2 rounded-lg text-center border border-emerald-200">
+                            <p class="info-label justify-center !mb-1 text-emerald-700">Entrada</p>
+                            <input type="time" id="shift-entry" class="w-full text-center text-sm font-bold text-emerald-800 bg-transparent border-none p-0 focus:ring-0" onchange="updateShiftField('entrada_real', this.value)">
+                        </div>
+                        <div class="bg-rose-50 p-2 rounded-lg text-center border border-rose-200">
+                            <p class="info-label justify-center !mb-1 text-rose-700">Salida</p>
+                            <input type="time" id="shift-exit" class="w-full text-center text-sm font-bold text-rose-800 bg-transparent border-none p-0 focus:ring-0" onchange="updateShiftField('salida_real', this.value)">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center mt-2">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">
+                            Tiempo: <span id="shift-time" class="font-mono ml-1 text-slate-800">00:00:00</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Fila 3: Switches -->
+                <div id="grid-switches" class="grid grid-cols-4 gap-2 mb-4">
+                    <label class="relative block cursor-pointer">
+                        <input type="checkbox" id="switch-extra" class="peer sr-only" onchange="updateShiftField('es_extra', this.checked)">
+                        <div class="py-1.5 rounded-md bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-500 uppercase text-center transition-colors peer-checked:bg-fuchsia-600 peer-checked:border-fuchsia-600 peer-checked:text-white">Extra</div>
+                    </label>
+                    <label class="relative block cursor-pointer">
+                        <input type="checkbox" id="switch-recup" class="peer sr-only" onchange="updateShiftField('es_recuperacion', this.checked)">
+                        <div class="py-1.5 rounded-md bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-500 uppercase text-center transition-colors peer-checked:bg-emerald-500 peer-checked:border-emerald-500 peer-checked:text-white">Recup</div>
+                    </label>
+                    <label class="relative block cursor-pointer">
+                        <input type="checkbox" id="switch-festivo" class="peer sr-only" onchange="updateShiftField('es_festivo', this.checked)">
+                        <div class="py-1.5 rounded-md bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-500 uppercase text-center transition-colors peer-checked:bg-purple-600 peer-checked:border-purple-600 peer-checked:text-white">Festivo</div>
+                    </label>
+                    <label class="relative block cursor-pointer">
+                        <input type="checkbox" id="switch-retardo" class="peer sr-only" onchange="updateShiftField('retardo', this.checked)">
+                        <div class="py-1.5 rounded-md bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-500 uppercase text-center transition-colors peer-checked:bg-rose-100 peer-checked:border-rose-400 peer-checked:text-rose-700">Retardo</div>
+                    </label>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="mb-4">
+                    <p class="info-label">Notas</p>
+                    <textarea id="shift-obs" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs focus:bg-white focus:border-fuchsia-400 outline-none resize-none" placeholder="Observaciones..." onchange="updateShiftField('comentario', this.value)"></textarea>
+                </div>
+
+                <button id="btn-shift-action" class="w-full py-2.5 rounded-lg font-bold text-white uppercase text-xs shadow-sm transition-colors hidden" onclick="handleShiftAction()">
+                    ACCIÓN
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN PATRONES -->
+        <div id="content-patrones" class="tab-content hidden w-full max-w-5xl mx-auto">
+            <div class="profile-group">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="group-title !mb-0">Generador de Patrones</h3>
+                    <div class="flex gap-2">
+                        <button onclick="undoLastBackup()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-2 rounded flex items-center gap-1 transition-colors border border-slate-200 text-[9px] uppercase">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                            <span class="hidden sm:inline">Deshacer</span>
+                        </button>
+                        <button onclick="showBackupHistory()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-2 rounded flex items-center gap-1 transition-colors border border-slate-200 text-[9px] uppercase">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="hidden sm:inline">Historial</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <p class="info-label text-slate-500">1. Secuencia (Añade con + para dobletes)</p>
+                <div class="flex flex-wrap gap-2 mb-4 p-2 bg-slate-50 rounded-lg border border-slate-200 justify-center">
+                    <button onclick="addToPattern('matutino')" class="px-3 py-1.5 bg-[#fef08a] color-matutino text-[10px] font-bold rounded-md shadow-sm">Matutino</button>
+                    <button onclick="addToPattern('vespertino')" class="px-3 py-1.5 bg-[#bae6fd] color-vespertino text-[10px] font-bold rounded-md shadow-sm">Vespertino</button>
+                    <button onclick="addToPattern('nocturno')" class="px-3 py-1.5 bg-[#1e293b] color-nocturno text-[10px] font-bold rounded-md shadow-sm text-white">Nocturno</button>
+                    <button onclick="addToPattern('descanso')" class="px-3 py-1.5 bg-[#e2e8f0] color-descanso text-[10px] font-bold rounded-md shadow-sm">Descanso</button>
+                    <select onchange="if(this.value) { addToPattern('ausentismo', this.value); this.value=''; }" class="px-3 py-1.5 bg-[#fecdd3] color-ausentismo text-[10px] font-bold rounded-md appearance-none text-center outline-none cursor-pointer shadow-sm">
+                        <option value="" disabled selected>AUSENTISMO ▾</option>
+                        <option value="Descanso">Descanso</option>
+                        <option value="Permiso">Permiso</option>
+                        <option value="Vacaciones">Vacaciones</option>
+                        <option value="Suspensión">Suspensión</option>
+                        <option value="Incapacidades">Incapacidades</option>
+                        <option value="Falta">Falta</option>
+                    </select>
+                </div>
+
+                <div id="pattern-display" class="flex flex-wrap gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-lg min-h-[60px] mb-4 items-center justify-center">
+                    <span class="text-xs text-slate-400">Secuencia vacía...</span>
+                </div>
+
+                <p class="info-label text-slate-500">2. Fechas de Aplicación</p>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-500 uppercase block mb-1">Inicio</label>
+                        <input type="date" id="patron-start" class="edit-input" onchange="generatePreview()">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-500 uppercase block mb-1">Fin</label>
+                        <input type="date" id="patron-end" class="edit-input" onchange="generatePreview()">
+                    </div>
+                </div>
+
+                <!-- Calendario de Previsualización -->
+                <p class="info-label text-slate-500 mt-2">3. Vista Previa (Sobreescribirá los turnos existentes)</p>
+                <div id="calendar-preview-container" class="w-full bg-slate-50 rounded-lg border border-slate-200 p-2 mb-4 overflow-hidden max-h-[300px] overflow-y-auto">
+                    <p class="text-xs text-slate-400 text-center py-4">Configura el patrón y las fechas para ver la previsualización.</p>
+                </div>
+
+                <button onclick="generatePattern()" class="w-full py-2.5 rounded-lg font-bold text-white uppercase text-xs bg-slate-800 hover:bg-slate-900 transition-colors shadow-md">
+                    Aplicar Patrón
+                </button>
+                <div id="patron-feedback" class="mt-3 text-xs font-bold text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- MODAL AUSENTISMO -->
+        <div id="modal-ausentismo" class="fixed inset-0 bg-slate-900/40 z-[200] hidden items-center justify-center p-4">
+            <div class="bg-white w-full max-w-xs rounded-xl shadow-lg p-5">
+                <h3 class="text-sm font-bold text-slate-900 uppercase mb-2">Ausentismo</h3>
+                <p class="text-xs text-slate-500 mb-4">Motivo de la ausencia. Si es "Falta", mantiene el turno como referencia.</p>
+                
+                <select id="input-motivo-ausentismo" class="edit-select mb-4 !text-sm">
+                    <option value="" disabled selected>Seleccionar...</option>
+                    <option value="Descanso">Descanso</option>
+                    <option value="Permiso">Permiso</option>
+                    <option value="Vacaciones">Vacaciones</option>
+                    <option value="Suspensión">Suspensión</option>
+                    <option value="Incapacidades">Incapacidades</option>
+                    <option value="Falta">Falta</option>
+                </select>
+
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('modal-ausentismo').style.display='none'" class="flex-1 py-2 rounded-lg font-bold text-slate-600 bg-slate-100 text-xs">Cancelar</button>
+                    <button onclick="confirmAusentismo()" class="flex-1 py-2 rounded-lg font-bold text-white bg-rose-600 text-xs">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL HISTORIAL DE BACKUPS -->
+        <div id="modal-history" class="fixed inset-0 bg-slate-900/40 z-[200] hidden items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-5 flex flex-col max-h-[80vh]">
+                <h3 class="text-sm font-bold text-slate-900 uppercase mb-2 border-b border-slate-100 pb-2 flex justify-between items-center">
+                    Historial de Patrones
+                    <button onclick="document.getElementById('modal-history').style.display='none'" class="text-slate-400 hover:text-rose-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </h3>
+                <p class="text-xs text-slate-500 mb-4">Últimos 10 cambios generados masivamente para este elemento. Selecciona uno para restaurar el estado anterior a ese momento.</p>
+                
+                <div id="history-list" class="flex-grow overflow-y-auto pr-1 flex flex-col gap-2">
+                    <p class="text-xs text-slate-400 text-center py-4">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/"
+        };
+        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db_rtdb = getDatabase(app);
+        const fs = getFirestore(app);
+
+        const params = new URLSearchParams(window.location.search);
+        const elId = params.get('id');
+        const elFecha = params.get('fecha'); 
+        const urlTurno = params.get('turno'); 
+        const initialTab = params.get('pestaña') || 'turno';
+
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        let currentElementData = null;
+        let fullCatalog = null; 
+        let listadoCasetas = [];
+        let timerInterval = null;
+        
+        let dayShiftsData = {}; 
+        let currentShiftTab = null;
+        let googleMapsLoaded = false;
+
+        const TAB_COLORS = {
+            'matutino': 'bg-[#fef08a] color-matutino',
+            'vespertino': 'bg-[#bae6fd] color-vespertino',
+            'nocturno': 'bg-[#1e293b] color-nocturno text-white',
+            'ausentismo': 'bg-[#fecdd3] color-ausentismo',
+            'descanso': 'bg-[#e2e8f0] color-descanso'
+        };
+
+        // NOTIFICADOR FORTIFICADO PARA DELTA UPDATES
+        async function notifyUpdate(dbKey) {
+            localStorage.setItem('thisUpdate', 'true');
+            const ts = Date.now().toString();
+            
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) {
+                    localUpdates = JSON.parse(stored);
+                }
+            } catch(e) {}
+            
+            localUpdates[dbKey] = ts;
+            localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+            
+            await set(ref(db_rtdb, `updates/RegAs/${dbKey}`), ts).catch(err => console.error("Error al notificar RTDB:", err));
+        }
+
+        function calcularEdad(dobStr) {
+            if (!dobStr) return '-';
+            let parts = dobStr.includes('/') ? dobStr.split('/') : dobStr.split('-');
+            let dob;
+            if (dobStr.includes('/')) {
+                dob = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                dob = new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+            if (isNaN(dob.getTime())) return '-';
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            return age + ' años';
+        }
+
+        async function loadGoogleMaps() {
+            if (googleMapsLoaded) return;
+            try {
+                const snap = await get(ref(db_rtdb, 'api/maps'));
+                if (snap.exists()) {
+                    const apiKey = snap.val();
+                    return new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+                        script.async = true;
+                        script.defer = true;
+                        script.onload = () => {
+                            googleMapsLoaded = true;
+                            resolve();
+                        };
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+            } catch (error) {
+                console.error("Error cargando Google Maps API", error);
+            }
+        }
+
+        async function getSavedPhoto(id) {
+            return new Promise((resolve) => {
+                const request = indexedDB.open("CIC_OS_Cache_Fotos", 1);
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    if (!idb.objectStoreNames.contains("fotos")) { idb.close(); return resolve(null); }
+                    const tx = idb.transaction("fotos", "readonly");
+                    const req = tx.objectStore("fotos").get(id);
+                    req.onsuccess = () => { idb.close(); resolve(req.result ? URL.createObjectURL(req.result) : null); };
+                    req.onerror = () => { idb.close(); resolve(null); };
+                };
+                request.onerror = () => resolve(null);
+            });
+        }
+
+        async function loadData() {
+            if (!elId) return;
+            document.getElementById('el-id').innerText = elId;
+
+            await loadGoogleMaps();
+
+            const photoEl = document.getElementById('el-photo');
+            const cached = await getSavedPhoto(elId);
+            if (cached) photoEl.src = cached;
+            else {
+                try {
+                    const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${elId}.webp`));
+                    photoEl.src = url;
+                } catch(e) {}
+            }
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction(["registros", "catalogos"], "readonly");
+                const catStore = tx.objectStore("catalogos");
+                
+                catStore.get("Casetas").onsuccess = (res) => {
+                    const casetasData = res.target.result || {};
+                    listadoCasetas = Object.keys(casetasData).filter(k => k !== 'id');
+                };
+
+                catStore.get("ElementosPP").onsuccess = (res) => {
+                    fullCatalog = res.target.result || {};
+                    const elementEntry = Object.entries(fullCatalog).find(([name, info]) => info.ID === elId);
+                    if (elementEntry) {
+                        currentElementData = { name: elementEntry[0], info: elementEntry[1] };
+                        renderProfileContent();
+                    }
+                };
+
+                // Formateo correcto usando dbKey
+                const regYear = elFecha.substring(4, 8);
+                const monthIndex = parseInt(elFecha.substring(2,4)) - 1;
+                const monthName = MONTH_NAMES[monthIndex];
+                const dbKey = `${regYear}_${monthName}`;
+
+                tx.objectStore("registros").get(dbKey).onsuccess = (res) => {
+                    const monthData = res.target.result || {};
+                    dayShiftsData = monthData[elFecha]?.[elId] || {};
+                    if (!currentShiftTab) currentShiftTab = urlTurno || 'matutino'; 
+                    renderShiftTabs();
+                    renderShiftDetails();
+                };
+
+                // Load ACTUAL TODAY's status for the header label usando dbKey
+                const today = new Date();
+                const todayYearStr = String(today.getFullYear());
+                const todayMonthName = MONTH_NAMES[today.getMonth()];
+                const todayDbKey = `${todayYearStr}_${todayMonthName}`;
+                const todayKey = String(today.getDate()).padStart(2, '0') + String(today.getMonth() + 1).padStart(2, '0') + todayYearStr;
+                
+                tx.objectStore("registros").get(todayDbKey).onsuccess = (resToday) => {
+                    const tMonthData = resToday.target.result || {};
+                    const tDayData = tMonthData[todayKey]?.[elId] || {};
+                    
+                    let statusHtml = '<span class="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">DESCANSO</span>';
+                    
+                    if (tDayData['ausentismo']) {
+                        statusHtml = `<span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">${tDayData['ausentismo'].motivo}</span>`;
+                    } else {
+                        let isEnTurno = false, isCompletado = false, hasTurno = false;
+                        ['matutino', 'vespertino', 'nocturno'].forEach(s => {
+                            if (tDayData[s]) {
+                                hasTurno = true;
+                                if (tDayData[s].entrada_real && !tDayData[s].salida_real) isEnTurno = true;
+                                else if (tDayData[s].entrada_real && tDayData[s].salida_real) isCompletado = true;
+                            }
+                        });
+                        
+                        if (isEnTurno) {
+                            statusHtml = `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">EN TURNO</span>`;
+                        } else if (isCompletado) {
+                            statusHtml = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">JORNADA COMPLETADA</span>`;
+                        } else if (hasTurno) {
+                            statusHtml = `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm">PROGRAMADO HOY</span>`;
+                        }
+                    }
+                    
+                    const statusContainer = document.getElementById('el-status-container');
+                    if (statusContainer) statusContainer.innerHTML = statusHtml;
+                };
+            };
+        }
+
+        function renderShiftTabs() {
+            const container = document.getElementById('shift-sub-tabs');
+            const outerContainer = document.getElementById('shift-sub-tabs-container');
+            if (!container) return;
+            
+            let html = '';
+            const existingShifts = Object.keys(dayShiftsData);
+            
+            if (!existingShifts.includes(currentShiftTab)) {
+                existingShifts.push(currentShiftTab); 
+            }
+
+            const orderMap = { 'matutino': 1, 'vespertino': 2, 'nocturno': 3, 'ausentismo': 4 };
+            existingShifts.sort((a, b) => (orderMap[a] || 99) - (orderMap[b] || 99));
+
+            existingShifts.forEach(shift => {
+                const colorClass = TAB_COLORS[shift]?.split(' ')[1] || 'text-slate-800';
+                html += `<button class="shift-sub-tab ${shift === currentShiftTab ? 'active ' + colorClass : 'bg-slate-100 text-slate-500'}" onclick="window.switchShiftTab('${shift}')">${shift}</button>`;
+            });
+
+            const allShifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+            const available = allShifts.filter(s => !existingShifts.includes(s));
+
+            if (available.length > 0) {
+                html += `
+                <div class="relative inline-block ml-1">
+                    <select onchange="if(this.value) window.handleAddShift(this.value)" class="shift-sub-tab-add appearance-none pr-6 cursor-pointer outline-none">
+                        <option value="" disabled selected>+ AÑADIR</option>
+                        ${available.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        window.handleAddShift = async function(shift) {
+            if (shift === 'ausentismo') {
+                document.getElementById('modal-ausentismo').style.display = 'flex';
+                document.getElementById('input-motivo-ausentismo').value = '';
+            } else {
+                let shiftsToDelete = [];
+                if (dayShiftsData['ausentismo'] && dayShiftsData['ausentismo'].motivo?.toLowerCase() !== 'falta') {
+                    shiftsToDelete.push('ausentismo');
+                    delete dayShiftsData['ausentismo'];
+                }
+                dayShiftsData[shift] = {}; 
+                currentShiftTab = shift;
+                
+                if (shiftsToDelete.length > 0) await saveFullDayShiftsData(shiftsToDelete);
+                else await saveShiftData({}); 
+                
+                renderShiftTabs();
+                renderShiftDetails();
+            }
+            const addSelect = document.querySelector('.shift-sub-tab-add');
+            if(addSelect) addSelect.value = '';
+        };
+
+        window.confirmAusentismo = async function() {
+            const motivo = document.getElementById('input-motivo-ausentismo').value;
+            if (!motivo) return;
+            document.getElementById('modal-ausentismo').style.display = 'none';
+
+            let shiftsToDelete = [];
+            let newAusentismo = { motivo: motivo };
+
+            if (motivo.toLowerCase() === 'falta') {
+                let shiftToReplace = currentShiftTab !== 'ausentismo' ? currentShiftTab : Object.keys(dayShiftsData).find(k => k !== 'ausentismo');
+                if (shiftToReplace && dayShiftsData[shiftToReplace]) {
+                    newAusentismo.turno_ausente = shiftToReplace;
+                    newAusentismo.Caseta = dayShiftsData[shiftToReplace].Caseta || '';
+                    shiftsToDelete.push(shiftToReplace);
+                }
+            } else {
+                shiftsToDelete = Object.keys(dayShiftsData).filter(k => k !== 'ausentismo');
+            }
+
+            shiftsToDelete.forEach(s => delete dayShiftsData[s]);
+            dayShiftsData['ausentismo'] = newAusentismo;
+            currentShiftTab = 'ausentismo';
+
+            await saveFullDayShiftsData(shiftsToDelete);
+            renderShiftTabs();
+            renderShiftDetails();
+        };
+
+        window.saveFullDayShiftsData = async function(shiftsToDelete = []) {
+            const regYear = elFecha.substring(4, 8);
+            const monthIndex = parseInt(elFecha.substring(2,4)) - 1;
+            const monthName = MONTH_NAMES[monthIndex];
+            const dbKey = `${regYear}_${monthName}`;
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+
+                store.get(dbKey).onsuccess = async (res) => {
+                    let monthData = res.target.result || { id: dbKey };
+                    if (!monthData[elFecha]) monthData[elFecha] = {};
+                    if (!monthData[elFecha][elId]) monthData[elFecha][elId] = {};
+
+                    shiftsToDelete.forEach(s => delete monthData[elFecha][elId][s]);
+                    monthData[elFecha][elId][currentShiftTab] = dayShiftsData[currentShiftTab];
+
+                    store.put(monthData).onsuccess = async () => {
+                        let firestoreUpdate = {};
+                        shiftsToDelete.forEach(s => firestoreUpdate[`${elFecha}.${elId}.${s}`] = deleteField());
+                        firestoreUpdate[`${elFecha}.${elId}.${currentShiftTab}`] = dayShiftsData[currentShiftTab];
+
+                        try {
+                            const docRef = doc(fs, "RegAs", "Registros", regYear, monthName);
+                            await updateDoc(docRef, firestoreUpdate).catch(async () => {
+                                const updateObj = { [elFecha]: { [elId]: { [currentShiftTab]: dayShiftsData[currentShiftTab] } } };
+                                await setDoc(docRef, updateObj, { merge: true });
+                            });
+                            
+                            await notifyUpdate(dbKey);
+                            loadData();
+                        } catch (err) {}
+                    };
+                };
+            };
+        };
+
+        window.switchShiftTab = function(shift) {
+            currentShiftTab = shift;
+            renderShiftTabs();
+            renderShiftDetails();
+        };
+        
+        window.changeShiftType = async function(newShiftName) {
+            if (newShiftName === currentShiftTab || !newShiftName) return;
+            let shiftsToDelete = [currentShiftTab];
+            let shiftDataToMove = dayShiftsData[currentShiftTab] || {};
+            delete dayShiftsData[currentShiftTab];
+            dayShiftsData[newShiftName] = shiftDataToMove;
+            currentShiftTab = newShiftName;
+            
+            if (dayShiftsData['ausentismo'] && dayShiftsData['ausentismo'].motivo?.toLowerCase() !== 'falta') {
+                shiftsToDelete.push('ausentismo');
+                delete dayShiftsData['ausentismo'];
+            }
+            
+            await saveFullDayShiftsData(shiftsToDelete);
+            renderShiftTabs();
+            renderShiftDetails();
+        };
+
+        function renderShiftDetails() {
+            const activeShift = dayShiftsData[currentShiftTab] || {};
+            
+            const casetaSelect = document.getElementById('shift-caseta-select');
+            if (casetaSelect && casetaSelect.options.length <= 1 && listadoCasetas.length > 0) {
+                casetaSelect.innerHTML = '<option value="">Sin Asignación</option>' + listadoCasetas.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+            if (casetaSelect) casetaSelect.value = activeShift.Caseta || "";
+
+            document.getElementById('shift-prog').value = activeShift.entrada_programada || "";
+            document.getElementById('shift-entry').value = activeShift.entrada_real || "";
+            document.getElementById('shift-exit').value = activeShift.salida_real || "";
+            
+            document.getElementById('switch-extra').checked = !!activeShift.es_extra;
+            document.getElementById('switch-recup').checked = !!activeShift.es_recuperacion;
+            document.getElementById('switch-festivo').checked = !!activeShift.es_festivo;
+            document.getElementById('switch-retardo').checked = !!activeShift.retardo;
+            document.getElementById('shift-obs').value = activeShift.comentario || "";
+
+            if (currentShiftTab === 'ausentismo') {
+                document.getElementById('turno-select-wrapper').classList.add('hidden');
+                document.getElementById('turno-label-wrapper').classList.remove('hidden');
+                document.getElementById('shift-turno-label').innerText = currentShiftTab;
+                document.getElementById('ausentismo-details').classList.remove('hidden');
+                document.getElementById('shift-motivo').innerText = activeShift.motivo || 'No especificado';
+                document.getElementById('grid-entry-exit').classList.add('hidden');
+                document.getElementById('grid-switches').classList.add('hidden');
+            } else {
+                document.getElementById('turno-select-wrapper').classList.remove('hidden');
+                document.getElementById('turno-label-wrapper').classList.add('hidden');
+                document.getElementById('shift-turno-select').value = currentShiftTab;
+                document.getElementById('ausentismo-details').classList.add('hidden');
+                document.getElementById('grid-entry-exit').classList.remove('hidden');
+                document.getElementById('grid-switches').classList.remove('hidden');
+            }
+
+            updateTimer(activeShift.entrada_real, activeShift.salida_real, elFecha);
+            renderShiftAction(activeShift.entrada_real, activeShift.salida_real);
+        }
+
+        function updateTimer(entrada, salida, dateStr) {
+            clearInterval(timerInterval);
+            const display = document.getElementById('shift-time');
+            
+            if (!entrada || currentShiftTab === 'ausentismo') {
+                display.innerText = "00:00:00";
+                return;
+            }
+
+            const parseTime = (timeStr, dStr) => {
+                const day = parseInt(dStr.substring(0,2));
+                const month = parseInt(dStr.substring(2,4)) - 1;
+                const year = parseInt(dStr.substring(4,8));
+                const [h, m] = timeStr.split(':').map(Number);
+                return new Date(year, month, day, h, m, 0).getTime();
+            };
+
+            const entryTime = parseTime(entrada, dateStr);
+            const exitTime = salida ? parseTime(salida, dateStr) : null;
+            
+            const tick = () => {
+                const now = exitTime || Date.now();
+                let diff = now - entryTime;
+                if (diff < 0 && salida) diff += 86400000; 
+                else if (diff < 0 && !salida) diff = 0; 
+                
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                display.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            };
+            
+            tick();
+            if (!salida) timerInterval = setInterval(tick, 1000);
+        }
+
+        function renderShiftAction(entrada, salida) {
+            const btn = document.getElementById('btn-shift-action');
+            if (currentShiftTab === 'ausentismo') {
+                btn.classList.add('hidden'); 
+                return;
+            }
+
+            if (!entrada) {
+                btn.className = "w-full py-2.5 rounded-lg font-bold text-white uppercase text-xs transition-colors bg-emerald-600 hover:bg-emerald-700";
+                btn.innerText = "Registrar Entrada";
+                btn.onclick = () => handleShiftAction('entrada');
+                btn.classList.remove('hidden');
+            } else if (!salida) {
+                btn.className = "w-full py-2.5 rounded-lg font-bold text-white uppercase text-xs transition-colors bg-rose-600 hover:bg-rose-700";
+                btn.innerText = "Registrar Salida";
+                btn.onclick = () => handleShiftAction('salida');
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        window.handleShiftAction = async function(type) {
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            await saveShiftData(type === 'entrada' ? { entrada_real: timeStr } : { salida_real: timeStr });
+            loadData();
+        };
+
+        window.updateShiftField = async function(field, value) {
+            if (currentShiftTab === 'ausentismo' && field !== 'comentario' && field !== 'Caseta') return;
+            if (!dayShiftsData[currentShiftTab]) dayShiftsData[currentShiftTab] = {};
+            dayShiftsData[currentShiftTab][field] = value;
+            
+            if (field === 'entrada_real' || field === 'salida_real') {
+                const activeShift = dayShiftsData[currentShiftTab];
+                updateTimer(activeShift.entrada_real, activeShift.salida_real, elFecha);
+                renderShiftAction(activeShift.entrada_real, activeShift.salida_real);
+            }
+            await saveShiftData({ [field]: value });
+        };
+
+        async function saveShiftData(updates) {
+            const regYear = elFecha.substring(4, 8);
+            const monthIndex = parseInt(elFecha.substring(2,4)) - 1;
+            const monthName = MONTH_NAMES[monthIndex];
+            const dbKey = `${regYear}_${monthName}`;
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+                
+                store.get(dbKey).onsuccess = async (res) => {
+                    let monthData = res.target.result || { id: dbKey };
+                    if (!monthData[elFecha]) monthData[elFecha] = {};
+                    if (!monthData[elFecha][elId]) monthData[elFecha][elId] = {};
+                    if (!monthData[elFecha][elId][currentShiftTab]) monthData[elFecha][elId][currentShiftTab] = {};
+                    
+                    Object.assign(monthData[elFecha][elId][currentShiftTab], updates);
+                    
+                    store.put(monthData).onsuccess = async () => {
+                        let firestoreUpdate = {};
+                        firestoreUpdate[`${elFecha}.${elId}.${currentShiftTab}`] = monthData[elFecha][elId][currentShiftTab];
+
+                        try {
+                            const docRef = doc(fs, "RegAs", "Registros", regYear, monthName);
+                            await updateDoc(docRef, firestoreUpdate).catch(async () => {
+                                const updateObj = { [elFecha]: { [elId]: { [currentShiftTab]: monthData[elFecha][elId][currentShiftTab] } } };
+                                await setDoc(docRef, updateObj, { merge: true });
+                            });
+                            
+                            await notifyUpdate(dbKey);
+                            loadData();
+                        } catch (err) {}
+                    };
+                };
+            };
+        }
+
+        function renderProfileContent() {
+            if (!currentElementData) return;
+            document.getElementById('el-name').innerText = currentElementData.name;
+            const container = document.getElementById('perfil-groups-container');
+            container.innerHTML = '';
+
+            const groups = [
+                { title: 'Acceso', path: null, keys: ['ID', 'uid', 'Modulo', 'Acceso'] },
+                { title: 'Contacto', path: null, keys: ['Teléfono', 'email'] },
+                { title: 'Identidad Personal', path: 'Identidad', keys: ['Grado de estudios', 'Fecha de nacimiento', 'Domicilio actual', 'No de IMSS', 'Genero', 'Alergias', 'Lugar de origen', 'Estado civil'] },
+                { title: 'Operativa', path: 'Operativa', keys: ['Puesto', 'Estado', 'FechaDeIngreso', 'AccesoPredeterminado'] },
+                { title: 'Uniforme', path: 'Uniforme', keys: ['Camisa', 'Pantalon', 'Calzado', 'Gorra'] }
+            ];
+
+            groups.forEach(group => {
+                const dataSource = group.path ? currentElementData.info[group.path] : currentElementData.info;
+                if (!dataSource) return;
+
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'profile-group';
+                groupDiv.innerHTML = `<h3 class="group-title">${group.title}</h3>`;
+                
+                const fieldsGrid = document.createElement('div');
+                fieldsGrid.className = 'fields-grid';
+                groupDiv.appendChild(fieldsGrid);
+
+                group.keys.forEach(key => {
+                    const value = dataSource[key] !== undefined ? dataSource[key] : '';
+                    const dataPath = group.path ? `${group.path}.${key}` : key;
+                    const safeKeyId = dataPath.replace(/[^a-zA-Z0-9]/g, '_');
+
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'relative flex flex-col justify-end'; 
+                    fieldDiv.innerHTML = `
+                        <p class="info-label">
+                            ${key}
+                            <span id="indicator-${safeKeyId}" class="save-indicator">
+                                <span id="dot-local-${safeKeyId}" class="dot-local hidden">✓</span>
+                                <span id="dot-cloud-${safeKeyId}" class="dot-cloud hidden">✓</span>
+                            </span>
+                        </p>
+                    `;
+                    
+                    if (typeof value === 'boolean') {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 border border-transparent hover:bg-slate-100';
+                        const input = document.createElement('input');
+                        input.type = 'checkbox';
+                        input.checked = value;
+                        input.onchange = (e) => autoSaveField(dataPath, e.target.checked, safeKeyId, key);
+                        input.className = 'w-4 h-4 accent-fuchsia-600 rounded';
+                        label.appendChild(input);
+                        label.append(value ? 'Habilitado' : 'Deshabilitado');
+                        fieldDiv.appendChild(label);
+                    } 
+                    else if (key === 'AccesoPredeterminado') {
+                        const select = document.createElement('select');
+                        select.className = 'edit-select custom-tag-select text-left !text-left-last !bg-slate-50';
+                        select.onchange = (e) => autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                        
+                        let optionsHtml = `<option value="">Seleccionar caseta...</option>`;
+                        listadoCasetas.forEach(caseta => {
+                            optionsHtml += `<option value="${caseta}" ${caseta === value ? 'selected' : ''}>${caseta}</option>`;
+                        });
+                        select.innerHTML = optionsHtml;
+                        fieldDiv.appendChild(select);
+                    }
+                    else if (key.includes('Fecha de nacimiento')) {
+                        const input = document.createElement('input');
+                        input.type = 'date';
+                        input.className = 'edit-input';
+                        if (value && value.includes('/')) {
+                            const parts = value.split('/');
+                            if (parts.length === 3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                        } else input.value = value;
+                        input.onchange = (e) => {
+                            autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                            document.getElementById(`display-edad-${safeKeyId}`).innerText = calcularEdad(e.target.value);
+                        };
+                        fieldDiv.appendChild(input);
+
+                        const ageDiv = document.createElement('div');
+                        ageDiv.className = 'relative flex flex-col justify-end';
+                        ageDiv.innerHTML = `
+                            <p class="info-label">Edad</p>
+                            <div id="display-edad-${safeKeyId}" class="edit-input bg-transparent border-none px-0 text-slate-500 font-bold">${calcularEdad(value)}</div>
+                        `;
+                        
+                        fieldsGrid.appendChild(fieldDiv);
+                        fieldsGrid.appendChild(ageDiv);
+                        return;
+                    }
+                    else if (key.includes('Fecha')) {
+                        const input = document.createElement('input');
+                        input.type = 'date';
+                        input.className = 'edit-input';
+                        if (value && value.includes('/')) {
+                            const parts = value.split('/');
+                            if (parts.length === 3) input.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                        } else input.value = value;
+                        input.onchange = (e) => autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                        fieldDiv.appendChild(input);
+                    }
+                    else if (key === 'Teléfono') {
+                        const flexContainer = document.createElement('div');
+                        flexContainer.className = 'flex items-center gap-2';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'edit-input flex-1';
+                        input.value = value;
+                        input.onchange = (e) => autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                        flexContainer.appendChild(input);
+
+                        const waBtn = document.createElement('a');
+                        waBtn.className = 'flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-md w-8 h-8 flex-shrink-0 transition-colors cursor-pointer';
+                        waBtn.title = 'Enviar WhatsApp';
+                        waBtn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`;
+                        
+                        const updateWaLink = (val) => {
+                            const clean = val.replace(/\D/g, '');
+                            waBtn.href = clean ? `whatsapp://send?phone=${clean}` : '#';
+                            waBtn.style.opacity = clean ? '1' : '0.5';
+                            waBtn.style.pointerEvents = clean ? 'auto' : 'none';
+                        };
+                        updateWaLink(value);
+                        input.addEventListener('input', (e) => updateWaLink(e.target.value));
+
+                        flexContainer.appendChild(input);
+                        flexContainer.appendChild(waBtn);
+                        fieldDiv.appendChild(flexContainer);
+                    }
+                    else if (key === 'Domicilio actual') {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'edit-input';
+                        input.value = value;
+                        input.id = `input-addr-${safeKeyId}`;
+                        input.onchange = (e) => autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                        fieldDiv.appendChild(input);
+
+                        if (value && value.trim() !== '') geocodeExistingAddress(value);
+                        setTimeout(() => {
+                            if (googleMapsLoaded && window.google) {
+                                const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "mx" }, fields: ["formatted_address", "geometry"] });
+                                autocomplete.addListener("place_changed", () => {
+                                    const place = autocomplete.getPlace();
+                                    if (!place.geometry || !place.geometry.location) return;
+                                    const address = place.formatted_address || input.value;
+                                    input.value = address;
+                                    autoSaveField(dataPath, address, safeKeyId, key);
+                                    renderMiniMap(place.geometry.location.lat(), place.geometry.location.lng());
+                                });
+                            }
+                        }, 100);
+                    }
+                    else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'edit-input';
+                        input.value = value;
+                        input.onchange = (e) => autoSaveField(dataPath, e.target.value, safeKeyId, key);
+                        fieldDiv.appendChild(input);
+                    }
+
+                    fieldsGrid.appendChild(fieldDiv);
+                });
+
+                if (group.title === 'Identidad Personal') {
+                    const mapContainer = document.createElement('div');
+                    mapContainer.id = 'minimap-container';
+                    mapContainer.className = 'col-span-full h-40 rounded-lg bg-slate-100 border border-slate-200 hidden mt-4 overflow-hidden';
+                    fieldsGrid.appendChild(mapContainer);
+                }
+
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function geocodeExistingAddress(address) {
+            if (!googleMapsLoaded || !window.google || !window.google.maps) {
+                setTimeout(() => geocodeExistingAddress(address), 500);
+                return;
+            }
+            new google.maps.Geocoder().geocode({ address: address, componentRestrictions: { country: 'MX' } }, (results, status) => {
+                if (status === 'OK' && results[0]) renderMiniMap(results[0].geometry.location.lat(), results[0].geometry.location.lng());
+            });
+        }
+
+        function renderMiniMap(lat, lon) {
+            const container = document.getElementById('minimap-container');
+            if (!container) return;
+            container.classList.remove('hidden');
+            const map = new google.maps.Map(container, {
+                center: { lat: lat, lng: lon },
+                zoom: 16,
+                disableDefaultUI: true
+            });
+            new google.maps.Marker({
+                position: { lat: lat, lng: lon },
+                map: map
+            });
+            container.style.cursor = 'pointer';
+            container.onclick = () => { window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank'); };
+        }
+
+        async function autoSaveField(pathStr, rawValue, safeKeyId, keyName) {
+            const indicator = document.getElementById(`indicator-${safeKeyId}`);
+            const dotLocal = document.getElementById(`dot-local-${safeKeyId}`);
+            const dotCloud = document.getElementById(`dot-cloud-${safeKeyId}`);
+            
+            if (indicator) {
+                indicator.classList.add('active');
+                dotLocal.classList.remove('hidden');
+                dotCloud.classList.add('hidden');
+            }
+
+            let valueToSave = rawValue;
+            if (keyName.includes('Fecha') && rawValue && rawValue.includes('-')) {
+                const p = rawValue.split('-');
+                if (p.length === 3) valueToSave = `${p[2]}/${p[1]}/${p[0]}`;
+            }
+
+            const path = pathStr.split('.');
+            const elementInfo = currentElementData.info;
+            if (path.length === 1) elementInfo[path[0]] = valueToSave;
+            else if (path.length === 2) {
+                if (!elementInfo[path[0]]) elementInfo[path[0]] = {};
+                elementInfo[path[0]][path[1]] = valueToSave;
+            }
+
+            fullCatalog[currentElementData.name] = elementInfo;
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("catalogos", "readwrite");
+                tx.objectStore("catalogos").put(fullCatalog).onsuccess = async () => {
+                    try {
+                        const updateObj = { ElementosPP: { [currentElementData.name]: elementInfo } };
+                        await setDoc(doc(fs, "RegAs", "Catalogos"), updateObj, { merge: true });
+                        if (dotCloud) { dotCloud.innerText = "✓"; dotCloud.classList.remove('hidden'); }
+                    } catch (err) {
+                        if (dotCloud) { dotCloud.innerText = "!"; dotCloud.classList.remove('hidden'); }
+                    }
+                    setTimeout(() => {
+                        if (indicator) indicator.classList.remove('active');
+                        setTimeout(() => {
+                            if (dotLocal) dotLocal.classList.add('hidden');
+                            if (dotCloud) dotCloud.classList.add('hidden');
+                        }, 300);
+                    }, 2000);
+                };
+            };
+        }
+
+        window.syncFullCatalog = async function() {
+            const btn = document.getElementById('btn-sync-catalog');
+            const icon = document.getElementById('icon-sync');
+            btn.disabled = true; icon.classList.add('animate-spin-fast');
+
+            try {
+                const catSnap = await getDoc(doc(fs, "RegAs", "Catalogos"));
+                if (catSnap.exists()) {
+                    const data = catSnap.data();
+                    const idb = await new Promise(r => {
+                        const req = indexedDB.open("CIC_OS_RegAs", 8);
+                        req.onsuccess = (e) => r(e.target.result);
+                    });
+                    const tx = idb.transaction("catalogos", "readwrite");
+                    const store = tx.objectStore("catalogos");
+                    for (const [key, value] of Object.entries(data)) {
+                        if (typeof value === 'object' && value !== null && !Array.isArray(value)) store.put({ id: key, ...value });
+                        else store.put({ id: key, data: value });
+                    }
+                    tx.oncomplete = () => { idb.close(); loadData(); setTimeout(() => { btn.disabled = false; icon.classList.remove('animate-spin-fast'); }, 500); };
+                }
+            } catch (err) { btn.disabled = false; icon.classList.remove('animate-spin-fast'); }
+        };
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            
+            const btn = document.getElementById(`tab-${tabName}`);
+            const content = document.getElementById(`content-${tabName}`);
+            
+            if (btn) btn.classList.add('active');
+            if (content) content.classList.remove('hidden');
+
+            const subTabsContainer = document.getElementById('shift-sub-tabs-container');
+            if (tabName === 'turno') subTabsContainer.classList.remove('hidden');
+            else subTabsContainer.classList.add('hidden');
+        };
+
+        // --- PATRONES (MÚLTIPLES TURNOS POR DÍA Y PREVISUALIZACIÓN) ---
+        let currentPatternSequence = [];
+        let draggedPatternIndex = null;
+
+        window.addToPattern = function(type, motivo = null) {
+            currentPatternSequence.push({ shifts: [{type, motivo}], count: 1 });
+            renderPatternDisplay();
+            window.generatePreview();
+        };
+
+        window.addShiftToBlock = function(blockIndex, type) {
+            if(!type) return;
+            currentPatternSequence[blockIndex].shifts.push({type: type, motivo: null});
+            renderPatternDisplay();
+            window.generatePreview();
+        };
+
+        window.removeShiftFromBlock = function(blockIndex, shiftIndex) {
+            currentPatternSequence[blockIndex].shifts.splice(shiftIndex, 1);
+            if (currentPatternSequence[blockIndex].shifts.length === 0) {
+                currentPatternSequence.splice(blockIndex, 1);
+            }
+            renderPatternDisplay();
+            window.generatePreview();
+        };
+
+        window.changePatternCount = function(index, delta) {
+            currentPatternSequence[index].count += delta;
+            if (currentPatternSequence[index].count <= 0) currentPatternSequence.splice(index, 1);
+            renderPatternDisplay();
+            window.generatePreview();
+        };
+
+        window.onDragStartPattern = function(e, index) { draggedPatternIndex = index; e.dataTransfer.effectAllowed = "move"; e.target.style.opacity = '0.5'; };
+        window.onDragEndPattern = function(e) { e.target.style.opacity = '1'; };
+        window.onDragOverPattern = function(e) { e.preventDefault(); };
+        window.onDropPattern = function(e, targetIndex) {
+            e.preventDefault();
+            if (draggedPatternIndex === null || draggedPatternIndex === targetIndex) return;
+            const itemToMove = currentPatternSequence.splice(draggedPatternIndex, 1)[0];
+            currentPatternSequence.splice(targetIndex, 0, itemToMove);
+            draggedPatternIndex = null;
+            renderPatternDisplay();
+            window.generatePreview();
+        };
+
+        function renderPatternDisplay() {
+            const container = document.getElementById('pattern-display');
+            if (currentPatternSequence.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400">Secuencia vacía...</span>';
+                return;
+            }
+
+            container.innerHTML = currentPatternSequence.map((item, i) => {
+                let shiftsHtml = item.shifts.map((s, sIdx) => {
+                    const label = s.type === 'ausentismo' && s.motivo ? s.motivo.substring(0,3) : s.type.substring(0,3);
+                    const bgClass = TAB_COLORS[s.type]?.split(' ')[0] || 'bg-slate-200';
+                    const textClass = s.type === 'nocturno' ? 'text-white' : 'text-slate-800';
+                    return `
+                        <div class="relative group flex items-center justify-center ${bgClass} ${textClass} px-2 py-1 rounded w-full">
+                            <span>${label}</span>
+                            <button onclick="removeShiftFromBlock(${i}, ${sIdx})" class="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full w-3 h-3 flex items-center justify-center text-[7px] opacity-0 group-hover:opacity-100 transition-opacity">x</button>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                <div draggable="true" ondragstart="onDragStartPattern(event, ${i})" ondragend="onDragEndPattern(event)" ondragover="onDragOverPattern(event)" ondrop="onDropPattern(event, ${i})" class="flex flex-col items-center gap-1 p-1 rounded-md text-[10px] font-bold uppercase cursor-move border-2 border-slate-100 bg-white shadow-sm min-w-[50px]">
+                    <div class="flex flex-col w-full gap-0.5">
+                        ${shiftsHtml}
+                    </div>
+                    <select onchange="addShiftToBlock(${i}, this.value); this.value='';" class="w-full text-center text-[9px] appearance-none bg-slate-50 text-slate-400 outline-none rounded py-0.5 cursor-pointer mt-0.5 hover:bg-slate-100">
+                        <option value="" disabled selected>+</option>
+                        <option value="matutino">MAT</option>
+                        <option value="vespertino">VES</option>
+                        <option value="nocturno">NOC</option>
+                    </select>
+                    <div class="flex items-center bg-slate-100 rounded w-full justify-between px-1 mt-1">
+                        <button onclick="changePatternCount(${i}, -1)" class="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded leading-none text-slate-500">-</button>
+                        <span class="text-[9px] text-slate-600">x${item.count}</span>
+                        <button onclick="changePatternCount(${i}, 1)" class="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded leading-none text-slate-500">+</button>
+                    </div>
+                </div>`
+            }).join(`<svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`);
+        }
+
+        window.generatePreview = function() {
+            const startVal = document.getElementById('patron-start').value;
+            const endVal = document.getElementById('patron-end').value;
+            const container = document.getElementById('calendar-preview-container');
+
+            if (!startVal || !endVal || currentPatternSequence.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Configura el patrón y las fechas para ver la previsualización.</p>';
+                return;
+            }
+
+            let startDate = new Date(startVal + 'T00:00:00');
+            let endDate = new Date(endVal + 'T00:00:00');
+
+            if (startDate > endDate) {
+                container.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Fechas inválidas.</p>';
+                return;
+            }
+
+            const flatPattern = [];
+            currentPatternSequence.forEach(item => { for (let i = 0; i < item.count; i++) flatPattern.push(item); });
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readonly");
+                const store = tx.objectStore("registros");
+
+                let startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                let endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                let monthsToProcess = [];
+
+                let currM = new Date(startMonth);
+                while(currM <= endMonth) {
+                    monthsToProcess.push(new Date(currM));
+                    currM.setMonth(currM.getMonth() + 1);
+                }
+
+                let completed = 0;
+                let monthsData = {};
+
+                if (monthsToProcess.length === 0) return;
+
+                monthsToProcess.forEach(mDate => {
+                    const year = mDate.getFullYear();
+                    const month = mDate.getMonth();
+                    const mName = MONTH_NAMES[month];
+                    const dbKey = `${year}_${mName}`;
+
+                    store.get(dbKey).onsuccess = (res) => {
+                        monthsData[`${year}-${month}`] = res.target.result || {};
+                        completed++;
+                        if (completed === monthsToProcess.length) {
+                            renderCalendarGrid(startDate, endDate, flatPattern, monthsToProcess, monthsData);
+                        }
+                    };
+                });
+            };
+        };
+
+        function renderCalendarGrid(startDate, endDate, flatPattern, monthsToProcess, monthsData) {
+            let html = '';
+            const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
+
+            monthsToProcess.forEach(mDate => {
+                const year = mDate.getFullYear();
+                const month = mDate.getMonth();
+                const mName = MONTH_NAMES[month];
+                const monthData = monthsData[`${year}-${month}`];
+
+                html += `<div class="mb-4"><h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2 border-b border-slate-200 pb-1">${mName} ${year}</h4>`;
+                html += `<div class="grid grid-cols-7 gap-1 mb-1">`;
+                dayNames.forEach(d => html += `<div class="text-[8px] font-bold text-slate-400 text-center uppercase">${d}</div>`);
+                html += `</div><div class="grid grid-cols-7 gap-1">`;
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDay; i++) {
+                    html += `<div class="p-1"></div>`; 
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const currentDate = new Date(year, month, day);
+                    const dayKey = String(day).padStart(2, '0') + String(month + 1).padStart(2, '0') + year;
+
+                    let cellClass = "cal-cell border rounded flex flex-col gap-0.5 p-0.5 overflow-hidden ";
+                    let contentHtml = `<span class="text-[8px] font-bold text-center w-full block mb-0.5 leading-none">${day}</span>`;
+
+                    if (currentDate >= startDate && currentDate <= endDate) {
+                        cellClass += "border-fuchsia-300 bg-white shadow-sm ring-1 ring-inset ring-fuchsia-100";
+                        const diffTime = Math.abs(currentDate - startDate);
+                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+                        const patternItem = flatPattern[diffDays % flatPattern.length];
+
+                        patternItem.shifts.forEach(s => {
+                            const label = s.type === 'ausentismo' ? (s.motivo || 'AUS').substring(0,3) : s.type.substring(0,3);
+                            const bgClass = TAB_COLORS[s.type]?.split(' ')[0] || 'bg-slate-200';
+                            const textClass = s.type === 'nocturno' ? 'text-white' : 'text-slate-800';
+                            contentHtml += `<span class="text-[6px] font-black uppercase text-center rounded-sm ${bgClass} ${textClass} px-0.5 leading-[10px] w-full block truncate">${label}</span>`;
+                        });
+
+                    } else {
+                        cellClass += "border-slate-100 bg-slate-50 opacity-70";
+                        const existingShifts = monthData[dayKey]?.[elId];
+                        if (existingShifts) {
+                            Object.keys(existingShifts).forEach(k => {
+                                let label = k.substring(0,3);
+                                if (k === 'ausentismo') label = existingShifts[k].motivo?.substring(0,3) || 'AUS';
+                                contentHtml += `<span class="text-[6px] font-bold uppercase text-center rounded-sm bg-slate-200 text-slate-500 px-0.5 leading-[10px] w-full block truncate">${label}</span>`;
+                            });
+                        }
+                    }
+
+                    html += `<div class="${cellClass}">${contentHtml}</div>`;
+                }
+                html += `</div></div>`;
+            });
+
+            document.getElementById('calendar-preview-container').innerHTML = html;
+        }
+
+        function showPatternFeedback(msg, isError = false) {
+            const fb = document.getElementById('patron-feedback');
+            fb.textContent = msg;
+            fb.className = `mt-3 text-xs font-bold text-center p-2 rounded-md ${isError ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`;
+            fb.classList.remove('hidden');
+            setTimeout(() => fb.classList.add('hidden'), 4000);
+        }
+
+        window.generatePattern = async function() {
+            if (currentPatternSequence.length === 0) return showPatternFeedback("Agrega turnos.", true);
+            const startVal = document.getElementById('patron-start').value;
+            const endVal = document.getElementById('patron-end').value;
+
+            if (!startVal || !endVal) return showPatternFeedback("Selecciona fechas.", true);
+            let startDate = new Date(startVal + 'T00:00:00');
+            let endDate = new Date(endVal + 'T00:00:00');
+            if (startDate > endDate) return showPatternFeedback("Fechas inválidas.", true);
+
+            const flatPattern = [];
+            currentPatternSequence.forEach(item => { for (let i = 0; i < item.count; i++) flatPattern.push(item); });
+
+            const baseCaseta = currentElementData.info?.Operativa?.AccesoPredeterminado || "";
+            
+            const targetDates = [];
+            let currentDate = new Date(startDate);
+            let pIndex = 0;
+            while (currentDate <= endDate) {
+                targetDates.push({ dateObj: new Date(currentDate), pIndex: pIndex });
+                currentDate.setDate(currentDate.getDate() + 1);
+                pIndex++;
+            }
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = async (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+                
+                let monthsToProcess = {};
+                targetDates.forEach(tDate => {
+                    const yStr = String(tDate.dateObj.getFullYear());
+                    const mName = MONTH_NAMES[tDate.dateObj.getMonth()];
+                    const dbKey = `${yStr}_${mName}`;
+                    if(!monthsToProcess[dbKey]) monthsToProcess[dbKey] = { days: [], monthName: mName, yearStr: yStr };
+                    monthsToProcess[dbKey].days.push(tDate);
+                });
+
+                let backupObj = {
+                    id: Date.now(),
+                    timestamp: new Date().toLocaleString(),
+                    start: startVal,
+                    end: endVal,
+                    affectedData: {}
+                };
+
+                let promises = Object.keys(monthsToProcess).map(dbKey => {
+                    return new Promise((resolve) => {
+                        store.get(dbKey).onsuccess = async (res) => {
+                            let monthData = res.target.result || { id: dbKey };
+                            const group = monthsToProcess[dbKey];
+                            const yearStr = group.yearStr;
+                            const monthName = group.monthName;
+                            
+                            if (!backupObj.affectedData[dbKey]) backupObj.affectedData[dbKey] = { days: {}, monthName: monthName };
+                            
+                            let firestoreUpdatesByYear = {};
+
+                            group.days.forEach(tDate => {
+                                const d = tDate.dateObj;
+                                const dayKey = String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + yearStr;
+                                
+                                if (!firestoreUpdatesByYear[yearStr]) firestoreUpdatesByYear[yearStr] = {};
+
+                                const existingData = monthData[dayKey]?.[elId];
+                                backupObj.affectedData[dbKey].days[dayKey] = existingData ? JSON.parse(JSON.stringify(existingData)) : null;
+
+                                const patternItem = flatPattern[tDate.pIndex % flatPattern.length];
+                                
+                                let shiftObj = {};
+                                patternItem.shifts.forEach(s => {
+                                    if (s.type === 'descanso') shiftObj.ausentismo = { motivo: 'Descanso' };
+                                    else if (s.type === 'ausentismo') shiftObj.ausentismo = { motivo: s.motivo };
+                                    else shiftObj[s.type] = { Caseta: baseCaseta }; 
+                                });
+
+                                if (!monthData[dayKey]) monthData[dayKey] = {};
+                                monthData[dayKey][elId] = shiftObj;
+
+                                firestoreUpdatesByYear[yearStr][`${dayKey}.${elId}`] = shiftObj;
+                            });
+
+                            store.put(monthData).onsuccess = async () => {
+                                for (const yrStr in firestoreUpdatesByYear) {
+                                    try {
+                                        const docRef = doc(fs, "RegAs", "Registros", yrStr, monthName);
+                                        await updateDoc(docRef, firestoreUpdatesByYear[yrStr]).catch(async () => {
+                                            let setObj = {};
+                                            group.days.forEach(tDate => {
+                                                const d = tDate.dateObj;
+                                                if (String(d.getFullYear()) === yrStr) {
+                                                    const dayKey = String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + yrStr;
+                                                    setObj[dayKey] = { [elId]: monthData[dayKey][elId] };
+                                                }
+                                            });
+                                            await setDoc(docRef, setObj, { merge: true });
+                                        });
+                                    } catch(e){}
+                                }
+                                await notifyUpdate(dbKey);
+                                resolve();
+                            };
+                        };
+                    });
+                });
+
+                await Promise.all(promises);
+
+                try {
+                    const currentYear = String(new Date().getFullYear());
+                    const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+                    const backupRef = doc(fs, "RegAs", "Backups", currentYear, currentMonthName);
+                    
+                    const backupDocSnap = await getDoc(backupRef);
+                    let userBackups = [];
+                    if (backupDocSnap.exists() && backupDocSnap.data()[elId]) {
+                        userBackups = backupDocSnap.data()[elId];
+                    }
+                    userBackups.unshift(backupObj);
+                    userBackups = userBackups.slice(0, 10); 
+                    
+                    await setDoc(backupRef, { [elId]: userBackups }, { merge: true });
+                } catch(e) {
+                    console.error("No se pudo guardar backup en la nube", e);
+                }
+
+                loadData();
+                showPatternFeedback("Patrón asignado y backup creado.");
+            };
+        };
+
+        window.undoLastBackup = async function() {
+            if(!confirm("¿Deshacer la última asignación de patrón?")) return;
+            await restoreSpecificBackup(0);
+        };
+
+        window.showBackupHistory = async function() {
+            const listContainer = document.getElementById('history-list');
+            listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Cargando...</p>';
+            document.getElementById('modal-history').style.display = 'flex';
+
+            const currentYear = String(new Date().getFullYear());
+            const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+            const backupRef = doc(fs, "RegAs", "Backups", currentYear, currentMonthName);
+
+            try {
+                const snap = await getDoc(backupRef);
+                if (snap.exists() && snap.data()[elId] && snap.data()[elId].length > 0) {
+                    const backups = snap.data()[elId];
+                    listContainer.innerHTML = backups.map((b, i) => `
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs font-bold text-slate-700">${b.timestamp}</p>
+                                <p class="text-[9px] text-slate-500 uppercase mt-0.5">Afectó: ${b.start} a ${b.end}</p>
+                            </div>
+                            <button onclick="restoreSpecificBackup(${i})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold px-3 py-1.5 rounded transition-colors">
+                                Restaurar
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No hay backups recientes en este mes.</p>';
+                }
+            } catch(e) {
+                listContainer.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Error al cargar backups.</p>';
+            }
+        };
+
+        window.restoreSpecificBackup = async function(index) {
+            const currentYear = String(new Date().getFullYear());
+            const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+            const backupRef = doc(fs, "RegAs", "Backups", currentYear, currentMonthName);
+
+            try {
+                const snap = await getDoc(backupRef);
+                if (!snap.exists() || !snap.data()[elId] || !snap.data()[elId][index]) {
+                    alert("Backup no encontrado.");
+                    return;
+                }
+
+                const userBackups = snap.data()[elId];
+                const backupToRestore = userBackups[index];
+
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onsuccess = async (e) => {
+                    const db = e.target.result;
+                    const tx = db.transaction("registros", "readwrite");
+                    const store = tx.objectStore("registros");
+
+                    let promises = Object.keys(backupToRestore.affectedData).map(dbKey => {
+                        return new Promise((resolve) => {
+                            store.get(dbKey).onsuccess = async (res) => {
+                                let monthData = res.target.result || { id: dbKey };
+                                const mBackup = backupToRestore.affectedData[dbKey];
+                                const monthName = mBackup.monthName;
+                                
+                                let firestoreUpdatesByYear = {};
+
+                                for (const dayKey in mBackup.days) {
+                                    const oldDayData = mBackup.days[dayKey];
+                                    const yearStr = dayKey.substring(4, 8); 
+
+                                    if (!firestoreUpdatesByYear[yearStr]) firestoreUpdatesByYear[yearStr] = {};
+                                    if (!monthData[dayKey]) monthData[dayKey] = {};
+
+                                    if (oldDayData === null) {
+                                        delete monthData[dayKey][elId];
+                                        firestoreUpdatesByYear[yearStr][`${dayKey}.${elId}`] = deleteField();
+                                    } else {
+                                        monthData[dayKey][elId] = oldDayData;
+                                        firestoreUpdatesByYear[yearStr][`${dayKey}.${elId}`] = oldDayData;
+                                    }
+                                }
+
+                                store.put(monthData).onsuccess = async () => {
+                                    for (const yearStr in firestoreUpdatesByYear) {
+                                        try {
+                                            const docRef = doc(fs, "RegAs", "Registros", yearStr, monthName);
+                                            await updateDoc(docRef, firestoreUpdatesByYear[yearStr]);
+                                        } catch(e){}
+                                    }
+                                    await notifyUpdate(dbKey);
+                                    resolve();
+                                };
+                            };
+                        });
+                    });
+
+                    await Promise.all(promises);
+
+                    userBackups.splice(index, 1);
+                    await setDoc(backupRef, { [elId]: userBackups }, { merge: true });
+                    
+                    document.getElementById('modal-history').style.display = 'none';
+                    loadData();
+                    showPatternFeedback("Estado anterior restaurado correctamente.");
+                };
+
+            } catch(e) {
+                console.error("Error al restaurar", e);
+                alert("Ocurrió un error al intentar restaurar.");
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => { if (user) { switchTab(initialTab); loadData(); } });
+    </script>
+</body>
+</html>

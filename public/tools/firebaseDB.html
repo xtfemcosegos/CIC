@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Data Tool - CIC OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { font-family: 'Open Sans', sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .step-inactive { display: none; }
+        
+        .btn-primary {
+            background-color: #0f172a;
+            color: white;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background-color: #1e293b; transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+
+        pre {
+            background-color: #0f172a;
+            color: #94a3b8;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            max-height: 400px;
+            overflow: auto;
+            border: 1px solid #1e293b;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .editor-textarea {
+            font-family: 'Courier New', Courier, monospace;
+            tab-size: 4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-8">
+
+    <div class="w-full max-w-2xl glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <header class="bg-slate-900 p-8 text-white flex justify-between items-center border-b border-slate-800">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Firebase Admin Tool</h1>
+                <p class="text-sm text-slate-400 mt-1" id="project-label">Gestor de datos y edición</p>
+            </div>
+            <div class="bg-blue-500/10 p-3 rounded-2xl border border-blue-500/20">
+                <i data-lucide="database" class="w-8 h-8 text-blue-400"></i>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-8 flex-1">
+            
+            <!-- STEP 1: Configuración -->
+            <div id="step-config" class="space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-100 p-3 rounded-xl"><i data-lucide="key" class="w-6 h-6 text-blue-600"></i></div>
+                    <div>
+                        <h2 class="text-xl font-bold">Configuración del Proyecto</h2>
+                        <p class="text-sm text-gray-500">Pega tu objeto 'firebaseConfig'</p>
+                    </div>
+                </div>
+                
+                <div class="relative group">
+                    <textarea id="firebase-config-input" class="w-full h-44 p-5 text-xs font-mono border border-slate-200 rounded-2xl bg-slate-50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none" placeholder='const firebaseConfig = { ... };'></textarea>
+                </div>
+
+                <button onclick="initFirebase()" class="w-full py-4 btn-primary rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-slate-900/10">
+                    Conectar y Continuar
+                    <i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i>
+                </button>
+            </div>
+
+            <!-- STEP 2: Selección de Acción -->
+            <div id="step-action" class="step-inactive space-y-8 animate-in fade-in duration-500">
+                <div class="text-center space-y-2">
+                    <h2 class="text-2xl font-bold text-slate-800">¿Qué operación desea realizar?</h2>
+                    <p class="text-slate-500">Seleccione el flujo de datos para este proyecto.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="selectAction('download')" class="flex flex-col items-center gap-4 p-6 border-2 border-slate-100 rounded-2xl hover:border-blue-500 hover:bg-blue-50/50 transition-all group bg-white">
+                            <i data-lucide="download-cloud" class="w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-bold text-slate-700">Descargar</span>
+                        </button>
+                        <button onclick="selectAction('upload')" class="flex flex-col items-center gap-4 p-6 border-2 border-slate-100 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-all group bg-white">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-emerald-600 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-bold text-slate-700">Subir</span>
+                        </button>
+                    </div>
+                    <button onclick="selectAction('edit')" class="flex items-center justify-center gap-4 p-6 border-2 border-slate-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50/50 transition-all group bg-white">
+                        <i data-lucide="edit-3" class="w-8 h-8 text-indigo-600 group-hover:rotate-12 transition-transform"></i>
+                        <span class="font-bold text-lg text-slate-700">Editar Documento / Nodo</span>
+                    </button>
+                </div>
+
+                <button onclick="resetToConfig()" class="w-full py-3 text-sm font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Desconectar proyecto
+                </button>
+            </div>
+
+            <!-- STEP 3: Detalles de la Operación -->
+            <div id="step-details" class="step-inactive space-y-6">
+                <div class="flex items-center gap-4">
+                    <button onclick="goToActions()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                    <h2 id="details-title" class="text-xl font-bold text-slate-800">Detalles</h2>
+                </div>
+
+                <div class="bg-slate-100 p-1.5 rounded-2xl flex gap-2">
+                    <button onclick="setDB('firestore')" id="btn-db-fs" class="flex-1 py-3 text-sm font-bold rounded-xl transition-all bg-white shadow-sm text-slate-800">Firestore</button>
+                    <button onclick="setDB('rtdb')" id="btn-db-rt" class="flex-1 py-3 text-sm font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700">RTDB</button>
+                </div>
+
+                <div id="fs-options" class="flex items-center justify-center gap-8 py-2">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" name="fs-type" id="fs-type-coll" value="collection" checked class="w-5 h-5 text-blue-600 border-slate-300">
+                        <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600">Colección</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" name="fs-type" id="fs-type-doc" value="doc" class="w-5 h-5 text-blue-600 border-slate-300">
+                        <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600">Documento</span>
+                    </label>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ruta del recurso</label>
+                    <input type="text" id="db-path" class="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-mono text-sm" placeholder="ej. cic/personal/data">
+                </div>
+
+                <!-- Content (Upload / Edit) -->
+                <div id="content-container" class="hidden space-y-4">
+                    
+                    <!-- Editor Principal -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contenido del JSON</label>
+                            <div class="flex gap-2">
+                                <input type="file" id="file-input" class="hidden" accept=".json">
+                                <button onclick="document.getElementById('file-input').click()" class="text-[9px] bg-slate-200 px-2 py-1 rounded font-bold uppercase hover:bg-slate-300">Importar Archivo</button>
+                            </div>
+                        </div>
+                        <textarea id="json-input" class="w-full h-64 p-4 text-xs font-mono border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none editor-textarea" placeholder='{ ... }'></textarea>
+                    </div>
+
+                    <!-- Panel Agregar Entrada (Solo en EDIT) -->
+                    <div id="add-entry-panel" class="hidden p-5 border-2 border-indigo-100 bg-indigo-50/30 rounded-2xl space-y-4">
+                        <h4 class="text-xs font-black text-indigo-600 uppercase flex items-center gap-2">
+                            <i data-lucide="plus-square" class="w-4 h-4"></i> Agregar nueva entrada
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[9px] font-bold text-slate-400 uppercase">Nombre (Key)</label>
+                                <input type="text" id="new-entry-key" class="w-full p-3 border rounded-xl text-sm bg-white outline-none" placeholder="ej. nuevo_campo">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[9px] font-bold text-slate-400 uppercase">Valor (JSON o Texto)</label>
+                                <input type="text" id="new-entry-value" class="w-full p-3 border rounded-xl text-sm bg-white outline-none" placeholder='ej. "texto" o { "a": 1 }'>
+                            </div>
+                        </div>
+                        <button onclick="applyEntry()" class="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-all">
+                            Integrar al Editor
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-execute" onclick="executeOperation()" class="w-full py-4 btn-primary rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-slate-900/10">
+                    Procesar Solicitud
+                </button>
+            </div>
+
+            <!-- Loader / Results -->
+            <div id="status-container" class="mt-8 hidden border-t border-slate-100 pt-8">
+                <div id="loader" class="flex flex-col items-center gap-5">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p id="status-text" class="text-sm font-bold text-slate-500">Iniciando operación...</p>
+                </div>
+                
+                <div id="results" class="hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-emerald-600 uppercase tracking-wider">Éxito</span>
+                        <button id="btn-download-result" class="flex items-center gap-2 text-xs font-black text-blue-600 hover:text-blue-700 uppercase">
+                            <i data-lucide="download" class="w-4 h-4"></i> Guardar archivo
+                        </button>
+                    </div>
+                    <pre id="json-preview"></pre>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-6 hidden">
+            <div class="bg-white w-full max-w-md rounded-3xl p-10 shadow-2xl space-y-8 border border-slate-100">
+                <div class="text-center space-y-4">
+                    <div class="bg-rose-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto">
+                        <i data-lucide="shield-alert" class="w-10 h-10 text-rose-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight">Permisos Insuficientes</h3>
+                    <p class="text-sm text-slate-500">Este recurso requiere autenticación. Ingrese sus credenciales de administrador.</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input type="email" id="auth-email" placeholder="Email" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-sm font-medium">
+                    <input type="password" id="auth-pass" placeholder="Password" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-sm font-medium">
+                    <button onclick="retryWithAuth()" class="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 transition-all shadow-xl shadow-rose-600/20 active:scale-95">
+                        Autenticar y Reintentar
+                    </button>
+                    <button onclick="hideAuth()" class="w-full py-2 text-xs text-slate-400 font-bold uppercase hover:text-slate-600 transition-colors">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl opacity-0 pointer-events-none transition-all duration-300 text-sm font-bold z-[100] flex items-center gap-3">
+        Mensaje
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref, get as getRTDB, set as setRTDB } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // State
+        let firebaseApp, auth, dbFS, dbRT;
+        let currentAction = 'download';
+        let currentEngine = 'firestore';
+        let lastLoadedData = null;
+
+        // Robust Config Parser
+        function parseFirebaseConfig(raw) {
+            try { return JSON.parse(raw); } catch (e) {
+                try {
+                    const start = raw.indexOf('{');
+                    const end = raw.lastIndexOf('}');
+                    if (start === -1 || end === -1) throw new Error();
+                    const objStr = raw.substring(start, end + 1);
+                    let jsonFix = objStr.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*}/g, '}');
+                    return JSON.parse(jsonFix);
+                } catch (err) {
+                    try {
+                        const extracted = raw.substring(raw.indexOf('{'));
+                        return (new Function(`return ${extracted}`))();
+                    } catch (finalErr) { throw new Error("Configuración inválida"); }
+                }
+            }
+        }
+
+        window.initFirebase = async () => {
+            const raw = document.getElementById('firebase-config-input').value.trim();
+            if(!raw) return showToast("⚠️ Pega la configuración");
+            try {
+                const config = parseFirebaseConfig(raw);
+                firebaseApp = initializeApp(config);
+                auth = getAuth(firebaseApp);
+                dbFS = getFirestore(firebaseApp);
+                dbRT = getDatabase(firebaseApp);
+                await signOut(auth);
+                document.getElementById('project-label').innerText = `Proyecto: ${config.projectId}`;
+                showToast("🚀 Conectado");
+                showStep('action');
+            } catch (e) { showToast("❌ Error: " + e.message); }
+        };
+
+        window.selectAction = (action) => {
+            currentAction = action;
+            const titles = { 'download': 'Descargar Datos', 'upload': 'Subir Datos', 'edit': 'Editar Documento' };
+            document.getElementById('details-title').innerText = titles[action];
+            
+            // UI Visibility based on action
+            document.getElementById('content-container').classList.toggle('hidden', action === 'download');
+            document.getElementById('add-entry-panel').classList.toggle('hidden', action !== 'edit');
+            
+            // Adjust execute button label
+            document.getElementById('btn-execute').innerText = action === 'edit' ? 'Cargar para Editar' : 'Procesar Solicitud';
+            
+            // For editing, we force Doc selection for Firestore as collections are too big for one-step edit
+            if (action === 'edit') {
+                document.getElementById('fs-type-doc').checked = true;
+                document.getElementById('fs-options').classList.add('pointer-events-none', 'opacity-50');
+            } else {
+                document.getElementById('fs-options').classList.remove('pointer-events-none', 'opacity-50');
+            }
+
+            showStep('details');
+        };
+
+        window.setDB = (engine) => {
+            currentEngine = engine;
+            document.getElementById('fs-options').classList.toggle('hidden', engine === 'rtdb');
+            const btns = ['btn-db-fs', 'btn-db-rt'];
+            btns.forEach(id => {
+                const active = (id === 'btn-db-fs' && engine === 'firestore') || (id === 'btn-db-rt' && engine === 'rtdb');
+                document.getElementById(id).className = active ? 'flex-1 py-3 text-sm font-bold rounded-xl transition-all bg-white shadow-sm text-slate-800' : 'flex-1 py-3 text-sm font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700';
+            });
+        };
+
+        window.executeOperation = async () => {
+            const path = document.getElementById('db-path').value.trim();
+            if (!path) return showToast("⚠️ Ruta requerida");
+
+            // Handling the "First Stage" of EDIT
+            if (currentAction === 'edit' && document.getElementById('btn-execute').innerText === 'Cargar para Editar') {
+                await performLoadForEdit(path);
+                return;
+            }
+
+            const status = document.getElementById('status-container');
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('results');
+            
+            status.classList.remove('hidden');
+            loader.classList.remove('hidden');
+            results.classList.add('hidden');
+            document.getElementById('status-text').innerText = "Procesando...";
+
+            try {
+                if (currentAction === 'download') await handleDownload(path);
+                else if (currentAction === 'upload' || currentAction === 'edit') await handleUpload(path);
+            } catch (error) {
+                console.error(error);
+                if (error.code?.includes('permission') || error.message?.includes('permission')) showAuthModal();
+                else { showToast("❌ Error: " + error.message); status.classList.add('hidden'); }
+            }
+        };
+
+        async function performLoadForEdit(path) {
+            const status = document.getElementById('status-container');
+            status.classList.remove('hidden');
+            document.getElementById('status-text').innerText = "Cargando datos...";
+            
+            try {
+                let data = null;
+                if (currentEngine === 'firestore') {
+                    const snap = await getDoc(doc(dbFS, path));
+                    if (snap.exists()) data = snap.data();
+                } else {
+                    const snap = await getRTDB(ref(dbRT, path));
+                    data = snap.val();
+                }
+
+                if (data === null || data === undefined) throw new Error("Documento no encontrado");
+
+                lastLoadedData = data;
+                document.getElementById('json-input').value = JSON.stringify(data, null, 4);
+                document.getElementById('btn-execute').innerText = 'Guardar Cambios en Firebase';
+                document.getElementById('btn-execute').classList.replace('btn-primary', 'bg-emerald-600');
+                status.classList.add('hidden');
+                showToast("✅ Datos cargados");
+            } catch (error) {
+                if (error.code?.includes('permission') || error.message?.includes('permission')) showAuthModal();
+                else { showToast("❌ Error al cargar: " + error.message); status.classList.add('hidden'); }
+            }
+        }
+
+        async function handleDownload(path) {
+            let data = null;
+            if (currentEngine === 'firestore') {
+                const type = document.querySelector('input[name="fs-type"]:checked').value;
+                if (type === 'doc') {
+                    const snap = await getDoc(doc(dbFS, path));
+                    if (snap.exists()) data = snap.data();
+                } else {
+                    const snap = await getDocs(collection(dbFS, path));
+                    data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                }
+            } else {
+                const snap = await getRTDB(ref(dbRT, path));
+                data = snap.val();
+            }
+            if (!data) throw new Error("No hay datos");
+            displayResult(data);
+        }
+
+        async function handleUpload(path) {
+            const rawJson = document.getElementById('json-input').value;
+            let data;
+            try { data = JSON.parse(rawJson); } catch (e) { throw new Error("JSON inválido"); }
+
+            if (currentEngine === 'firestore') await setDoc(doc(dbFS, path), data);
+            else await setRTDB(ref(dbRT, path), data);
+
+            showToast("✅ Sincronizado");
+            displayResult(data);
+            
+            // Reset button if we were editing
+            if (currentAction === 'edit') {
+                document.getElementById('btn-execute').innerText = 'Cargar para Editar';
+                document.getElementById('btn-execute').classList.replace('bg-emerald-600', 'btn-primary');
+            }
+        }
+
+        // Logic for merging new entry into editor
+        window.applyEntry = () => {
+            const key = document.getElementById('new-entry-key').value.trim();
+            const valRaw = document.getElementById('new-entry-value').value.trim();
+            const currentJsonRaw = document.getElementById('json-input').value;
+            
+            if (!key) return showToast("⚠️ Nombre de entrada requerido");
+
+            try {
+                let currentObj = JSON.parse(currentJsonRaw || "{}");
+                let parsedVal;
+                
+                try { parsedVal = JSON.parse(valRaw); } 
+                catch (e) { parsedVal = valRaw; } // If not JSON, treat as string
+
+                currentObj[key] = parsedVal;
+                document.getElementById('json-input').value = JSON.stringify(currentObj, null, 4);
+                
+                document.getElementById('new-entry-key').value = "";
+                document.getElementById('new-entry-value').value = "";
+                showToast("➕ Entrada integrada");
+            } catch (e) {
+                showToast("❌ Error al integrar: JSON del editor inválido");
+            }
+        };
+
+        function displayResult(data) {
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('results');
+            loader.classList.add('hidden');
+            results.classList.remove('hidden');
+            document.getElementById('json-preview').innerText = JSON.stringify(data, null, 2);
+            document.getElementById('btn-download-result').onclick = () => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `fb_export_${Date.now()}.json`;
+                a.click();
+            };
+        }
+
+        window.retryWithAuth = async () => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if (!email || !pass) return showToast("⚠️ Credenciales");
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                hideAuth();
+                showToast("🔓 Autenticado");
+                executeOperation(); 
+            } catch (e) { showToast("❌ Falló"); }
+        };
+
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // If in Edit mode and using add entry panel, maybe they want to upload the value
+                // For simplicity, we fill the main editor
+                document.getElementById('json-input').value = event.target.result;
+                showToast("📄 Archivo cargado al editor");
+            };
+            reader.readAsText(file);
+        });
+
+        function showStep(step) {
+            ['config', 'action', 'details'].forEach(s => document.getElementById(`step-${s}`).classList.add('step-inactive'));
+            document.getElementById(`step-${step}`).classList.remove('step-inactive');
+            document.getElementById('status-container').classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.opacity = '1';
+            t.style.transform = 'translate(-50%, -20px)';
+            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%, 0)'; }, 3000);
+        }
+
+        window.hideAuth = () => document.getElementById('auth-modal').classList.add('hidden');
+        window.showAuthModal = () => document.getElementById('auth-modal').classList.remove('hidden');
+        window.resetToConfig = () => showStep('config');
+        window.goToActions = () => showStep('action');
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

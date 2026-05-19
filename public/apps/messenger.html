@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Control de Caché -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>Chat Interno CIC-OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        
+        /* Custom scrollbar vibrante */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #c084fc; }
+        
+        /* Animaciones */
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Ocultar barra scroll en input de busqueda desplegable */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800">
+
+    <!-- Contenedor Principal (Llena el 100% del espacio) -->
+    <div class="flex flex-col w-full h-full bg-white relative overflow-hidden">
+        
+        <!-- Cabecera Global Vibrante -->
+        <div class="bg-gradient-to-r from-purple-700 via-purple-600 to-fuchsia-600 text-white p-3 sm:p-4 flex items-center shadow-lg shadow-purple-900/20 z-20 shrink-0">
+            <!-- Botón Volver -->
+            <button id="btn-back" class="hidden mr-3 p-1.5 rounded-full hover:bg-white/20 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            
+            <!-- Foto de Perfil Dinámica (Propia o del Interlocutor) -->
+            <div id="my-avatar-container" class="shrink-0 mr-3">
+                <div class="w-11 h-11 rounded-full bg-white/20 animate-pulse border border-white/30"></div>
+            </div>
+
+            <!-- Titulo y Status -->
+            <div class="flex-1 flex justify-between items-center overflow-hidden gap-2">
+                <div class="overflow-hidden flex-1 flex flex-col justify-center">
+                    <div class="flex items-center gap-2 w-full">
+                        <h3 id="chat-title" class="font-bold text-xl sm:text-2xl tracking-wide truncate drop-shadow-md">Bandeja de Entrada</h3>
+                        <div id="presence-dot" class="hidden w-3 h-3 rounded-full bg-slate-400 shrink-0 border border-white/50 shadow-inner transition-colors"></div>
+                    </div>
+                    <p id="my-uid-display" class="text-[10px] text-purple-100 opacity-90 uppercase tracking-widest truncate drop-shadow-sm">Cargando perfil...</p>
+                </div>
+                <span id="chat-status" class="text-[10px] bg-slate-800/40 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors shrink-0 border border-white/20 backdrop-blur-sm shadow-inner self-start mt-1 sm:self-center sm:mt-0">...</span>
+            </div>
+        </div>
+
+        <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
+        <div id="toast-container" class="absolute top-[80px] left-0 right-0 z-50 flex flex-col items-center pointer-events-none gap-2 px-4"></div>
+
+        <!-- ================= VISTA: BANDEJA DE ENTRADA (INBOX) ================= -->
+        <div id="inbox-view" class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+            <!-- Panel de Nueva Conversación (Buscador en Tiempo Real) -->
+            <div class="p-3 sm:p-4 bg-white border-b border-slate-200 shadow-sm z-10 shrink-0 relative">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="other-uid-input" placeholder="Buscar contacto por Nombre o ID..." autocomplete="off"
+                           class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition shadow-inner disabled:opacity-50" disabled>
+                </div>
+                <!-- Menú Desplegable Inteligente -->
+                <div id="search-dropdown" class="absolute left-3 right-3 sm:left-4 sm:right-4 top-[calc(100%-8px)] bg-white shadow-2xl rounded-xl border border-purple-100 max-h-64 overflow-y-auto custom-scrollbar z-50 hidden flex-col py-1">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+
+            <!-- Lista de Conversaciones Activas -->
+            <div id="conversations-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 relative">
+                <div id="inbox-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 opacity-60">
+                    <svg class="w-14 h-14 text-purple-300 mb-3 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
+                    </svg>
+                    <p class="text-sm font-semibold text-slate-500">Bandeja Vacía</p>
+                    <p class="text-xs text-slate-400 mt-1">Busca a un compañero arriba para iniciar.</p>
+                </div>
+                <!-- Items inyectados -->
+            </div>
+        </div>
+
+        <!-- ================= VISTA: CHAT INDIVIDUAL ================= -->
+        <div id="chat-view" class="hidden flex-1 flex-col overflow-hidden bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMTY4LCA4NSwgMjQ3LCAwLjE1KSIvPjwvc3ZnPg==')] relative">
+            <!-- Contenedor de mensajes -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar backdrop-blur-[1px]">
+                <!-- Los mensajes inyectados por JS aparecerán aquí -->
+            </div>
+
+            <!-- Entrada de texto -->
+            <div class="p-3 bg-white/90 backdrop-blur-md border-t border-purple-100 flex gap-2 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.03)] shrink-0 z-10">
+                <input type="text" id="message-input" placeholder="Escribe un mensaje..." autocomplete="off"
+                       class="flex-1 px-4 py-3 bg-slate-100/80 border border-slate-200 rounded-2xl outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition text-sm shadow-inner">
+                <button id="btn-send" class="bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:opacity-90 transition-all shadow-lg shadow-purple-600/30 shrink-0 transform active:scale-95">
+                    <svg class="w-5 h-5 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Firebase y Lógica del Chat -->
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded, onValue, serverTimestamp, onDisconnect, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // Variables de entorno de Firebase
+        let app, auth, db_chat, db_users, storage;
+
+        // Elementos del DOM
+        const chatTitle = document.getElementById('chat-title');
+        const statusBadge = document.getElementById('chat-status');
+        const myUidDisplay = document.getElementById('my-uid-display');
+        const myAvatarContainer = document.getElementById('my-avatar-container');
+        const btnBack = document.getElementById('btn-back');
+        
+        const inboxView = document.getElementById('inbox-view');
+        const chatView = document.getElementById('chat-view');
+        const toastContainer = document.getElementById('toast-container');
+        
+        const otherUidInput = document.getElementById('other-uid-input');
+        const searchDropdown = document.getElementById('search-dropdown');
+        const conversationsList = document.getElementById('conversations-list');
+        const inboxEmptyState = document.getElementById('inbox-empty-state');
+        
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInput = document.getElementById('message-input');
+        const btnSend = document.getElementById('btn-send');
+
+        // Variables de estado (ESTRICTAMENTE UID)
+        let myUid = null;
+        let currentInterlocutorUid = null;
+        let usuariosDirectory = {}; 
+        
+        // Control de lectura y listeners
+        let lastSeenTimestamps = JSON.parse(localStorage.getItem('chat_last_seen') || '{}');
+        let currentChatUnsubscribe = null;
+        let currentPresenceUnsubscribe = null;
+        let myPresenceRef = null;
+        let inboxUnsubscribe = null;
+        let versionUnsubscribe = null; 
+        let prevInboxData = {};
+        let initialInboxLoad = true;
+
+        // Caché en memoria para las URLs de Storage (evitar múltiples llamadas de red a la API)
+        const avatarCache = {};
+
+        // Función ASÍNCRONA que genera el HTML del Avatar. 
+        // Emite un placeholder y de fondo trae el token de Storage si es necesario.
+        function getAvatarHtml(uid, initial, sizeClasses, customFallback, extraImgClasses) {
+            const info = usuariosDirectory[uid];
+            const idOp = info ? (info.ID || info.id) : null;
+            
+            // Si no tiene ID Operativo, no hay foto para buscar, regresamos el fallback por defecto
+            if (!idOp) return customFallback;
+
+            // Si ya está en caché y ha completado, retornamos la URL directa
+            if (avatarCache[uid] && typeof avatarCache[uid] === 'string') {
+                if (avatarCache[uid] === 'error') return customFallback;
+                return `<img src="${avatarCache[uid]}" class="${sizeClasses} rounded-full object-cover shrink-0 ${extraImgClasses}">`;
+            }
+
+            // Si no, generamos un Placeholder único y disparamos la petición segura
+            const placeholderId = `avatar-${uid}-${Math.random().toString(36).substr(2, 9)}`;
+            loadAvatarAsync(uid, idOp, placeholderId, customFallback, sizeClasses, extraImgClasses);
+            
+            return `<div id="${placeholderId}" class="${sizeClasses} rounded-full bg-slate-200 animate-pulse shrink-0 border border-slate-300 ${extraImgClasses}"></div>`;
+        }
+
+        // Recuperar imagen desde Firebase Storage con TOKEN (SDK)
+        async function loadAvatarAsync(uid, idOp, elementId, customFallback, sizeClasses, extraImgClasses) {
+            if (!avatarCache[uid]) {
+                const imgRef = sRef(storage, `Fotos/ElementosPP/${idOp}.webp`);
+                // Guardamos la promesa en el caché para evitar peticiones duplicadas a la misma foto
+                avatarCache[uid] = getDownloadURL(imgRef).then(url => {
+                    avatarCache[uid] = url; // Transforma de promesa a string
+                    return url;
+                }).catch(() => {
+                    avatarCache[uid] = 'error'; // Foto no existente o error de permisos
+                    return 'error';
+                });
+            }
+            
+            // Esperamos la resolución (de la promesa o de la cadena final)
+            const url = await avatarCache[uid];
+            
+            // Actualizamos en el DOM si el elemento sigue existiendo
+            const el = document.getElementById(elementId);
+            if (el) {
+                if (url !== 'error') {
+                    el.outerHTML = `<img src="${url}" class="${sizeClasses} rounded-full object-cover shrink-0 ${extraImgClasses}">`;
+                } else {
+                    el.outerHTML = customFallback;
+                }
+            }
+        }
+
+        // Obtener nombre formateado basado ESTRICTAMENTE en UID
+        function getNameFromUid(uid) {
+            if (usuariosDirectory[uid]) {
+                const info = usuariosDirectory[uid];
+                const fullName = info.nombre || info.Nombre || `Usuario ${uid.substring(0,6)}`;
+                const parts = fullName.split(' ');
+                return `${parts[0]} ${parts[1] || ''}`.trim();
+            }
+            return `Usuario ${uid.substring(0,6)}...`;
+        }
+
+        // Actualizar UI del usuario autenticado (Encabezado Global para el Inbox)
+        function updateOwnDisplay() {
+            if (!myUid) return;
+            const myName = getNameFromUid(myUid);
+            const myInfo = usuariosDirectory[myUid] || {};
+            const myIdOp = myInfo.ID || myInfo.id || '';
+            
+            chatTitle.innerText = "Bandeja de Entrada";
+            myUidDisplay.innerText = `${myName} (ID: ${myIdOp || myUid.substring(0,6)})`;
+
+            // Construir HTML del propio Avatar usando Storage Seguro
+            const initial = myName.charAt(0).toUpperCase();
+            const fallback = `<div class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center font-bold text-white shrink-0 border border-white/40 shadow-inner">${initial}</div>`;
+            
+            myAvatarContainer.innerHTML = getAvatarHtml(
+                myUid, 
+                initial, 
+                "w-11 h-11", 
+                fallback, 
+                "border-2 border-white/60 shadow-md bg-purple-800"
+            );
+        }
+
+        // Inicialización de Firebase
+        const initFirebase = async () => {
+            const configStr = sessionStorage.getItem('cic_os_config');
+
+            if (configStr) {
+                const firebaseConfig = JSON.parse(configStr);
+                app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+            } else {
+                const messengerConfig = {
+                    apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg", 
+                    projectId: "cic-os",
+                    databaseURL: "https://cic-os-messenger.firebaseio.com/" 
+                };
+                app = getApps().length > 0 ? getApp() : initializeApp(messengerConfig, "MessengerApp");
+            }
+            
+            auth = getAuth(app);
+            storage = getStorage(app); // Inicializa Storage usando la App que tiene el Bucket Configurado
+            db_chat = getDatabase(app, "https://cic-os-messenger.firebaseio.com/");
+            db_users = getDatabase(app, "https://cic-os-default-rtdb.firebaseio.com/");
+
+            // 1. Cargar el Directorio de Usuarios
+            const usersRef = ref(db_users, "usuarios");
+            onValue(usersRef, (snapshot) => {
+                usuariosDirectory = snapshot.val() || {};
+                
+                // Si no estamos dentro de un chat, actualizamos la información visual con nuestros propios datos
+                if (!currentInterlocutorUid) {
+                    updateOwnDisplay(); 
+                }
+                
+                // Actualizamos dropdown si está escribiendo
+                if(document.activeElement === otherUidInput) {
+                    renderDropdown(otherUidInput.value);
+                }
+            });
+
+            // 2. Resolver Autenticación
+            if (!configStr) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (err) {
+                    console.error("Error de Auth:", err);
+                }
+            }
+            
+            setupAuthListener();
+        };
+
+        // 3. Escuchar estado de conexión
+        function setupAuthListener() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    myUid = user.uid; 
+                    
+                    updateOwnDisplay(); 
+                    
+                    statusBadge.innerText = "Conectado";
+                    statusBadge.className = "text-[10px] bg-emerald-500/90 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors ml-2 shrink-0 border border-emerald-400/50 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    
+                    otherUidInput.disabled = false;
+
+                    // --- SISTEMA DE PRESENCIA (ONLINE/OFFLINE) ---
+                    myPresenceRef = ref(db_chat, `presence/${myUid}`);
+                    const connectedRef = ref(db_chat, '.info/connected');
+                    onValue(connectedRef, (snap) => {
+                        if (snap.val() === true) {
+                            onDisconnect(myPresenceRef).set('offline').then(() => {
+                                set(myPresenceRef, 'online');
+                            });
+                        }
+                    });
+
+                    setupInboxListener();
+                    setupVersionControl(); 
+                    setTimeout(checkInitialModCCOIntent, 600);
+
+                } else {
+                    if (myPresenceRef) set(myPresenceRef, 'offline');
+                    myUid = null;
+                    myUidDisplay.innerText = "Sesión cerrada";
+                    statusBadge.innerText = "Desconectado";
+                    statusBadge.className = "text-[10px] bg-rose-500/90 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors ml-2 shrink-0 border border-rose-400/50";
+                    otherUidInput.disabled = true;
+                    if (inboxUnsubscribe) inboxUnsubscribe();
+                    if (versionUnsubscribe) versionUnsubscribe();
+                }
+            });
+        }
+
+        // ================= BUSCADOR INTELIGENTE EN TIEMPO REAL =================
+        function renderDropdown(filterText = "") {
+            searchDropdown.innerHTML = '';
+            const searchStr = filterText.toLowerCase();
+
+            let count = 0;
+            for (const [uid, info] of Object.entries(usuariosDirectory)) {
+                if (uid === myUid) continue; 
+                
+                const name = info.nombre || info.Nombre || `Usuario ${uid.substring(0,6)}`;
+                const idOp = info.ID || info.id || "";
+                
+                if (name.toLowerCase().includes(searchStr) || idOp.includes(searchStr)) {
+                    count++;
+                    const initial = name.charAt(0).toUpperCase();
+                    
+                    // Elemento HTML de Foto de la Sugerencia
+                    const fallback = `<div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-700 shrink-0">${initial}</div>`;
+                    const imgHtml = getAvatarHtml(uid, initial, "w-9 h-9", fallback, "border border-purple-200");
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-3 px-4 py-2.5 hover:bg-purple-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors";
+                    div.innerHTML = `
+                        ${imgHtml}
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-sm font-bold text-slate-800 truncate">${name}</p>
+                            <p class="text-[10px] font-semibold text-purple-600/70">ID: ${idOp || 'N/A'}</p>
+                        </div>
+                    `;
+                    
+                    // Mouse down asegura que atrape el click antes de que el input pierda foco
+                    div.onmousedown = (e) => {
+                        e.preventDefault(); 
+                        otherUidInput.value = ''; // limpiar
+                        searchDropdown.classList.add('hidden');
+                        openChat(uid, name);
+                    };
+                    searchDropdown.appendChild(div);
+                }
+            }
+            
+            if (count === 0) {
+                searchDropdown.innerHTML = '<div class="p-4 text-center text-xs font-semibold text-slate-400">No se encontraron colaboradores</div>';
+            }
+            searchDropdown.classList.remove('hidden');
+        }
+
+        // Listeners del Buscador
+        otherUidInput.addEventListener('focus', () => renderDropdown(otherUidInput.value));
+        otherUidInput.addEventListener('input', (e) => renderDropdown(e.target.value));
+        otherUidInput.addEventListener('blur', () => {
+            // Breve retraso para permitir clicks en el scroll
+            setTimeout(() => searchDropdown.classList.add('hidden'), 200);
+        });
+
+        // ================= INTEGRACIÓN CON MOD-CCO =================
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data && data.action === 'OPEN_CHAT' && data.uid) {
+                if (myUid && data.uid !== myUid) {
+                    const targetName = data.name || getNameFromUid(data.uid);
+                    openChat(data.uid, targetName);
+                }
+            }
+        });
+
+        function checkInitialModCCOIntent() {
+            const pendingUid = localStorage.getItem('open_chat_uid');
+            const pendingName = localStorage.getItem('open_chat_name');
+            if (pendingUid && myUid && pendingUid !== myUid) {
+                const targetName = pendingName || getNameFromUid(pendingUid);
+                openChat(pendingUid, targetName);
+                localStorage.removeItem('open_chat_uid');
+                localStorage.removeItem('open_chat_name');
+            }
+        }
+
+        function setupVersionControl() {
+            if (versionUnsubscribe) versionUnsubscribe();
+            const versionRef = ref(db_chat, "updates/chat");
+            versionUnsubscribe = onValue(versionRef, (snapshot) => {
+                const cloudVersion = snapshot.val();
+                if (!cloudVersion) return;
+                const localVersion = localStorage.getItem('chat_update_version');
+                if (localVersion && cloudVersion.toString() !== localVersion) {
+                    localStorage.setItem('chat_update_version', cloudVersion.toString());
+                    window.location.href = window.location.pathname + '?v=' + cloudVersion;
+                } else if (!localVersion) {
+                    localStorage.setItem('chat_update_version', cloudVersion.toString());
+                }
+            });
+        }
+
+        // ================= LÓGICA DE BANDEJA Y NOTIFICACIONES =================
+        function setupInboxListener() {
+            if (inboxUnsubscribe) inboxUnsubscribe();
+            const userRef = ref(db_chat, myUid); 
+            inboxUnsubscribe = onValue(userRef, (snapshot) => {
+                const data = snapshot.val() || {};
+                const inboxItems = [];
+
+                for (const [otherUid, msgs] of Object.entries(data)) {
+                    const msgKeys = Object.keys(msgs);
+                    if (msgKeys.length === 0) continue;
+                    
+                    const lastMsgKey = msgKeys[msgKeys.length - 1];
+                    const lastMsg = msgs[lastMsgKey];
+
+                    inboxItems.push({
+                        otherUid,
+                        lastMsg,
+                        unread: (lastMsg.senderId !== myUid) && (lastMsg.timestamp > (lastSeenTimestamps[otherUid] || 0))
+                    });
+
+                    if (!initialInboxLoad) {
+                        const prevMsgs = prevInboxData[otherUid] || {};
+                        const prevMsgKeys = Object.keys(prevMsgs);
+                        if (msgKeys.length > prevMsgKeys.length && lastMsg.senderId !== myUid) {
+                            if (currentInterlocutorUid !== otherUid) {
+                                showToast(getNameFromUid(otherUid), lastMsg.text, otherUid);
+                            }
+                        }
+                    }
+                }
+
+                initialInboxLoad = false;
+                prevInboxData = data;
+                renderInbox(inboxItems);
+            });
+        }
+
+        function renderInbox(items) {
+            Array.from(conversationsList.children).forEach(child => {
+                if (child.id !== 'inbox-empty-state') child.remove();
+            });
+
+            if (items.length === 0) {
+                inboxEmptyState.classList.remove('hidden');
+                return;
+            }
+
+            inboxEmptyState.classList.add('hidden');
+            items.sort((a, b) => (b.lastMsg.timestamp || 0) - (a.lastMsg.timestamp || 0));
+
+            items.forEach(item => {
+                const name = getNameFromUid(item.otherUid);
+                const isUnread = item.unread;
+                const timeStr = item.lastMsg.timestamp ? new Date(item.lastMsg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                const initial = name.charAt(0).toUpperCase();
+                
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-3 p-3 sm:p-4 bg-white border border-slate-100 rounded-2xl mb-2 cursor-pointer transition-all hover:shadow-lg hover:border-purple-200 group ${isUnread ? 'border-l-[5px] border-l-fuchsia-500 bg-gradient-to-r from-purple-50/50 to-transparent shadow-md' : 'shadow-sm'}`;
+                
+                // Elemento HTML de Foto en el Listado
+                const fallback = `<div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center font-bold text-xl text-purple-700 shrink-0 shadow-inner group-hover:scale-105 transition-transform">${initial}</div>`;
+                const imgHtml = getAvatarHtml(item.otherUid, initial, "w-12 h-12", fallback, "border border-purple-200 group-hover:scale-105 transition-transform");
+
+                div.innerHTML = `
+                    ${imgHtml}
+                    <div class="flex-1 overflow-hidden">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <h4 class="font-bold text-sm truncate ${isUnread ? 'text-purple-900' : 'text-slate-800'}">${name}</h4>
+                            <span class="text-[10px] text-slate-400 shrink-0 ml-2 font-medium">${timeStr}</span>
+                        </div>
+                        <p class="text-xs truncate ${isUnread ? 'font-bold text-fuchsia-700' : 'text-slate-500'}">
+                            ${item.lastMsg.senderId === myUid ? '<span class="text-slate-400 font-normal">Tú:</span> ' : ''}${escapeHTML(item.lastMsg.text)}
+                        </p>
+                    </div>
+                    ${isUnread ? '<div class="w-2.5 h-2.5 bg-fuchsia-500 rounded-full shrink-0 shadow-[0_0_8px_rgba(217,70,239,0.8)]"></div>' : ''}
+                `;
+                
+                div.onclick = () => openChat(item.otherUid, name);
+                conversationsList.appendChild(div);
+            });
+        }
+
+        function showToast(senderName, text, otherUid) {
+            const toast = document.createElement('div');
+            const initial = senderName.charAt(0).toUpperCase();
+            toast.className = 'bg-slate-900 text-white p-3 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] flex items-center gap-3 w-full max-w-sm toast-enter pointer-events-auto cursor-pointer border-l-4 border-fuchsia-500 border-t border-r border-b border-slate-700';
+            toast.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center font-bold text-sm shrink-0 border border-white/20">
+                    ${initial}
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <h5 class="font-bold text-xs text-purple-200">Nuevo mensaje de ${senderName}</h5>
+                    <p class="text-xs text-white truncate font-medium drop-shadow-sm">${escapeHTML(text)}</p>
+                </div>
+            `;
+            
+            toast.onclick = () => {
+                toast.remove();
+                openChat(otherUid, senderName);
+            };
+
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                if(toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 4000);
+        }
+
+        // ================= LÓGICA DEL CHAT INDIVIDUAL =================
+        function openChat(otherUid, titleName) {
+            currentInterlocutorUid = otherUid;
+            
+            // 1. Cambiar Información en la Cabecera a la del Contacto
+            chatTitle.innerText = titleName;
+            
+            const info = usuariosDirectory[otherUid] || {};
+            const idOp = info.ID || info.id || '';
+            myUidDisplay.innerText = idOp ? `ID: ${idOp}` : 'Conectado';
+
+            // Ocultar la insignia global de estado ("Conectado") en la vista del chat
+            statusBadge.classList.add('hidden');
+
+            // 1.5 Activar y Escuchar el Punto de Presencia
+            const presenceDot = document.getElementById('presence-dot');
+            presenceDot.classList.remove('hidden');
+            presenceDot.className = "w-3 h-3 rounded-full bg-slate-400 shrink-0 border border-white/50 shadow-inner transition-colors"; // Default offline
+            
+            if (currentPresenceUnsubscribe) currentPresenceUnsubscribe();
+            const otherPresenceRef = ref(db_chat, `presence/${otherUid}`);
+            currentPresenceUnsubscribe = onValue(otherPresenceRef, (snap) => {
+                const status = snap.val();
+                if (status === 'online') {
+                    presenceDot.className = "w-3 h-3 rounded-full bg-emerald-400 shrink-0 border border-white/50 shadow-[0_0_8px_rgba(52,211,153,0.8)] transition-colors";
+                } else {
+                    presenceDot.className = "w-3 h-3 rounded-full bg-slate-400 shrink-0 border border-white/50 shadow-inner transition-colors";
+                }
+            });
+
+            // 2. Cambiar Avatar en la Cabecera a la del Contacto
+            const initial = titleName.charAt(0).toUpperCase();
+            const fallback = `<div class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center font-bold text-white shrink-0 border border-white/40 shadow-inner">${initial}</div>`;
+            
+            myAvatarContainer.innerHTML = getAvatarHtml(
+                otherUid, 
+                initial, 
+                "w-11 h-11", 
+                fallback, 
+                "border-2 border-white/60 shadow-md bg-purple-800"
+            );
+
+            // 3. Modificar UI para entrar a vista de Chat
+            inboxView.classList.add('hidden');
+            chatView.classList.remove('hidden');
+            chatView.classList.add('flex');
+            btnBack.classList.remove('hidden');
+            
+            messagesContainer.innerHTML = '';
+            messageInput.focus();
+
+            updateLastSeen(otherUid);
+
+            // 4. Conectar listener de mensajes
+            if (currentChatUnsubscribe) currentChatUnsubscribe();
+            
+            const conversationRef = ref(db_chat, `${myUid}/${otherUid}`);
+            currentChatUnsubscribe = onChildAdded(conversationRef, (snapshot) => {
+                const msgData = snapshot.val();
+                renderMessage(msgData);
+                updateLastSeen(otherUid);
+            });
+        }
+
+        btnBack.addEventListener('click', () => {
+            currentInterlocutorUid = null;
+            
+            // Regresar las vistas
+            chatView.classList.add('hidden');
+            chatView.classList.remove('flex');
+            inboxView.classList.remove('hidden');
+            btnBack.classList.add('hidden');
+            
+            // Ocultar punto de presencia
+            document.getElementById('presence-dot').classList.add('hidden');
+            if (currentPresenceUnsubscribe) {
+                currentPresenceUnsubscribe();
+                currentPresenceUnsubscribe = null;
+            }
+
+            // Mostrar nuevamente la insignia global de estado ("Conectado") en el Inbox
+            statusBadge.classList.remove('hidden');
+
+            // Restaurar mi propia foto y nombre en la cabecera Global
+            updateOwnDisplay();
+
+            if (currentChatUnsubscribe) {
+                currentChatUnsubscribe();
+                currentChatUnsubscribe = null;
+            }
+            
+            // Re-renderizar la bandeja
+            renderInbox(Object.entries(prevInboxData).map(([otherUid, msgs]) => {
+                const msgKeys = Object.keys(msgs);
+                const lastMsg = msgs[msgKeys[msgKeys.length - 1]];
+                return {
+                    otherUid,
+                    lastMsg,
+                    unread: (lastMsg.senderId !== myUid) && (lastMsg.timestamp > (lastSeenTimestamps[otherUid] || 0))
+                };
+            }));
+        });
+
+        function updateLastSeen(otherUid) {
+            lastSeenTimestamps[otherUid] = Date.now();
+            localStorage.setItem('chat_last_seen', JSON.stringify(lastSeenTimestamps));
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !myUid || !currentInterlocutorUid) return;
+
+            messageInput.value = '';
+            btnSend.disabled = true;
+
+            const messageObj = {
+                text: text,
+                senderId: myUid,
+                timestamp: serverTimestamp()
+            };
+
+            const myConversationRef = ref(db_chat, `${myUid}/${currentInterlocutorUid}`);
+            const hisConversationRef = ref(db_chat, `${currentInterlocutorUid}/${myUid}`);
+
+            try {
+                await Promise.all([
+                    push(myConversationRef, messageObj),
+                    push(hisConversationRef, messageObj)
+                ]);
+            } catch (error) {
+                console.error("Error al enviar:", error);
+            } finally {
+                btnSend.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function renderMessage(msg) {
+            const isMine = msg.senderId === myUid;
+            const msgWrapper = document.createElement('div');
+            msgWrapper.className = `msg-bubble flex w-full ${isMine ? 'justify-end' : 'justify-start'} toast-enter`;
+            
+            const timeDate = msg.timestamp ? new Date(msg.timestamp) : new Date();
+            const timeStr = timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            msgWrapper.innerHTML = `
+                <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-[85%]">
+                    <div class="px-4 py-3 rounded-2xl text-sm shadow-md ${
+                        isMine 
+                        ? 'bg-gradient-to-br from-purple-600 to-fuchsia-500 text-white rounded-br-sm' 
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm shadow-sm'
+                    }">
+                        ${escapeHTML(msg.text)}
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 px-1 font-semibold">${timeStr}</span>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(msgWrapper);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+                }[tag])
+            );
+        }
+
+        btnSend.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Iniciar App
+        initFirebase();
+    </script>
+</body>
+</html>

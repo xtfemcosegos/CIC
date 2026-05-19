@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Storage Tool - CIC OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Librería para crear archivos ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { font-family: 'Open Sans', sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .step-inactive { display: none; }
+        
+        .btn-primary {
+            background-color: #0f172a;
+            color: white;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background-color: #1e293b; transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .mode-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-8">
+
+    <div class="w-full max-w-2xl glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <header class="bg-slate-900 p-8 text-white flex justify-between items-center border-b border-slate-800">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Storage Transfer Tool</h1>
+                <p class="text-sm text-slate-400 mt-1" id="project-label">Gestor de Carga y Descarga</p>
+            </div>
+            <div class="bg-indigo-500/10 p-3 rounded-2xl border border-indigo-500/20">
+                <i data-lucide="refresh-cw" class="w-8 h-8 text-indigo-400"></i>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-8 flex-1">
+            
+            <!-- STEP 1: Configuración -->
+            <div id="step-config" class="space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-100 p-3 rounded-xl"><i data-lucide="key" class="w-6 h-6 text-blue-600"></i></div>
+                    <div>
+                        <h2 class="text-xl font-bold">Configuración Firebase</h2>
+                        <p class="text-sm text-gray-500">Pega tu objeto 'firebaseConfig' para iniciar</p>
+                    </div>
+                </div>
+                
+                <textarea id="firebase-config-input" class="w-full h-44 p-5 text-xs font-mono border border-slate-200 rounded-2xl bg-slate-50 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder='const firebaseConfig = { ... };'></textarea>
+
+                <button onclick="initFirebase()" class="w-full py-4 btn-primary rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl">
+                    Conectar Storage
+                    <i data-lucide="zap" class="w-5 h-5 text-yellow-400"></i>
+                </button>
+            </div>
+
+            <!-- STEP 2: Transferencia -->
+            <div id="step-transfer" class="step-inactive space-y-6 animate-in fade-in duration-500">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-slate-800">Panel de Control</h2>
+                    <button onclick="resetToConfig()" class="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-widest">Desconectar</button>
+                </div>
+
+                <!-- Selector de Modo -->
+                <div class="flex p-1 bg-slate-100 rounded-xl gap-1">
+                    <button onclick="setMode('download')" id="mode-download" class="mode-btn active flex-1 py-2 text-xs font-bold rounded-lg transition-all">DESCARGAR</button>
+                    <button onclick="setMode('upload')" id="mode-upload" class="mode-btn flex-1 py-2 text-xs font-bold rounded-lg transition-all">SUBIR</button>
+                </div>
+
+                <!-- Contenedor Dinámico: Descarga -->
+                <div id="container-download" class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ruta Remota (Prefix)</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="folder-search" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="storage-path" class="w-full pl-11 p-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-mono text-sm" placeholder="ej. multimedia/iconos">
+                        </div>
+                    </div>
+                    <button id="btn-start-download" onclick="startFolderDownload()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-700 transition-all">
+                        Escanear y Descargar ZIP
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Contenedor Dinámico: Subida -->
+                <div id="container-upload" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Seleccionar Carpeta Local</label>
+                        <div class="relative">
+                            <input type="file" id="folder-input" webkitdirectory mozdirectory directory class="hidden">
+                            <button onclick="document.getElementById('folder-input').click()" class="w-full p-4 border-2 border-dashed border-indigo-200 rounded-2xl bg-indigo-50/50 hover:bg-indigo-100/50 text-indigo-600 font-bold text-sm transition-all flex flex-col items-center gap-2">
+                                <i data-lucide="folder-plus" class="w-8 h-8"></i>
+                                <span id="folder-label">Clic para elegir carpeta</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Destino en Storage</label>
+                        <input type="text" id="upload-dest-path" class="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-mono text-sm" placeholder="ej. backups/mayo">
+                    </div>
+                    <button id="btn-start-upload" onclick="startFolderUpload()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl hover:bg-emerald-700 transition-all">
+                        Iniciar Carga de Carpeta
+                        <i data-lucide="upload" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Progreso Compartido -->
+                <div id="progress-container" class="hidden space-y-4 border-t border-slate-100 pt-6">
+                    <div class="flex justify-between items-end">
+                        <div class="flex-1 min-w-0">
+                            <p id="progress-status" class="text-sm font-bold text-slate-700 truncate">Preparando...</p>
+                            <p id="file-count" class="text-[10px] text-slate-400 uppercase font-black tracking-tighter">0 archivos</p>
+                        </div>
+                        <span id="percentage" class="text-2xl font-black text-indigo-600 ml-4">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                        <div id="bar" class="progress-bar h-full bg-indigo-600 w-0"></div>
+                    </div>
+                    <div id="log-console" class="text-[9px] font-mono bg-slate-900 text-slate-400 p-3 rounded-xl max-h-32 overflow-y-auto"></div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-6 hidden">
+            <div class="bg-white w-full max-w-md rounded-3xl p-10 shadow-2xl space-y-8 border border-slate-100">
+                <div class="text-center space-y-4">
+                    <div class="bg-rose-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+                        <i data-lucide="shield-alert" class="w-10 h-10 text-rose-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight">Permisos Insuficientes</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Este recurso requiere privilegios administrativos. Ingrese sus credenciales para autenticar la operación.</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="email" id="auth-email" placeholder="Email administrativo" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all text-sm">
+                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all text-sm">
+                    <button onclick="retryWithAuth()" class="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all">
+                        Autenticar y Reintentar
+                    </button>
+                    <button onclick="hideAuth()" class="w-full text-xs text-gray-400 font-bold uppercase hover:text-slate-600 transition-colors">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl opacity-0 pointer-events-none transition-all duration-300 text-sm font-bold z-[100]">
+        Mensaje
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref, listAll, getBlob, uploadBytesResumable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // Global State
+        let firebaseApp, auth, storage;
+        let fileList = [];
+        let currentMode = 'download';
+        let isTaskPending = false;
+
+        // Config Parser
+        function parseFirebaseConfig(raw) {
+            try { return JSON.parse(raw); } catch (e) {
+                try {
+                    const start = raw.indexOf('{');
+                    const end = raw.lastIndexOf('}');
+                    const objStr = raw.substring(start, end + 1);
+                    let jsonFix = objStr.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*}/g, '}');
+                    return JSON.parse(jsonFix);
+                } catch (err) {
+                    try { return (new Function(`return ${raw.substring(raw.indexOf('{'))}`))(); }
+                    catch (finalErr) { throw new Error("Configuración inválida"); }
+                }
+            }
+        }
+
+        window.initFirebase = async () => {
+            const raw = document.getElementById('firebase-config-input').value.trim();
+            if(!raw) return showToast("⚠️ Pega la configuración");
+            try {
+                const config = parseFirebaseConfig(raw);
+                firebaseApp = initializeApp(config);
+                auth = getAuth(firebaseApp);
+                storage = getStorage(firebaseApp);
+                
+                // Escuchador de sesión
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        document.getElementById('project-label').innerText = `Storage: ${config.storageBucket} (${user.email})`;
+                    } else {
+                        document.getElementById('project-label').innerText = `Storage: ${config.storageBucket} (Invitado)`;
+                    }
+                });
+
+                showToast("✅ Conectado");
+                showStep('transfer');
+            } catch (e) { showToast("❌ Error: " + e.message); }
+        };
+
+        window.setMode = (mode) => {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            document.getElementById('container-download').classList.toggle('hidden', mode !== 'download');
+            document.getElementById('container-upload').classList.toggle('hidden', mode !== 'upload');
+            document.getElementById('progress-container').classList.add('hidden');
+        };
+
+        // --- LÓGICA DE DESCARGA ---
+        window.startFolderDownload = async () => {
+            const path = document.getElementById('storage-path').value.trim();
+            const btn = document.getElementById('btn-start-download');
+            prepareProgress(btn);
+            fileList = [];
+            try {
+                await scanRecursively(path);
+                if (fileList.length === 0) throw new Error("Carpeta vacía o inexistente.");
+                
+                const zip = new JSZip();
+                let downloaded = 0;
+                for (const fileRef of fileList) {
+                    addLog(`Descargando: ${fileRef.fullPath}`);
+                    try {
+                        const blob = await getBlob(fileRef);
+                        zip.file(fileRef.fullPath, blob);
+                        downloaded++;
+                        updateProgress(`Empaquetando...`, Math.floor((downloaded / fileList.length) * 90), downloaded);
+                    } catch (e) { 
+                        if(e.code?.includes('permission')) throw e; // Burbujear error de permiso para mostrar modal
+                        addLog(`⚠️ Error: ${fileRef.name}`, true); 
+                    }
+                }
+                updateProgress("Generando ZIP...", 95, downloaded);
+                const content = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(content);
+                a.download = `fb_storage_backup_${Date.now()}.zip`;
+                a.click();
+                updateProgress("Completado", 100, downloaded);
+            } catch (error) { handleError(error, btn); }
+        };
+
+        async function scanRecursively(path) {
+            const listRef = ref(storage, path);
+            const res = await listAll(listRef);
+            res.items.forEach(item => fileList.push(item));
+            for (const folderRef of res.prefixes) {
+                addLog(`Explorando: ${folderRef.fullPath}`);
+                await scanRecursively(folderRef.fullPath);
+            }
+        }
+
+        // --- LÓGICA DE SUBIDA ---
+        window.startFolderUpload = async () => {
+            const input = document.getElementById('folder-input');
+            const destPath = document.getElementById('upload-dest-path').value.trim();
+            const btn = document.getElementById('btn-start-upload');
+            
+            if (!input.files || input.files.length === 0) return showToast("⚠️ Selecciona una carpeta primero");
+            
+            prepareProgress(btn);
+            const files = Array.from(input.files);
+            let uploaded = 0;
+
+            try {
+                for (const file of files) {
+                    const cleanPath = file.webkitRelativePath.replace(/^\//, '');
+                    const remotePath = destPath ? `${destPath}/${cleanPath}` : cleanPath;
+                    const storageRef = ref(storage, remotePath);
+
+                    addLog(`Subiendo: ${cleanPath}`);
+                    await new Promise((resolve, reject) => {
+                        const uploadTask = uploadBytesResumable(storageRef, file);
+                        uploadTask.on('state_changed', 
+                            null,
+                            (err) => reject(err),
+                            () => {
+                                uploaded++;
+                                updateProgress(`Subiendo archivos...`, Math.floor((uploaded / files.length) * 100), uploaded, files.length);
+                                resolve();
+                            }
+                        );
+                    });
+                }
+                updateProgress("¡Carga finalizada!", 100, uploaded, files.length);
+                showToast("🚀 Carpeta subida con éxito");
+            } catch (error) { handleError(error, btn); }
+        };
+
+        // UI Helpers
+        function prepareProgress(btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            document.getElementById('progress-container').classList.remove('hidden');
+            document.getElementById('log-console').innerHTML = "";
+            updateProgress("Iniciando...", 0, 0);
+        }
+
+        function updateProgress(msg, perc, current, total = null) {
+            document.getElementById('progress-status').innerText = msg;
+            document.getElementById('percentage').innerText = perc + "%";
+            document.getElementById('bar').style.width = perc + "%";
+            document.getElementById('file-count').innerText = total ? `${current} de ${total} archivos` : `${current} archivos procesados`;
+        }
+
+        function addLog(msg, isError = false) {
+            const log = document.getElementById('log-console');
+            const div = document.createElement('div');
+            div.className = isError ? "text-red-400" : "text-slate-400";
+            div.innerText = `> ${msg}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function handleError(err, btn) {
+            console.error(err);
+            const msg = (err.code || err.message || "").toLowerCase();
+            
+            // Si el usuario ya está autenticado y sigue recibiendo error de permisos,
+            // no mostramos el modal otra vez, solo informamos que su cuenta no tiene acceso.
+            if ((msg.includes('permission') || msg.includes('unauthorized')) && !auth.currentUser) {
+                isTaskPending = true;
+                showAuthModal();
+            } else if (msg.includes('permission') || msg.includes('unauthorized')) {
+                showToast("❌ Acceso Denegado: Tu cuenta no tiene permisos para este recurso.");
+                addLog("Error de permisos críticos. Verifique las reglas de Firebase.", true);
+            } else {
+                showToast("❌ Error: " + err.message);
+            }
+            
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+        }
+
+        window.retryWithAuth = async () => {
+            const email = document.getElementById('auth-email').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            
+            if(!email || !pass) return showToast("⚠️ Ingresa credenciales");
+
+            try {
+                showToast("🔐 Autenticando...");
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Forzar ocultación del modal ANTES de reintentar la tarea
+                hideAuth();
+                
+                // Limpiar campos de login
+                document.getElementById('auth-email').value = "";
+                document.getElementById('auth-pass').value = "";
+                
+                showToast("🔓 Acceso concedido");
+                
+                // Reiniciar tarea si estaba pendiente con un pequeño delay para el DOM
+                if(isTaskPending) {
+                    isTaskPending = false;
+                    setTimeout(() => {
+                        currentMode === 'download' ? startFolderDownload() : startFolderUpload();
+                    }, 500);
+                }
+            } catch (e) {
+                console.error("Auth Error:", e);
+                showToast("❌ Error al autenticar: Credenciales inválidas");
+            }
+        };
+
+        document.getElementById('folder-input').addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                const folderName = files[0].webkitRelativePath.split('/')[0];
+                document.getElementById('folder-label').innerText = `${folderName} (${files.length} archivos)`;
+            }
+        });
+
+        function showStep(step) {
+            ['config', 'transfer'].forEach(s => document.getElementById(`step-${s}`).classList.add('step-inactive'));
+            document.getElementById(`step-${step}`).classList.remove('step-inactive');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = '1'; t.style.transform = 'translate(-50%, -20px)';
+            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%, 0)'; }, 3000);
+        }
+
+        window.hideAuth = () => {
+            document.getElementById('auth-modal').classList.add('hidden');
+        };
+        
+        window.showAuthModal = () => {
+            document.getElementById('auth-modal').classList.remove('hidden');
+        };
+        
+        window.resetToConfig = () => {
+            signOut(auth);
+            showStep('config');
+        };
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

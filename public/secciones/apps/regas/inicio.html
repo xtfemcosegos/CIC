@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio - Registro de Asistencia</title>
+    <link href="/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: #0f172a;
+        }
+
+        /* Barra superior refinada */
+        .top-bar-modern {
+            background: #0f172a; /* Slate 900 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            height: 64px;
+            z-index: 50;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .date-nav-btn {
+            color: #94a3b8; /* Slate 400 */
+            transition: all 0.2s ease;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 18px;
+            border-radius: 8px;
+        }
+        .date-nav-btn:hover { 
+            color: #ffffff; 
+            background: rgba(255,255,255,0.1);
+        }
+        .date-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        #date-row-container {
+            display: flex;
+            gap: 8px;
+            flex-grow: 1;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0 16px;
+        }
+
+        /* Píldoras de fecha rediseñadas */
+        .date-pill {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 6px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 75px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .date-pill:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .date-pill .day-name { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; }
+        .date-pill .day-val { font-size: 0.85rem; font-weight: 800; color: #e2e8f0; margin-top: 2px; }
+
+        /* FECHA SELECCIONADA */
+        .date-pill.active {
+            background: #ffffff !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .date-pill.active .day-name { color: #475569 !important; }
+        .date-pill.active .day-val { color: #0f172a !important; }
+
+        /* FECHA ACTUAL (HOY) */
+        .date-pill.is-today {
+            background: rgba(112, 0, 112, 0.2);
+            border: 1px solid rgba(112, 0, 112, 0.5);
+        }
+        .date-pill.is-today .day-name { color: #f472b6; }
+        .date-pill.is-today .day-val { color: #ffffff; }
+
+        /* FECHA ACTUAL SELECCIONADA */
+        .date-pill.is-today.active {
+            background: #ffffff !important;
+            border: 2px solid #d000d0 !important;
+            box-shadow: 0 4px 15px rgba(208, 0, 208, 0.3);
+        }
+        .date-pill.is-today.active .day-name { color: #700070 !important; }
+        .date-pill.is-today.active .day-val { color: #700070 !important; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Selector de turnos tipo Segmented Control */
+        .shift-pill {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+        .shift-pill:hover {
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.05);
+        }
+        .shift-pill.active {
+            background: #ffffff;
+            color: #001a35;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            min-height: 0;
+            position: relative;
+            background: #f1f5f9;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .panel-container {
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .panel-header {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        .header-fuchsia { background: linear-gradient(90deg, #700070, #8b008b); }
+        .header-blue { background: linear-gradient(90deg, #001a35, #002855); }
+
+        /* Tarjetas y Grupos de Caseta */
+        .caseta-group { 
+            width: 100%; 
+            border-radius: 12px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            border: 1px solid #f1f5f9;
+        }
+        
+        .caseta-header {
+            padding: 8px 16px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .element-card {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            cursor: pointer;
+        }
+        .element-card:last-child { border-bottom: none; }
+        .element-card:hover { 
+            background-color: #f8fafc; 
+            transform: translateX(4px);
+        }
+
+        /* --- ESTILOS PARA CASETAS VACÍAS (FANTASMAS) --- */
+        .empty-caseta {
+            display: none;
+        }
+        
+        body.show-hidden-casetas .empty-caseta,
+        body.is-dragging .empty-caseta {
+            display: block;
+            opacity: 0.65;
+            border-style: dashed;
+            border-width: 2px;
+        }
+        
+        body.show-hidden-casetas .empty-caseta .caseta-header,
+        body.is-dragging .empty-caseta .caseta-header {
+            background: #f1f5f9 !important; /* Gris muy suave */
+            color: #64748b !important; /* Slate oscuro */
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        #detail-panel {
+            width: 40%;
+            z-index: 60;
+            flex-shrink: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .horizontal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(max(260px, calc(33.333% - 0.6rem)), 1fr));
+            gap: 0.75rem;
+            width: 100%;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content { flex-direction: column; padding: 0; gap: 0; }
+            .panel-container { width: 100% !important; flex: 1 !important; border: none; border-radius: 0; }
+            .header-blue { background: linear-gradient(90deg, #700070, #8b008b); border-top: 1px solid rgba(255,255,255,0.1); }
+            .shift-pill.active { color: #700070; }
+
+            #detail-panel {
+                position: absolute;
+                inset: 0; 
+                width: 100% !important;
+                height: 100% !important;
+                z-index: 100;
+                border: none;
+                border-radius: 0;
+            }
+        }
+        
+        /* Custom Scrollbar para contenedores interiores */
+        .shift-container::-webkit-scrollbar { width: 6px; }
+        .shift-container::-webkit-scrollbar-track { background: transparent; }
+        .shift-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .shift-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar-modern">
+        <!-- Controles Izquierdo -->
+        <div class="flex items-center">
+            <button onclick="jumpDate(-7)" class="date-nav-btn" title="Semana Anterior">«</button>
+            <button onclick="jumpDate(-1)" class="date-nav-btn" title="Día Anterior">‹</button>
+        </div>
+
+        <!-- Fila de Fechas Central -->
+        <div id="date-row-container" class="hide-scrollbar">
+            <!-- Inyectado por JS -->
+        </div>
+
+        <!-- Controles Derecho -->
+        <div class="flex items-center">
+            <button onclick="jumpDate(1)" class="date-nav-btn" title="Día Siguiente">›</button>
+            <button onclick="jumpDate(7)" class="date-nav-btn" title="Semana Siguiente">»</button>
+        </div>
+    </header>
+
+    <!-- BANNER DE SINCRONIZACIÓN -->
+    <div id="sync-banner" class="hidden relative w-full bg-slate-800 border-b border-slate-700 text-xs flex justify-between items-center z-40 shadow-sm overflow-hidden h-10 shrink-0 transition-all">
+        <div id="sync-progress-bar" class="absolute left-0 top-0 h-full bg-emerald-500/20 w-full origin-left transition-transform duration-300" style="transform: scaleX(1);"></div>
+        <div class="relative z-10 px-4 text-white flex items-center gap-4">
+            <div class="flex items-center font-medium">
+                <span class="relative flex h-3 w-3 mr-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span id="sync-banner-text" class="text-[10px] tracking-wide">Sincronizando: <span id="sync-changes-count" class="font-bold text-emerald-300">0</span> cambios pendientes.</span>
+            </div>
+            <button onclick="window.undoLastChange()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-[9px] font-bold uppercase transition border border-slate-600">Deshacer</button>
+        </div>
+        <div class="relative z-10 flex items-center pr-4">
+            <button id="sync-banner-btn" onclick="window.uploadChangesToCloud()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded cursor-pointer font-black transition uppercase tracking-widest text-[9px] shadow-sm">Subir Ahora</button>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <!-- PANEL IZQUIERDO: En Turno (Gobernado estrictamente por JS) -->
+        <div id="panel-enturno-desktop" class="panel-container flex-1 transition-all" style="display: none;">
+            <div class="panel-header header-fuchsia">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-white opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h2 class="text-white text-[11px] font-black uppercase tracking-[0.15em]">En Turno</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- Botón "Ojo" para revelar casetas ocultas -->
+                    <button onclick="document.body.classList.toggle('show-hidden-casetas')" class="p-1 text-white/70 hover:text-white transition cursor-pointer" title="Mostrar/Ocultar Casetas Vacías">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                    <div id="count-enturno-desktop" class="bg-white/20 px-2.5 py-0.5 rounded-full text-white text-[10px] font-bold">0</div>
+                </div>
+            </div>
+            <div class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3" id="container-enturno-desktop"></div>
+        </div>
+
+        <!-- PANEL DERECHO / ÚNICO -->
+        <div id="panel-consulta-general" class="panel-container flex-1 transition-all">
+            <div class="panel-header header-blue">
+                <div class="flex gap-2 items-center w-full" id="shift-selector-container">
+                    
+                    <!-- Selector Móvil -->
+                    <div class="relative sm:hidden flex-grow">
+                        <select id="shift-select-mobile" class="appearance-none bg-white/10 text-white border border-white/20 rounded-lg pl-3 pr-8 py-1.5 text-[11px] font-bold uppercase outline-none cursor-pointer w-full focus:bg-white/20 transition-colors">
+                            <option value="enturno" class="text-slate-800" style="display: none;">En Turno</option>
+                            <option value="matutino" class="text-slate-800" selected>Matutino</option>
+                            <option value="vespertino" class="text-slate-800">Vespertino</option>
+                            <option value="nocturno" class="text-slate-800">Nocturno</option>
+                            <option value="ausentismos" class="text-slate-800">Ausentismos</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white/70">
+                            <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+
+                    <!-- Selector Desktop -->
+                    <div class="hidden sm:flex gap-1.5 overflow-x-auto hide-scrollbar bg-black/20 p-1 rounded-lg" id="shift-selector">
+                        <button class="shift-pill" data-shift="enturno" style="display: none;">En Turno</button>
+                        <button class="shift-pill active" data-shift="matutino">Matutino</button>
+                        <button class="shift-pill" data-shift="vespertino">Vespertino</button>
+                        <button class="shift-pill" data-shift="nocturno">Nocturno</button>
+                        <button class="shift-pill" data-shift="ausentismos">Ausentismos</button>
+                    </div>
+                    
+                    <div class="ml-auto flex items-center gap-2">
+                        <!-- Botón "Ojo" para revelar casetas ocultas -->
+                        <button onclick="document.body.classList.toggle('show-hidden-casetas')" class="p-1 text-white/70 hover:text-white transition cursor-pointer" title="Mostrar/Ocultar Casetas Vacías">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>
+                        <div id="count-consulta" class="bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full text-white/80 text-[10px] font-bold shadow-inner">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="container-enturno" class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3 hidden"></div>
+            <div id="container-matutino" class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3"></div>
+            <div id="container-vespertino" class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3 hidden"></div>
+            <div id="container-nocturno" class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3 hidden"></div>
+            <div id="container-ausentismos" class="shift-container flex-grow bg-slate-50 overflow-y-auto p-3 hidden"></div>
+        </div>
+
+        <!-- PANEL DE DETALLE -->
+        <div id="detail-panel" class="hidden transition-all duration-300 ease-in-out">
+            <iframe id="iframe-detalle" class="w-full h-full border-none" src="about:blank"></iframe>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/"
+        };
+        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const fs = getFirestore(app);
+        const rtdb = getDatabase(app);
+
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const DAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+        
+        let currentShift = 'matutino';
+        let selectedDate = new Date();
+        let listadoCasetas = {};
+        let cachedElementosPP = {}; // Guardará en memoria el catálogo para resolver nombres
+        let authReady = false;
+        
+        const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        const photoCache = {}; 
+
+        const realToday = new Date();
+        realToday.setHours(0,0,0,0);
+        let viewStartDate = null; 
+
+        const CASETA_COLORS = [
+            { bg: '#1e3a8a', border: '#1e40af', text: '#ffffff' }, 
+            { bg: '#064e3b', border: '#047857', text: '#ffffff' }, 
+            { bg: '#581c87', border: '#6b21a8', text: '#ffffff' }, 
+            { bg: '#7c2d12', border: '#9a3412', text: '#ffffff' }, 
+            { bg: '#134e4a', border: '#0f766e', text: '#ffffff' }, 
+            { bg: '#831843', border: '#9d174d', text: '#ffffff' }, 
+            { bg: '#334155', border: '#475569', text: '#ffffff' }, 
+            { bg: '#3b0764', border: '#581c87', text: '#ffffff' }, 
+            { bg: '#7f1d1d', border: '#991b1b', text: '#ffffff' }, 
+            { bg: '#14532d', border: '#166534', text: '#ffffff' }, 
+            { bg: '#1e1b4b', border: '#312e81', text: '#ffffff' }, 
+            { bg: '#450a0a', border: '#7f1d1d', text: '#ffffff' }, 
+            { bg: '#020617', border: '#0f172a', text: '#ffffff' }, 
+            { bg: '#422006', border: '#713f12', text: '#ffffff' }, 
+            { bg: '#083344', border: '#155e75', text: '#ffffff' }, 
+            { bg: '#4c1d95', border: '#5b21b6', text: '#ffffff' }  
+        ];
+
+        function getCasetaColor(index) {
+            return CASETA_COLORS[index % CASETA_COLORS.length];
+        }
+
+        const dateRowContainer = document.getElementById('date-row-container');
+
+        async function fetchLocalData(dateObj) {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onerror = () => reject("Error al abrir base de datos local");
+                
+                request.onsuccess = (e) => {
+                    const db = e.target.result;
+                    const tx = db.transaction(["registros", "catalogos"], "readonly");
+                    const regStore = tx.objectStore("registros");
+                    const catStore = tx.objectStore("catalogos");
+
+                    const monthName = MONTH_NAMES[dateObj.getMonth()];
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const year = dateObj.getFullYear();
+                    const dayKey = `${day}${month}${year}`;
+                    
+                    const dbKey = `${year}_${monthName}`;
+
+                    const data = { 
+                        casetas: {}, 
+                        elementosPP: {}, 
+                        dayData: {}, 
+                        allRegistros: [], 
+                        isMonthMissing: false, 
+                        missingDbKey: dbKey 
+                    };
+
+                    catStore.get("Casetas").onsuccess = (res) => data.casetas = res.target.result || {};
+                    catStore.get("ElementosPP").onsuccess = (res) => {
+                        data.elementosPP = res.target.result || {};
+                        cachedElementosPP = data.elementosPP; // Cachear para notificaciones rápidas
+                    };
+                    
+                    regStore.getAll().onsuccess = (res) => {
+                        data.allRegistros = res.target.result || [];
+                        const currentMonthData = data.allRegistros.find(m => m.id === dbKey);
+                        
+                        if (!currentMonthData) {
+                            data.isMonthMissing = true;
+                        }
+                        
+                        data.dayData = currentMonthData ? (currentMonthData[dayKey] || {}) : {};
+                    };
+
+                    tx.oncomplete = () => resolve(data);
+                };
+            });
+        }
+
+        async function processData(localData) {
+            const { casetas, elementosPP, dayData, allRegistros } = localData;
+            listadoCasetas = casetas; 
+
+            const results = { enturno: [], matutino: [], vespertino: [], nocturno: [], ausentismos: [] };
+            const selectedDayKey = `${String(selectedDate.getDate()).padStart(2, '0')}${String(selectedDate.getMonth() + 1).padStart(2, '0')}${selectedDate.getFullYear()}`;
+
+            allRegistros.forEach(monthObj => {
+                Object.entries(monthObj).forEach(([dayKey, idsData]) => {
+                    if (dayKey === 'id') return;
+
+                    Object.entries(idsData).forEach(([id, shifts]) => {
+                        const elementEntry = Object.entries(elementosPP).find(([name, info]) => info.ID === id);
+                        const nombre = elementEntry ? elementEntry[0] : "Desconocido";
+                        const info = elementEntry ? elementEntry[1] : {};
+                        const puesto = info.Operativa?.Puesto || "Operativo";
+
+                        Object.entries(shifts).forEach(([shiftName, s]) => {
+                            if (typeof s === 'object' && s !== null && s.entrada_real && !s.salida_real) {
+                                results.enturno.push({ 
+                                    id, nombre, puesto, 
+                                    data: { ...s, _dayKey: dayKey, _shiftName: shiftName } 
+                                });
+                            }
+                        });
+                    });
+                });
+            });
+
+            for (const [id, shifts] of Object.entries(dayData)) {
+                const elementEntry = Object.entries(elementosPP).find(([name, info]) => info.ID === id);
+                const nombre = elementEntry ? elementEntry[0] : "Desconocido";
+                const info = elementEntry ? elementEntry[1] : {};
+                const puesto = info.Operativa?.Puesto || "Operativo";
+
+                ['matutino', 'vespertino', 'nocturno'].forEach(shift => {
+                    if (shifts[shift]) results[shift].push({ id, nombre, puesto, data: { ...shifts[shift], _dayKey: selectedDayKey, _shiftName: shift } });
+                });
+
+                if (shifts['ausentismo']) {
+                    results.ausentismos.push({ id, nombre, puesto, data: { ...shifts['ausentismo'], _dayKey: selectedDayKey, _shiftName: 'ausentismo'} });
+                }
+            }
+
+            return results;
+        }
+
+        async function loadData() {
+            if (!authReady) return; 
+            
+            const loadingHtml = `
+                <div class="p-12 w-full flex flex-col items-center justify-center opacity-40 col-span-full">
+                    <svg class="w-8 h-8 text-slate-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Cargando Datos...</span>
+                </div>
+            `;
+            const contEnturno = document.getElementById('container-enturno-desktop');
+            if (contEnturno) contEnturno.innerHTML = loadingHtml;
+
+            ['enturno', 'matutino', 'vespertino', 'nocturno', 'ausentismos'].forEach(shift => {
+                const el = document.getElementById(`container-${shift}`);
+                if (el) el.innerHTML = loadingHtml;
+            });
+
+            try {
+                const rawData = await fetchLocalData(selectedDate);
+                
+                if (rawData.isMonthMissing) {
+                    if (!window._requestedMonths) window._requestedMonths = {};
+                    if (!window._requestedMonths[rawData.missingDbKey]) {
+                        window._requestedMonths[rawData.missingDbKey] = true;
+                        
+                        console.log(`[Inicio] Mes faltante: ${rawData.missingDbKey}. Verificando RTDB...`);
+                        
+                        get(ref(rtdb, `updates/RegAs/${rawData.missingDbKey}`)).then(async (snap) => {
+                            const ts = snap.val();
+                            
+                            let localUpdates = {};
+                            try {
+                                const stored = localStorage.getItem('updates_regas');
+                                if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+                            } catch(e) {}
+
+                            if (ts) {
+                                delete localUpdates[rawData.missingDbKey];
+                                localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+
+                                if (typeof window.parent === 'object' && typeof window.parent.Download_DB === 'function') {
+                                    if (typeof window.parent.showToast === 'function') {
+                                        window.parent.showToast(`Descargando registros de ${rawData.missingDbKey.replace('_', ' ')}...`, "info");
+                                    }
+                                    window.parent.Download_DB([rawData.missingDbKey]);
+                                }
+                            } else {
+                                console.log(`[Inicio] Timestamp no encontrado en RTDB. Consultando Firestore para ${rawData.missingDbKey}...`);
+                                const [yearStr, monthName] = rawData.missingDbKey.split('_');
+                                
+                                try {
+                                    const docRef = doc(fs, "RegAs", "Registros", yearStr, monthName);
+                                    const docSnap = await getDoc(docRef);
+                                    
+                                    const newTs = Date.now().toString();
+                                    localUpdates[rawData.missingDbKey] = newTs;
+                                    localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+                                    await set(ref(rtdb, `updates/RegAs/${rawData.missingDbKey}`), newTs).catch(()=>{});
+
+                                    const request = indexedDB.open("CIC_OS_RegAs", 8);
+                                    request.onsuccess = (e) => {
+                                        const db = e.target.result;
+                                        const tx = db.transaction("registros", "readwrite");
+                                        
+                                        if (docSnap.exists()) {
+                                            console.log(`[Inicio] Documento antiguo recuperado de Firestore. Actualizando...`);
+                                            tx.objectStore("registros").put({ id: rawData.missingDbKey, ...docSnap.data() });
+                                        } else {
+                                            console.log(`[Inicio] Mes virgen confirmado. Inicializando en blanco...`);
+                                            tx.objectStore("registros").put({ id: rawData.missingDbKey });
+                                        }
+                                        
+                                        tx.oncomplete = () => {
+                                            loadData();
+                                        };
+                                    };
+                                } catch(errorFs) {
+                                    console.error("Error consultando Firestore de respaldo:", errorFs);
+                                }
+                            }
+                        }).catch(err => console.error("Error consultando RTDB:", err));
+                    }
+                }
+
+                const processed = await processData(rawData);
+
+                renderGroupedList(document.getElementById('container-enturno-desktop'), processed.enturno, 'count-enturno-desktop', true);
+                
+                ['enturno', 'matutino', 'vespertino', 'nocturno', 'ausentismos'].forEach(shift => {
+                    const container = document.getElementById(`container-${shift}`);
+                    if (container) {
+                        renderGroupedList(container, processed[shift], null, shift === 'enturno');
+                        container.dataset.count = processed[shift].length; 
+                    }
+                });
+
+                updateLayoutLogic();
+                loadPhotosInBackground([...processed.enturno, ...processed.matutino, ...processed.vespertino, ...processed.nocturno, ...processed.ausentismos]);
+
+            } catch (e) {
+                console.error("Fallo al procesar dibujo de UI", e);
+            }
+        }
+
+        function updateLayoutLogic() {
+            const enturnoPanel = document.getElementById('panel-enturno-desktop');
+            const shiftSelectDesktop = document.querySelector('.shift-pill[data-shift="enturno"]');
+            const shiftSelectMobile = document.querySelector('#shift-select-mobile option[value="enturno"]');
+            const detailPanelOpen = !document.getElementById('detail-panel').classList.contains('hidden');
+            
+            const minSpaceForTwoPanels = 1500;
+            const availableWidth = window.innerWidth;
+
+            // Control estricto de estilos inline para evitar choques con el CSS base de Tailwind
+            if (availableWidth >= minSpaceForTwoPanels && !detailPanelOpen) {
+                // PANTALLAS GRANDES: Separados (2 Paneles)
+                if (enturnoPanel) enturnoPanel.style.display = 'flex';
+                
+                // Ocultar opción "En Turno" de los selectores para que no se duplique visual ni funcionalmente
+                if (shiftSelectDesktop) shiftSelectDesktop.style.display = 'none';
+                if (shiftSelectMobile) shiftSelectMobile.style.display = 'none';
+                
+                // Si el panel derecho estaba mostrando "En Turno", cambiarlo obligatoriamente a "Matutino"
+                if (currentShift === 'enturno') {
+                    changeShift('matutino');
+                }
+            } else {
+                // PANTALLAS MEDIANAS/PEQUEÑAS: Fusionados (1 Panel Único)
+                // Esconde por completo el panel izquierdo separador
+                if (enturnoPanel) enturnoPanel.style.display = 'none';
+                
+                // Restaurar la opción "En Turno" en los selectores del panel unificado
+                if (shiftSelectDesktop) shiftSelectDesktop.style.display = 'inline-block';
+                if (shiftSelectMobile) shiftSelectMobile.style.display = 'block';
+            }
+
+            updateConsultaCounter();
+        }
+
+        function loadPhotosInBackground(allItems) {
+            const uniqueIds = [...new Set(allItems.map(item => item.id))];
+
+            uniqueIds.forEach(async (id) => {
+                if (photoCache[id]) {
+                    updateAvatarsInDOM(id, photoCache[id]);
+                    return;
+                }
+
+                try {
+                    const downloadUrl = await getDownloadURL(sRef(storage, `gs://cic-os.firebasestorage.app/Fotos/ElementosPP/${id}.webp`));
+                    photoCache[id] = downloadUrl;
+                    updateAvatarsInDOM(id, downloadUrl);
+                } catch (err) {
+                    photoCache[id] = DEFAULT_AVATAR; 
+                    updateAvatarsInDOM(id, DEFAULT_AVATAR);
+                }
+            });
+        }
+
+        function updateAvatarsInDOM(id, url) {
+            const images = document.querySelectorAll(`img[data-user-id="${id}"]`);
+            images.forEach(img => {
+                if (img.src !== url) img.src = url;
+            });
+        }
+
+        function renderGroupedList(container, data, counterId, isEnTurno = false) {
+            if (counterId) {
+                const counterEl = document.getElementById(counterId);
+                if (counterEl) counterEl.innerText = data.length;
+            }
+            
+            const assignedIds = new Set();
+            let html = "";
+            
+            const casetasNames = Object.keys(listadoCasetas)
+                .filter(k => k !== 'id')
+                .sort((a, b) => {
+                    let idxA = 999;
+                    let idxB = 999;
+                    if (listadoCasetas[a] && listadoCasetas[a].index !== undefined) {
+                        const parsedA = parseInt(listadoCasetas[a].index, 10);
+                        if (!isNaN(parsedA)) idxA = parsedA;
+                    }
+                    if (listadoCasetas[b] && listadoCasetas[b].index !== undefined) {
+                        const parsedB = parseInt(listadoCasetas[b].index, 10);
+                        if (!isNaN(parsedB)) idxB = parsedB;
+                    }
+                    return idxA - idxB;
+                });
+
+            casetasNames.forEach(casetaName => {
+                const elementosEnCaseta = data ? data.filter(item => {
+                    const casetaAsignada = item.data?.Caseta || "";
+                    return casetaAsignada === casetaName;
+                }) : [];
+
+                const casetaInfo = listadoCasetas[casetaName];
+                let colorIndex = 0;
+                if (casetaInfo && casetaInfo.index !== undefined) {
+                    const parsedIdx = parseInt(casetaInfo.index, 10);
+                    if (!isNaN(parsedIdx)) colorIndex = parsedIdx;
+                }
+                const color = getCasetaColor(colorIndex);
+                const isEmpty = elementosEnCaseta.length === 0;
+                
+                html += `
+                    <div class="caseta-group border-l-[4px] transition-all duration-200 ${isEmpty ? 'empty-caseta' : ''}" style="border-left-color: ${color.border}"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2', 'ring-slate-400', 'scale-[1.01]')"
+                         ondragleave="this.classList.remove('ring-2', 'ring-slate-400', 'scale-[1.01]')"
+                         ondrop="event.preventDefault(); this.classList.remove('ring-2', 'ring-slate-400', 'scale-[1.01]'); window.onDrop(event, '${casetaName}')">
+                        <div class="caseta-header" style="background: linear-gradient(90deg, ${color.bg}, ${color.border}); color: ${color.text};">
+                            <span>${casetaName}</span>
+                            <span class="bg-white/20 px-2 py-0.5 rounded-full font-black text-[9px]">${elementosEnCaseta.length}</span>
+                        </div>
+                        <div class="flex flex-col min-h-[40px]">
+                            ${elementosEnCaseta.map(item => {
+                                assignedIds.add(item.id + (item.data.entrada_real || ''));
+                                return renderItemCard(item, isEnTurno);
+                            }).join('')}
+                            ${isEmpty ? '<div class="p-3 text-center text-[10px] text-slate-400 italic">Arrastra un elemento aquí</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            const others = data ? data.filter(item => !assignedIds.has(item.id + (item.data.entrada_real || ''))) : [];
+            if (others.length > 0) {
+                html += `
+                    <div class="caseta-group border-l-[4px] transition-all duration-200" style="border-left-color: #4a044e;"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2', 'ring-slate-400', 'scale-[1.01]')"
+                         ondragleave="this.classList.remove('ring-2', 'ring-slate-400', 'scale-[1.01]')"
+                         ondrop="event.preventDefault(); this.classList.remove('ring-2', 'ring-slate-400', 'scale-[1.01]'); window.onDrop(event, '')">
+                        <div class="caseta-header" style="background: linear-gradient(90deg, #4a044e, #701a75); color: #ffffff;">
+                            <span>Otras Ubicaciones</span>
+                            <span class="bg-white/20 px-2 py-0.5 rounded-full font-black text-[9px]">${others.length}</span>
+                        </div>
+                        <div class="flex flex-col min-h-[40px]">
+                            ${others.map(item => renderItemCard(item, isEnTurno)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `<div class="horizontal-grid cols-dynamic">${html}</div>`;
+        }
+
+        function renderItemCard(item, isEnTurno) {
+            let actionBtn = '';
+            const shiftName = item.data._shiftName;
+
+            if (isEnTurno) {
+                actionBtn = `
+                    <button onclick="event.stopPropagation(); window.registrarSalida('${item.id}', '${item.data._dayKey}', '${shiftName}')"
+                            class="flex items-center justify-center bg-rose-600 hover:bg-rose-700 text-white rounded-full transition shadow-sm w-8 h-8 ml-2 flex-shrink-0" title="Registrar Salida">
+                        <svg class="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                    </button>
+                `;
+            } else if (!item.data?.entrada_real && shiftName !== 'ausentismo') {
+                const now = new Date();
+                const isToday = selectedDate.toDateString() === now.toDateString();
+                
+                if (isToday) {
+                    const currentHour = now.getHours();
+                    let canCheckIn = false;
+                    if (shiftName === 'matutino' && currentHour >= 5 && currentHour < 12) canCheckIn = true;
+                    if (shiftName === 'vespertino' && currentHour >= 12 && currentHour < 17) canCheckIn = true;
+                    if (shiftName === 'nocturno' && currentHour >= 17) canCheckIn = true;
+
+                    if (canCheckIn) {
+                        actionBtn = `
+                            <button onclick="event.stopPropagation(); window.registrarEntrada('${item.id}', '${item.data._dayKey}', '${shiftName}')"
+                                    class="flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition shadow-sm w-8 h-8 ml-2 flex-shrink-0" title="Registrar Entrada">
+                                <svg class="w-4 h-4 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                            </button>
+                        `;
+                    }
+                }
+            }
+
+            return `
+                <div draggable="true"
+                     ondragstart="window.onDragStart(event, '${item.id}', '${item.data._dayKey}', '${shiftName}')"
+                     ondragend="this.classList.remove('opacity-40'); document.body.classList.remove('is-dragging');"
+                     onclick="window.openDetail('${item.id}', '${item.data._dayKey}', '${shiftName}', ${isEnTurno})" 
+                     class="element-card p-3 flex items-center justify-between group relative overflow-hidden cursor-grab active:cursor-grabbing">
+                    <div class="flex items-center gap-3 overflow-hidden flex-grow pointer-events-none">
+                        <div class="w-9 h-9 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200 shadow-sm ring-2 ring-transparent group-hover:ring-slate-200 transition-all">
+                            <img data-user-id="${item.id}" src="${photoCache[item.id] || DEFAULT_AVATAR}" class="w-full h-full object-cover transition-opacity duration-300">
+                        </div>
+                        <div class="flex-grow overflow-hidden pr-2">
+                            <p class="text-[11px] font-bold text-slate-800 truncate uppercase tracking-tight">${item.nombre}</p>
+                            <p class="text-[9px] text-slate-500 font-medium truncate leading-tight mt-0.5">${item.puesto}</p>
+                        </div>
+                    </div>
+                    ${actionBtn}
+                </div>
+            `;
+        }
+
+        window.openDetail = function(id, dayKey, shiftName, isEnTurnoVal) {
+            if (isEnTurnoVal) {
+                changeShift('enturno');
+            }
+
+            const detailPanel = document.getElementById('detail-panel');
+            const iframe = document.getElementById('iframe-detalle');
+            const url = `panel.html?id=${id}&fecha=${dayKey}&turno=${shiftName}&pestaña=turno`;
+            iframe.src = url;
+            detailPanel.classList.remove('hidden');
+            updateLayoutLogic(); 
+        };
+
+        window.closeDetail = function() {
+            const detailPanel = document.getElementById('detail-panel');
+            const iframe = document.getElementById('iframe-detalle');
+            detailPanel.classList.add('hidden');
+            iframe.src = "about:blank";
+            updateLayoutLogic(); 
+        };
+
+        // ====== LÓGICA DE DRAG AND DROP (ARRASTRAR Y SOLTAR) ======
+        
+        window.onDragStart = function(e, id, dayKey, shiftName) {
+            e.dataTransfer.setData('application/json', JSON.stringify({ id, dayKey, shiftName }));
+            e.dataTransfer.effectAllowed = 'move';
+            
+            setTimeout(() => {
+                e.target.classList.add('opacity-40');
+                document.body.classList.add('is-dragging'); 
+            }, 0);
+        };
+
+        window.onDrop = async function(e, nuevaCaseta) {
+            document.body.classList.remove('is-dragging'); 
+            try {
+                const dataStr = e.dataTransfer.getData('application/json');
+                if (!dataStr) return;
+                const { id, dayKey, shiftName } = JSON.parse(dataStr);
+                
+                await window.moverCaseta(id, dayKey, shiftName, nuevaCaseta);
+            } catch(err) {
+                console.error("Error al arrastrar y soltar:", err);
+            }
+        };
+
+        // NOTIFICADOR FORTIFICADO PARA LOCALSTORAGE
+        async function notifyUpdate(dbKey) {
+            localStorage.setItem('thisUpdate', 'true');
+            const ts = Date.now().toString();
+            
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) {
+                    localUpdates = JSON.parse(stored);
+                }
+            } catch(e) {}
+            
+            localUpdates[dbKey] = ts;
+            localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+            
+            await set(ref(rtdb, `updates/RegAs/${dbKey}`), ts).catch(err => console.error("Error al notificar RTDB:", err));
+        }
+
+        // DISPARAR NOTIFICACIONES EN RTDB CON URL DE MINIATURA REAL
+        async function sendRTDBNotification(targetId, actionType, timeString) {
+            try {
+                const currentTimestamp = Date.now().toString();
+                
+                // 1. Obtener el nombre de la persona logueada prioritariamente de sessionStorage, fallback en localStorage
+                const loggedInUserName = sessionStorage.getItem('cic_os_name') || localStorage.getItem('cic_os_name') || "Un administrador";
+                
+                // 2. Buscar el nombre del elemento afectado dentro de la caché local cargada
+                let targetWorkerName = "Desconocido";
+                if (cachedElementosPP) {
+                    const workerEntry = Object.entries(cachedElementosPP).find(([name, info]) => info.ID === targetId);
+                    if (workerEntry) targetWorkerName = workerEntry[0];
+                }
+
+                // 3. Obtener la URL de la foto en segundo plano (con resolución asíncrona robusta)
+                let photoUrl = photoCache[targetId] || DEFAULT_AVATAR;
+                if (photoUrl === DEFAULT_AVATAR) {
+                    try {
+                        photoUrl = await getDownloadURL(sRef(storage, `gs://cic-os.firebasestorage.app/Fotos/ElementosPP/${targetId}.webp`));
+                        photoCache[targetId] = photoUrl; // Guardar en caché para optimizar llamadas
+                    } catch (err) {
+                        photoUrl = DEFAULT_AVATAR;
+                    }
+                }
+
+                // 4. Generar la estructura del payload requerido con ortografía refinada ("registró" en lugar de "registro")
+                const notificationPayload = {
+                    title: "Registro de asistencia",
+                    mensaje: `${loggedInUserName} registró la ${actionType} de ${targetWorkerName} a las ${timeString}`,
+                    url: "apps/regas.html",
+                    "url-miniatura": photoUrl
+                };
+
+                // 5. Inyectar de manera directa en la base de datos de notificaciones
+                await set(ref(rtdb, `notificaciones/${currentTimestamp}`), notificationPayload);
+                console.log(`[Notificaciones] Alerta con miniatura enviada con éxito por acción: ${actionType}`);
+            } catch (err) {
+                console.error("Error crítico al despachar notificación en tiempo real:", err);
+            }
+        }
+
+        window.moverCaseta = function(id, dayKey, shiftName, nuevaCaseta) {
+            const regYear = dayKey.substring(4, 8);
+            const monthIndex = parseInt(dayKey.substring(2,4)) - 1;
+            const monthName = MONTH_NAMES[monthIndex];
+            const dbKey = `${regYear}_${monthName}`; 
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+
+                store.get(dbKey).onsuccess = async (res) => {
+                    const monthData = res.target.result;
+                    if(monthData && monthData[dayKey] && monthData[dayKey][id] && monthData[dayKey][id][shiftName]) {
+                        if (monthData[dayKey][id][shiftName].Caseta === nuevaCaseta) return;
+
+                        monthData[dayKey][id][shiftName].Caseta = nuevaCaseta;
+                        
+                        store.put(monthData).onsuccess = async () => {
+                            loadData(); 
+                            const updateObj = { [dayKey]: { [id]: { [shiftName]: { Caseta: nuevaCaseta } } } };
+                            await setDoc(doc(fs, "RegAs", "Registros", regYear, monthName), updateObj, { merge: true });
+                            await notifyUpdate(dbKey);
+                        };
+                    }
+                };
+            };
+        };
+
+        window.registrarSalida = function(id, dayKey, shiftName) {
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const regYear = dayKey.substring(4, 8);
+            const monthIndex = parseInt(dayKey.substring(2,4)) - 1;
+            const monthName = MONTH_NAMES[monthIndex];
+            const dbKey = `${regYear}_${monthName}`; 
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+
+                store.get(dbKey).onsuccess = async (res) => { 
+                    const monthData = res.target.result;
+                    if(monthData && monthData[dayKey] && monthData[dayKey][id] && monthData[dayKey][id][shiftName]) {
+                        monthData[dayKey][id][shiftName].salida_real = timeStr;
+                        store.put(monthData).onsuccess = async () => {
+                            loadData(); 
+                            const updateObj = { [dayKey]: { [id]: { [shiftName]: { salida_real: timeStr } } } };
+                            await setDoc(doc(fs, "RegAs", "Registros", regYear, monthName), updateObj, { merge: true });
+                            await notifyUpdate(dbKey);
+                            
+                            // Disparar Notificación de Salida con miniatura
+                            await sendRTDBNotification(id, "salida", timeStr);
+                        };
+                    }
+                };
+            };
+        };
+
+        window.registrarEntrada = function(id, dayKey, shiftName) {
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const regYear = dayKey.substring(4, 8);
+            const monthIndex = parseInt(dayKey.substring(2,4)) - 1;
+            const monthName = MONTH_NAMES[monthIndex];
+            const dbKey = `${regYear}_${monthName}`; 
+
+            const request = indexedDB.open("CIC_OS_RegAs", 8);
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction("registros", "readwrite");
+                const store = tx.objectStore("registros");
+
+                store.get(dbKey).onsuccess = async (res) => {
+                    const monthData = res.target.result;
+                    if(monthData && monthData[dayKey] && monthData[dayKey][id] && monthData[dayKey][id][shiftName]) {
+                        monthData[dayKey][id][shiftName].entrada_real = timeStr;
+                        store.put(monthData).onsuccess = async () => {
+                            loadData(); 
+                            const updateObj = { [dayKey]: { [id]: { [shiftName]: { entrada_real: timeStr } } } };
+                            await setDoc(doc(fs, "RegAs", "Registros", regYear, monthName), updateObj, { merge: true });
+                            await notifyUpdate(dbKey);
+                            
+                            // Disparar Notificación de Entrada con miniatura
+                            await sendRTDBNotification(id, "entrada", timeStr);
+                        }; 
+                    }
+                };
+            };
+        };
+
+        window.jumpDate = function(offset) {
+            selectedDate.setDate(selectedDate.getDate() + offset);
+            updateDateDisplay();
+        };
+
+        function renderDateRow() {
+            dateRowContainer.innerHTML = '';
+            
+            const availableWidth = dateRowContainer.clientWidth;
+            if (availableWidth <= 0) {
+                setTimeout(renderDateRow, 50);
+                return;
+            }
+
+            const pillFullWidth = 85; 
+            let count = Math.floor(availableWidth / pillFullWidth);
+            if (count < 1) count = 1;
+
+            const selectedTime = new Date(selectedDate).setHours(0,0,0,0);
+
+            if (!viewStartDate) {
+                viewStartDate = new Date(selectedDate);
+                viewStartDate.setDate(viewStartDate.getDate() - Math.floor(count / 2));
+            }
+
+            let viewStartTime = new Date(viewStartDate).setHours(0,0,0,0);
+            let viewEndTime = new Date(viewStartTime);
+            viewEndTime.setDate(new Date(viewEndTime).getDate() + count - 1);
+
+            if (selectedTime < viewStartTime) {
+                viewStartDate = new Date(selectedDate);
+            } else if (selectedTime > viewEndTime.getTime()) {
+                const newStart = new Date(selectedDate);
+                newStart.setDate(newStart.getDate() - count + 1);
+                viewStartDate = newStart;
+            }
+
+            for (let i = 0; i < count; i++) {
+                const d = new Date(viewStartDate);
+                d.setDate(d.getDate() + i);
+                d.setHours(0,0,0,0);
+                
+                const isSelected = d.getTime() === selectedTime;
+                const isToday = d.getTime() === realToday.getTime();
+                
+                const pill = document.createElement('div');
+                pill.className = `date-pill ${isSelected ? 'active' : ''} ${isToday ? 'is-today' : ''}`;
+                
+                const dayName = DAY_NAMES[d.getDay()];
+                const dayVal = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+                
+                pill.innerHTML = `
+                    <div class="day-name">${dayName}</div>
+                    <div class="day-val">${dayVal}</div>
+                `;
+                
+                pill.onclick = () => {
+                    selectedDate = new Date(d);
+                    updateDateDisplay();
+                };
+                
+                dateRowContainer.appendChild(pill);
+            }
+        }
+
+        function updateDateDisplay() {
+            renderDateRow();
+            if (authReady) loadData();
+        }
+
+        function updateConsultaCounter() {
+            const activeContainer = document.getElementById(`container-${currentShift}`);
+            if (activeContainer) {
+                const counterEl = document.getElementById('count-consulta');
+                if (counterEl) counterEl.innerText = activeContainer.dataset.count || '0';
+            }
+        }
+
+        function changeShift(shiftName) {
+            currentShift = shiftName;
+            const mobileSelect = document.getElementById('shift-select-mobile');
+            if (mobileSelect) mobileSelect.value = currentShift;
+            document.querySelectorAll('.shift-pill').forEach(p => {
+                if (p.dataset.shift === currentShift) p.classList.add('active');
+                else p.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.shift-container').forEach(c => {
+                if (c.id !== 'container-enturno-desktop') {
+                    c.classList.add('hidden');
+                }
+            });
+            
+            const targetCont = document.getElementById(`container-${currentShift}`);
+            if (targetCont) targetCont.classList.remove('hidden');
+            updateConsultaCounter();
+        }
+
+        document.querySelectorAll('.shift-pill').forEach(btn => {
+            btn.onclick = (e) => changeShift(e.target.dataset.shift);
+        });
+
+        document.getElementById('shift-select-mobile').addEventListener('change', (e) => {
+            changeShift(e.target.value);
+        });
+
+        window.addEventListener('resize', () => {
+            const detailPanelOpen = !document.getElementById('detail-panel').classList.contains('hidden');
+            const minSpaceForTwoPanels = 1500;
+            // Sincronizar de forma precisa el cambio de vista al redimensionar la ventana
+            if (window.innerWidth >= minSpaceForTwoPanels && !detailPanelOpen && currentShift === 'enturno') {
+                changeShift('matutino');
+            }
+            updateLayoutLogic();
+            renderDateRow(); 
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'updates_regas') loadData();
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (!authReady) {
+                authReady = true;
+                updateDateDisplay(); 
+            }
+        });
+    </script>
+</body>
+</html>

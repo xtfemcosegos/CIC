@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marbetes - Control de Estacionamiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --emerald-dark: #065f46;
+            --emerald-soft: rgba(6, 95, 70, 0.05);
+        }
+
+        body, html {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f8fafc;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .main-panel {
+            background: #ffffff;
+            height: 100vh;
+            width: 100vw;
+            display: none;
+            position: relative;
+        }
+
+        .nav-sidebar {
+            background: #ffffff;
+            border-right: 1px solid #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 70px;
+            z-index: 20;
+            height: 100%;
+        }
+
+        .nav-sidebar.expanded { width: 200px; }
+
+        #toggle-labels {
+            position: absolute;
+            left: 58px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--emerald-dark);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(6, 95, 70, 0.4);
+            z-index: 30;
+            transition: left 0.3s;
+        }
+        
+        .nav-sidebar.expanded + #toggle-labels { left: 188px; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-item:hover {
+            background: var(--emerald-soft);
+            color: var(--emerald-dark);
+        }
+
+        .nav-item.active {
+            background: var(--emerald-dark);
+            color: white;
+        }
+
+        .nav-text {
+            margin-left: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .expanded .nav-text { opacity: 1; }
+
+        #sync-overlay, #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #login-overlay { display: none; z-index: 110; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+
+        .emerald-text { color: var(--emerald-dark); }
+        .emerald-bg { background-color: var(--emerald-dark); }
+        
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 50px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .icon-container-circle {
+            background: var(--emerald-dark);
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 10px 15px -3px rgba(6, 95, 70, 0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            outline: none;
+            background: #f8fafc;
+            transition: all 0.3s;
+        }
+        
+        input:focus { border-color: var(--emerald-dark); background: white; }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: var(--emerald-dark);
+            color: white;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        #standalone-brand {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 120;
+            display: none;
+        }
+
+        .brand-icon-box {
+            background: var(--emerald-dark);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Branding superior izquierdo (Solo modo autónomo) -->
+    <div id="standalone-brand">
+        <div class="brand-icon-box">
+            <img src="../ico/marbetes.ico" class="w-7 h-7 object-contain" alt="Logo" onerror="this.style.display='none'">
+        </div>
+    </div>
+
+    <!-- Login obligatorio (Solo modo autónomo si no hay sesión) -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="icon-container-circle">
+                <img src="../ico/marbetes.ico" class="w-10 h-10 object-contain" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2099/2099058.png'">
+            </div>
+            <h2 class="text-3xl font-extrabold mb-2 text-slate-800">Acceso Marbetes</h2>
+            <p class="text-slate-400 text-sm mb-10 font-bold uppercase tracking-widest">Identificación Obligatoria</p>
+            
+            <div class="text-left">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Email Institucional</label>
+                <input type="email" id="login-email" placeholder="usuario@cic.com">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Contraseña</label>
+                <input type="password" id="login-pass" placeholder="••••••••">
+            </div>
+
+            <button class="btn-login" id="btn-do-login">INGRESAR</button>
+            <p id="login-error" class="text-red-500 text-xs mt-6 hidden font-semibold">Credenciales no autorizadas</p>
+        </div>
+    </div>
+
+    <!-- Sincronización -->
+    <div id="sync-overlay">
+        <div class="icon-container-circle scale-110 mb-8">
+            <img src="../ico/marbetes.ico" class="w-10 h-10 object-contain" alt="Carga">
+        </div>
+        <div class="w-14 h-14 border-[3px] border-slate-100 border-t-[#065f46] rounded-full animate-spin mb-6"></div>
+        <p class="font-bold emerald-text animate-pulse text-xl tracking-tighter">Marbetes | Sincronizando</p>
+        <p id="sync-status" class="text-[10px] text-slate-400 mt-2 text-center max-w-xs uppercase tracking-widest font-bold">Validando sesión y datos</p>
+    </div>
+
+    <div class="main-panel" id="appFrame">
+        <nav class="nav-sidebar" id="sidebar">
+            <div class="nav-item active" onclick="switchSection('inicio', this)" title="Inicio">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span class="nav-text">Inicio</span>
+            </div>
+            <div class="nav-item" onclick="switchSection('configuracion', this)" title="Configuración">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="nav-text">Configuración</span>
+            </div>
+        </nav>
+        <div id="toggle-labels" onclick="document.getElementById('sidebar').classList.toggle('expanded')">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <main class="flex-grow relative bg-white overflow-hidden">
+            <iframe id="section-iframe" class="w-full h-full border-none" src="about:blank"></iframe>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            databaseURL: "https://marbetes.firebaseio.com",
+            storageBucket: "cic-os.firebasestorage.app",
+            messagingSenderId: "628160285586",
+            appId: "1:628160285586:web:cb265d10e256697ab68f4b"
+        };
+
+        let app, auth, db;
+        const syncStatusText = document.getElementById('sync-status');
+        const iframe = document.getElementById('section-iframe');
+
+        async function initApp() {
+            const configStr = sessionStorage.getItem('cic_os_config');
+            const token = sessionStorage.getItem('cic_os_token');
+            const isIframe = window.self !== window.top;
+
+            const config = configStr ? JSON.parse(configStr) : defaultFirebaseConfig;
+            config.databaseURL = defaultFirebaseConfig.databaseURL;
+
+            try {
+                app = getApps().length > 0 ? getApp() : initializeApp(config);
+                auth = getAuth(app);
+                db = getDatabase(app);
+
+                if (isIframe) {
+                    if (!token) {
+                        window.location.href = '../index.html';
+                        return;
+                    }
+                    
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) checkSync();
+                        else {
+                            window.location.href = '../index.html';
+                        }
+                    });
+                } else {
+                    document.getElementById('standalone-brand').style.display = 'block';
+                    setupFavicon('../ico/marbetes.ico');
+
+                    if (token) {
+                        checkSync();
+                    } else {
+                        document.getElementById('sync-overlay').style.display = 'none';
+                        document.getElementById('login-overlay').style.display = 'flex';
+                    }
+                }
+            } catch (e) {
+                console.error("Error inicialización:", e);
+                if (isIframe) window.location.href = '../index.html';
+            }
+        }
+
+        function setupFavicon(url) {
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = url;
+        }
+
+        async function saveToLocal(data) {
+            return new Promise((resolve) => {
+                // CAMBIO CLAVE: Usar un nombre de DB único para Marbetes
+                const request = indexedDB.open("CIC_OS_Marbetes", 1);
+                request.onupgradeneeded = (e) => {
+                    const idb = e.target.result;
+                    if (!idb.objectStoreNames.contains("marbetes")) {
+                        idb.createObjectStore("marbetes", { keyPath: "id" });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction("marbetes", "readwrite");
+                    const store = tx.objectStore("marbetes");
+                    store.clear();
+                    data.forEach(item => store.put(item));
+                    tx.oncomplete = resolve;
+                };
+            });
+        }
+
+        async function runUpdate() {
+            syncStatusText.innerText = "Sincronizando base de datos central...";
+            try {
+                const snapshot = await get(ref(db, "db_folios"));
+                const dataRaw = snapshot.val();
+                const data = dataRaw ? Object.entries(dataRaw).map(([k, v]) => ({ id: k, ...v })) : [];
+                await saveToLocal(data);
+                
+                let timestamp = Date.now();
+                try { 
+                    const timeSnap = await get(ref(db, "updates/marbetes"));
+                    timestamp = timeSnap.val() || timestamp; 
+                } catch(e){}
+                localStorage.setItem('updates_marbetes', timestamp);
+                
+                finishSync();
+            } catch (error) {
+                console.error("Sync Error:", error);
+                syncStatusText.innerText = "Error de conexión. Sesión requerida.";
+            }
+        }
+
+        async function checkSync() {
+            const safetyTimeout = setTimeout(() => { finishSync(); }, 6000);
+            try {
+                const snapshot = await get(ref(db, "updates/marbetes"));
+                const remote = snapshot.val();
+                const local = localStorage.getItem('updates_marbetes');
+                
+                if (!local || local != remote) await runUpdate();
+                else finishSync();
+            } catch (e) {
+                finishSync();
+            } finally {
+                clearTimeout(safetyTimeout);
+            }
+        }
+
+        function finishSync() {
+            document.getElementById('sync-overlay').style.opacity = '0';
+            document.getElementById('appFrame').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('sync-overlay').style.display = 'none';
+                if (!iframe.src || iframe.src === 'about:blank') {
+                    switchSection('inicio', document.querySelector('.nav-item.active'));
+                }
+            }, 300);
+        }
+
+        window.switchSection = function(name, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if(el) el.classList.add('active');
+            iframe.src = `../secciones/apps/marbetes/${name}.html`;
+        };
+
+        document.getElementById('btn-do-login').onclick = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            if(!email || !pass) return;
+            
+            const btn = document.getElementById('btn-do-login');
+            btn.innerText = "VERIFICANDO...";
+            btn.disabled = true;
+
+            try {
+                const res = await signInWithEmailAndPassword(auth, email, pass);
+                sessionStorage.setItem('cic_os_token', await res.user.getIdToken());
+                sessionStorage.setItem('cic_os_config', JSON.stringify(defaultFirebaseConfig));
+                
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('sync-overlay').style.display = 'flex';
+                checkSync();
+            } catch (e) {
+                document.getElementById('login-error').classList.remove('hidden');
+                btn.innerText = "INGRESAR";
+                btn.disabled = false;
+            }
+        };
+
+        initApp();
+    </script>
+</body>
+</html>

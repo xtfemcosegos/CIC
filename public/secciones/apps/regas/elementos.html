@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Elementos - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Forzar Open Sans en toda la tipografía del documento */
+        * {
+            font-family: 'Open Sans', sans-serif !important;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .fuchsia-gradient {
+            background: linear-gradient(135deg, #701a75 0%, #d946ef 100%);
+        }
+        .modal-overlay { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0; }
+            .modal-content { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; position: absolute; top: 0; left: 0; }
+        }
+        
+        /* Ajuste para los inputs de tipo date */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen custom-scroll">
+
+    <!-- Notificaciones Toast Locales (Reemplaza alert nativos) -->
+    <div id="local-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] bg-slate-900/95 text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 border border-white/10">
+        <span id="local-toast-msg">Mensaje</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 no-print">
+        <div class="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <i data-lucide="users" class="text-fuchsia-600"></i> Catálogo de Personal
+                </h1>
+                <p class="text-xs text-slate-500 font-medium">Gestión integral de expedientes operativos</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Botón de Sincronización Manual del Catálogo -->
+                <button onclick="forceCatalogDownload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all no-print animate-in fade-in" title="Forzar Sincronización">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="btn-sync-icon"></i>
+                    <span class="hidden sm:inline">Sincronizar</span>
+                </button>
+
+                <select id="casetaFilter" class="bg-slate-100 border-transparent text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-fuchsia-500 transition-all cursor-pointer">
+                    <option value="Todas" selected>Todas las Casetas</option>
+                    <option value="Sin Asignar">Sin Asignar</option>
+                </select>
+
+                <select id="statusFilter" class="bg-slate-100 border-transparent text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-fuchsia-500 transition-all cursor-pointer">
+                    <option value="Activo" selected>Activos</option>
+                    <option value="Baja">Baja</option>
+                    <option value="Incapacidad">Incapacidad</option>
+                    <option value="Todos">Todos</option>
+                </select>
+
+                <div class="relative flex-1 md:w-64">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar por nombre o ID..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-fuchsia-500 rounded-xl text-sm transition-all outline-none">
+                </div>
+                
+                <button onclick="openModal()" class="fuchsia-gradient text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-fuchsia-200 flex items-center gap-2 active:scale-95 transition-all">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full mx-auto p-6 no-print">
+        <!-- Contenedor adaptado a agrupaciones y columnas -->
+        <div id="elementsGrid" class="w-full space-y-8">
+            <div class="py-20 text-center w-full" id="loadingState">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-fuchsia-500 border-t-transparent"></div>
+                <p class="mt-4 text-slate-500 font-medium" id="loadingText">Verificando sesión activa...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Formulario Completo -->
+    <div id="elementModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0 no-print" onclick="closeModal()"></div>
+        <div class="modal-content bg-white w-full max-w-5xl max-h-[95vh] rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            
+            <div class="fuchsia-gradient px-8 py-6 flex justify-between items-center text-white shrink-0 no-print">
+                <div>
+                    <h2 id="modalTitle" class="text-xl font-black tracking-tight">Expediente de Elemento</h2>
+                    <p class="text-xs text-white/70 font-bold uppercase tracking-widest">Edición de Catálogo Maestro</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="p-2 hover:bg-white/20 rounded-full transition-colors" title="Imprimir Carta">
+                        <i data-lucide="printer" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="closeModal()" class="p-2 hover:bg-white/20 rounded-full transition-colors">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form id="elementForm" class="flex-1 overflow-y-auto p-8 custom-scroll print:overflow-visible print:p-0">
+                <div class="flex flex-col md:flex-row gap-8">
+                    
+                    <div class="w-full md:w-64 shrink-0 flex flex-col items-center gap-4">
+                        <div class="w-full aspect-[3/4] rounded-3xl bg-slate-100 border-2 border-dashed border-slate-200 overflow-hidden relative flex items-center justify-center group">
+                            <div id="modalPhotoSilhouette" class="absolute inset-0 flex items-center justify-center text-slate-300">
+                                <i data-lucide="user" class="w-20 h-20"></i>
+                            </div>
+                            <img id="modalPhotoPreview" class="w-full h-full object-cover hidden relative z-10" src="">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 no-print">
+                                <label class="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform shadow-lg">
+                                    Cambiar Foto
+                                    <input type="file" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
+                                </label>
+                            </div>
+                        </div>
+                        <div id="uploadProgress" class="w-full bg-slate-100 h-1 rounded-full overflow-hidden hidden no-print">
+                            <div class="h-full bg-fuchsia-600 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <h3 class="text-sm font-black text-fuchsia-600 uppercase tracking-widest border-b pb-2">Información Operativa</h3>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre Completo (ID de Llave)</label>
+                                    <input type="text" name="nombre_key" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">ID / Nómina</label>
+                                        <input type="text" id="modalIDInput" name="ID" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Puesto</label>
+                                        <input type="text" name="Operativa.Puesto" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estado</label>
+                                        <select name="Operativa.Estado" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                            <option value="Activo">Activo</option>
+                                            <option value="Baja">Baja</option>
+                                            <option value="Incapacidad">Incapacidad</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fecha Ingreso</label>
+                                        <input type="date" name="Operativa.FechaDeIngreso" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none text-slate-700">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Módulo / Compañía</label>
+                                        <input type="text" name="Modulo" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Acceso Predeterminado</label>
+                                        <input type="text" name="Operativa.AccesoPredeterminado" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 text-red-400">Fecha de Baja</label>
+                                    <input type="date" name="Operativa.FechaDeBaja" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-red-400 outline-none text-slate-700">
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <h3 class="text-sm font-black text-fuchsia-600 uppercase tracking-widest border-b pb-2">Identidad Personal</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Teléfono</label>
+                                        <input type="text" name="Teléfono" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Género</label>
+                                        <input type="text" name="Identidad.Genero" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email</label>
+                                    <input type="email" name="email" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">NSS (IMSS)</label>
+                                        <input type="text" name="Identidad.No de IMSS" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">F. Nacimiento</label>
+                                        <input type="date" name="Identidad.Fecha de nacimiento" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none text-slate-700">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estado Civil</label>
+                                    <input type="text" name="Identidad.Estado civil" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Domicilio actual</label>
+                                    <input type="text" name="Identidad.Domicilio actual" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contactos de Emergencia</h3>
+                                    <button type="button" onclick="addListRow('emergency')" class="text-fuchsia-600 no-print"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+                                </div>
+                                <div id="emergencyList" class="space-y-2"></div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cursos y Certificaciones</h3>
+                                    <button type="button" onclick="addListRow('courses')" class="text-fuchsia-600 no-print"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+                                </div>
+                                <div id="coursesList" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="px-8 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 shrink-0 no-print">
+                <button onclick="closeModal()" class="px-5 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 uppercase">Cancelar</button>
+                <button onclick="saveElement()" class="fuchsia-gradient text-white px-8 py-2 rounded-xl text-sm font-black shadow-lg shadow-fuchsia-200 active:scale-95 transition-all uppercase tracking-widest">Guardar Expediente</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getStorage, ref as sRef, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref as rRef, set as rSet, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Credenciales oficiales de RegAs 
+        const firebaseConfig = {
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/",
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+        const fs = getFirestore(app);
+        const rtdb = getDatabase(app);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const AUTH_UID = urlParams.get('uid') || '';
+        let appStarted = false;
+
+        let allElements = {};
+        let casetasConfig = {}; // Catálogo de casetas para ordenación dinámica por index
+        let editingKey = null;
+        let urlCache = {};
+
+        // --- MANEJO DE INDEXEDDB LOCAL ---
+        const DB_NAME = "CIC_OS_RegAs";
+        const STORE_NAME = "catalogos";
+        const ENTRY_KEY = "ElementosPP";
+
+        function showLocalToast(message, type = 'success') {
+            const toast = document.getElementById('local-toast');
+            const msgEl = document.getElementById('local-toast-msg');
+            if (!toast) return;
+
+            toast.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 flex items-center gap-2 border border-white/10";
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-600');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-indigo-600');
+            }
+
+            msgEl.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // NOTIFICADOR FORTIFICADO PARA DELTA UPDATES EN RTDB
+        async function notifyCatalogUpdate() {
+            localStorage.setItem('thisUpdate', 'true');
+            const ts = Date.now().toString();
+            
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) {
+                    localUpdates = JSON.parse(stored);
+                }
+            } catch(e) {}
+            
+            localUpdates["Catalogos"] = ts;
+            localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+            
+            await rSet(rRef(rtdb, `updates/RegAs/Catalogos`), ts).catch(err => console.error("[Elementos] Error al notificar RTDB:", err));
+        }
+
+        function getIndexedDB() {
+            return new Promise((resolve, reject) => {
+                try {
+                    const request = indexedDB.open(DB_NAME);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME);
+                        }
+                    };
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+
+        async function fetchFromIndexedDB() {
+            try {
+                const idb = await getIndexedDB();
+                return new Promise((resolve, reject) => {
+                    const tx = idb.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const getReq = store.get(ENTRY_KEY);
+                    getReq.onsuccess = () => resolve(getReq.result || {});
+                    getReq.onerror = () => reject(getReq.error);
+                });
+            } catch (err) {
+                console.error("Error al acceder a IndexedDB:", err);
+                return {};
+            }
+        }
+
+        // Obtener simultáneamente los catálogos ElementosPP y Casetas para el ordenamiento dinámico
+        async function fetchCatalogosFromIndexedDB() {
+            try {
+                const idb = await getIndexedDB();
+                return new Promise((resolve, reject) => {
+                    const tx = idb.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const reqEl = store.get("ElementosPP");
+                    const reqCas = store.get("Casetas");
+                    
+                    let result = { elementos: {}, casetas: {} };
+                    
+                    reqEl.onsuccess = () => {
+                        result.elementos = reqEl.result || {};
+                        if (reqCas.readyState === "done") resolve(result);
+                    };
+                    reqCas.onsuccess = () => {
+                        result.casetas = reqCas.result || {};
+                        if (reqEl.readyState === "done") resolve(result);
+                    };
+                    reqEl.onerror = () => reject(reqEl.error);
+                    reqCas.onerror = () => reject(reqCas.error);
+                });
+            } catch (err) {
+                console.error("Error al acceder a IndexedDB para catálogos:", err);
+                return { elementos: {}, casetas: {} };
+            }
+        }
+
+        async function writeToIndexedDB(data) {
+            const idb = await getIndexedDB();
+            return new Promise((resolve, reject) => {
+                const tx = idb.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                const putReq = store.put(data, ENTRY_KEY);
+                putReq.onsuccess = () => resolve();
+                putReq.onerror = () => reject(putReq.error);
+            });
+        }
+
+        async function updateDataInDB(updatedData) {
+            const storageObj = { id: ENTRY_KEY, ...updatedData };
+            await writeToIndexedDB(storageObj);
+            allElements = updatedData;
+            updateCasetaFilterOptions();
+            renderGrid();
+        }
+
+        async function getPhotoURL(id) {
+            if (!id) return null;
+            if (urlCache[id]) return urlCache[id];
+            try {
+                // Intentar ruta estándar
+                const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${id}.webp`));
+                urlCache[id] = url;
+                return url;
+            } catch (e) {
+                try {
+                    // Intentar ruta legacy
+                    const url = await getDownloadURL(sRef(storage, `ElementosPP/${id}.webp`));
+                    urlCache[id] = url;
+                    return url;
+                } catch (e2) {
+                    urlCache[id] = 'not_found';
+                    return null;
+                }
+            }
+        }
+
+        function calculateAge(birthday) {
+            if (!birthday) return "S/N";
+            
+            const parts = birthday.match(/\d+/g); 
+            if (!parts || parts.length < 3) return "S/N";
+
+            let day, month, year;
+            
+            if (parts[0].length === 4) { 
+                year = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10);
+                day = parseInt(parts[2], 10);
+            } else { 
+                day = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10);
+                year = parseInt(parts[2], 10);
+            }
+
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return "S/N";
+
+            const today = new Date();
+            let age = today.getFullYear() - year;
+            const m = (today.getMonth() + 1) - month;
+
+            if (m < 0 || (m === 0 && today.getDate() < day)) {
+                age--;
+            }
+
+            return age >= 0 ? age : "S/N";
+        }
+
+        window.copyCardAsImage = async (cardId) => {
+            const card = document.getElementById(cardId);
+            const controls = card.querySelector('.action-controls');
+            
+            const originalDisplay = controls.style.display;
+            controls.style.display = 'none';
+
+            // MITIGACIÓN AGRESIVA DE ERRORES DE FUENTES 404 (dom-to-image):
+            // Removemos por completo cualquier hoja de estilo sospechosa antes del renderizado
+            const styleSheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
+            const removedSheets = [];
+            styleSheets.forEach(sheet => {
+                const href = sheet.getAttribute('href') || '';
+                const content = sheet.textContent || '';
+                if (href.includes('office.net') || href.includes('fabric') || content.includes('Segoe UI') || content.includes('Leelawadee') || content.includes('office365')) {
+                    sheet.remove();
+                    removedSheets.push(sheet);
+                }
+            });
+
+            try {
+                const dataUrl = await domtoimage.toPng(card, { bgcolor: '#ffffff' });
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                
+                // Intentar copiar al portapapeles de forma segura en iframe
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                    showLocalToast('¡Tarjeta copiada al portapapeles!', 'success');
+                } catch (clipErr) {
+                    // Fallback usando document.execCommand para el iFrame
+                    const tempImg = document.createElement('img');
+                    tempImg.src = dataUrl;
+                    document.body.appendChild(tempImg);
+                    const range = document.createRange();
+                    range.selectNode(tempImg);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    window.getSelection().removeAllRanges();
+                    tempImg.remove();
+                    showLocalToast('¡Tarjeta seleccionada! Use Ctrl+C o copiar', 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                showLocalToast('Fallo al capturar tarjeta', 'error');
+            } finally {
+                controls.style.display = originalDisplay;
+                // Devolver las hojas de estilo eliminadas al DOM al terminar de fotografiar
+                removedSheets.forEach(sheet => document.head.appendChild(sheet));
+            }
+        };
+
+        window.editElement = async (name) => {
+            editingKey = name;
+            const data = allElements[name];
+            if (!data) return;
+
+            const form = document.getElementById('elementForm');
+            form.nombre_key.value = name;
+            
+            const inputs = form.querySelectorAll('input[name], select[name]');
+            inputs.forEach(input => {
+                if (input.name === 'nombre_key') return;
+                const path = input.name.split('.');
+                let val = data;
+                for (const segment of path) { val = val ? val[segment] : null; }
+                
+                if (input.type === 'checkbox') {
+                    input.checked = val === true;
+                } else if (input.type === 'date' && val) {
+                    if (val.includes('/')) {
+                        const parts = val.split('/');
+                        if (parts.length === 3) {
+                            val = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    input.value = val || '';
+                } else {
+                    input.value = val || '';
+                }
+            });
+
+            const photoUrl = await getPhotoURL(data.ID);
+            const preview = document.getElementById('modalPhotoPreview');
+            const silhouette = document.getElementById('modalPhotoSilhouette');
+            if (photoUrl && photoUrl !== 'not_found') {
+                preview.src = photoUrl;
+                preview.classList.remove('hidden');
+                silhouette.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                silhouette.classList.remove('hidden');
+            }
+
+            document.getElementById('emergencyList').innerHTML = '';
+            document.getElementById('coursesList').innerHTML = '';
+
+            const emergencies = data.Identidad?.['en caso de emergencia'];
+            if(Array.isArray(emergencies)) emergencies.forEach(e => addListRow('emergency', e));
+
+            const courses = data.Identidad?.Curso;
+            if(Array.isArray(courses)) courses.forEach(c => addListRow('courses', c));
+
+            document.getElementById('elementModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeModal = () => { document.getElementById('elementModal').classList.add('hidden'); };
+        
+        window.openModal = () => {
+            editingKey = null;
+            document.getElementById('elementForm').reset();
+            document.getElementById('modalPhotoPreview').classList.add('hidden');
+            document.getElementById('modalPhotoSilhouette').classList.remove('hidden');
+            document.getElementById('emergencyList').innerHTML = '';
+            document.getElementById('coursesList').innerHTML = '';
+            document.getElementById('elementModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.handlePhotoUpload = async (event) => {
+            const file = event.target.files[0];
+            const id = document.getElementById('modalIDInput').value;
+            if (!file || !id) { showLocalToast("Asigne un ID antes de subir la foto.", "error"); return; }
+            
+            const progress = document.getElementById('uploadProgress');
+            const progressBar = progress.querySelector('div');
+            progress.classList.remove('hidden');
+            progressBar.style.width = '10%';
+            
+            try {
+                const webpBlob = await processImage(file);
+                progressBar.style.width = '50%';
+                // Guardar en la ruta estandarizada Fotos/ElementosPP/
+                const storageRef = sRef(storage, `Fotos/ElementosPP/${id}.webp`);
+                await uploadBytes(storageRef, webpBlob, { contentType: 'image/webp' });
+                progressBar.style.width = '100%';
+                
+                const newUrl = await getDownloadURL(storageRef);
+                urlCache[id] = newUrl;
+                document.getElementById('modalPhotoPreview').src = newUrl;
+                document.getElementById('modalPhotoPreview').classList.remove('hidden');
+                document.getElementById('modalPhotoSilhouette').classList.add('hidden');
+                
+                // Actualizar inmediatamente en local y en la nube de estar editando
+                if (editingKey) {
+                    await autoSaveCatalogField(document.getElementById('modalIDInput'));
+                }
+
+                setTimeout(() => { progress.classList.add('hidden'); renderGrid(); }, 1000);
+            } catch (err) { 
+                console.error(err);
+                progress.classList.add('hidden'); 
+                showLocalToast("Fallo al subir fotografía", "error");
+            }
+        };
+
+        function processImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width, height = img.height;
+                        const maxDim = 800;
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) { height *= maxDim / width; width = maxDim; }
+                            else { width *= maxDim / height; height = maxDim; }
+                        }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob((blob) => blob ? resolve(blob) : reject(), 'image/webp', 0.8);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.addListRow = (type, data = {}) => {
+            const container = document.getElementById(type === 'emergency' ? 'emergencyList' : 'coursesList');
+            const row = document.createElement('div');
+            row.className = "flex gap-2 items-start bg-slate-50 p-3 rounded-xl border border-slate-200 no-print";
+            
+            const randId = Math.random().toString(36).substring(7);
+
+            if (type === 'emergency') {
+                row.innerHTML = `
+                    <div class="flex-1 space-y-2">
+                        <input type="text" placeholder="Nombre" value="${data.Nombre || ''}" onchange="window.autoSaveDynamicLists()" class="w-full text-xs p-1 border-b bg-transparent border-slate-300 outline-none">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" placeholder="Parentesco" value="${data.Parentesco || ''}" onchange="window.autoSaveDynamicLists()" class="text-[10px] p-1 border-b bg-transparent outline-none">
+                            <input type="text" placeholder="Teléfono" value="${data['numero de telefono'] || ''}" onchange="window.autoSaveDynamicLists()" class="text-[10px] p-1 border-b bg-transparent outline-none">
+                        </div>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove(); window.autoSaveDynamicLists();" class="text-slate-300 hover:text-red-500 no-print"><i data-lucide="minus-circle" class="w-4 h-4"></i></button>
+                `;
+            } else {
+                row.innerHTML = `
+                    <div class="flex-1 space-y-2">
+                        <input type="text" placeholder="Curso" value="${data.Curso || ''}" onchange="window.autoSaveDynamicLists()" class="w-full text-xs p-1 border-b bg-transparent border-slate-300 outline-none">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select onchange="window.autoSaveDynamicLists()" class="text-[10px] p-1 border-b bg-transparent border-slate-200 outline-none">
+                                <option value="Completado" ${data.Estatus === 'Completado' ? 'selected' : ''}>Completado</option>
+                                <option value="Pendiente" ${data.Estatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            </select>
+                            <input type="text" placeholder="Fecha" value="${data.Fecha || ''}" onchange="window.autoSaveDynamicLists()" class="text-[10px] p-1 border-b bg-transparent outline-none">
+                        </div>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove(); window.autoSaveDynamicLists();" class="text-slate-300 hover:text-red-500 no-print"><i data-lucide="minus-circle" class="w-4 h-4"></i></button>
+                `;
+            }
+            container.appendChild(row); 
+            lucide.createIcons();
+            
+            // Auto guardar al añadir fila
+            window.autoSaveDynamicLists();
+        };
+
+        window.saveElement = async () => {
+            const form = document.getElementById('elementForm');
+            const newName = form.nombre_key.value.trim();
+            if (!newName) return;
+            
+            const updatedElements = JSON.parse(JSON.stringify(allElements));
+            
+            // PREVENIR PÉRDIDA DE DATOS: Recuperamos y preservamos los campos ya existentes si editamos
+            const elementData = (editingKey && updatedElements[editingKey]) 
+                ? JSON.parse(JSON.stringify(updatedElements[editingKey])) 
+                : { Identidad: { Curso: [], "en caso de emergencia": [] }, Operativa: {}, Uniforme: {} };
+                
+            const inputs = form.querySelectorAll('input[name], select[name]');
+            
+            inputs.forEach(input => {
+                if (input.name === 'nombre_key') return;
+                const path = input.name.split('.');
+                let current = elementData;
+                for (let i = 0; i < path.length - 1; i++) {
+                    if (!current[path[i]]) current[path[i]] = {};
+                    current = current[path[i]];
+                }
+
+                let value;
+                if (input.type === 'checkbox') {
+                    value = input.checked;
+                } else if (input.type === 'date' && input.value) {
+                    const parts = input.value.split('-');
+                    if (parts.length === 3) {
+                        value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    } else {
+                        value = input.value;
+                    }
+                } else {
+                    value = input.value;
+                }
+
+                current[path[path.length - 1]] = value;
+            });
+
+            // Re-escribir listas dinámicas limpiamente
+            if (!elementData.Identidad) elementData.Identidad = {};
+            elementData.Identidad["en caso de emergencia"] = [];
+            elementData.Identidad.Curso = [];
+
+            document.querySelectorAll('#emergencyList > div').forEach(div => {
+                const ins = div.querySelectorAll('input');
+                elementData.Identidad["en caso de emergencia"].push({ Nombre: ins[0].value, Parentesco: ins[1].value, "numero de telefono": ins[2].value });
+            });
+            document.querySelectorAll('#coursesList > div').forEach(div => {
+                const ins = div.querySelectorAll('input, select');
+                elementData.Identidad.Curso.push({ Curso: ins[0].value, Estatus: ins[1].value, Fecha: ins[2].value });
+            });
+
+            if (editingKey && editingKey !== newName) {
+                delete updatedElements[editingKey];
+            }
+            updatedElements[newName] = elementData;
+
+            try {
+                // 1. Guardar quirúrgicamente en Firestore
+                const updateObj = {
+                    ElementosPP: {
+                        [newName]: elementData
+                    }
+                };
+                if (editingKey && editingKey !== newName) {
+                    updateObj.ElementosPP[editingKey] = deleteField();
+                }
+
+                await setDoc(doc(fs, "RegAs", "Catalogos"), updateObj, { merge: true });
+                console.log("[Elementos] Sincronización exitosa en Firestore.");
+
+                // 2. Guardar en Base de Datos Local
+                await updateDataInDB(updatedElements);
+
+                // 3. Notificar a la RTDB para sincronización instantánea en red
+                await notifyCatalogUpdate();
+
+                closeModal();
+                showLocalToast("Expediente guardado", "success");
+            } catch (err) {
+                console.error("Error al guardar:", err);
+                showLocalToast("Error de conexión de red", "error");
+            }
+        };
+
+        // --- SISTEMA DE AUTO-GUARDADO AL CAMBIAR CAMPOS EN EDICIÓN ---
+        document.getElementById('elementForm').addEventListener('change', async (e) => {
+            if (!editingKey) return; // Si es nuevo no autoguardamos hasta guardar el expediente por primera vez
+            const input = e.target;
+            
+            // Si pertenece a las listas de emergencia o cursos, la lógica es especial
+            if (input.closest('#emergencyList') || input.closest('#coursesList')) {
+                return; 
+            }
+            
+            if (!input.name) return;
+            await autoSaveCatalogField(input);
+        });
+
+        async function autoSaveCatalogField(input) {
+            if (!editingKey) return;
+            const name = input.name;
+            let value = input.type === 'checkbox' ? input.checked : input.value;
+
+            if (input.type === 'date' && value) {
+                const parts = value.split('-');
+                if (parts.length === 3) value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            const path = name.split('.');
+            let current = allElements[editingKey];
+            if (!current) return;
+
+            for (let i = 0; i < path.length - 1; i++) {
+                if (!current[path[i]]) current[path[i]] = {};
+                current = current[path[i]];
+            }
+            current[path[path.length - 1]] = value;
+
+            // Guardar local
+            await updateDataInDB(allElements);
+
+            // Guardar Nube (Firestore y RTDB)
+            try {
+                const updateObj = {
+                    ElementosPP: {
+                        [editingKey]: allElements[editingKey]
+                    }
+                };
+                await setDoc(doc(fs, "RegAs", "Catalogos"), updateObj, { merge: true });
+                await notifyCatalogUpdate();
+                showLocalToast("Cambio guardado automáticamente", "success");
+            } catch (err) {
+                console.error("Error en autoguardado de campo:", err);
+            }
+        }
+
+        window.autoSaveDynamicLists = async () => {
+            if (!editingKey) return;
+            
+            const emergencyList = [];
+            document.querySelectorAll('#emergencyList > div').forEach(div => {
+                const ins = div.querySelectorAll('input');
+                if (ins.length >= 3) {
+                    emergencyList.push({ Nombre: ins[0].value, Parentesco: ins[1].value, "numero de telefono": ins[2].value });
+                }
+            });
+
+            const coursesList = [];
+            document.querySelectorAll('#coursesList > div').forEach(div => {
+                const ins = div.querySelectorAll('input, select');
+                if (ins.length >= 3) {
+                    coursesList.push({ Curso: ins[0].value, Estatus: ins[1].value, Fecha: ins[2].value });
+                }
+            });
+
+            if (!allElements[editingKey].Identidad) allElements[editingKey].Identidad = {};
+            allElements[editingKey].Identidad["en caso de emergencia"] = emergencyList;
+            allElements[editingKey].Identidad.Curso = coursesList;
+
+            // Guardar local
+            await updateDataInDB(allElements);
+
+            // Guardar Nube (Firestore y RTDB)
+            try {
+                const updateObj = {
+                    ElementosPP: {
+                        [editingKey]: allElements[editingKey]
+                    }
+                };
+                await setDoc(doc(fs, "RegAs", "Catalogos"), updateObj, { merge: true });
+                await notifyCatalogUpdate();
+            } catch (err) {
+                console.error("Error al auto-guardar listas:", err);
+            }
+        };
+
+        // --- SISTEMA DE FORZAR DESCARGA MANUAL DEL CATALOGO ---
+        window.forceCatalogDownload = async () => {
+            const syncIcon = document.getElementById('btn-sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin-fast');
+            showLocalToast("Sincronizando catálogo con la nube...", "info");
+
+            try {
+                const catDocRef = doc(fs, "RegAs", "Catalogos");
+                const catDocSnap = await getDoc(catDocRef);
+
+                if (catDocSnap.exists()) {
+                    const dataCatalogos = catDocSnap.data();
+
+                    const idb = await getIndexedDB();
+                    const tx = idb.transaction(STORE_NAME, "readwrite");
+                    const store = tx.objectStore(STORE_NAME);
+
+                    if (dataCatalogos.ElementosPP) {
+                        const elStorage = { id: "ElementosPP", ...dataCatalogos.ElementosPP };
+                        await store.put(elStorage);
+                    }
+                    if (dataCatalogos.Casetas) {
+                        const casStorage = { id: "Casetas", ...dataCatalogos.Casetas };
+                        await store.put(casStorage);
+                    }
+
+                    idb.close();
+
+                    let localUpdates = {};
+                    try {
+                        const stored = localStorage.getItem('updates_regas');
+                        if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+                    } catch (e) {}
+
+                    const remoteSnap = await get(rRef(rtdb, 'updates/RegAs/Catalogos'));
+                    const ts = remoteSnap.val() || Date.now().toString();
+
+                    localUpdates["Catalogos"] = ts;
+                    localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+
+                    await initData();
+                    showLocalToast("Catálogo sincronizado exitosamente", "success");
+                } else {
+                    showLocalToast("No se encontró el catálogo maestro en la nube", "error");
+                }
+            } catch (err) {
+                console.error("Error forzando descarga:", err);
+                showLocalToast("Fallo al descargar catálogo", "error");
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin-fast');
+            }
+        };
+
+        // --- COMPROBACIÓN PROACTIVA EN ARRANQUE (DELTA UPDATES) ---
+        async function checkCatalogVersionAndInit() {
+            const loadingText = document.getElementById('loadingText');
+            if (loadingText) loadingText.textContent = "Comprobando versión del catálogo...";
+
+            try {
+                const remoteSnap = await get(rRef(rtdb, 'updates/RegAs/Catalogos'));
+                const remoteTs = remoteSnap.val();
+
+                let localUpdates = {};
+                try {
+                    const stored = localStorage.getItem('updates_regas');
+                    if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+                } catch(e) {}
+
+                const localTs = localUpdates["Catalogos"];
+
+                // Si la versión local es nula o difiere de la nube, descargamos de Firestore antes de iniciar la UI
+                if (!localTs || String(remoteTs) !== String(localTs)) {
+                    if (loadingText) loadingText.textContent = "Descargando última versión del catálogo...";
+                    console.log("[Elementos] Versión local desactualizada. Descargando de Firestore...");
+
+                    const catDocSnap = await getDoc(doc(fs, "RegAs", "Catalogos"));
+                    if (catDocSnap.exists()) {
+                        const dataCatalogos = catDocSnap.data();
+
+                        const idb = await getIndexedDB();
+                        const tx = idb.transaction(STORE_NAME, "readwrite");
+                        const store = tx.objectStore(STORE_NAME);
+
+                        if (dataCatalogos.ElementosPP) {
+                            const elStorage = { id: "ElementosPP", ...dataCatalogos.ElementosPP };
+                            await store.put(elStorage);
+                        }
+                        if (dataCatalogos.Casetas) {
+                            const casStorage = { id: "Casetas", ...dataCatalogos.Casetas };
+                            await store.put(casStorage);
+                        }
+                        idb.close();
+
+                        const tsToSave = remoteTs || Date.now().toString();
+                        localUpdates["Catalogos"] = tsToSave;
+                        localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+                        console.log("[Elementos] Descarga y alineación inicial de catálogos completa.");
+                    }
+                }
+            } catch (err) {
+                console.error("[Elementos] Fallo al comprobar versión inicial de catálogos:", err);
+            } finally {
+                await initData();
+            }
+        }
+
+        function updateCasetaFilterOptions() {
+            const casetaSelect = document.getElementById('casetaFilter');
+            const currentValue = casetaSelect.value;
+            
+            const uniqueCasetas = new Set();
+            Object.values(allElements).forEach(data => {
+                const caseta = data.Operativa?.AccesoPredeterminado;
+                if (caseta) uniqueCasetas.add(caseta);
+            });
+            
+            const sortedCasetas = Array.from(uniqueCasetas).sort();
+            
+            casetaSelect.innerHTML = '<option value="Todas">Todas las Casetas</option>' + 
+                                     '<option value="Sin Asignar">Sin Asignar</option>' +
+                                     sortedCasetas.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            if (currentValue && (uniqueCasetas.has(currentValue) || currentValue === 'Todas' || currentValue === 'Sin Asignar')) {
+                casetaSelect.value = currentValue;
+            } else {
+                casetaSelect.value = 'Todas';
+            }
+        }
+
+        async function renderGrid() {
+            const container = document.getElementById('elementsGrid');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const caseta = document.getElementById('casetaFilter').value; 
+            
+            const entries = Object.entries(allElements).filter(([name, data]) => {
+                if (name === 'id' || name === 'data') return false; 
+                const matchesSearch = name.toLowerCase().includes(search) || (data.ID && data.ID.toString().includes(search));
+                const matchesStatus = status === 'Todos' || (data.Operativa?.Estado === status);
+                
+                const itemCaseta = data.Operativa?.AccesoPredeterminado || 'Sin Asignar';
+                const matchesCaseta = caseta === 'Todas' || itemCaseta === caseta;
+                
+                return matchesSearch && matchesStatus && matchesCaseta;
+            });
+            
+            if (entries.length === 0) { 
+                container.innerHTML = `<div class="py-20 text-center opacity-40 italic w-full">No se hallaron resultados que coincidan.</div>`; 
+                return; 
+            }
+            
+            container.innerHTML = '';
+            
+            const groupedEntries = {};
+            for (const [name, data] of entries) {
+                const groupName = data.Operativa?.AccesoPredeterminado || 'Sin Asignar';
+                if (!groupedEntries[groupName]) {
+                    groupedEntries[groupName] = [];
+                }
+                groupedEntries[groupName].push([name, data]);
+            }
+
+            // ORDENACIÓN POR CAMPO INDEX DE CASETAS CONFIG
+            const sortedGroups = Object.keys(groupedEntries).sort((a, b) => {
+                if (a === "Sin Asignar") return 1;
+                if (b === "Sin Asignar") return -1;
+                const indexA = (casetasConfig[a] && casetasConfig[a].index !== undefined) ? Number(casetasConfig[a].index) : 999;
+                const indexB = (casetasConfig[b] && casetasConfig[b].index !== undefined) ? Number(casetasConfig[b].index) : 999;
+                if (indexA !== indexB) return indexA - indexB;
+                return a.localeCompare(b);
+            });
+
+            for (const group of sortedGroups) {
+                const groupSection = document.createElement('div');
+                groupSection.className = "w-full mb-8";
+
+                const groupHeader = document.createElement('div');
+                groupHeader.className = "flex items-center gap-3 border-b-2 border-slate-200 pb-2 mb-6";
+                groupHeader.innerHTML = `
+                    <i data-lucide="map-pin" class="text-fuchsia-600 w-5 h-5"></i>
+                    <h2 class="text-lg font-black text-slate-800 uppercase tracking-widest">${group}</h2>
+                    <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs font-bold">${groupedEntries[group].length}</span>
+                `;
+                groupSection.appendChild(groupHeader);
+
+                const gridContainer = document.createElement('div');
+                gridContainer.className = "grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(440px,1fr))] gap-4 items-start w-full";
+
+                for (const [name, data] of groupedEntries[group]) {
+                    const photoUrl = await getPhotoURL(data.ID);
+                    const age = calculateAge(data.Identidad?.['Fecha de nacimiento']);
+                    const rawPhone = data.Teléfono ? data.Teléfono.replace(/\D/g, '') : '';
+                    const waPhone = rawPhone.length === 10 ? '52' + rawPhone : rawPhone;
+                    const cardId = `card-${data.ID}`;
+
+                    const isBaja = data.Operativa?.Estado === 'Baja' || !!data.Operativa?.FechaDeBaja;
+                    const headerStatus = isBaja ? 'BAJA' : 'ALTA';
+                    const headerColor = isBaja ? 'bg-red-600' : 'bg-[#00b050]'; 
+                    const indicatorColor = isBaja ? 'bg-red-500' : (data.Operativa?.Estado === 'Activo' ? 'bg-[#00b050]' : 'bg-slate-400');
+                    
+                    const card = document.createElement('div');
+                    card.id = cardId;
+                    card.className = "bg-white w-full rounded-2xl border border-slate-200 shadow-sm transition-all overflow-hidden relative flex flex-row animate-in fade-in slide-in-from-bottom-2 duration-200";
+                    
+                    card.innerHTML = `
+                        <div class="absolute top-0 left-0 w-1.5 h-full ${indicatorColor}"></div>
+                        
+                        <div class="flex flex-row w-full p-3 gap-3 md:p-4 md:gap-4 items-center">
+                            
+                            <!-- Columna Izquierda -->
+                            <div class="w-[110px] md:w-[125px] flex-shrink-0 relative z-10 pl-1.5">
+                                <div class="border-[2px] border-black p-1 w-full aspect-[3/4] bg-white flex items-center justify-center shadow-sm">
+                                    ${photoUrl && photoUrl !== 'not_found' ? 
+                                        `<img src="${photoUrl}" class="w-full h-full object-cover">` : 
+                                        `<div class="text-slate-300"><i data-lucide="user" class="w-12 h-12"></i></div>`
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Columna Derecha -->
+                            <div class="flex-1 flex flex-col justify-between overflow-hidden relative z-10 py-1">
+                                <div>
+                                    <h3 class="text-center font-black text-[10px] md:text-[11px] uppercase tracking-widest mb-2 text-black">ESTADO DE FUERZA PROTECCION OS</h3>
+                                    
+                                    <table class="w-full text-[9.5px] md:text-[10px] lg:text-[11px] text-left border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th class="bg-slate-500 text-white px-2 py-1 font-bold w-[40%]">Informacion</th>
+                                                <th class="${headerColor} text-white px-2 py-1 font-bold text-center w-[60%] uppercase">${headerStatus}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">NOMBRE</td>
+                                                <td class="px-2 py-1 text-black leading-tight">${name}</td>
+                                            </tr>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">FECHA DE ALTA</td>
+                                                <td class="px-2 py-1 text-black">${data.Operativa?.FechaDeIngreso || 'S/N'}</td>
+                                            </tr>
+                                            ${isBaja ? `
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">FECHA DE BAJA</td>
+                                                <td class="px-2 py-1 text-red-600 font-bold">${data.Operativa.FechaDeBaja || 'S/N'}</td>
+                                            </tr>
+                                            ` : ''}
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">EDAD</td>
+                                                <td class="px-2 py-1 text-black">${age}</td>
+                                            </tr>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">COMPAÑÍA</td>
+                                                <td class="px-2 py-1 text-black uppercase">${data.Modulo || 'S/N'}</td>
+                                            </tr>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">PUESTO</td>
+                                                <td class="px-2 py-1 text-black leading-tight">${data.Operativa?.Puesto || 'S/N'}</td>
+                                            </tr>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black"># EMPLEADO</td>
+                                                <td class="px-2 py-1 text-black">${data.ID || 'S/N'}</td>
+                                            </tr>
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-2 py-1 font-black uppercase text-black">ESTADO CIVIL</td>
+                                                <td class="px-2 py-1 text-black capitalize">${data.Identidad?.['Estado civil'] || 'S/N'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-end gap-2 action-controls">
+                                    ${waPhone ? `
+                                        <a href="whatsapp://send?phone=${waPhone}" class="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-lg hover:bg-[#20b856] transition-colors font-bold text-[9px] uppercase tracking-widest shadow-sm" title="WhatsApp">
+                                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.539 2.016 2.126-.54c1.029.563 2.025.886 3.162.888l.003.001c3.181 0 5.767-2.587 5.768-5.767 0-3.18-2.587-5.751-5.771-5.751zm3.854 8.16c-.159.448-.916.817-1.259.863-.333.044-.754.059-1.216-.088-.313-.099-.703-.232-1.224-.457-2.214-.957-3.647-3.23-3.757-3.378-.11-.148-.893-1.187-.893-2.264 0-1.076.564-1.607.765-1.821.2-.215.438-.268.584-.268h.42c.134 0 .313-.05.49.375.179.435.615 1.496.668 1.604.054.108.09.233.018.375-.072.143-.109.233-.215.358-.107.125-.224.279-.322.375-.107.107-.219.224-.094.439.125.215.555.913 1.192 1.477.82.727 1.512.951 1.727 1.058.215.107.341.09.467-.054.125-.144.536-.627.68-.842.143-.215.286-.179.483-.107.197.072 1.253.592 1.468.699.215.107.358.161.411.251.054.089.054.52-.105.968z"/></svg>
+                                            <span>WhatsApp</span>
+                                        </a>
+                                    ` : ''}
+                                    <button type="button" onclick="copyCardAsImage('${cardId}')" class="flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors font-bold text-[9px] uppercase tracking-widest shadow-sm">
+                                        <i data-lucide="camera" class="w-3.5 h-3.5"></i> Copiar
+                                    </button>
+                                    <button type="button" onclick="editElement('${name}')" class="flex items-center justify-center gap-1 px-3 py-1.5 bg-fuchsia-50 text-fuchsia-600 rounded-lg hover:bg-fuchsia-600 hover:text-white transition-colors font-bold text-[9px] uppercase tracking-widest shadow-sm">
+                                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    `;
+                    gridContainer.appendChild(card);
+                }
+                groupSection.appendChild(gridContainer);
+                container.appendChild(groupSection);
+            }
+            
+            lucide.createIcons();
+        }
+
+        async function checkSessionAndInit() {
+            const localToken = sessionStorage.getItem('cic_os_token');
+            const localConfig = sessionStorage.getItem('cic_os_config');
+            const localTokenVariant = sessionStorage.getItem('cic_oc_token'); 
+
+            if (localToken || localConfig || localTokenVariant) {
+                console.log("Sesión validada exitosamente mediante las variables del Shell en SessionStorage.");
+                if (!appStarted) {
+                    appStarted = true;
+                    await checkCatalogVersionAndInit();
+                }
+            } else {
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        if (AUTH_UID && user.uid !== AUTH_UID) return;
+                        if (!appStarted) {
+                            appStarted = true;
+                            await checkCatalogVersionAndInit();
+                        }
+                    } else {
+                        const loadingText = document.getElementById('loadingText');
+                        if (loadingText) {
+                            loadingText.textContent = "Esperando sesión activa desde el sistema principal...";
+                        }
+                    }
+                });
+            }
+        }
+
+        async function initData() {
+            const localData = await fetchCatalogosFromIndexedDB();
+            
+            // NORMALIZACIÓN ROBUSTA DE CATALOGOS (Soporta directo y anidamiento de .data)
+            let rawElementos = localData.elementos || {};
+            if (rawElementos.data && typeof rawElementos.data === 'object') {
+                allElements = { ...rawElementos.data };
+            } else {
+                allElements = { ...rawElementos };
+            }
+            delete allElements.id;
+            delete allElements.data;
+
+            // NORMALIZACIÓN ROBUSTA DE CASETAS
+            let rawCasetas = localData.casetas || {};
+            if (rawCasetas.data && typeof rawCasetas.data === 'object') {
+                casetasConfig = { ...rawCasetas.data };
+            } else {
+                casetasConfig = { ...rawCasetas };
+            }
+            delete casetasConfig.id;
+            delete casetasConfig.data;
+
+            updateCasetaFilterOptions(); 
+            renderGrid();
+        }
+
+        // --- INICIALIZACIÓN ---
+        document.getElementById('searchInput').addEventListener('input', renderGrid);
+        document.getElementById('statusFilter').addEventListener('change', renderGrid);
+        document.getElementById('casetaFilter').addEventListener('change', renderGrid);
+        
+        checkSessionAndInit();
+
+    </script>
+</body>
+</html>

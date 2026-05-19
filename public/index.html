@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC OS - Acceso</title>
+    <!-- Fuente Open Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent; 
+        }
+
+        /* Video de fondo a pantalla completa */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            object-fit: cover;
+            transition: opacity 1s;
+        }
+
+        .login-wrapper {
+            display: flex;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 24px;
+            width: 950px; 
+            max-width: 95%;
+            min-height: 500px;
+            color: white;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            overflow: hidden;
+        }
+
+        .card-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        /* Paneles Izquierdo y Derecho */
+        .left-panel {
+            width: 340px;
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            flex-grow: 1;
+            padding: 50px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Responsive: Apilar en pantallas pequeñas */
+        @media (max-width: 800px) {
+            .login-wrapper { flex-direction: column; height: auto; max-height: 90vh; overflow-y: auto;}
+            .left-panel { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 20px; }
+            .right-panel { padding: 30px 20px; }
+        }
+
+        h1 { 
+            font-weight: 700; 
+            font-size: 50px;
+            margin-bottom: 5px; 
+            letter-spacing: 2px;
+            line-height: 1.1;
+        }
+        
+        h2 { 
+            font-weight: 300; 
+            font-size: 22px; 
+            margin-bottom: 35px; 
+            opacity: 0.9;
+            line-height: 1.2;
+        }
+
+        .left-panel h3 {
+            font-weight: 400;
+            font-size: 18px;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .profile-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+
+        .profile-list::-webkit-scrollbar { width: 6px; }
+        .profile-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .profile-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+
+        .profile-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            text-align: left;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .profile-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .profile-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .profile-item img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-right: 12px;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: #333;
+        }
+
+        .profile-info { 
+            flex-grow: 1; 
+            overflow: hidden; 
+            pointer-events: none; 
+        }
+
+        .profile-name { 
+            font-weight: 600; 
+            font-size: 15px; 
+            white-space: nowrap; 
+            text-overflow: ellipsis; 
+            overflow: hidden;
+        }
+
+        .profile-email { 
+            font-size: 12px; 
+            opacity: 0.6; 
+            white-space: nowrap; 
+            text-overflow: ellipsis; 
+            overflow: hidden;
+        }
+
+        .remove-profile-btn {
+            background: transparent;
+            color: rgba(255,255,255,0.3);
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .remove-profile-btn:hover { 
+            color: #ff5252; 
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .avatar-container { margin-bottom: 15px; position: relative; display: inline-block; }
+        
+        .user-avatar-large {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            background-color: #333;
+        }
+
+        h3.welcome-name { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
+        p.user-email-large { font-size: 14px; opacity: 0.7; margin-bottom: 20px; }
+        
+        .status-message {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00e676;
+            margin-top: 15px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            outline: none;
+            color: #111;
+            font-size: 1.05rem;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="email"]:focus, input[type="password"]:focus {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Checkbox y Advertencia */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 5px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #ff1744;
+        }
+
+        .checkbox-container label {
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .warning-text {
+            display: block;
+            text-align: left;
+            font-size: 12px;
+            color: #ffcc80;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            background-color: #ff1744; 
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            text-transform: uppercase;
+            font-size: 1.05rem;
+            letter-spacing: 1px;
+        }
+
+        button.btn-primary:hover { background-color: #d50000; }
+        button.btn-primary:active { transform: scale(0.98); }
+        button.btn-primary:disabled { background-color: #550000; cursor: wait; opacity: 0.7; }
+
+        button.btn-secondary {
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 10px;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        button.btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        #error-msg { 
+            color: #ff8a80; 
+            font-size: 0.95rem; 
+            margin-top: 15px; 
+            display: none; 
+            font-weight: 600;
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        /* Vistas intercambiables del panel derecho */
+        #status-view, #standard-login-view {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <video autoplay muted playsinline preload="auto" id="bg-video">
+        <source src="https://firebasestorage.googleapis.com/v0/b/cic-os.firebasestorage.app/o/multimedia%2FCIC_inicio.mp4?alt=media&token=b8a62247-0927-4f44-9ef1-57de47d6984c" type="video/mp4">
+    </video>
+
+    <div class="login-wrapper" id="loginCard">
+        
+        <!-- PANEL IZQUIERDO: LISTA DE PERFILES GUARDADOS -->
+        <div class="left-panel" id="leftPanel" style="display: none;">
+            <h3>Cuentas guardadas</h3>
+            <div id="profilesContainer" class="profile-list">
+                <!-- Se inyectan los usuarios vía JS -->
+            </div>
+            <button id="btnUseAnother" class="btn-secondary">+ Ingresar otra cuenta</button>
+        </div>
+
+        <!-- PANEL DERECHO: FORMULARIOS DE LOGIN -->
+        <div class="right-panel">
+            <h1>CIC OS</h1>
+            <h2>Centro de información y comunicación</h2>
+            
+            <!-- VISTA A: ESTADO DE CARGA (Oculto hasta que se valida la contraseña) -->
+            <div id="status-view">
+                <div class="avatar-container">
+                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar-large" onerror="this.src='https://ui-avatars.com/api/?name=U&background=random'">
+                </div>
+                <h3 class="welcome-name" id="userNameDisplay">Hola, Usuario</h3>
+                <p class="user-email-large" id="userEmailDisplay">correo@ejemplo.com</p>
+                
+                <div class="status-message" id="statusMessage">Iniciando sesión...</div>
+            </div>
+
+            <!-- VISTA B: LOGIN ESTÁNDAR (Correo y Contraseña) -->
+            <form id="standard-login-view">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Correo electrónico" required autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
+                </div>
+
+                <label class="checkbox-container">
+                    <input type="checkbox" id="rememberStandard">
+                    <span>Guardar perfil en este equipo</span>
+                </label>
+                <!-- Ajuste de texto para reflejar la realidad del acceso -->
+                <small class="warning-text">⚠️ Al guardar el perfil, tu correo quedará registrado para un acceso más rápido. No uses esta opción en equipos públicos.</small>
+
+                <button type="submit" id="btnLogin" class="btn-primary">Ingresar</button>
+            </form>
+
+            <p id="error-msg">Credenciales incorrectas</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as storageRef, getBlob } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            messagingSenderId: "628160285586",
+            appId: "1:628160285586:web:cb265d10e256697ab68f4b",
+            measurementId: "G-Y76LMVF819"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        // Elementos UI
+        const video = document.getElementById('bg-video');
+        const loginCard = document.getElementById('loginCard');
+        const errorMsg = document.getElementById('error-msg');
+        
+        // Paneles y Vistas
+        const leftPanel = document.getElementById('leftPanel');
+        const standardView = document.getElementById('standard-login-view');
+        const statusView = document.getElementById('status-view');
+
+        // Inputs y Contenedores
+        const profilesContainer = document.getElementById('profilesContainer');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const rememberStandard = document.getElementById('rememberStandard');
+
+        // Botones
+        const btnLogin = document.getElementById('btnLogin');
+        const btnUseAnother = document.getElementById('btnUseAnother');
+
+        let moduloDestino = "";
+        let savedUserEmail = "";
+        let savedProfiles = [];
+        let fallbackRedirect; 
+
+        function initProfiles() {
+            savedProfiles = JSON.parse(localStorage.getItem('cic_os_saved_profiles')) || [];
+            
+            if (savedProfiles.length > 0) {
+                leftPanel.style.display = 'flex'; 
+                renderProfileList();
+                // Por defecto, mostramos la vista de login estándar para el primer perfil
+                iniciarSesionDirecta(savedProfiles[0]); 
+            } else {
+                leftPanel.style.display = 'none'; 
+                showRightView(standardView);
+                emailInput.focus();
+            }
+        }
+
+        function showRightView(view) {
+            standardView.style.display = 'none';
+            statusView.style.display = 'none';
+            errorMsg.style.display = 'none';
+            view.style.display = 'block';
+        }
+
+        function renderProfileList() {
+            profilesContainer.innerHTML = ''; 
+            
+            savedProfiles.forEach(profile => {
+                const item = document.createElement('div');
+                item.className = 'profile-item';
+                item.dataset.email = profile.email; 
+                
+                if (profile.email === savedUserEmail) {
+                    item.classList.add('active'); 
+                }
+                
+                const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.nombre)}&background=333&color=fff`;
+                const avatarSrc = profile.fotoBase64 || defaultAvatar;
+
+                item.innerHTML = `
+                    <img src="${avatarSrc}" alt="Avatar" onerror="this.src='${defaultAvatar}'">
+                    <div class="profile-info">
+                        <div class="profile-name">${profile.nombre}</div>
+                        <div class="profile-email">${profile.email}</div>
+                    </div>
+                    <button class="remove-profile-btn" data-email="${profile.email}" title="Quitar cuenta del equipo">&times;</button>
+                `;
+                profilesContainer.appendChild(item);
+            });
+        }
+
+        // Delegación de eventos para el contenedor de perfiles
+        profilesContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-profile-btn');
+            const profileItem = e.target.closest('.profile-item');
+
+            if (removeBtn) {
+                e.stopPropagation();
+                const emailToRemove = removeBtn.dataset.email;
+                savedProfiles = savedProfiles.filter(p => p.email !== emailToRemove);
+                localStorage.setItem('cic_os_saved_profiles', JSON.stringify(savedProfiles));
+                
+                if (savedProfiles.length === 0) {
+                    initProfiles(); 
+                } else {
+                    renderProfileList();
+                    // Si borró el que estaba activo, seleccionar el primero de la lista
+                    if(savedUserEmail === emailToRemove) iniciarSesionDirecta(savedProfiles[0]);
+                }
+            } else if (profileItem) {
+                const email = profileItem.dataset.email;
+                const profile = savedProfiles.find(p => p.email === email);
+                if (profile) {
+                    iniciarSesionDirecta(profile);
+                }
+            }
+        });
+
+        // NUEVA FUNCIÓN: Ahora prepara el formulario en lugar de saltarse a Firebase
+        function iniciarSesionDirecta(profile) {
+            savedUserEmail = profile.email;
+            
+            // Actualizar la lista para resaltar el usuario seleccionado
+            Array.from(profilesContainer.children).forEach(child => {
+                child.classList.remove('active');
+                if(child.dataset.email === profile.email) child.classList.add('active');
+            });
+            
+            // Mostrar la vista de login estándar para pedir la contraseña
+            showRightView(standardView);
+            
+            // Pre-llenar el correo y enfocar la contraseña
+            emailInput.value = profile.email;
+            passwordInput.value = ''; 
+            rememberStandard.checked = true; // Mantener activado el recordatorio
+            passwordInput.focus();
+            
+            // Mensaje amigable
+            errorMsg.style.display = 'block';
+            errorMsg.style.color = '#81c784'; // Verde suave
+            errorMsg.innerText = `Hola ${profile.nombre.split(' ')[0]}, ingresa tu contraseña.`;
+        }
+
+        // Utilidad: Convertir Blob a Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        btnUseAnother.addEventListener('click', () => {
+            savedUserEmail = "";
+            renderProfileList(); // Quita el resaltado 'active' de todos
+            showRightView(standardView);
+            emailInput.value = '';
+            passwordInput.value = '';
+            rememberStandard.checked = false;
+            emailInput.focus();
+            errorMsg.style.display = 'none';
+        });
+
+        const freezeVideo = () => {
+            video.pause();
+            video.currentTime = 0.1; 
+        };
+
+        if (video.readyState >= 2) {
+            freezeVideo();
+        } else {
+            video.onloadedmetadata = freezeVideo;
+        }
+
+        video.onended = () => {
+            clearTimeout(fallbackRedirect); 
+            if (moduloDestino) window.location.href = `mods/${moduloDestino}.html`;
+        };
+
+        async function processNewLogin(email, password, sourceBtn) {
+            if(!email || !password) return;
+
+            sourceBtn.disabled = true;
+            sourceBtn.innerText = "Verificando...";
+            errorMsg.style.display = 'none';
+
+            try {
+                // 1. OBLIGATORIO: Crear la sesión real en Firebase
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. Transición Visual (Ya validamos credenciales)
+                video.muted = false;
+                const promise = video.play();
+                if (promise !== undefined) promise.then(() => video.pause()).catch(() => {});
+
+                // 3. Mostrar la vista de carga (Status View)
+                showRightView(statusView);
+                document.getElementById('userEmailDisplay').innerText = email;
+
+                const userRef = ref(db, `usuarios/${user.uid}`);
+                const snapshot = await get(userRef);
+
+                if (!snapshot.exists()) throw new Error("Usuario no encontrado en BD");
+
+                const userData = snapshot.val();
+                moduloDestino = userData.modulo;
+                const nombreUsuario = userData.nombre || 'Usuario';
+                const personalID = userData.ID; 
+                
+                // Actualizar UI con los datos reales
+                document.getElementById('userNameDisplay').innerText = `Hola, ${nombreUsuario.split(' ')[0]}`;
+                
+                const token = await user.getIdToken();
+                
+                // Guardar token y config en sessionStorage para los submódulos
+                sessionStorage.setItem('cic_os_token', token);
+                sessionStorage.setItem('cic_os_config', JSON.stringify(firebaseConfig));
+                sessionStorage.setItem('cic_os_name', nombreUsuario);
+                sessionStorage.setItem('cic_os_role', userData.puesto || 'Colaborador');
+
+                let base64Image = null;
+                const existingProfile = savedProfiles.find(p => p.email === email);
+                if (existingProfile && existingProfile.fotoBase64) {
+                    base64Image = existingProfile.fotoBase64;
+                    document.getElementById('userAvatar').src = base64Image;
+                } else if (personalID) {
+                    try {
+                        const imagePath = `Fotos/ElementosPP/${personalID}.webp`;
+                        const imgRef = storageRef(storage, imagePath);
+                        const blob = await getBlob(imgRef); 
+                        base64Image = await blobToBase64(blob);
+                        document.getElementById('userAvatar').src = base64Image;
+                    } catch (storageError) {
+                        console.warn("No se encontró la foto en Storage (CORS o inexistente).");
+                    }
+                }
+
+                // Guardar / Actualizar Perfil local
+                if (rememberStandard.checked) {
+                    const newProfile = {
+                        email: email,
+                        nombre: nombreUsuario,
+                        fotoBase64: base64Image,
+                        modulo: moduloDestino,
+                        puesto: userData.puesto || 'Colaborador',
+                        uid: user.uid,
+                        token: token 
+                    };
+                    
+                    savedProfiles = savedProfiles.filter(p => p.email !== email);
+                    savedProfiles.unshift(newProfile);
+                    localStorage.setItem('cic_os_saved_profiles', JSON.stringify(savedProfiles));
+                }
+
+                if (moduloDestino) {
+                    ejecutarTransicion();
+                } else {
+                    throw new Error("Módulo de destino no definido");
+                }
+
+            } catch (error) {
+                console.error("Error en login:", error);
+                showRightView(standardView); // Devolver a la vista estándar si falla
+                errorMsg.style.display = 'block';
+                errorMsg.style.color = '#ff8a80';
+                errorMsg.innerText = "Credenciales incorrectas o error de conexión.";
+                sourceBtn.disabled = false;
+                sourceBtn.innerText = "Ingresar";
+                video.muted = true;
+                freezeVideo();
+            }
+        }
+
+        // NUEVO: Escuchador de eventos del Formulario (Sustituye a los eventos click y keydown anteriores)
+        standardView.addEventListener('submit', (e) => {
+            e.preventDefault(); // Evita que la página se recargue
+            processNewLogin(emailInput.value, passwordInput.value, btnLogin);
+        });
+
+        function ejecutarTransicion() {
+            loginCard.classList.add('card-hidden');
+            
+            fallbackRedirect = setTimeout(() => {
+                if (moduloDestino) window.location.href = `mods/${moduloDestino}.html`;
+            }, 8000); 
+
+            setTimeout(() => {
+                video.muted = false; 
+                video.play().catch(err => {
+                    console.warn("Video bloqueado, forzando redirección.", err);
+                    clearTimeout(fallbackRedirect);
+                    if (moduloDestino) window.location.href = `mods/${moduloDestino}.html`;
+                });
+            }, 100);
+        }
+
+        initProfiles();
+
+    </script>
+</body>
+</html>

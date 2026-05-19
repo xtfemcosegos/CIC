@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planeación - Registro de Asistencia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            min-height: 0;
+            position: relative;
+        }
+
+        .matrix-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: white;
+            transition: width 0.3s;
+        }
+
+        /* Fila de fechas */
+        .matrix-header {
+            display: flex;
+            background: linear-gradient(180deg, #2a2a2a 0%, #000000 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            height: auto; 
+            min-height: 75px; 
+        }
+
+        /* Columna fija izquierda */
+        .col-fixed {
+            width: 68px;
+            flex-shrink: 0;
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; 
+            padding: 0 8px 0 20px; 
+            gap: 6px; 
+        }
+        
+        .header-col-fixed {
+            background: #1a1a1a;
+            border-right: 1px solid #000000;
+            z-index: 40;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+
+        @media (min-width: 640px) {
+            .col-fixed { width: 220px; padding: 0 12px; gap: 12px; }
+            .header-col-fixed { padding-left: 12px; padding-right: 12px; }
+        }
+
+        /* Columnas de fechas */
+        .col-date {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .is-today { background: linear-gradient(145deg, #700070, #4a004a) !important; border-color: #9d009d !important; }
+
+        /* Resalte temporal (Botón Hoy) */
+        .flash-today {
+            animation: pulseToday 3s ease-out forwards;
+        }
+        @keyframes pulseToday {
+            0% { background-color: rgba(234, 179, 8, 0.4); box-shadow: inset 0 0 15px rgba(234, 179, 8, 0.6); }
+            20% { background-color: rgba(234, 179, 8, 0.4); box-shadow: inset 0 0 15px rgba(234, 179, 8, 0.6); }
+            100% { background-color: inherit; box-shadow: none; }
+        }
+
+        /* Cuerpo de la matriz */
+        .matrix-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 100px;
+        }
+
+        /* Filas */
+        .matrix-row {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            min-height: 48px;
+            transition: background 0.2s;
+        }
+        .matrix-row:hover { background-color: #f8fafc; }
+
+        /* Celda de Turno */
+        .cell-shift {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 0;
+            padding: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+            overflow: hidden;
+        }
+        .cell-shift:hover { filter: brightness(0.95); background-color: rgba(0,0,0,0.02); }
+
+        /* Pastilla del turno */
+        .shift-pill {
+            padding: 0;
+            border-radius: 0;
+            border: none; 
+            font-size: 8px; 
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            box-shadow: none; 
+            transition: all 0.2s ease;
+        }
+        .shift-pill:active { transform: scale(0.92); }
+        .shift-pill:hover { filter: brightness(1.1); }
+
+        /* Colores Gradientes */
+        .shift-matutino { background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%); color: #854d0e; } 
+        .shift-vespertino { background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%); color: #075985; } 
+        .shift-nocturno { background: linear-gradient(135deg, #334155 0%, #0f172a 100%); color: #f8fafc; } 
+        
+        .shift-aus-vacaciones { background: linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%); color: #064e3b; } 
+        .shift-aus-permiso { background: linear-gradient(135deg, #ffedd5 0%, #fdba74 100%); color: #7c2d12; } 
+        .shift-aus-descanso { background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%); color: #334155; } 
+        .shift-aus-festivo { background: linear-gradient(135deg, #f3e8ff 0%, #d8b4fe 100%); color: #581c87; } 
+        .shift-aus-falta { background: linear-gradient(135deg, #fef08a 0%, #facc15 100%); color: #b91c1c; } 
+        .shift-aus-suspension { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); color: #7f1d1d; } 
+        .shift-aus-incapacidades { background: linear-gradient(135deg, #cffafe 0%, #67e8f9 100%); color: #164e63; } 
+        .shift-aus-default { background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); color: #7f1d1d; } 
+        
+        .shift-empty { background: transparent; color: #cbd5e1; font-size: 14px; font-weight: 300; }
+
+        /* Panel Detalle */
+        #detail-panel { width: 40%; z-index: 60; border-left: 2px solid #e2e8f0; flex-shrink: 0; background: white; transition: transform 0.3s ease-in-out; }
+
+        @media (max-width: 1024px) {
+            #detail-panel { position: absolute; inset: 0; width: 100% !important; height: 100% !important; z-index: 100; border-left: none; transform: translateX(100%); }
+            #detail-panel.open-mobile { transform: translateX(0); }
+        }
+
+        /* Menu Contextual & Submenús */
+        #context-menu {
+            position: fixed;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            z-index: 1000;
+            min-width: 190px;
+            padding: 6px 0;
+            overflow: visible; 
+        }
+        .context-item {
+            padding: 10px 16px;
+            font-size: 12px;
+            color: #334155;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .context-item:hover { background-color: #f1f5f9; color: #0f172a; }
+
+        .context-submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: -5px;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            min-width: 160px;
+            padding: 6px 0;
+            z-index: 1001;
+        }
+        .context-item:hover > .context-submenu { display: block; }
+        .submenu-left .context-submenu { left: auto; right: 100%; }
+        
+        .context-submenu-item {
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #334155;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .context-submenu-item:hover { background-color: #f1f5f9; color: #0f172a; }
+    </style>
+</head>
+<body>
+
+    <main class="main-content">
+        <div id="matrix-wrapper" class="matrix-container">
+            <div class="matrix-header" id="matrix-header">
+                <!-- Se inyecta por JS -->
+            </div>
+            <div class="matrix-body hide-scrollbar" id="matrix-body">
+                <div class="p-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest w-full">
+                    Sincronizando Sistema...
+                </div>
+            </div>
+        </div>
+
+        <div id="detail-panel" class="hidden">
+            <iframe id="iframe-detalle" class="w-full h-full border-none" src="about:blank"></iframe>
+        </div>
+    </main>
+
+    <div id="context-menu" class="hidden">
+        <!-- Se llena con JS -->
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+        };
+        
+        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+        const rtdb = getDatabase(app);
+
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const MOTIVOS_AUS = ['Vacaciones', 'Permiso', 'Descanso', 'Festivo', 'Falta', 'Suspensión', 'Incapacidades'];
+        
+        let authReady = false;
+        const photoCache = {}; 
+        let fullCatalog = {};
+        let casetasConfig = {}; 
+        let allRegistros = [];
+        let loadedMonthsDB = new Set(); 
+        let configPlaneacion = { ocultosCasetas: [], ocultosElementos: [] };
+
+        const cellMinWidth = 42; 
+        const arrowSpace = 80; 
+        let colCount = 0;
+        let cellWidth = 0;
+        let viewDates = [];
+        let baseDateOffset = 0; 
+        let shouldHighlightToday = false; 
+
+        // NOTIFICADOR FORTIFICADO PARA DELTA UPDATES EN RTDB
+        async function notifyUpdate(dbKey) {
+            localStorage.setItem('thisUpdate', 'true');
+            const ts = Date.now().toString();
+            
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) {
+                    localUpdates = JSON.parse(stored);
+                }
+            } catch(e) {}
+            
+            localUpdates[dbKey] = ts;
+            localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+            
+            await set(ref(rtdb, `updates/RegAs/${dbKey}`), ts).catch(err => console.error("[Planeación] Error al notificar RTDB:", err));
+        }
+
+        function getDayKey(dateObj) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        // ---------- LÓGICA DE INDEXEDDB Y RTDB ---------- //
+        async function fetchLocalData() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onerror = () => reject("Error IDB");
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction(["registros", "catalogos"], "readonly");
+                    const data = { elementosPP: {}, allRegistros: [], casetas: {} };
+                    tx.objectStore("catalogos").get("ElementosPP").onsuccess = (res) => data.elementosPP = res.target.result || {};
+                    tx.objectStore("catalogos").get("Casetas").onsuccess = (res) => data.casetas = res.target.result || {};
+                    tx.objectStore("registros").getAll().onsuccess = (res) => data.allRegistros = res.target.result || [];
+                    tx.oncomplete = () => resolve(data);
+                };
+            });
+        }
+
+        async function saveMonthToIDB(monthObj) {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onerror = () => reject("Error IDB");
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction("registros", "readwrite");
+                    tx.objectStore("registros").put(monthObj);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject();
+                };
+            });
+        }
+
+        async function loadConfig() {
+            try {
+                const docSnap = await getDoc(doc(db, 'RegAs', 'Config'));
+                if (docSnap.exists() && docSnap.data().Planeacion) {
+                    configPlaneacion.ocultosCasetas = docSnap.data().Planeacion.ocultosCasetas || [];
+                    configPlaneacion.ocultosElementos = docSnap.data().Planeacion.ocultosElementos || [];
+                }
+            } catch (e) { console.warn("Error config vista", e); }
+        }
+
+        function calculateGrid() {
+            const wrapper = document.getElementById('matrix-wrapper');
+            let availableWidth = wrapper.clientWidth;
+            const fixedColWidth = window.innerWidth < 640 ? 68 : 220; 
+            const remainingWidth = availableWidth - fixedColWidth - arrowSpace;
+            
+            colCount = Math.floor(remainingWidth / cellMinWidth);
+            if (colCount < 3) colCount = 3; 
+            cellWidth = remainingWidth / colCount;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            today.setDate(today.getDate() + baseDateOffset); 
+
+            viewDates = [];
+            for (let i = 0; i < colCount; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + (i - 2)); 
+                viewDates.push(d);
+            }
+        }
+
+        // MOTOR DE ACTUALIZACIÓN PROACTIVA Y DELTA UPDATES AL NAVEGAR FECHAS
+        async function checkAndFetchMonths() {
+            calculateGrid(); 
+            
+            let localUpdates = {};
+            try {
+                const stored = localStorage.getItem('updates_regas');
+                if (stored && stored.startsWith('{')) localUpdates = JSON.parse(stored);
+            } catch(e) {}
+
+            if (!window._requestedMonths) window._requestedMonths = {};
+
+            for (let d of viewDates) {
+                const monthName = MONTH_NAMES[d.getMonth()];
+                const yearStr = String(d.getFullYear());
+                const fetchKey = `${yearStr}_${monthName}`; // Llave única a prueba de múltiples años
+
+                if (!loadedMonthsDB.has(fetchKey)) {
+                    // Si el mes no está en caché de IndexedDB, verificamos proactivamente
+                    if (!window._requestedMonths[fetchKey]) {
+                        window._requestedMonths[fetchKey] = true;
+                        console.log(`[Planeación] Verificando existencia de ${fetchKey} en RTDB...`);
+
+                        get(ref(rtdb, `updates/RegAs/${fetchKey}`)).then(async (snap) => {
+                            const ts = snap.val();
+                            
+                            if (ts) {
+                                // Caso 1: Sí tiene timestamp en RTDB (Ya fue creado en la nube)
+                                delete localUpdates[fetchKey];
+                                localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+
+                                if (typeof window.parent === 'object' && typeof window.parent.Download_DB === 'function') {
+                                    if (typeof window.parent.showToast === 'function') {
+                                        window.parent.showToast(`Buscando registros de ${fetchKey.replace('_', ' ')}...`, "info");
+                                    }
+                                    window.parent.Download_DB([fetchKey]);
+                                }
+                            } else {
+                                // Caso 2: No tiene timestamp en RTDB. Comprobamos si es un documento legacy en Firestore
+                                try {
+                                    const docRef = doc(db, 'RegAs', 'Registros', yearStr, monthName);
+                                    const docSnap = await getDoc(docRef);
+                                    
+                                    const newTs = Date.now().toString();
+                                    localUpdates[fetchKey] = newTs;
+                                    localStorage.setItem('updates_regas', JSON.stringify(localUpdates));
+                                    await set(ref(rtdb, `updates/RegAs/${fetchKey}`), newTs).catch(()=>{});
+
+                                    const request = indexedDB.open("CIC_OS_RegAs", 8);
+                                    request.onsuccess = (e) => {
+                                        const idb = e.target.result;
+                                        const tx = idb.transaction("registros", "readwrite");
+                                        
+                                        if (docSnap.exists()) {
+                                            console.log(`[Planeación] Documento recuperado de Firestore para ${fetchKey}.`);
+                                            tx.objectStore("registros").put({ id: fetchKey, ...docSnap.data() });
+                                        } else {
+                                            console.log(`[Planeación] Mes virgen. Inicializando localmente: ${fetchKey}`);
+                                            tx.objectStore("registros").put({ id: fetchKey });
+                                        }
+                                        
+                                        tx.oncomplete = () => {
+                                            idb.close();
+                                            loadedMonthsDB.add(fetchKey);
+                                            loadData(); // Recarga la matriz al inyectar localmente
+                                        };
+                                    };
+                                } catch (errorFs) {
+                                    console.error("[Planeación] Fallo en la comprobación profunda de Firestore:", errorFs);
+                                }
+                            }
+                        }).catch(err => console.error("[Planeación] Error al consultar RTDB:", err));
+                    }
+                }
+            }
+            drawMatrix(); 
+        }
+
+        window.shiftDates = async function(days, reset = false) {
+            if (reset) {
+                baseDateOffset = 0;
+                shouldHighlightToday = true; 
+                setTimeout(() => { shouldHighlightToday = false; }, 3100);
+            } else {
+                baseDateOffset += days;
+                shouldHighlightToday = false;
+            }
+            document.getElementById('matrix-body').innerHTML = '<div class="p-10 text-center text-slate-400 font-bold uppercase tracking-widest w-full">Sincronizando Fechas...</div>';
+            await checkAndFetchMonths();
+        };
+
+        async function drawMatrix() {
+            const headerContainer = document.getElementById('matrix-header');
+            const bodyContainer = document.getElementById('matrix-body');
+            
+            calculateGrid();
+            const fixedColWidth = window.innerWidth < 640 ? 68 : 220;
+            const realTodayTime = new Date().setHours(0,0,0,0);
+
+            let headerHtml = `
+                <div class="col-fixed header-col-fixed relative">
+                    <span class="hidden sm:inline truncate w-full">Personal Operativo</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="window.shiftDates(0, true)" title="Volver a Hoy" class="bg-white/10 hover:bg-white/20 text-white rounded px-2 py-0.5 text-[9px] uppercase font-bold transition">Hoy</button>
+                        <button onclick="event.stopPropagation(); window.showUnhideMenu(event)" title="Mostrar Ocultos" class="text-white/50 hover:text-white transition cursor-pointer text-sm">👁️</button>
+                    </div>
+                </div>
+                <div class="flex items-center shrink-0 border-r border-white/10 bg-gradient-to-b from-slate-800 to-black" style="width: 40px;">
+                    <button onclick="window.shiftDates(-7)" title="-1 Semana" class="w-1/2 h-full hover:bg-white/10 text-white font-bold transition flex items-center justify-center">&laquo;</button>
+                    <button onclick="window.shiftDates(-1)" title="-1 Día" class="w-1/2 h-full border-l border-white/5 hover:bg-white/10 text-white font-bold transition flex items-center justify-center">&lsaquo;</button>
+                </div>
+            `;
+            
+            viewDates.forEach(d => {
+                const isToday = d.getTime() === realTodayTime;
+                const shortName = DAY_NAMES[d.getDay()].substring(0,3);
+                const dayNum = String(d.getDate()).padStart(2,'0');
+                const flashClass = (isToday && shouldHighlightToday) ? 'flash-today' : '';
+
+                headerHtml += `
+                    <div class="col-date py-2 ${isToday ? 'is-today' : ''} ${flashClass}" style="width: ${cellWidth}px;">
+                        <div class="text-[10px] font-bold uppercase ${isToday ? 'text-white/80' : 'text-slate-400'} mb-1.5">${shortName}</div>
+                        <div class="text-base font-black leading-none ${isToday ? 'text-white' : 'text-slate-200'}">${dayNum}</div>
+                    </div>
+                `;
+            });
+
+            headerHtml += `
+                <div class="flex items-center shrink-0 border-l border-white/10 bg-gradient-to-b from-slate-800 to-black" style="width: 40px;">
+                    <button onclick="window.shiftDates(1)" title="+1 Día" class="w-1/2 h-full hover:bg-white/10 text-white font-bold transition flex items-center justify-center">&rsaquo;</button>
+                    <button onclick="window.shiftDates(7)" title="+1 Semana" class="w-1/2 h-full border-l border-white/5 hover:bg-white/10 text-white font-bold transition flex items-center justify-center">&raquo;</button>
+                </div>
+            `;
+            headerContainer.innerHTML = headerHtml;
+
+            const elementosActivos = Object.entries(fullCatalog)
+                .map(([nombre, info]) => ({ nombre, info }))
+                .filter(el => el.info.Operativa?.Estado === "Activo");
+
+            const grupos = {};
+            elementosActivos.forEach(el => {
+                const grupo = el.info.Operativa?.AccesoPredeterminado || "Sin Asignar";
+                if (!grupos[grupo]) grupos[grupo] = [];
+                grupos[grupo].push(el);
+            });
+
+            const gruposOrdenados = Object.keys(grupos)
+                .filter(g => !configPlaneacion.ocultosCasetas.includes(g))
+                .sort((a, b) => {
+                    if (a === "Sin Asignar") return 1;
+                    if (b === "Sin Asignar") return -1;
+                    const indexA = (casetasConfig[a] && casetasConfig[a].index !== undefined) ? Number(casetasConfig[a].index) : 999;
+                    const indexB = (casetasConfig[b] && casetasConfig[b].index !== undefined) ? Number(casetasConfig[b].index) : 999;
+                    if (indexA !== indexB) return indexA - indexB;
+                    return a.localeCompare(b);
+                });
+
+            let bodyHtml = '';
+
+            gruposOrdenados.forEach(grupoName => {
+                bodyHtml += `
+                    <div class="matrix-row bg-slate-50 items-center select-none" oncontextmenu="window.showContextMenu(event, 'caseta', '${grupoName}')" style="min-height: 24px; border-bottom: 1px solid #e2e8f0;">
+                        <div class="font-black text-[9px] sm:text-[10px] text-fuchsia-800 uppercase tracking-widest bg-slate-50 z-20 whitespace-nowrap py-1 sticky left-0 pl-2 sm:pl-3" style="min-width: ${fixedColWidth}px;">${grupoName}</div>
+                        <div class="shrink-0 bg-slate-50" style="width: 40px;"></div>
+                        <div class="flex-grow flex items-center pr-2"><div class="h-[1px] w-full bg-slate-200"></div></div>
+                    </div>
+                `;
+
+                const elementosDelGrupo = grupos[grupoName]
+                    .filter(el => !configPlaneacion.ocultosElementos.includes(el.info.ID))
+                    .sort((a,b) => a.nombre.localeCompare(b.nombre));
+
+                elementosDelGrupo.forEach(el => {
+                    const id = el.info.ID;
+                    const photoUrl = photoCache[id] || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                    
+                    let rowHtml = `
+                        <div class="matrix-row">
+                            <div class="col-fixed select-none" oncontextmenu="window.showContextMenu(event, 'elemento', '${id}')">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200 shadow-sm mx-auto sm:mx-0">
+                                    <img data-user-id="${id}" src="${photoUrl}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="hidden sm:flex overflow-hidden flex-grow flex-col justify-center">
+                                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-800 truncate uppercase leading-tight">${el.nombre}</p>
+                                    <p class="text-[7.5px] sm:text-[8px] text-slate-400 font-medium truncate leading-tight">${el.info.Operativa?.Puesto || 'Operativo'}</p>
+                                </div>
+                            </div>
+                            <div class="shrink-0 bg-slate-50 border-r border-slate-200" style="width: 40px;"></div>
+                    `;
+
+                    viewDates.forEach(d => {
+                        const isToday = d.getTime() === realTodayTime;
+                        const flashClass = (isToday && shouldHighlightToday) ? 'flash-today' : '';
+                        
+                        const dayKey = getDayKey(d);
+                        const monthName = MONTH_NAMES[d.getMonth()];
+                        const yearStr = String(d.getFullYear());
+                        const fetchKey = `${yearStr}_${monthName}`;
+                        
+                        const monthObj = allRegistros.find(m => m.id === fetchKey || m.id === monthName) || {};
+                        const shiftsForDay = monthObj[dayKey]?.[id] || {};
+                        
+                        let cellPills = '';
+                        const validShifts = ['matutino', 'vespertino', 'nocturno', 'ausentismo'];
+                        let shiftAssigned = false;
+
+                        validShifts.forEach(shiftName => {
+                            if (shiftsForDay[shiftName]) {
+                                shiftAssigned = true;
+                                let label = shiftName.substring(0,3);
+                                let cssClass = `shift-${shiftName}`;
+
+                                if (shiftName === 'ausentismo') {
+                                    const motivo = shiftsForDay['ausentismo'].motivo || 'Ausentismo';
+                                    label = motivo.substring(0,3); 
+                                    const cleanMotivo = motivo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+                                    cssClass = `shift-aus-${cleanMotivo}`;
+                                    const validAusClasses = ['shift-aus-vacaciones', 'shift-aus-permiso', 'shift-aus-descanso', 'shift-aus-festivo', 'shift-aus-falta', 'shift-aus-suspension', 'shift-aus-incapacidades'];
+                                    if (!validAusClasses.includes(cssClass)) cssClass = 'shift-aus-default';
+                                }
+
+                                cellPills += `<div class="shift-pill ${cssClass}" onclick="event.stopPropagation(); window.openDetail('${id}', '${dayKey}', '${shiftName}')">${label}</div>`;
+                            }
+                        });
+
+                        if (!shiftAssigned) cellPills = `<div class="shift-pill shift-empty">+</div>`;
+                        const actionShift = shiftAssigned ? Object.keys(shiftsForDay)[0] : 'nuevo';
+
+                        rowHtml += `
+                            <div class="cell-shift select-none ${flashClass}" style="width: ${cellWidth}px;" 
+                                 onclick="window.openDetail('${id}', '${dayKey}', '${actionShift}')"
+                                 oncontextmenu="window.showCellContextMenu(event, '${id}', '${dayKey}')">
+                                ${cellPills}
+                            </div>
+                        `;
+                    });
+
+                    rowHtml += `<div class="shrink-0 bg-slate-50 border-l border-slate-200" style="width: 40px;"></div></div>`;
+                    bodyHtml += rowHtml;
+                });
+            });
+
+            bodyContainer.innerHTML = bodyHtml;
+            loadPhotosInBackground(elementosActivos.map(e => e.info.ID));
+        }
+
+        // ------------- MENÚS CONTEXTUALES Y LÓGICA DIRECTA ------------- //
+
+        window.showContextMenu = function(e, type, idOrName) {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('context-menu');
+            menu.className = 'absolute'; 
+            
+            let html = '';
+            if (type === 'caseta') {
+                html += `<div class="context-item" onclick="event.stopPropagation(); window.hideItem(event, 'caseta', '${idOrName}')">👁️ Ocultar Caseta</div>`;
+                html += `<div class="context-item" onclick="event.stopPropagation(); window.openContextPanel(event, 'planeacion_caseta.html', '${idOrName}')">⚙️ Planeación Caseta</div>`;
+            } else if (type === 'elemento') {
+                html += `<div class="context-item" onclick="event.stopPropagation(); window.hideItem(event, 'elemento', '${idOrName}')">👁️ Ocultar Elemento</div>`;
+                html += `<div class="context-item" onclick="event.stopPropagation(); window.openContextPanel(event, 'planeacion_elemento.html', '${idOrName}')">⚙️ Planeación Elemento</div>`;
+            }
+            
+            menu.innerHTML = html;
+            positionMenu(e, menu);
+        };
+
+        window.showCellContextMenu = function(e, id, dayKey) {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('context-menu');
+            
+            let ausHtml = MOTIVOS_AUS.map(m => `<div class="context-submenu-item" onclick="event.stopPropagation(); window.quickAssign(event, '${id}','${dayKey}','ausentismo','${m}')">${m}</div>`).join('');
+            
+            let actElems = Object.entries(fullCatalog)
+                .map(([nombre, info]) => ({ nombre, info }))
+                .filter(el => el.info?.Operativa?.Estado === "Activo" && el.info?.ID !== id)
+                .sort((a,b) => a.nombre.localeCompare(b.nombre));
+                
+            let swpHtml = actElems.map(el => `<div class="context-submenu-item truncate" onclick="event.stopPropagation(); window.swapShift(event, '${id}','${el.info.ID}','${dayKey}')">${el.nombre}</div>`).join('');
+            
+            menu.innerHTML = `
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${id}','${dayKey}','matutino')">☀️ Matutino</div>
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${id}','${dayKey}','vespertino')">🌇 Vespertino</div>
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${id}','${dayKey}','nocturno')">🌙 Nocturno</div>
+                <div class="context-item">
+                    🛑 Ausentismo <span class="float-right opacity-50">▶</span>
+                    <div class="context-submenu max-h-64 overflow-y-auto hide-scrollbar">${ausHtml}</div>
+                </div>
+                <hr class="my-1 border-slate-200">
+                <div class="context-item text-red-600" onclick="event.stopPropagation(); window.deleteShift(event, '${id}','${dayKey}')">🗑️ Eliminar asignación</div>
+                <div class="context-item text-red-800" onclick="event.stopPropagation(); window.deleteAllFrom(event, '${id}','${dayKey}')">⚠️ Borrar a partir de aquí</div>
+                <hr class="my-1 border-slate-200">
+                <div class="context-item">
+                    🔄 Intercambiar Turno <span class="float-right opacity-50">▶</span>
+                    <div class="context-submenu max-h-64 overflow-y-auto hide-scrollbar" style="width: 200px;">${swpHtml}</div>
+                </div>
+            `;
+            
+            if (e.clientX > window.innerWidth - 380) { menu.className = 'submenu-left absolute'; } 
+            else { menu.className = 'absolute'; }
+
+            positionMenu(e, menu);
+        };
+
+        window.showUnhideMenu = function(e) {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('context-menu');
+            menu.className = 'absolute';
+            
+            let html = '<div class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-1">Restaurar Ocultos</div>';
+            if (configPlaneacion.ocultosCasetas.length === 0 && configPlaneacion.ocultosElementos.length === 0) {
+                html += '<div class="px-3 py-2 text-xs text-slate-400 italic">No hay nada oculto</div>';
+            } else {
+                configPlaneacion.ocultosCasetas.forEach(c => html += `<div class="context-item" onclick="event.stopPropagation(); window.unhideItem(event, 'caseta', '${c}')">🏢 Caseta: ${c}</div>`);
+                configPlaneacion.ocultosElementos.forEach(eId => {
+                    let nom = eId;
+                    const elementEntry = Object.entries(fullCatalog).find(([name, info]) => info.ID === eId);
+                    if (elementEntry) nom = elementEntry[0];
+                    html += `<div class="context-item truncate" onclick="event.stopPropagation(); window.unhideItem(event, 'elemento', '${eId}')">👤 Elemento: ${nom}</div>`;
+                });
+            }
+            menu.innerHTML = html;
+            positionMenu(e, menu);
+        };
+
+        function positionMenu(e, menu) {
+            let topPos = e.clientY; let leftPos = e.clientX;
+            if (window.innerHeight - topPos < 250) topPos -= 200; 
+            menu.style.left = leftPos + 'px';
+            menu.style.top = topPos + 'px';
+            menu.classList.remove('hidden');
+        }
+
+        document.addEventListener('click', () => document.getElementById('context-menu').classList.add('hidden'));
+        document.getElementById('matrix-wrapper').addEventListener('scroll', () => document.getElementById('context-menu').classList.add('hidden'));
+
+        // --- FUNCIONES RÁPIDAS (MODIFICAN FIRESTORE Y LOCAL IDB CON NOTIFYUPDATE) --- //
+
+        window.quickAssign = async function(e, id, dayKey, shiftName, motivo = null) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            
+            const mStr = dayKey.substring(2,4);
+            const yStr = dayKey.substring(4,8);
+            const monthName = MONTH_NAMES[parseInt(mStr, 10) - 1];
+            const fetchKey = `${yStr}_${monthName}`;
+
+            let shiftData = shiftName === 'ausentismo' ? { motivo: motivo } : true;
+            let updatePayload = {};
+            updatePayload[`${dayKey}.${id}`] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+
+            try {
+                const docRef = doc(db, 'RegAs', 'Registros', yStr, monthName);
+                try {
+                    await updateDoc(docRef, updatePayload);
+                } catch (err) {
+                    if (err.code === 'not-found') {
+                        let setPayload = {};
+                        setPayload[dayKey] = {};
+                        setPayload[dayKey][id] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+                        await setDoc(docRef, setPayload, { merge: true });
+                    } else { throw err; }
+                }
+
+                let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+                if (!existingMonth) {
+                    existingMonth = { id: fetchKey };
+                    allRegistros.push(existingMonth);
+                }
+                existingMonth.id = fetchKey; 
+                if (!existingMonth[dayKey]) existingMonth[dayKey] = {};
+                existingMonth[dayKey][id] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+                
+                await saveMonthToIDB(existingMonth);
+                await notifyUpdate(fetchKey); // Notificación diferencial quirúrgica
+                drawMatrix();
+            } catch(e) { console.error("Error asignando turno", e); }
+        };
+
+        window.deleteShift = async function(e, id, dayKey) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            
+            const mStr = dayKey.substring(2,4);
+            const yStr = dayKey.substring(4,8);
+            const monthName = MONTH_NAMES[parseInt(mStr, 10) - 1];
+            const fetchKey = `${yStr}_${monthName}`;
+
+            try {
+                await updateDoc(doc(db, 'RegAs', 'Registros', yStr, monthName), { [`${dayKey}.${id}`]: deleteField() });
+                let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+                if (existingMonth && existingMonth[dayKey]) {
+                    delete existingMonth[dayKey][id];
+                    await saveMonthToIDB(existingMonth);
+                }
+                await notifyUpdate(fetchKey); // Notificación diferencial quirúrgica
+                drawMatrix();
+            } catch(err) { 
+                if (err.code !== 'not-found') console.error("Error eliminando", err); 
+            }
+        };
+
+        window.swapShift = async function(e, id1, id2, dayKey) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            
+            const mStr = dayKey.substring(2,4);
+            const yStr = dayKey.substring(4,8);
+            const monthName = MONTH_NAMES[parseInt(mStr, 10) - 1];
+            const fetchKey = `${yStr}_${monthName}`;
+
+            let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+            if (!existingMonth || !existingMonth[dayKey]) return;
+
+            const shift1 = existingMonth[dayKey][id1];
+            const shift2 = existingMonth[dayKey][id2];
+
+            let payload = {};
+            payload[`${dayKey}.${id1}`] = shift2 || deleteField();
+            payload[`${dayKey}.${id2}`] = shift1 || deleteField();
+
+            try {
+                await updateDoc(doc(db, 'RegAs', 'Registros', yStr, monthName), payload);
+                if (shift2) existingMonth[dayKey][id1] = shift2; else delete existingMonth[dayKey][id1];
+                if (shift1) existingMonth[dayKey][id2] = shift1; else delete existingMonth[dayKey][id2];
+                await saveMonthToIDB(existingMonth);
+                await notifyUpdate(fetchKey); // Notificación diferencial quirúrgica
+                drawMatrix();
+            } catch(err) { 
+                if (err.code !== 'not-found') console.error("Error intercambiando", err); 
+            }
+        };
+
+        window.deleteAllFrom = async function(e, id, fromDayKey) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            if(!confirm('¿Seguro que deseas borrar todas las asignaciones a partir de esta fecha? Esta acción no se puede deshacer.')) return;
+
+            const dStr = fromDayKey.substring(0,2); const mStr = fromDayKey.substring(2,4); const yStr = fromDayKey.substring(4,8);
+            const fromDate = new Date(Number(yStr), Number(mStr)-1, Number(dStr));
+            fromDate.setHours(0,0,0,0);
+
+            const batch = writeBatch(db);
+            let localUpdates = [];
+            let updatesByDoc = {};
+
+            allRegistros.forEach(monthData => {
+                Object.keys(monthData).forEach(dk => {
+                    if (dk === 'id') return;
+                    if (dk.length === 8 && monthData[dk][id]) {
+                        const iterDate = new Date(Number(dk.substring(4,8)), Number(dk.substring(2,4))-1, Number(dk.substring(0,2)));
+                        iterDate.setHours(0,0,0,0);
+                        
+                        if (iterDate.getTime() >= fromDate.getTime()) {
+                            const iterYStr = dk.substring(4,8);
+                            const iterMName = MONTH_NAMES[parseInt(dk.substring(2,4), 10) - 1];
+                            const docPath = `${iterYStr}/${iterMName}`; 
+                            
+                            if (!updatesByDoc[docPath]) updatesByDoc[docPath] = { yStr: iterYStr, mName: iterMName, updates: {} };
+                            updatesByDoc[docPath].updates[`${dk}.${id}`] = deleteField();
+                            
+                            localUpdates.push({ monthId: monthData.id, dayKey: dk });
+                        }
+                    }
+                });
+            });
+
+            Object.values(updatesByDoc).forEach(docData => {
+                batch.update(doc(db, 'RegAs', 'Registros', docData.yStr, docData.mName), docData.updates);
+            });
+
+            try {
+                await batch.commit();
+                let monthsToSave = new Set();
+                localUpdates.forEach(u => {
+                    const mObj = allRegistros.find(m => m.id === u.monthId);
+                    if (mObj && mObj[u.dayKey]) {
+                        delete mObj[u.dayKey][id];
+                        monthsToSave.add(mObj);
+                    }
+                });
+                for(let mObj of monthsToSave) {
+                    await saveMonthToIDB(mObj); 
+                    await notifyUpdate(mObj.id); // Notificación individual de RTDB para cada mes afectado
+                }
+                drawMatrix();
+            } catch(err) { console.error("Error borrado masivo", err); }
+        };
+
+        // --- OCULTAR Y RESTAURAR --- //
+
+        window.hideItem = async function(e, type, idOrName) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            if (type === 'caseta' && !configPlaneacion.ocultosCasetas.includes(idOrName)) configPlaneacion.ocultosCasetas.push(idOrName);
+            if (type === 'elemento' && !configPlaneacion.ocultosElementos.includes(idOrName)) configPlaneacion.ocultosElementos.push(idOrName);
+            drawMatrix();
+            try { await setDoc(doc(db, 'RegAs', 'Config'), { Planeacion: configPlaneacion }, { merge: true }); } catch(err) {}
+        };
+
+        window.unhideItem = async function(e, type, idOrName) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            if (type === 'caseta') configPlaneacion.ocultosCasetas = configPlaneacion.ocultosCasetas.filter(c => c !== idOrName);
+            else configPlaneacion.ocultosElementos = configPlaneacion.ocultosElementos.filter(el => el !== idOrName);
+            drawMatrix();
+            try { await setDoc(doc(db, 'RegAs', 'Config'), { Planeacion: configPlaneacion }, { merge: true }); } catch(err) {}
+        };
+
+        window.openContextPanel = function(e, url, idOrName) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            window.location.href = `${url}?id=${encodeURIComponent(idOrName)}`;
+        };
+
+        // --- IMÁGENES Y PANEL LATERAL --- //
+
+        async function loadPhotosInBackground(ids) {
+            for (const id of ids) {
+                if (photoCache[id]) { updateAvatarsInDOM(id, photoCache[id]); continue; }
+                try {
+                    const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${id}.webp`));
+                    photoCache[id] = url; updateAvatarsInDOM(id, url);
+                } catch (err) {
+                    photoCache[id] = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; updateAvatarsInDOM(id, photoCache[id]);
+                }
+            }
+        }
+
+        function updateAvatarsInDOM(id, url) {
+            const images = document.querySelectorAll(`img[data-user-id="${id}"]`);
+            images.forEach(img => { if (img.src !== url) img.src = url; });
+        }
+
+        window.openDetail = function(id, dayKey, shiftName) {
+            const dp = document.getElementById('detail-panel');
+            document.getElementById('iframe-detalle').src = `panel.html?id=${id}&fecha=${dayKey}&turno=${shiftName}&pestaña=turno`;
+            dp.classList.remove('hidden');
+            if (window.innerWidth < 1024) setTimeout(() => dp.classList.add('open-mobile'), 10);
+            else setTimeout(drawMatrix, 50); 
+        };
+
+        window.closeDetail = function() {
+            const dp = document.getElementById('detail-panel'); const ifr = document.getElementById('iframe-detalle');
+            if (window.innerWidth < 1024) { dp.classList.remove('open-mobile'); setTimeout(() => { dp.classList.add('hidden'); ifr.src = "about:blank"; }, 300); } 
+            else { dp.classList.add('hidden'); ifr.src = "about:blank"; setTimeout(drawMatrix, 50); }
+        };
+
+        async function loadData() {
+            if (!authReady) return; 
+            try {
+                const data = await fetchLocalData();
+                
+                // NORMALIZACIÓN ROBUSTA DE ELEMENTOS PP (Soporta directo y anidamiento de .data)
+                let rawElementos = data.elementosPP || {};
+                if (rawElementos.data && typeof rawElementos.data === 'object') {
+                    fullCatalog = { ...rawElementos.data };
+                } else {
+                    fullCatalog = { ...rawElementos };
+                }
+                delete fullCatalog.id;
+                delete fullCatalog.data;
+
+                // NORMALIZACIÓN ROBUSTA DE CASETAS (Soporta directo y anidamiento de .data)
+                let rawCasetas = data.casetas || {};
+                if (rawCasetas.data && typeof rawCasetas.data === 'object') {
+                    casetasConfig = { ...rawCasetas.data };
+                } else {
+                    casetasConfig = { ...rawCasetas };
+                }
+                delete casetasConfig.id;
+                delete casetasConfig.data;
+
+                // NORMALIZACIÓN ROBUSTA DE REGISTROS MENSUALES (Soporta directo y .data)
+                allRegistros = (data.allRegistros || []).map(m => {
+                    if (m.data && typeof m.data === 'object') {
+                        return { id: m.id, ...m.data };
+                    }
+                    return m;
+                });
+                
+                // Mapear los meses precargados al Set de la memoria usando su nueva llave de año
+                allRegistros.forEach(m => {
+                    let yearStr = new Date().getFullYear();
+                    let monthName = m.id;
+                    if(m.id && m.id.includes('_')) { [yearStr, monthName] = m.id.split('_'); } 
+                    else if (m.id) { m.id = `${yearStr}_${monthName}`; } 
+                    if (m.id) loadedMonthsDB.add(m.id);
+                }); 
+                
+                await checkAndFetchMonths();
+            } catch (e) { console.error("Error al cargar datos", e); }
+        }
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(drawMatrix, 150); });
+        
+        window.addEventListener('storage', (e) => { 
+            if (e.key === 'updates_regas') loadData(); 
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!authReady && user) { authReady = true; await loadConfig(); loadData(); }
+        });
+    </script>
+</body>
+</html>

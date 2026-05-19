@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planeación de Elemento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .main-content {
+            display: flex;
+            flex-direction: row;
+            flex-grow: 1;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Área principal (Matriz + Widgets) */
+        .main-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+            min-width: 0; 
+        }
+
+        .matrix-container {
+            flex: 0 0 auto; 
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .matrix-header {
+            display: flex;
+            background: linear-gradient(180deg, #2a2a2a 0%, #000000 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            height: auto; 
+            min-height: 75px; 
+        }
+
+        .col-fixed {
+            width: 68px;
+            flex-shrink: 0;
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; 
+            padding: 0 8px 0 20px; 
+            gap: 6px; 
+        }
+        
+        .header-col-fixed {
+            background: #1a1a1a;
+            border-right: 1px solid #000000;
+            z-index: 40;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+
+        @media (min-width: 640px) {
+            .col-fixed { width: 250px; padding: 0 12px; gap: 12px; }
+            .header-col-fixed { padding-left: 12px; padding-right: 12px; }
+        }
+
+        #element-selector {
+            background: transparent;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+            max-width: 150px;
+            text-overflow: ellipsis;
+        }
+        #element-selector option {
+            color: #1a1a1a;
+            background: white;
+        }
+
+        .col-date {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .is-today { background: linear-gradient(145deg, #700070, #4a004a) !important; border-color: #9d009d !important; }
+
+        .flash-today { animation: pulseToday 3s ease-out forwards; }
+        @keyframes pulseToday {
+            0% { background-color: rgba(234, 179, 8, 0.4); box-shadow: inset 0 0 15px rgba(234, 179, 8, 0.6); }
+            20% { background-color: rgba(234, 179, 8, 0.4); box-shadow: inset 0 0 15px rgba(234, 179, 8, 0.6); }
+            100% { background-color: inherit; box-shadow: none; }
+        }
+
+        .matrix-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .matrix-row {
+            display: flex;
+            min-height: 56px; 
+            transition: background 0.2s;
+        }
+
+        .cell-shift {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 0;
+            padding: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+            overflow: hidden;
+        }
+        .cell-shift:hover { filter: brightness(0.95); background-color: rgba(0,0,0,0.02); }
+
+        .shift-pill {
+            padding: 0;
+            border-radius: 0;
+            border: none; 
+            font-size: 8px; 
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            box-shadow: none; 
+            transition: all 0.2s ease;
+        }
+        .shift-pill:active { transform: scale(0.92); }
+        .shift-pill:hover { filter: brightness(1.1); }
+
+        .shift-matutino { background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%); color: #854d0e; } 
+        .shift-vespertino { background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%); color: #075985; } 
+        .shift-nocturno { background: linear-gradient(135deg, #334155 0%, #0f172a 100%); color: #f8fafc; } 
+        .shift-aus-vacaciones { background: linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%); color: #064e3b; } 
+        .shift-aus-permiso { background: linear-gradient(135deg, #ffedd5 0%, #fdba74 100%); color: #7c2d12; } 
+        .shift-aus-descanso { background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%); color: #334155; } 
+        .shift-aus-festivo { background: linear-gradient(135deg, #f3e8ff 0%, #d8b4fe 100%); color: #581c87; } 
+        .shift-aus-falta { background: linear-gradient(135deg, #fef08a 0%, #facc15 100%); color: #b91c1c; } 
+        .shift-aus-suspension { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%); color: #7f1d1d; } 
+        .shift-aus-incapacidades { background: linear-gradient(135deg, #cffafe 0%, #67e8f9 100%); color: #164e63; } 
+        .shift-aus-default { background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); color: #7f1d1d; } 
+        .shift-empty { background: transparent; color: #cbd5e1; font-size: 14px; font-weight: 300; }
+
+        .widgets-panel {
+            flex-grow: 1;
+            background-color: #f1f5f9;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .widget-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #context-menu {
+            position: fixed;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            z-index: 1000;
+            min-width: 190px;
+            padding: 6px 0;
+            overflow: visible; 
+        }
+        .context-item { padding: 10px 16px; font-size: 12px; color: #334155; cursor: pointer; font-weight: 600; transition: background 0.2s; position: relative; }
+        .context-item:hover { background-color: #f1f5f9; color: #0f172a; }
+        .context-submenu { display: none; position: absolute; left: 100%; top: -5px; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; border-radius: 8px; min-width: 160px; padding: 6px 0; z-index: 1001; }
+        .context-item:hover > .context-submenu { display: block; }
+        .submenu-left .context-submenu { left: auto; right: 100%; }
+        .context-submenu-item { padding: 8px 16px; font-size: 11px; color: #334155; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .context-submenu-item:hover { background-color: #f1f5f9; color: #0f172a; }
+
+        #detail-panel { 
+            width: 40%; 
+            flex-shrink: 0;
+            z-index: 60; 
+            border-left: 2px solid #e2e8f0; 
+            background: white; 
+            display: none; 
+        }
+        #detail-panel.open { display: block; }
+        
+        @media (max-width: 1024px) { 
+            #detail-panel { position: absolute; inset: 0; width: 100% !important; transform: translateX(100%); transition: transform 0.3s ease-in-out; } 
+            #detail-panel.open-mobile { transform: translateX(0); display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="main-content">
+        <div id="main-area" class="main-area">
+            
+            <div id="matrix-wrapper" class="matrix-container">
+                <div class="matrix-header" id="matrix-header">
+                    </div>
+                <div class="matrix-body hide-scrollbar" id="matrix-body">
+                    <div class="p-6 text-center text-slate-400 text-xs font-bold uppercase tracking-widest w-full">
+                        Cargando Elemento...
+                    </div>
+                </div>
+            </div>
+
+            <div class="widgets-panel hide-scrollbar">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div class="widget-card">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">⏱️</div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Horas Regulares</h3>
+                        </div>
+                        <div class="text-3xl font-black text-slate-800" id="w-horas-regulares">0 <span class="text-sm font-medium text-slate-400">hrs</span></div>
+                        <p class="text-[10px] text-slate-400 mt-1">Semana actual (Lun-Dom)</p>
+                    </div>
+
+                    <div class="widget-card border border-amber-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold">⚡</div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Horas Extras</h3>
+                        </div>
+                        <div class="text-3xl font-black text-amber-600" id="w-horas-extras">0 <span class="text-sm font-medium text-amber-400">hrs</span></div>
+                        <p class="text-[10px] text-slate-400 mt-1">Semana actual (Lun-Dom)</p>
+                    </div>
+
+                    <div class="widget-card">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold">⚠️</div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Faltas / Retardos</h3>
+                        </div>
+                        <div class="text-3xl font-black flex items-center" id="w-faltas-retardos">
+                            <span class="text-rose-600">0</span> <span class="text-slate-300 mx-2">/</span> <span class="text-amber-500">0</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Semana actual (Lun-Dom)</p>
+                    </div>
+
+                    <div class="widget-card">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">🏢</div>
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Caseta Dominante</h3>
+                        </div>
+                        <div class="text-xl font-black text-slate-800 truncate" id="w-casetas">-</div>
+                        <p class="text-[10px] text-emerald-600 font-bold mt-1" id="w-casetas-pct">Perfil Predeterminado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="detail-panel">
+            <iframe id="iframe-detalle" class="w-full h-full border-none" src="about:blank"></iframe>
+        </div>
+    </main>
+
+    <div id="context-menu" class="hidden"></div>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref as rtdbRef, set as rtdbSet, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg", authDomain: "cic-os.firebaseapp.com", projectId: "cic-os", storageBucket: "cic-os.firebasestorage.app" };
+        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+        const auth = getAuth(app); const storage = getStorage(app); const db = getFirestore(app); const rtdb = getDatabase(app);
+
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const MOTIVOS_AUS = ['Vacaciones', 'Permiso', 'Descanso', 'Festivo', 'Falta', 'Suspensión', 'Incapacidades'];
+        
+        let authReady = false;
+        let photoCache = {}; 
+        let fullCatalog = {};
+        let allRegistros = [];
+        let loadedMonthsDB = new Set(); 
+
+        const cellMinWidth = 42; 
+        const arrowSpace = 80; 
+        let colCount = 0;
+        let cellWidth = 0;
+        let viewDates = [];
+        let baseDateOffset = 0; 
+        let shouldHighlightToday = false; 
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetElementId = urlParams.get('id');
+
+        function getDayKey(dateObj) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        async function fetchLocalData() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onerror = () => reject("Error IDB");
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction(["registros", "catalogos"], "readonly");
+                    const data = { elementosPP: {}, allRegistros: [] };
+                    tx.objectStore("catalogos").get("ElementosPP").onsuccess = (res) => data.elementosPP = res.target.result || {};
+                    tx.objectStore("registros").getAll().onsuccess = (res) => data.allRegistros = res.target.result || [];
+                    tx.oncomplete = () => resolve(data);
+                };
+            });
+        }
+
+        async function saveMonthToIDB(monthObj) {
+            return new Promise((resolve) => {
+                const request = indexedDB.open("CIC_OS_RegAs", 8);
+                request.onsuccess = (e) => {
+                    const tx = e.target.result.transaction("registros", "readwrite");
+                    tx.objectStore("registros").put(monthObj);
+                    tx.oncomplete = () => resolve();
+                };
+            });
+        }
+
+        async function notifyGlobalUpdate() {
+            try { await rtdbSet(rtdbRef(rtdb, 'Updates/RegAs'), serverTimestamp()); localStorage.setItem('updates_regas', Date.now().toString()); } catch(e) {}
+        }
+
+        function calculateGrid() {
+            const wrapper = document.getElementById('matrix-wrapper');
+            let availableWidth = wrapper.clientWidth;
+            const fixedColWidth = window.innerWidth < 640 ? 68 : 250; 
+            const remainingWidth = availableWidth - fixedColWidth - arrowSpace;
+            
+            colCount = Math.floor(remainingWidth / cellMinWidth);
+            if (colCount < 3) colCount = 3; 
+            cellWidth = remainingWidth / colCount;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            today.setDate(today.getDate() + baseDateOffset); 
+
+            viewDates = [];
+            for (let i = 0; i < colCount; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + (i - 2)); 
+                viewDates.push(d);
+            }
+        }
+
+        async function checkAndFetchMonths() {
+            calculateGrid(); 
+            
+            // GARANTIZAR que los meses de la semana en curso se descarguen (para los widgets)
+            let datesToFetch = [...viewDates];
+            const todayReal = new Date();
+            todayReal.setHours(0,0,0,0);
+            const dayOfWeek = todayReal.getDay();
+            const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+            const startOfWeek = new Date(todayReal);
+            startOfWeek.setDate(todayReal.getDate() - diffToMonday);
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                datesToFetch.push(d);
+            }
+
+            for (let d of datesToFetch) {
+                const monthName = MONTH_NAMES[d.getMonth()];
+                const yearStr = String(d.getFullYear());
+                const fetchKey = `${yearStr}_${monthName}`; 
+
+                if (!loadedMonthsDB.has(fetchKey)) {
+                    try {
+                        const docRef = doc(db, 'RegAs', 'Registros', yearStr, monthName); 
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+                            if (!existingMonth) { existingMonth = { id: fetchKey }; allRegistros.push(existingMonth); }
+                            existingMonth.id = fetchKey; 
+                            Object.assign(existingMonth, docSnap.data());
+                            await saveMonthToIDB(existingMonth);
+                        }
+                    } catch (e) { console.error(`Error obteniendo mes`, e); }
+                    loadedMonthsDB.add(fetchKey);
+                }
+            }
+            drawMatrix(); 
+        }
+
+        window.shiftDates = async function(days, reset = false) {
+            if (reset) { baseDateOffset = 0; shouldHighlightToday = true; setTimeout(() => { shouldHighlightToday = false; }, 3100); } 
+            else { baseDateOffset += days; shouldHighlightToday = false; }
+            document.getElementById('matrix-body').innerHTML = '<div class="p-10 text-center text-slate-400 font-bold uppercase tracking-widest w-full">Sincronizando Fechas...</div>';
+            await checkAndFetchMonths();
+        };
+
+        window.goBack = function() {
+            window.location.href = "planeacion.html";
+        };
+
+        window.switchElement = function(newId) {
+            window.location.href = `planeacion_elemento.html?id=${encodeURIComponent(newId)}`;
+        };
+
+        async function drawMatrix() {
+            if (!targetElementId) {
+                document.getElementById('matrix-body').innerHTML = `<div class="p-10 text-center text-red-500 font-bold">ID de elemento no proporcionado.</div>`;
+                return;
+            }
+
+            const elInfoEntry = Object.entries(fullCatalog).find(([nombre, info]) => info?.ID === targetElementId);
+            if (!elInfoEntry) {
+                document.getElementById('matrix-body').innerHTML = `<div class="p-10 text-center text-red-500 font-bold">Elemento no encontrado en el catálogo.</div>`;
+                return;
+            }
+
+            const elNombre = elInfoEntry[0];
+            const elInfo = elInfoEntry[1];
+
+            const headerContainer = document.getElementById('matrix-header');
+            const bodyContainer = document.getElementById('matrix-body');
+            
+            calculateGrid();
+            const fixedColWidth = window.innerWidth < 640 ? 68 : 250;
+            const realTodayTime = new Date().setHours(0,0,0,0);
+
+            let headerHtml = `
+                <div class="col-fixed header-col-fixed relative">
+                    <select id="element-selector" onchange="window.switchElement(this.value)" class="hidden sm:block" title="Cambiar a otro elemento"></select>
+                    <span class="sm:hidden w-full text-center">👤</span>
+                    
+                    <div class="flex items-center gap-1">
+                        <button onclick="window.goBack()" title="Volver a Planeación" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-200 rounded px-1.5 py-0.5 text-[9px] uppercase font-bold transition">&larr;</button>
+                        <button onclick="window.shiftDates(0, true)" title="Volver a Hoy" class="bg-white/10 hover:bg-white/20 text-white rounded px-2 py-0.5 text-[9px] uppercase font-bold transition">Hoy</button>
+                    </div>
+                </div>
+                <div class="flex items-center shrink-0 border-r border-white/10 bg-gradient-to-b from-slate-800 to-black" style="width: 40px;">
+                    <button onclick="window.shiftDates(-7)" class="w-1/2 h-full hover:bg-white/10 text-white font-bold transition">&laquo;</button>
+                    <button onclick="window.shiftDates(-1)" class="w-1/2 h-full border-l border-white/5 hover:bg-white/10 text-white font-bold transition">&lsaquo;</button>
+                </div>
+            `;
+            
+            viewDates.forEach(d => {
+                const isToday = d.getTime() === realTodayTime;
+                const shortName = DAY_NAMES[d.getDay()].substring(0,3);
+                const dayNum = String(d.getDate()).padStart(2,'0');
+                const flashClass = (isToday && shouldHighlightToday) ? 'flash-today' : '';
+
+                headerHtml += `
+                    <div class="col-date py-2 ${isToday ? 'is-today' : ''} ${flashClass}" style="width: ${cellWidth}px;">
+                        <div class="text-[10px] font-bold uppercase ${isToday ? 'text-white/80' : 'text-slate-400'} mb-1.5">${shortName}</div>
+                        <div class="text-base font-black leading-none ${isToday ? 'text-white' : 'text-slate-200'}">${dayNum}</div>
+                    </div>
+                `;
+            });
+
+            headerHtml += `
+                <div class="flex items-center shrink-0 border-l border-white/10 bg-gradient-to-b from-slate-800 to-black" style="width: 40px;">
+                    <button onclick="window.shiftDates(1)" class="w-1/2 h-full hover:bg-white/10 text-white font-bold transition">&rsaquo;</button>
+                    <button onclick="window.shiftDates(7)" class="w-1/2 h-full border-l border-white/5 hover:bg-white/10 text-white font-bold transition">&raquo;</button>
+                </div>
+            `;
+            headerContainer.innerHTML = headerHtml;
+
+            if (window.innerWidth >= 640) {
+                setTimeout(() => {
+                    const selector = document.getElementById('element-selector');
+                    if (selector && selector.options.length <= 1) {
+                        let opts = '';
+                        Object.entries(fullCatalog).filter(([n, i]) => i.Operativa?.Estado === "Activo").sort((a,b) => a[0].localeCompare(b[0])).forEach(([n, i]) => {
+                                let sel = i.ID === targetElementId ? 'selected' : '';
+                                opts += `<option value="${i.ID}" ${sel}>${n}</option>`;
+                            });
+                        selector.innerHTML = opts;
+                    }
+                }, 10);
+            }
+
+            const photoUrl = photoCache[targetElementId] || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            let bodyHtml = `
+                <div class="matrix-row">
+                    <div class="col-fixed" style="background-color: #f8fafc;">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden border border-slate-300 shadow-sm mx-auto sm:mx-0">
+                            <img data-user-id="${targetElementId}" src="${photoUrl}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="hidden sm:flex overflow-hidden flex-grow flex-col justify-center">
+                            <p class="text-[10px] sm:text-[11px] font-bold text-slate-800 truncate uppercase leading-tight">${elNombre}</p>
+                            <p class="text-[8px] sm:text-[9px] text-slate-400 font-medium truncate leading-tight">${elInfo.Operativa?.Puesto || 'Operativo'}</p>
+                        </div>
+                    </div>
+                    <div class="shrink-0 bg-slate-50 border-r border-slate-200" style="width: 40px;"></div>
+            `;
+
+            viewDates.forEach(d => {
+                const isToday = d.getTime() === realTodayTime;
+                const flashClass = (isToday && shouldHighlightToday) ? 'flash-today' : '';
+                
+                const dayKey = getDayKey(d);
+                const monthName = MONTH_NAMES[d.getMonth()];
+                const yearStr = String(d.getFullYear());
+                const fetchKey = `${yearStr}_${monthName}`;
+                
+                const monthObj = allRegistros.find(m => m.id === fetchKey || m.id === monthName) || {};
+                const shiftsForDay = monthObj[dayKey]?.[targetElementId] || {};
+                
+                let cellPills = '';
+                let shiftAssigned = false;
+
+                ['matutino', 'vespertino', 'nocturno', 'ausentismo'].forEach(shiftName => {
+                    if (shiftsForDay[shiftName]) {
+                        shiftAssigned = true;
+                        let label = shiftName.substring(0,3);
+                        let cssClass = `shift-${shiftName}`;
+
+                        if (shiftName === 'ausentismo') {
+                            const motivo = shiftsForDay['ausentismo'].motivo || 'Ausentismo';
+                            label = motivo.substring(0,3); 
+                            const cleanMotivo = motivo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+                            cssClass = `shift-aus-${cleanMotivo}`;
+                            if (!['shift-aus-vacaciones', 'shift-aus-permiso', 'shift-aus-descanso', 'shift-aus-festivo', 'shift-aus-falta', 'shift-aus-suspension', 'shift-aus-incapacidades'].includes(cssClass)) cssClass = 'shift-aus-default';
+                        }
+                        cellPills += `<div class="shift-pill ${cssClass}" onclick="event.stopPropagation(); window.openDetail('${dayKey}', '${shiftName}')">${label}</div>`;
+                    }
+                });
+
+                if (!shiftAssigned) cellPills = `<div class="shift-pill shift-empty">+</div>`;
+                const actionShift = shiftAssigned ? Object.keys(shiftsForDay)[0] : 'nuevo';
+
+                bodyHtml += `
+                    <div class="cell-shift select-none ${flashClass}" style="width: ${cellWidth}px;" 
+                         onclick="window.openDetail('${dayKey}', '${actionShift}')"
+                         oncontextmenu="window.showCellContextMenu(event, '${dayKey}')">
+                        ${cellPills}
+                    </div>
+                `;
+            });
+
+            bodyHtml += `<div class="shrink-0 bg-slate-50 border-l border-slate-200" style="width: 40px;"></div></div>`;
+            bodyContainer.innerHTML = bodyHtml;
+            
+            if (!photoCache[targetElementId]) loadPhotosInBackground([targetElementId]);
+
+            updateWidgets();
+        }
+
+        // --- ACTUALIZACIÓN DE WIDGETS --- //
+        function updateWidgets() {
+            if (!targetElementId) return;
+
+            const elInfoEntry = Object.entries(fullCatalog).find(([nombre, info]) => info?.ID === targetElementId);
+            const elInfo = elInfoEntry ? elInfoEntry[1] : null;
+
+            let regularHours = 0;
+            let extraHours = 0;
+            let totalFaltas = 0;
+            let totalRetardos = 0;
+
+            // RANGO ESTRICTO: Lunes a Domingo de la semana actual (basado en el día de hoy)
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const dayOfWeek = today.getDay();
+            const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+            
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - diffToMonday);
+
+            for (let i = 0; i < 7; i++) {
+                const iterDate = new Date(startOfWeek);
+                iterDate.setDate(startOfWeek.getDate() + i);
+
+                const dayKey = getDayKey(iterDate);
+                const monthName = MONTH_NAMES[iterDate.getMonth()];
+                const yearStr = String(iterDate.getFullYear());
+                const fetchKey = `${yearStr}_${monthName}`;
+                
+                const monthObj = allRegistros.find(m => m.id === fetchKey || m.id === monthName) || {};
+                const shiftsForDay = monthObj[dayKey]?.[targetElementId] || {};
+
+                ['matutino', 'vespertino', 'nocturno'].forEach(shiftName => {
+                    const shiftData = shiftsForDay[shiftName];
+                    if (shiftData && typeof shiftData === 'object') {
+                        
+                        // Cálculo exacto si existen horas (o fallback si no)
+                        let hrs = 0;
+                        if (shiftData.entrada_real && shiftData.salida_real) {
+                            const [hE, mE] = shiftData.entrada_real.split(':').map(Number);
+                            const [hS, mS] = shiftData.salida_real.split(':').map(Number);
+                            let hDiff = (hS + (mS/60)) - (hE + (mE/60));
+                            if (hDiff < 0) hDiff += 24; 
+                            hrs = hDiff;
+                        } else if (shiftData.horas) {
+                            hrs = Number(shiftData.horas);
+                        }
+
+                        // ¿Es Extra?
+                        if (shiftData.es_extra === true) {
+                            extraHours += hrs;
+                        } else {
+                            regularHours += hrs;
+                        }
+
+                        // Conteo de retardos
+                        if (shiftData.retardo) {
+                            totalRetardos++;
+                        }
+                    }
+                });
+
+                if (shiftsForDay['ausentismo']) {
+                    const motivo = shiftsForDay['ausentismo'].motivo || '';
+                    if (motivo.toLowerCase().includes('falta')) totalFaltas++;
+                }
+            }
+
+            document.getElementById('w-horas-regulares').innerHTML = `${Number(regularHours.toFixed(2))} <span class="text-sm font-medium text-slate-400">hrs</span>`;
+            document.getElementById('w-horas-extras').innerHTML = `${Number(extraHours.toFixed(2))} <span class="text-sm font-medium text-amber-400">hrs</span>`;
+            document.getElementById('w-faltas-retardos').innerHTML = `<span class="text-rose-600">${totalFaltas}</span> <span class="text-slate-300 mx-2">/</span> <span class="text-amber-500">${totalRetardos}</span>`;
+
+            const defaultCaseta = elInfo?.Operativa?.AccesoPredeterminado || 'No asignada';
+            document.getElementById('w-casetas').innerText = defaultCaseta;
+        }
+
+        // --- MENÚ CONTEXTUAL CELDAS --- //
+        window.showCellContextMenu = function(e, dayKey) {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('context-menu');
+            
+            let ausHtml = MOTIVOS_AUS.map(m => `<div class="context-submenu-item" onclick="event.stopPropagation(); window.quickAssign(event, '${dayKey}','ausentismo','${m}')">${m}</div>`).join('');
+            
+            menu.innerHTML = `
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${dayKey}','matutino')">☀️ Matutino</div>
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${dayKey}','vespertino')">🌇 Vespertino</div>
+                <div class="context-item" onclick="event.stopPropagation(); window.quickAssign(event, '${dayKey}','nocturno')">🌙 Nocturno</div>
+                <div class="context-item">
+                    🛑 Ausentismo <span class="float-right opacity-50">▶</span>
+                    <div class="context-submenu max-h-64 overflow-y-auto hide-scrollbar">${ausHtml}</div>
+                </div>
+                <hr class="my-1 border-slate-200">
+                <div class="context-item text-red-600" onclick="event.stopPropagation(); window.deleteShift(event, '${dayKey}')">🗑️ Eliminar asignación</div>
+            `;
+            
+            let topPos = e.clientY; let leftPos = e.clientX;
+            if (window.innerHeight - topPos < 250) topPos -= 200; 
+            menu.style.left = leftPos + 'px';
+            menu.style.top = topPos + 'px';
+            menu.className = (leftPos > window.innerWidth - 380) ? 'submenu-left absolute' : 'absolute';
+        };
+
+        document.addEventListener('click', () => document.getElementById('context-menu').classList.add('hidden'));
+
+        // --- FUNCIONES RÁPIDAS --- //
+        window.quickAssign = async function(e, dayKey, shiftName, motivo = null) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            
+            const mStr = dayKey.substring(2,4); const yStr = dayKey.substring(4,8);
+            const monthName = MONTH_NAMES[parseInt(mStr, 10) - 1];
+            const fetchKey = `${yStr}_${monthName}`;
+
+            let shiftData = shiftName === 'ausentismo' ? { motivo: motivo } : true;
+            let updatePayload = {};
+            updatePayload[`${dayKey}.${targetElementId}`] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+
+            try {
+                const docRef = doc(db, 'RegAs', 'Registros', yStr, monthName);
+                try { await updateDoc(docRef, updatePayload); } 
+                catch (err) {
+                    if (err.code === 'not-found') {
+                        let setPayload = { [dayKey]: {} };
+                        setPayload[dayKey][targetElementId] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+                        await setDoc(docRef, setPayload, { merge: true });
+                    } else throw err; 
+                }
+
+                let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+                if (!existingMonth) { existingMonth = { id: fetchKey }; allRegistros.push(existingMonth); }
+                existingMonth.id = fetchKey; 
+                if (!existingMonth[dayKey]) existingMonth[dayKey] = {};
+                existingMonth[dayKey][targetElementId] = shiftName === 'ausentismo' ? { ausentismo: shiftData } : { [shiftName]: shiftData };
+                
+                await saveMonthToIDB(existingMonth);
+                await notifyGlobalUpdate();
+                drawMatrix();
+            } catch(e) { console.error("Error asignando", e); }
+        };
+
+        window.deleteShift = async function(e, dayKey) {
+            if (e) e.stopPropagation();
+            document.getElementById('context-menu').classList.add('hidden');
+            
+            const mStr = dayKey.substring(2,4); const yStr = dayKey.substring(4,8);
+            const monthName = MONTH_NAMES[parseInt(mStr, 10) - 1];
+            const fetchKey = `${yStr}_${monthName}`;
+
+            try {
+                await updateDoc(doc(db, 'RegAs', 'Registros', yStr, monthName), { [`${dayKey}.${targetElementId}`]: deleteField() });
+                let existingMonth = allRegistros.find(m => m.id === fetchKey || m.id === monthName);
+                if (existingMonth && existingMonth[dayKey]) {
+                    delete existingMonth[dayKey][targetElementId];
+                    await saveMonthToIDB(existingMonth);
+                }
+                await notifyGlobalUpdate();
+                drawMatrix();
+            } catch(err) { if (err.code !== 'not-found') console.error("Error eliminando", err); }
+        };
+
+        window.openDetail = function(dayKey, shiftName) {
+            const dp = document.getElementById('detail-panel');
+            document.getElementById('iframe-detalle').src = `panel.html?id=${targetElementId}&fecha=${dayKey}&turno=${shiftName}&pestaña=turno`;
+            
+            if (window.innerWidth < 1024) { 
+                dp.classList.add('open');
+                setTimeout(() => dp.classList.add('open-mobile'), 10);
+            } else { 
+                dp.classList.add('open');
+                setTimeout(drawMatrix, 50); 
+            }
+        };
+
+        window.closeDetail = function() {
+            const dp = document.getElementById('detail-panel'); const ifr = document.getElementById('iframe-detalle');
+            if (window.innerWidth < 1024) { 
+                dp.classList.remove('open-mobile'); 
+                setTimeout(() => { dp.classList.remove('open'); ifr.src = "about:blank"; }, 300); 
+            } else { 
+                dp.classList.remove('open'); 
+                ifr.src = "about:blank"; 
+                setTimeout(drawMatrix, 50); 
+            }
+        };
+
+        async function loadPhotosInBackground(ids) {
+            for (const id of ids) {
+                if (photoCache[id]) { updateAvatarsInDOM(id, photoCache[id]); continue; }
+                try {
+                    const url = await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${id}.webp`));
+                    photoCache[id] = url; updateAvatarsInDOM(id, url);
+                } catch (err) {
+                    photoCache[id] = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; updateAvatarsInDOM(id, photoCache[id]);
+                }
+            }
+        }
+
+        function updateAvatarsInDOM(id, url) {
+            const images = document.querySelectorAll(`img[data-user-id="${id}"]`);
+            images.forEach(img => { if (img.src !== url) img.src = url; });
+        }
+
+        async function loadData() {
+            if (!authReady) return; 
+            try {
+                const data = await fetchLocalData();
+                fullCatalog = data.elementosPP; allRegistros = data.allRegistros;
+                allRegistros.forEach(m => {
+                    let yearStr = new Date().getFullYear(); let monthName = m.id;
+                    if(m.id.includes('_')) { [yearStr, monthName] = m.id.split('_'); } else { m.id = `${yearStr}_${monthName}`; } 
+                    loadedMonthsDB.add(m.id);
+                }); 
+                await checkAndFetchMonths();
+            } catch (e) { console.error("Error", e); }
+        }
+
+        window.addEventListener('storage', (e) => { if (e.key === 'updates_regas') loadData(); });
+        window.addEventListener('resize', drawMatrix);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!authReady && user) { authReady = true; loadData(); }
+        });
+    </script>
+</body>
+</html>

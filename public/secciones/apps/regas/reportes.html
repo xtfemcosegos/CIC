@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Asistencia - CIC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Librería dom-to-image para captura de alta fidelidad -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Forzar Open Sans en toda la tipografía del documento */
+        * {
+            font-family: 'Open Sans', sans-serif !important;
+        }
+
+        .header-fuchsia-vivid { background: linear-gradient(135deg, #000000 0%, #4a044e 30%, #701a75 70%, #000000 100%); box-shadow: 0 4px 30px rgba(74, 4, 78, 0.5); }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #701a75; border-radius: 10px; }
+        .animate-in { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+        table { border-spacing: 0; border-collapse: collapse; table-layout: fixed; }
+        th { color: #000000 !important; font-weight: 900 !important; padding: 0 !important; height: 28px; vertical-align: middle; border-bottom-width: 2px !important; text-align: center !important; }
+        td { color: #000000 !important; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Notificaciones Toast Locales (Reemplaza alert nativos) -->
+    <div id="local-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] bg-slate-900/95 text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 border border-white/10">
+        <span id="local-toast-msg">Mensaje</span>
+    </div>
+
+    <header class="header-fuchsia-vivid py-2.5 px-6 shadow-2xl z-50 border-b border-fuchsia-950/50 shrink-0">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/30 shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                </div>
+                <h1 class="text-sm font-black uppercase text-white tracking-widest leading-none hidden md:block">Reportes</h1>
+            </div>
+
+            <div class="flex items-center gap-2 max-w-7xl flex-1 justify-end">
+                <select id="report-type" onchange="toggleEndDateVisibility()" class="bg-black/40 border border-white/20 text-white text-[10px] font-black uppercase rounded-lg px-3 py-2 outline-none focus:bg-black/60 focus:border-fuchsia-700 cursor-pointer w-36 transition-all">
+                    <option value="diario">Reporte Diario</option>
+                    <option value="semanal">Resumen Semanal</option>
+                    <option value="incidencias">Incidencias</option>
+                </select>
+                
+                <div id="incidence-filter-group" class="filter-container relative hidden">
+                    <button onclick="toggleDropdown('incidence-dropdown')" class="bg-black/40 border border-white/20 text-white text-[10px] font-black uppercase rounded-lg px-4 py-2 flex items-center gap-2 min-w-[160px] transition-all hover:bg-black/60">
+                        Incidencias (<span id="incidence-count-badge">all</span>)
+                        <svg class="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="incidence-dropdown" class="dropdown-menu absolute right-0 top-full mt-2 w-60 bg-slate-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden hidden z-[100]">
+                        <div id="incidence-options" class="max-h-64 overflow-y-auto custom-scroll py-2"></div>
+                    </div>
+                </div>
+
+                <div id="booth-filter-container" class="filter-container relative">
+                    <button onclick="toggleDropdown('booth-dropdown')" class="bg-black/40 border border-white/20 text-white text-[10px] font-black uppercase rounded-lg px-4 py-2 flex items-center gap-2 min-w-[150px] transition-all hover:bg-black/60">
+                        Casetas (<span id="booth-count-badge">all</span>)
+                        <svg class="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="booth-dropdown" class="dropdown-menu absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden hidden z-[100]">
+                        <div id="booth-options" class="max-h-64 overflow-y-auto custom-scroll py-2"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1 bg-black/40 rounded-lg px-2.5 py-1 border border-white/20 transition-all">
+                    <input type="date" id="date-start" class="bg-transparent text-white text-[10px] font-black outline-none w-28 uppercase cursor-pointer">
+                    <span id="end-date-slash" class="text-white/30 text-[10px] font-black">/</span>
+                    <div id="end-date-container"><input type="date" id="date-end" class="bg-transparent text-white text-[10px] font-black outline-none w-28 uppercase cursor-pointer"></div>
+                </div>
+                <button onclick="generarReporte()" class="bg-white text-fuchsia-950 hover:bg-fuchsia-50 font-black uppercase text-[10px] tracking-widest px-5 py-2 rounded-lg shadow-xl transition-all active:scale-95 border border-white/50 shrink-0">Generar</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 relative flex flex-col overflow-hidden">
+        <div id="report-loader" class="absolute inset-0 flex items-center justify-center bg-slate-100/50 z-20 hidden">
+            <div class="w-10 h-10 border-4 border-fuchsia-950 border-t-transparent animate-spin rounded-full"></div>
+        </div>
+
+        <main class="flex-1 flex flex-col overflow-hidden items-center">
+            <div class="w-full max-w-7xl h-full flex flex-col p-4 md:p-6">
+                <div id="copy-section" class="flex justify-end mb-3 hidden shrink-0">
+                    <button id="copy-btn" onclick="copyAsImage()" class="bg-fuchsia-900 hover:bg-black text-white px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 active:scale-95 border border-fuchsia-800">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        COPIAR REPORTE COMPLETO
+                    </button>
+                </div>
+                <div class="flex-1 bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in">
+                    <div id="report-preview" class="flex-1 overflow-y-auto custom-scroll font-mono text-[12px] text-slate-700 leading-relaxed bg-slate-50 p-4">
+                        <div class="h-full flex flex-col items-center justify-center text-center opacity-10 py-24">
+                            <svg class="w-20 h-20 mb-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            <p class="text-xl font-black uppercase tracking-[0.2em]">Vista previa</p>
+                            <p class="text-xs font-bold mt-2">Configura los filtros arriba y genera el informe</p>
+                        </div>
+                    </div>
+                </div>
+                <footer class="py-3 shrink-0"><p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">CIC · Módulo de Reportes v5.3</p></footer>
+            </div>
+        </main>
+
+        <aside id="detail-sidebar" class="fixed top-0 right-0 h-full w-[500px] bg-white shadow-2xl z-[100] transition-transform translate-x-full border-l border-slate-200 overflow-hidden flex flex-col">
+            <button onclick="cerrarPanel()" class="absolute top-2 right-2 z-[110] w-8 h-8 flex items-center justify-center bg-slate-800/20 hover:bg-slate-800/40 text-slate-600 hover:text-slate-900 rounded-full transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <iframe id="detail-iframe" src="about:blank" class="flex-1 border-none"></iframe>
+        </aside>
+    </div>
+
+    <script type="module">
+        let personalMap = {};
+        let casetasConfig = {};
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const dayNames = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+
+        const CASETA_CONFIG = [
+            "Centro de Control", "Encargado", "Recepción Edison", "Edison", 
+            "Impulso", "Michelena", "Simón Bolívar", "Carranza", "Universidad", "Rondinero"
+        ];
+
+        const INCIDENCE_TYPES = [
+            { id: 'extra', label: 'Extras' },
+            { id: 'festivo', label: 'Festivos' },
+            { id: 'retardo', label: 'Retardos' },
+            { id: 'falta', label: 'Faltas' },
+            { id: 'incapacidad', label: 'Incapacidades' },
+            { id: 'vacaciones', label: 'Vacaciones' },
+            { id: 'permiso', label: 'Permisos' },
+            { id: 'ausentismo', label: 'Otros Ausentismos' }
+        ];
+
+        const BOOTH_COLORS = {
+            "Centro de Control": "bg-blue-800",
+            "Encargado": "bg-purple-800",
+            "Recepción Edison": "bg-indigo-800",
+            "Edison": "bg-emerald-800",
+            "Impulso": "bg-amber-700",
+            "Michelena": "bg-rose-800",
+            "Simón Bolívar": "bg-pink-800",
+            "Carranza": "bg-cyan-800",
+            "Universidad": "bg-slate-700",
+            "Rondinero": "bg-orange-700",
+            "Otros": "bg-slate-900"
+        };
+
+        let selectedBooths = [...CASETA_CONFIG, "Otros"];
+        let selectedIncidences = INCIDENCE_TYPES.map(i => i.id);
+
+        const DB_NAME = "CIC_OS_RegAs";
+        const STORE_NAME = "catalogos";
+
+        function showLocalToast(message, type = 'success') {
+            const toast = document.getElementById('local-toast');
+            const msgEl = document.getElementById('local-toast-msg');
+            if (!toast) return;
+
+            toast.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[300] text-white text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full shadow-2xl transition-all duration-300 flex items-center gap-2 border border-white/10";
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-600');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-indigo-600');
+            }
+
+            msgEl.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function getIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // --- CARGAR EXPEDIENTE PERSONAL OPERATIVO DESDE INDEXEDDB ---
+        async function cargarPersonal() {
+            return new Promise((resolve) => {
+                getIndexedDB().then(idb => {
+                    const tx = idb.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get("ElementosPP");
+                    req.onsuccess = () => {
+                        let data = req.result || {};
+                        if (data.data && typeof data.data === 'object') {
+                            personalMap = { ...data.data };
+                        } else {
+                            personalMap = { ...data };
+                        }
+                        delete personalMap.id;
+                        delete personalMap.data;
+                        resolve();
+                    };
+                    req.onerror = () => resolve();
+                    tx.oncomplete = () => idb.close();
+                }).catch(() => resolve());
+            });
+        }
+
+        // --- CARGAR CASETAS DESDE INDEXEDDB PARA ORDENACIÓN MAESTRA ---
+        async function cargarCasetas() {
+            return new Promise((resolve) => {
+                getIndexedDB().then(idb => {
+                    const tx = idb.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get("Casetas");
+                    req.onsuccess = () => {
+                        let data = req.result || {};
+                        if (data.data && typeof data.data === 'object') {
+                            casetasConfig = { ...data.data };
+                        } else {
+                            casetasConfig = { ...data };
+                        }
+                        delete casetasConfig.id;
+                        delete casetasConfig.data;
+
+                        const orderedList = Object.keys(casetasConfig).sort((a, b) => {
+                            const indexA = casetasConfig[a].index !== undefined ? Number(casetasConfig[a].index) : 999;
+                            const indexB = casetasConfig[b].index !== undefined ? Number(casetasConfig[b].index) : 999;
+                            return indexA - indexB;
+                        });
+
+                        if (orderedList.length > 0) {
+                            CASETA_CONFIG.length = 0;
+                            CASETA_CONFIG.push(...orderedList);
+                            selectedBooths = [...CASETA_CONFIG, "Otros"];
+                        }
+                        resolve();
+                    };
+                    req.onerror = () => resolve();
+                    tx.oncomplete = () => idb.close();
+                }).catch(() => resolve());
+            });
+        }
+
+        // --- LECTURA LOCAL DE DOCUMENTOS REGISTROS POR MES DESDE INDEXEDDB ---
+        async function fetchMonthData(date) {
+            const year = date.getFullYear().toString();
+            const month = monthNames[date.getMonth()];
+            const dbKey = `${year}_${month}`;
+
+            return new Promise((resolve) => {
+                getIndexedDB().then(idb => {
+                    if (!idb.objectStoreNames.contains("registros")) {
+                        idb.close();
+                        resolve({});
+                        return;
+                    }
+                    const tx = idb.transaction("registros", "readonly");
+                    const store = tx.objectStore("registros");
+                    const req = store.get(dbKey);
+                    req.onsuccess = () => {
+                        const monthData = req.result || {};
+                        if (monthData.data && typeof monthData.data === 'object') {
+                            resolve({ id: monthData.id, ...monthData.data });
+                        } else {
+                            resolve(monthData);
+                        }
+                    };
+                    req.onerror = () => resolve({});
+                    tx.oncomplete = () => idb.close();
+                }).catch(() => resolve({}));
+            });
+        }
+
+        function getNowUTC6() {
+            const now = new Date();
+            const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utcMillis - (3600000 * 6));
+        }
+
+        // Helper para dar formato YYYY-MM-DD sin desviamientos de zona horaria (toISOString() bug fix)
+        function formatDateToYYYYMMDD(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        async function init() {
+            await cargarPersonal();
+            await cargarCasetas();
+            renderBoothCheckboxes();
+            renderIncidenceCheckboxes();
+            updateDefaultDatesByType(); 
+            toggleEndDateVisibility();
+        }
+
+        function renderBoothCheckboxes() {
+            const container = document.getElementById('booth-options');
+            container.innerHTML = '';
+            container.appendChild(createCheckboxItem('all', 'Todas las Casetas', true, 'booth'));
+            [...CASETA_CONFIG, "Otros"].forEach(booth => {
+                container.appendChild(createCheckboxItem(booth, booth, true, 'booth'));
+            });
+        }
+
+        function renderIncidenceCheckboxes() {
+            const container = document.getElementById('incidence-options');
+            container.innerHTML = '';
+            container.appendChild(createCheckboxItem('all', 'Todas las Incidencias', true, 'incidence'));
+            INCIDENCE_TYPES.forEach(inc => {
+                container.appendChild(createCheckboxItem(inc.id, inc.label, true, 'incidence'));
+            });
+        }
+
+        function createCheckboxItem(id, label, checked, group) {
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-3 px-3 py-2 hover:bg-white/5 cursor-pointer transition-colors";
+            div.onclick = (e) => {
+                const cb = div.querySelector('input');
+                if(e.target !== cb) cb.checked = !cb.checked;
+                handleFilterChange(group, cb.value, cb.checked);
+            };
+            div.innerHTML = `
+                <input type="checkbox" value="${id}" ${checked ? 'checked' : ''} class="w-4 h-4 rounded border-fuchsia-500 text-fuchsia-600 focus:ring-fuchsia-500 bg-black/40">
+                <span class="text-[10px] font-bold text-white uppercase tracking-wider">${label}</span>
+            `;
+            return div;
+        }
+
+        function handleFilterChange(group, id, isChecked) {
+            const containerId = group === 'booth' ? '#booth-options' : '#incidence-options';
+            const checkboxes = document.querySelectorAll(`${containerId} input`);
+            
+            if (id === 'all') {
+                checkboxes.forEach(cb => cb.checked = isChecked);
+            } else {
+                const allCb = document.querySelector(`${containerId} input[value="all"]`);
+                const others = Array.from(checkboxes).filter(cb => cb.value !== 'all');
+                allCb.checked = others.every(cb => cb.checked);
+            }
+            
+            if (group === 'booth') {
+                selectedBooths = Array.from(document.querySelectorAll('#booth-options input:checked')).map(cb => cb.value).filter(v => v !== 'all');
+                document.getElementById('booth-count-badge').innerText = selectedBooths.length;
+            } else {
+                selectedIncidences = Array.from(document.querySelectorAll('#incidence-options input:checked')).map(cb => cb.value).filter(v => v !== 'all');
+                document.getElementById('incidence-count-badge').innerText = selectedIncidences.length;
+            }
+        }
+
+        window.updateDefaultDatesByType = () => {
+            const type = document.getElementById('report-type').value;
+            const today = getNowUTC6();
+            
+            const dayOfWeek = today.getDay();
+            const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+            const thisMonday = new Date(today);
+            thisMonday.setDate(today.getDate() + diffToMonday);
+
+            let startDate = new Date(today);
+            let endDate = new Date(today);
+
+            if (type === 'diario') {
+                startDate = new Date(today);
+                endDate = new Date(today);
+            } 
+            else if (type === 'semanal') {
+                startDate = new Date(thisMonday);
+                startDate.setDate(thisMonday.getDate() + 7);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+            } 
+            else if (type === 'incidencias') {
+                startDate = new Date(thisMonday);
+                startDate.setDate(thisMonday.getDate() - 7);
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+            }
+
+            document.getElementById('date-start').value = formatDateToYYYYMMDD(startDate);
+            document.getElementById('date-end').value = formatDateToYYYYMMDD(endDate);
+        };
+
+        window.toggleEndDateVisibility = () => {
+            const type = document.getElementById('report-type').value;
+            const endContainer = document.getElementById('end-date-container');
+            const incidenceGroup = document.getElementById('incidence-filter-group');
+            const endSlash = document.getElementById('end-date-slash');
+
+            updateDefaultDatesByType();
+
+            if (type === 'diario') {
+                endContainer.classList.add('hidden');
+                endSlash.classList.add('hidden');
+                incidenceGroup.classList.add('hidden');
+            } else if (type === 'incidencias') {
+                endContainer.classList.remove('hidden');
+                endSlash.classList.remove('hidden');
+                incidenceGroup.classList.remove('hidden');
+            } else {
+                endContainer.classList.remove('hidden');
+                endSlash.classList.remove('hidden');
+                incidenceGroup.classList.add('hidden');
+            }
+        };
+
+        const getDayKey = (date) => {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}${m}${y}`;
+        };
+
+        window.generarReporte = async () => {
+            const type = document.getElementById('report-type').value;
+            const startStr = document.getElementById('date-start').value;
+            const endStr = document.getElementById('date-end').value;
+            
+            if (!startStr) return;
+            if (selectedBooths.length === 0) { showLocalToast("Selecciona al menos una caseta.", "error"); return; }
+
+            const loader = document.getElementById('report-loader');
+            const preview = document.getElementById('report-preview');
+            loader.classList.remove('hidden');
+            
+            try {
+                let content = "";
+                // Construcción de fechas usando índices manuales para evitar saltos UTC no deseados
+                const startParts = startStr.split('-');
+                const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+
+                if (type === 'diario') {
+                    content = await reportDiario(startDate);
+                } else if (type === 'semanal') {
+                    content = await reportSemanal(startDate);
+                } else if (type === 'incidencias') {
+                    const endParts = endStr.split('-');
+                    const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+                    content = await reportIncidencias(startDate, endDate);
+                }
+                
+                preview.innerHTML = content;
+                document.getElementById('copy-section').classList.remove('hidden');
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                preview.innerText = "Error al generar el reporte.";
+            } finally {
+                loader.classList.add('hidden');
+            }
+        };
+
+        async function reportDiario(date) {
+            const data = await fetchMonthData(date);
+            const dayKey = getDayKey(date);
+            const dayData = data[dayKey] || {};
+            const shifts = [ { id: 'matutino', label: 'Turno Matutino' }, { id: 'vespertino', label: 'Turno Vespertino' }, { id: 'nocturno', label: 'Turno Nocturno' } ];
+            
+            let html = `<div id="capture-area" class="bg-white p-6 w-full">
+                <div class="mb-4 bg-fuchsia-950 p-6 rounded-xl border-b-4 border-fuchsia-800 text-left">
+                    <h2 class="text-3xl font-black uppercase text-white tracking-tighter leading-none">Informe de asistencia</h2>
+                    <p class="text-lg font-bold text-fuchsia-300 capitalize mt-2 border-t border-white/10 pt-2">${date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
+                <div class="space-y-6">`;
+
+            shifts.forEach((shift, idx) => {
+                let rows = ""; let found = false;
+                Object.entries(dayData).forEach(([id, record]) => {
+                    if (record[shift.id]) {
+                        const nombre = Object.keys(personalMap).find(n => personalMap[n].ID == id) || id;
+                        const info = record[shift.id];
+                        if (!selectedBooths.includes(info.Caseta || 'Otros')) return;
+                        found = true;
+                        const hEntrada = info.entrada_real || '--:--';
+                        const hSalida = info.salida_real || '--:--';
+                        
+                        let badges = `<span class="bg-slate-100 text-slate-900 px-2 py-0.5 rounded text-[9px] font-black uppercase border border-slate-300 shadow-sm">${info.Caseta || 'Gral'}</span>`;
+                        if (info.es_extra) badges += `<span class="bg-fuchsia-700 text-white px-2 py-0.5 rounded text-[9px] font-black uppercase border border-fuchsia-500 ml-1 shadow-sm">Extra</span>`;
+                        if (info.retardo) badges += `<span class="bg-red-200 text-red-900 px-2 py-0.5 rounded text-[9px] font-black uppercase border border-red-300 ml-1 shadow-sm">Retardo</span>`;
+
+                        rows += `<tr class="text-[12px] border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <td class="py-1 px-1 font-bold text-slate-400 text-center">${id}</td>
+                            <td class="py-1 px-1 font-bold uppercase text-black leading-tight text-left">${nombre}</td>
+                            <td class="py-1 px-1"><div class="flex flex-wrap gap-1 justify-center">${badges}</div></td>
+                            <td class="py-1 px-1 font-black text-fuchsia-950 text-center text-base">${hEntrada}</td>
+                            <td class="py-1 px-1 font-black text-fuchsia-950 text-center text-base">${hSalida}</td>
+                            <td class="py-1 px-1 italic text-slate-800 leading-snug whitespace-normal break-words min-w-[150px] text-left">${info.comentario || ''}</td>
+                            <td class="py-1 px-1 text-right no-capture">
+                                <button onclick="mostrarDetalleElemento('${id}', '${shift.id}', '${dayKey}', 'turno')" class="p-1.5 text-slate-300 hover:text-fuchsia-800 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
+                });
+                if (found) html += buildTableSection(shift.label, rows, "bg-black", ["ID", "Nombre", "Estado", "Ent Real", "Sal Real", "Observaciones", ""], `shift-section-${idx}`);
+            });
+
+            let ausRows = ""; let ausFound = false;
+            Object.entries(dayData).forEach(([id, record]) => {
+                if (record.ausentismo && record.ausentismo.motivo !== 'Descanso') {
+                    const nombre = Object.keys(personalMap).find(n => personalMap[n].ID == id) || id;
+                    const booth = personalMap[nombre]?.Operativa?.AccesoPredeterminado || "Otros";
+                    if (!selectedBooths.includes(booth)) return;
+                    ausFound = true;
+                    const aus = record.ausentismo;
+                    const isFalta = aus.motivo === 'Falta' || aus.motivo === 'Incapacidad' || aus.motivo === 'Ausentismo';
+                    const rowStyle = isFalta ? "bg-yellow-400 text-red-700" : "bg-slate-50 text-slate-600";
+                    const badgeStyle = isFalta ? "bg-red-700 text-white border-red-900 shadow-md" : "bg-slate-200 text-slate-900 border-slate-400 shadow-sm";
+                    
+                    ausRows += `<tr class="text-[12px] border-b border-white/30 ${rowStyle}">
+                        <td class="py-1 px-1 font-bold opacity-60 text-center">${id}</td>
+                        <td class="py-1 px-1 font-black uppercase text-black leading-tight text-left">${nombre}</td>
+                        <td class="py-1 px-1 text-center" colspan="3"><span class="${badgeStyle} px-2 py-0.5 rounded text-[10px] font-black uppercase border">${aus.motivo}</span></td>
+                        <td class="py-1 px-1 italic font-black opacity-80 leading-snug whitespace-normal break-words text-left">${aus.comentario || ''}</td>
+                        <td class="py-1 px-1 no-capture"></td>
+                    </tr>`;
+                }
+            });
+            if (ausFound) html += buildTableSection("Incidencias y Ausentismos", ausRows, "bg-slate-900", ["ID", "Nombre", "Motivo", "", "", "Observaciones", ""], "absence-section");
+            html += `</div></div>`;
+            return html;
+        }
+
+        async function reportSemanal(startDate) {
+            const days = []; for (let i = 0; i < 7; i++) { const d = new Date(startDate); d.setDate(d.getDate() + i); days.push(d); }
+            const dataPerMonth = {}; 
+            // Corrección de Llaves en reportes semanales (_ en lugar de -)
+            for (const d of days) { 
+                const key = `${d.getFullYear()}_${monthNames[d.getMonth()]}`; 
+                if (!dataPerMonth[key]) dataPerMonth[key] = await fetchMonthData(d); 
+            }
+            const summary = {}; 
+            
+            days.forEach((d, dayIdx) => {
+                const monthKey = `${d.getFullYear()}_${monthNames[d.getMonth()]}`;
+                const dayKey = getDayKey(d);
+                const dayData = dataPerMonth[monthKey]?.[dayKey] || {};
+
+                Object.entries(dayData).forEach(([id, record]) => {
+                    const nombre = Object.keys(personalMap).find(n => personalMap[n].ID == id) || id;
+                    const booth = personalMap[nombre]?.Operativa?.AccesoPredeterminado || "Otros";
+
+                    if (!selectedBooths.includes(booth)) return;
+
+                    if (!summary[id]) {
+                        summary[id] = { id, nombre, booth, slots: Array(7).fill(null).map(() => []) };
+                    }
+                    
+                    if (record.ausentismo) {
+                        summary[id].slots[dayIdx].push({ label: record.ausentismo.motivo.toUpperCase(), type: 'aus' });
+                    } else {
+                        ['matutino', 'vespertino', 'nocturno'].forEach(sk => {
+                            if (record[sk]) {
+                                summary[id].slots[dayIdx].push({ label: sk.substring(0,3).toUpperCase(), type: sk });
+                            }
+                        });
+                    }
+                });
+            });
+
+            const groupedByBooth = {}; Object.values(summary).forEach(item => { if (!groupedByBooth[item.booth]) groupedByBooth[item.booth] = []; groupedByBooth[item.booth].push(item); });
+            const headers = ["Nombre", ...days.map(d => `${dayNames[d.getDay()]} ${d.getDate()}`)];
+            
+            let html = `<div id="capture-area" class="bg-white p-6 w-full"><div class="mb-4 bg-fuchsia-950 p-6 rounded-xl border-b-4 border-fuchsia-800 text-left"><h2 class="text-3xl font-black uppercase text-white tracking-tighter leading-none">Informe Semanal</h2><p class="text-lg font-bold text-fuchsia-300 capitalize mt-2 border-t border-white/10 pt-2">Periodo: ${startDate.toLocaleDateString('es-MX', {day: 'numeric', month: 'long'})} al ${days[6].toLocaleDateString('es-MX', {day: 'numeric', month: 'long', year: 'numeric'})}</p></div><div class="space-y-6">`;
+            
+            CASETA_CONFIG.concat(["Otros"]).forEach((boothName, boothIdx) => {
+                const elements = groupedByBooth[boothName];
+                if (elements && elements.length > 0) {
+                    let rows = ""; 
+                    elements.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(s => {
+                        rows += `<tr class="text-[12px] border-b border-slate-100 hover:bg-slate-50">
+                            <td class="py-1 px-1 font-bold uppercase text-black w-56 leading-tight text-left">${s.nombre}</td>
+                            ${s.slots.map((daySlots, dayIdx) => {
+                                if (daySlots.length === 0) return `<td class="py-1 px-1 text-center border-l border-slate-50 text-slate-300 text-[9px]">-</td>`;
+                                const dayKey = getDayKey(days[dayIdx]);
+                                const cellContent = daySlots.map(slot => {
+                                    let style = "text-slate-400 font-bold";
+                                    if (slot.type === 'matutino') style = "bg-yellow-100 text-yellow-950 rounded font-black border border-yellow-300 shadow-sm";
+                                    if (slot.type === 'vespertino') style = "bg-blue-600 text-white rounded font-black border border-blue-700 shadow-sm";
+                                    if (slot.type === 'nocturno') style = "bg-black text-white rounded font-black border border-slate-700 shadow-sm";
+                                    if (slot.type === 'aus') {
+                                        if (slot.label === 'DESCANSO') style = "bg-slate-100 text-slate-400 rounded font-black border border-slate-200";
+                                        else style = "bg-orange-100 text-orange-950 rounded font-black border border-orange-300 shadow-sm";
+                                    }
+                                    return `<div onclick="mostrarDetalleElemento('${s.id}', '${slot.type}', '${dayKey}', 'turno')" class="py-1 px-0.5 ${style} text-[8.5px] mb-0.5 last:mb-0 cursor-pointer hover:brightness-110 no-capture-child transition-all active:scale-95">${slot.label}</div>`;
+                                }).join('');
+                                return `<td class="py-1 px-1 text-center border-l border-slate-50">${cellContent}</td>`;
+                            }).join('')}
+                        </tr>`;
+                    });
+                    html += buildTableSection(boothName, rows, BOOTH_COLORS[boothName] || "bg-slate-900", headers, `weekly-booth-${boothIdx}`);
+                }
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
+        async function reportIncidencias(start, end) {
+            const daysCount = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            let rows = ""; let foundAny = false;
+            for (let i = 0; i < daysCount; i++) {
+                const current = new Date(start); current.setDate(current.getDate() + i);
+                // Corrección: Usar la variable camelCase global monthNames en lugar de MONTH_NAMES inexistente
+                const monthName = monthNames[current.getMonth()]; 
+                const yearStr = current.getFullYear().toString();
+                const dbKey = `${yearStr}_${monthName}`;
+                
+                const data = await fetchMonthData(current); 
+                const dayKey = getDayKey(current); 
+                const dayData = data[dayKey] || {};
+                
+                Object.entries(dayData).forEach(([id, record]) => {
+                    const nombre = Object.keys(personalMap).find(n => personalMap[n].ID == id) || id;
+                    const booth = personalMap[nombre]?.Operativa?.AccesoPredeterminado || "Otros";
+                    if (!selectedBooths.includes(booth)) return;
+                    
+                    let incidence = ""; let style = ""; let iType = "";
+                    if (record.ausentismo && record.ausentismo.motivo !== 'Descanso') {
+                        incidence = record.ausentismo.motivo.toUpperCase(); style = "bg-red-700 text-white border-red-900 shadow-md"; iType = record.ausentismo.motivo.toLowerCase();
+                    } else {
+                        const shiftKeys = ['matutino', 'vespertino', 'nocturno'];
+                        shiftKeys.forEach(sk => {
+                            if (record[sk]?.retardo) { incidence = "RETARDO (" + sk.toUpperCase() + ")"; iType = "retardo"; }
+                            if (record[sk]?.es_extra) { incidence = "EXTRA (" + sk.toUpperCase() + ")"; iType = "extra"; }
+                            if (record[sk]?.es_festivo) { incidence = "FESTIVO (" + sk.toUpperCase() + ")"; iType = "festivo"; }
+                        });
+                        if (iType === "retardo") style = "bg-red-200 text-red-950 border-red-400 shadow-sm";
+                        if (iType === "extra") style = "bg-fuchsia-800 text-white border-fuchsia-950 shadow-sm";
+                        if (iType === "festivo") style = "bg-purple-800 text-white border-purple-950 shadow-sm";
+                    }
+
+                    if (incidence && (selectedIncidences.includes(iType) || (selectedIncidences.includes('ausentismo') && ['falta', 'incapacidad', 'vacaciones', 'permiso'].includes(iType)))) {
+                        foundAny = true;
+                        rows += `<tr class="text-[12px] border-b border-slate-100 hover:bg-slate-50"><td class="py-1 px-1 font-bold uppercase text-black leading-tight text-left">${nombre}</td><td class="py-1 px-1 font-bold text-slate-600 text-center">${current.toLocaleDateString('es-MX', {day:'numeric', month:'long', year:'numeric'})}</td><td class="py-1 px-1 text-center"><span class="${style} px-2 py-0.5 rounded text-[10px] font-black uppercase border">${incidence}</span></td></tr>`;
+                    }
+                });
+            }
+            if (!foundAny) rows = `<tr><td colspan="3" class="py-10 text-center text-slate-400 italic font-bold">No se hallaron registros.</td></tr>`;
+            return `<div id="capture-area" class="bg-white p-6 w-full"><div class="mb-4 bg-fuchsia-950 p-6 rounded-xl border-b-4 border-fuchsia-800 text-left"><h2 class="text-3xl font-black uppercase text-white tracking-tighter leading-none">Informe de Incidencias</h2><p class="text-lg font-bold text-fuchsia-300 capitalize mt-2 border-t border-white/10 pt-2">Rango: ${start.toLocaleDateString('es-MX', {day:'numeric', month:'long'})} - ${end.toLocaleDateString('es-MX', {day:'numeric', month:'long', year:'numeric'})}</p></div>${buildTableSection("Listado de Novedades", rows, "bg-black", ["Elemento", "Fecha", "Incidencia"], "incidence-section")}</div>`;
+        }
+
+        function buildTableSection(title, rows, titleBg, headers, sectionId = null) {
+            const copyBtn = sectionId ? `
+                <button onclick="copySectionAsImage('${sectionId}', this)" class="no-capture ml-auto bg-white/20 hover:bg-white/40 text-white p-1 rounded-md transition-all active:scale-90" title="Copiar solo esta sección">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </button>
+            ` : '';
+
+            return `
+                <div id="${sectionId || ''}" class="border border-slate-200 rounded-xl overflow-hidden mb-4 shadow-md bg-white">
+                    <div class="${titleBg} px-4 py-2 flex items-center justify-between shadow-inner">
+                        <h3 class="text-[16px] font-black uppercase text-white tracking-[0.25em] text-left">${title}</h3>
+                        ${copyBtn}
+                    </div>
+                    <table class="w-full border-collapse table-fixed">
+                        <thead class="bg-slate-50 border-b-2 border-slate-200">
+                            <tr class="text-[12px] font-black uppercase text-black">
+                                ${headers.map(h => `<th class="py-0 px-1 ${h === "" ? 'w-10 no-capture' : ''}">${h}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.mostrarDetalleElemento = (id, turno, fecha, tab) => {
+            const panel = document.getElementById('detail-sidebar');
+            const iframe = document.getElementById('detail-iframe');
+            panel.classList.remove('translate-x-full');
+            iframe.src = `panel.html?id=${id}&fecha=${fecha}&turno=${turno}&pestaña=${tab}`;
+        };
+
+        window.cerrarPanel = () => {
+            const panel = document.getElementById('detail-sidebar');
+            panel.classList.add('translate-x-full');
+            document.getElementById('detail-iframe').src = "about:blank";
+        };
+
+        window.copySectionAsImage = async (id, btn) => {
+            const node = document.getElementById(id);
+            if (!node) return;
+            const noCapture = node.querySelectorAll('.no-capture');
+            noCapture.forEach(el => el.style.visibility = 'hidden');
+            const originalStyle = node.style.cssText;
+
+            // MITIGACIÓN AGRESIVA DE ERRORES DE FUENTES 404 (dom-to-image):
+            const styleSheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
+            const removedSheets = [];
+            styleSheets.forEach(sheet => {
+                const href = sheet.getAttribute('href') || '';
+                const content = sheet.textContent || '';
+                if (href.includes('office.net') || href.includes('fabric') || content.includes('Segoe UI') || content.includes('Leelawadee') || content.includes('office365')) {
+                    sheet.remove();
+                    removedSheets.push(sheet);
+                }
+            });
+
+            node.style.width = '1400px'; node.style.height = 'auto'; node.style.maxWidth = 'none'; node.style.borderRadius = '0';
+            try {
+                const scale = 3;
+                const blob = await domtoimage.toBlob(node, {
+                    bgcolor: '#ffffff',
+                    width: 1400 * scale,
+                    height: node.scrollHeight * scale,
+                    style: { transform: `scale(${scale})`, transformOrigin: 'top left', width: '1400px', height: node.scrollHeight + 'px', 'border-radius': '0', 'margin': '0' }
+                });
+                node.style.cssText = originalStyle;
+                noCapture.forEach(el => el.style.visibility = 'visible');
+                const item = new ClipboardItem({ "image/png": blob });
+                await navigator.clipboard.write([item]);
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>';
+                setTimeout(() => btn.innerHTML = originalHtml, 2000);
+            } catch (err) {
+                node.style.cssText = originalStyle;
+                noCapture.forEach(el => el.style.visibility = 'visible');
+                console.error(err);
+                showLocalToast("Fallo al copiar sección", "error");
+            } finally {
+                removedSheets.forEach(sheet => document.head.appendChild(sheet));
+            }
+        };
+
+        window.copyAsImage = async () => {
+            const captureArea = document.getElementById('capture-area');
+            const btn = document.getElementById('copy-btn');
+            if (!captureArea) return;
+            const noCapture = document.querySelectorAll('.no-capture');
+            noCapture.forEach(el => el.style.visibility = 'hidden');
+            btn.disabled = true; btn.innerText = "PROCESANDO...";
+
+            // MITIGACIÓN AGRESIVA DE ERRORES DE FUENTES 404 (dom-to-image):
+            const styleSheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'));
+            const removedSheets = [];
+            styleSheets.forEach(sheet => {
+                const href = sheet.getAttribute('href') || '';
+                const content = sheet.textContent || '';
+                if (href.includes('office.net') || href.includes('fabric') || content.includes('Segoe UI') || content.includes('Leelawadee') || content.includes('office365')) {
+                    sheet.remove();
+                    removedSheets.push(sheet);
+                }
+            });
+
+            try {
+                const originalStyle = captureArea.style.cssText;
+                captureArea.style.width = '1400px'; captureArea.style.height = 'auto'; captureArea.style.maxWidth = 'none'; captureArea.style.borderRadius = '0';
+                const scale = 3;
+                const blob = await domtoimage.toBlob(captureArea, {
+                    bgcolor: '#ffffff',
+                    width: 1400 * scale,
+                    height: captureArea.scrollHeight * scale,
+                    style: { transform: `scale(${scale})`, transformOrigin: 'top left', width: '1400px', height: captureArea.scrollHeight + 'px', 'border-radius': '0', 'margin': '0' }
+                });
+                captureArea.style.cssText = originalStyle;
+                noCapture.forEach(el => el.style.visibility = 'visible');
+                const item = new ClipboardItem({ "image/png": blob });
+                await navigator.clipboard.write([item]);
+                btn.innerText = "¡IMAGEN COPIADA!";
+                btn.classList.replace('bg-fuchsia-900', 'bg-green-600');
+                setTimeout(() => { btn.disabled = false; btn.innerText = "COPIAR REPORTE COMPLETO"; btn.classList.replace('bg-green-600', 'bg-fuchsia-900'); }, 2500);
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false; btn.innerText = "ERROR AL COPIAR";
+                noCapture.forEach(el => el.style.visibility = 'visible');
+                showLocalToast("Fallo al copiar reporte completo", "error");
+            } finally {
+                removedSheets.forEach(sheet => document.head.appendChild(sheet));
+            }
+        };
+
+        window.toggleDropdown = (id) => {
+            document.querySelectorAll('.dropdown-menu').forEach(d => { if(d.id !== id) d.classList.add('hidden'); });
+            document.getElementById(id).classList.toggle('hidden');
+        };
+
+        window.onclick = (e) => {
+            if (!e.target.closest('.filter-container')) {
+                document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.add('hidden'));
+            }
+        };
+
+        window.onload = init;
+    </script>
+</body>
+</html>

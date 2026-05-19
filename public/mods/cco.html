@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CIC OS - Centro de Control</title>
+    
+    <!-- Enlace al CSS compilado localmente -->
+    <link href="/style.css" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Archivo de scripts y utilidades globales -->
+    <script src="../script.js"></script>
+
+    <style>
+        html, body {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: -webkit-fill-available; 
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        
+        #notice-modal, #notif-mobile-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-hover-white { transition: filter 0.3s; }
+        .group:hover .icon-hover-white { filter: brightness(0) invert(1); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        .pearl-3d {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f8f6 40%, #eae8e1 100%);
+            border-bottom: 1px solid #dcdccb;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05), inset 0 2px 0 rgba(255,255,255,0.9), inset 0 -2px 2px rgba(0,0,0,0.04);
+        }
+        
+        .app-drawer {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: -340px;
+            width: 320px;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.15);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        .app-drawer.open { left: 0; }
+        
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(2px);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .user-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado Perla 3D -->
+    <header class="pearl-3d h-[60px] w-full px-4 md:px-[50px] flex justify-between items-center shrink-0 relative z-40">
+        <div class="flex items-center h-full gap-4">
+            <button id="btn-hamburger" class="relative w-[50px] h-[50px] flex items-center justify-center rounded-xl hover:bg-white/50 transition-all shadow-sm border border-transparent hover:border-gray-300 cursor-pointer group">
+                <img id="main-os-icon" src="../ico/cic.ico" class="w-9 h-9 object-contain drop-shadow-sm group-hover:scale-105 transition-transform" alt="CIC OS" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828304.png'">
+                <div class="absolute bottom-1 right-1 bg-white rounded shadow-sm border border-gray-200 p-[2px] pointer-events-none">
+                    <svg class="w-3 h-3 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </div>
+            </button>
+            
+            <div class="flex items-center gap-3 border-l border-gray-300 pl-4 h-10">
+                <!-- FOTO DE USUARIO -->
+                <img id="current-user-photo" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-10 h-10 rounded-full object-cover shadow border border-white cursor-pointer hover:opacity-80 transition-opacity" onclick="window.openProfile()" title="Mi Perfil" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
+                
+                <div class="flex flex-col justify-center">
+                    <div class="flex items-center gap-2">
+                        <!-- NOMBRE DE USUARIO -->
+                        <h1 class="text-sm font-bold text-gray-800 leading-tight cursor-pointer hover:text-blue-600 transition-colors" onclick="window.openProfile()" title="Mi Perfil">Buenos días, <span id="user-name">Cargando...</span></h1>
+                        
+                        <!-- Botón de Campanita para Notificaciones -->
+                        <button id="btn-bell" class="relative p-1.5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition cursor-pointer shadow-sm ml-1" title="Notificaciones">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="bell-badge" style="display: none;" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full border-2 border-white text-[8px] font-black text-white flex items-center justify-center shadow-sm">0</span>
+                        </button>
+
+                        <!-- Botón y Badge Numérico de Mensajes -->
+                        <button id="btn-messenger" class="relative p-1.5 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition cursor-pointer shadow-sm" title="Mensajes">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            <span id="msg-badge" style="display: none;" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[8px] font-black text-white flex items-center justify-center shadow-sm">0</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor con Rol de Usuario y Etiqueta de Sincronización -->
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-widest leading-tight" id="user-role">Estado del Sistema</p>
+                        <span class="text-gray-300 text-[10px]">•</span>
+                        <p class="text-[9px] text-blue-600 uppercase tracking-widest leading-tight font-bold truncate max-w-[130px] transition-all" id="syncStatusText">En línea</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="text-right hidden md:block">
+            <div class="flex items-center justify-end gap-3">
+                <div id="temp" class="text-lg font-light text-gray-500 italic">--°C</div>
+                <div id="clock" class="text-xl font-bold text-gray-800 tracking-tighter">00:00:00</div>
+            </div>
+            <div id="date" class="text-[9px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">Cargando fecha...</div>
+        </div>
+    </header>
+
+    <!-- Barra de Notificación Global -->
+    <div id="global-toast" class="fixed top-[75px] left-1/2 transform -translate-x-1/2 z-[200] px-5 py-2.5 rounded-full shadow-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white transition-all duration-300 opacity-0 -translate-y-4 pointer-events-none flex items-center gap-2">
+        <span id="global-toast-icon"></span>
+        <span id="global-toast-msg">Mensaje del sistema</span>
+    </div>
+
+    <!-- ÁREA 1: ESCRITORIO (Tableros) -->
+    <div id="desktop-view" class="w-full flex-grow flex flex-col md:flex-row gap-5 px-4 md:px-[50px] py-5 min-h-0 bg-[#f8fafc]">
+        
+        <!-- Contenedor Izquierdo (Maneja Avisos y Visor Dinámico de Notificaciones) -->
+        <div id="left-area-container" class="w-full md:w-3/4 flex flex-col h-full relative overflow-hidden">
+            
+            <!-- Tablero de Avisos (Vista Normal) -->
+            <div id="left-panel-avisos" class="glass-card flex flex-col h-full relative overflow-hidden">
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white/40 shrink-0">
+                    <h2 class="text-sm font-bold flex items-center gap-2 text-gray-700 uppercase tracking-widest">
+                        <span class="w-1.5 h-4 bg-red-600 rounded"></span>
+                        <span class="hidden sm:inline">Tablero de Avisos de Red</span>
+                        <span class="sm:hidden">Avisos</span>
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-show-notifs-mobile" class="md:hidden relative p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="notif-count-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">0</span>
+                        </button>
+                        <button id="btn-add-notice" class="bg-gray-800 hover:bg-black text-white text-[9px] font-bold px-4 py-2 rounded transition uppercase tracking-widest cursor-pointer shadow-sm">
+                            + Redactar
+                        </button>
+                    </div>
+                </div>
+                <div id="notices-container" class="p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-4 content-start">
+                    <p class="col-span-full text-center text-gray-400 text-xs py-10 italic uppercase tracking-widest">Iniciando base de datos local...</p>
+                </div>
+            </div>
+
+            <!-- Visor de Notificación en Iframe (Oculto por Defecto) -->
+            <div id="left-panel-iframe-container" class="glass-card flex-col h-full relative overflow-hidden hidden">
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white/40 shrink-0">
+                    <h2 class="text-sm font-bold flex items-center gap-2 text-purple-700 uppercase tracking-widest">
+                        <span class="w-1.5 h-4 bg-purple-600 rounded"></span>
+                        Visor de Contenido
+                    </h2>
+                    <button id="btn-close-notif-iframe" class="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-purple-600 uppercase tracking-widest transition cursor-pointer">
+                        Cerrar Visor
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="flex-grow relative bg-gray-50 rounded-b-2xl overflow-hidden">
+                    <iframe id="notif-content-iframe" src="about:blank" class="absolute inset-0 w-full h-full border-none"></iframe>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Panel Derecho Compartido (Notificaciones / Mensajes) (w-1/4) -->
+        <div id="right-panel-container" class="hidden md:flex w-1/4 glass-card flex-col h-full relative overflow-hidden shrink-0">
+            
+            <!-- VISTA DE NOTIFICACIONES -->
+            <div id="view-notifications" class="flex flex-col h-full w-full relative">
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white/40 shrink-0">
+                    <h2 class="text-sm font-bold flex items-center gap-2 text-gray-700 uppercase tracking-widest">
+                        <span class="w-1.5 h-4 bg-purple-500 rounded"></span>
+                        <span class="truncate">Notificaciones</span>
+                    </h2>
+                    <button id="btn-close-notifs-mobile" class="md:hidden text-gray-400 hover:text-red-500 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="notifications-panel" class="p-5 overflow-y-auto flex-grow flex flex-col gap-3 content-start bg-gray-50/50">
+                    <p class="text-center text-gray-400 text-[10px] italic uppercase tracking-widest py-10">Bandeja Vacía</p>
+                </div>
+            </div>
+
+            <!-- VISTA DEL MENSAJERO -->
+            <div id="view-messenger" class="hidden flex-col h-full w-full relative bg-white" style="display: none;">
+                <div class="bg-indigo-600 text-white p-3 flex justify-between items-center shrink-0 z-10 relative shadow-sm">
+                    <h3 class="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        Mensajes Directos
+                    </h3>
+                    <button id="btn-close-messenger" class="text-indigo-200 hover:text-white transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="flex-grow relative bg-gray-50">
+                    <iframe id="messenger-iframe" src="about:blank" class="absolute inset-0 w-full h-full border-none"></iframe>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ÁREA 2: CONTENEDOR DE APLICACIONES (Iframes Primarios) -->
+    <div id="app-view" class="w-full flex-grow relative hidden bg-[#f8fafc]">
+        <!-- Los iframes se inyectan aquí -->
+    </div>
+
+    <!-- ÁREA 3: CONTENEDOR DE PERFIL (Iframe Secundario) -->
+    <div id="profile-view" class="w-full flex-grow relative hidden bg-[#f8fafc] z-50">
+        <iframe id="profile-iframe" src="about:blank" class="w-full h-full border-none absolute inset-0"></iframe>
+    </div>
+
+    <!-- Menú Lateral (Aplicaciones Drawer) -->
+    <div id="drawer-overlay" class="drawer-overlay"></div>
+    <div id="app-drawer" class="app-drawer">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+            <h2 class="text-sm font-bold flex items-center gap-2 text-gray-700 uppercase tracking-widest">
+                Aplicaciones
+            </h2>
+            <div class="flex items-center gap-1">
+                <button id="btn-logout" title="Cerrar Sesión" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+                <button id="btn-close-drawer" title="Cerrar Panel" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div id="apps-container" class="p-4 flex flex-col gap-2 content-start overflow-y-auto flex-grow bg-white">
+            <p class="text-[11px] text-gray-400 italic text-center py-4">Cargando aplicaciones...</p>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 bg-gray-50 shrink-0 mt-auto">
+            <div class="flex gap-3 justify-center">
+                <!-- Botón 1: Descargar Bases de Datos -->
+                <button onclick="if(typeof Download_DB === 'function') { Download_DB('MANUAL'); } else { console.warn('Función Download_DB no encontrada'); }" title="Descargar Bases de Datos" class="w-[50px] h-[50px] bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 shadow-sm transition-all group cursor-pointer">
+                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                </button>
+                
+                <!-- Botón 2: Actualizar Versión (Update_CIC) -->
+                <button onclick="if(typeof Update_CIC === 'function') { Update_CIC(); } else { console.warn('Función Update_CIC no encontrada'); }" title="Actualizar Versión" class="w-[50px] h-[50px] bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-green-600 hover:border-green-300 hover:bg-green-50 shadow-sm transition-all group cursor-pointer">
+                    <svg class="w-6 h-6 transition-transform duration-500 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+                
+                <!-- Botón 3: Configuración (Abre config.html) -->
+                <button onclick="window.openApp('../config.html', '../ico/cic.ico', '#ffffff'); toggleDrawer();" title="Configuración" class="w-[50px] h-[50px] bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-100 shadow-sm transition-all group cursor-pointer">
+                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales de Notificación y Creación -->
+    <div id="notif-mobile-modal">
+        <div class="bg-white w-[90%] max-w-sm max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center bg-blue-50">
+                <h3 class="text-xs font-black text-blue-900 uppercase tracking-widest">Centro de Alertas</h3>
+                <button id="btn-close-notif-mobile-modal" class="text-blue-900/40 hover:text-red-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="notif-mobile-container" class="p-4 overflow-y-auto flex flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <div id="notice-modal">
+        <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
+            <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-4">Nuevo Aviso Programado</h3>
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Título</label>
+                    <input type="text" id="not-title" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 shadow-sm text-sm outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Mensaje</label>
+                    <textarea id="not-body" rows="3" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 resize-none shadow-sm text-sm outline-none focus:border-red-500"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1 text-green-600">Publicar el:</label>
+                        <input type="datetime-local" id="not-start" class="w-full bg-gray-50 border border-gray-100 rounded-lg p-2 text-xs outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1 text-red-600">Vencer el:</label>
+                        <input type="datetime-local" id="not-expiry" class="w-full bg-gray-50 border border-gray-100 rounded-lg p-2 text-xs outline-none focus:border-red-500">
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button id="btn-cancel" class="w-1/3 text-gray-400 font-bold hover:text-gray-600 transition text-xs tracking-widest cursor-pointer">CANCELAR</button>
+                <button id="btn-save-notice" class="w-2/3 bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition text-xs tracking-widest shadow-lg cursor-pointer">PUBLICAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts Base -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, get, onValue, onChildAdded, onChildChanged, onChildRemoved, update, query, orderByKey, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // ==========================================
+        // 1. VALIDACIÓN ESTRICTA DE SESIÓN (SESSION STORAGE)
+        // ==========================================
+        const rawConfig = sessionStorage.getItem('cic_os_config');
+        const userToken = sessionStorage.getItem('cic_os_token');
+
+        const firebaseConfig = JSON.parse(rawConfig);
+        const firebaseApp = initializeApp(firebaseConfig);
+        
+        const db = getDatabase(firebaseApp);
+        const messengerDb = getDatabase(firebaseApp, "https://cic-os-messenger.firebaseio.com/");
+        const auth = getAuth(firebaseApp);
+        const storage = getStorage(firebaseApp);
+
+        // ==========================================
+        // SISTEMA DE NOTIFICACIONES TOAST (GLOBAL)
+        // ==========================================
+        let toastTimeout;
+        window.showToast = function(message, type = 'success') {
+            const toast = document.getElementById('global-toast');
+            const msgEl = document.getElementById('global-toast-msg');
+            const iconEl = document.getElementById('global-toast-icon');
+
+            toast.className = "fixed top-[75px] left-1/2 transform -translate-x-1/2 z-[200] px-5 py-2.5 rounded-full shadow-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white transition-all duration-300 pointer-events-none flex items-center gap-2";
+
+            if (type === 'success') {
+                toast.classList.add('bg-green-600');
+                iconEl.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-600');
+                iconEl.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            } else {
+                toast.classList.add('bg-indigo-600');
+                iconEl.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            }
+
+            msgEl.innerText = message;
+
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-4');
+            }, 3000);
+        };
+
+        const container = document.getElementById('notices-container');
+        const modal = document.getElementById('notice-modal');
+        const appsContainer = document.getElementById('apps-container');
+        const appDrawer = document.getElementById('app-drawer');
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const desktopView = document.getElementById('desktop-view');
+        const appView = document.getElementById('app-view');
+        const profileView = document.getElementById('profile-view');
+        const profileIframe = document.getElementById('profile-iframe');
+
+        const userName = sessionStorage.getItem('cic_os_name') || 'Usuario';
+        let localData = {}; 
+        let currentUserPhotoId = "default";
+        
+        const MAX_IFRAMES_IN_RAM = 10;
+        let loadedAppsIframes = {}; 
+        let iframeHistory = []; 
+
+        const AVISOS_DB_NAME = "CIC_OS_Avisos";
+        const AVISOS_STORE_NAME = "cache";
+        const REGAS_DB_NAME = "CIC_OS_RegAs";
+        const REGAS_DB_VERSION = 8; 
+
+        // --- CACHÉ GLOBAL DE USUARIOS (NOMBRES Y FOTOS PERSISTENTE) ---
+        let globalUsersCache = {};
+
+        async function openIDBAvisos() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(AVISOS_DB_NAME, 1);
+                req.onupgradeneeded = (e) => e.target.result.createObjectStore(AVISOS_STORE_NAME);
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = () => reject("Error en DB de Avisos");
+            });
+        }
+
+        async function loadGlobalUsersCache() {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const req = idb.transaction(AVISOS_STORE_NAME, "readonly").objectStore(AVISOS_STORE_NAME).get("usuarios_cache");
+                req.onsuccess = () => { globalUsersCache = req.result || {}; idb.close(); resolve(); };
+                req.onerror = () => { idb.close(); resolve(); };
+            });
+        }
+
+        async function saveGlobalUsersCache() {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const tx = idb.transaction(AVISOS_STORE_NAME, "readwrite");
+                tx.objectStore(AVISOS_STORE_NAME).put(globalUsersCache, "usuarios_cache");
+                tx.oncomplete = () => { idb.close(); resolve(); };
+            });
+        }
+
+        async function fetchPhotoUrl(id) {
+            try { return await getDownloadURL(sRef(storage, `Fotos/ElementosPP/${id}.webp`)); } 
+            catch (e) { return 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; }
+        }
+
+        async function getUserInfo(uid) {
+            if (globalUsersCache[uid]) return globalUsersCache[uid];
+            try {
+                const snap = await get(ref(db, `usuarios/${uid}`));
+                if (snap.exists()) {
+                    const data = snap.val();
+                    const name = data.nombre || data.Nombre || data.name || data.Name || 'Usuario';
+                    const photoId = data.ID || data.id || 'default';
+                    const photoUrl = await fetchPhotoUrl(photoId);
+                    globalUsersCache[uid] = { name, photoUrl };
+                    saveGlobalUsersCache(); // Fire and forget (Asíncrono para no bloquear)
+                    return globalUsersCache[uid];
+                }
+            } catch(e) {}
+            // Fallback si falla
+            globalUsersCache[uid] = { name: 'Usuario', photoUrl: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' };
+            saveGlobalUsersCache();
+            return globalUsersCache[uid];
+        }
+
+        const fixPath = (path) => {
+            if (!path) return "";
+            if (path.startsWith('http') || path.startsWith('data:')) return path;
+            let cleanPath = path.replace(/^(\.\.\/|\.\/|\/)+/, '');
+            return `../${cleanPath}`;
+        };
+
+        const toggleDrawer = () => {
+            appDrawer.classList.toggle('open');
+            drawerOverlay.classList.toggle('open');
+        };
+
+        document.getElementById('btn-hamburger').onclick = toggleDrawer;
+        document.getElementById('btn-close-drawer').onclick = toggleDrawer;
+        drawerOverlay.onclick = toggleDrawer;
+
+        // ==========================================
+        // CONTROLADORES DE BADGES (MENSAJES Y NOTIFICACIONES)
+        // ==========================================
+        let messageCount = 0;
+        let bellCount = 0;
+        const msgBadge = document.getElementById('msg-badge');
+        const bellBadge = document.getElementById('bell-badge');
+        
+        function incrementMessageBadge() {
+            messageCount++;
+            msgBadge.textContent = messageCount > 9 ? '9+' : messageCount;
+            msgBadge.style.display = 'flex';
+        }
+        function clearMessageBadge() {
+            messageCount = 0;
+            msgBadge.style.display = 'none';
+        }
+
+        function incrementBellBadge() {
+            bellCount++;
+            bellBadge.textContent = bellCount > 9 ? '9+' : bellCount;
+            bellBadge.style.display = 'flex';
+        }
+        function clearBellBadge() {
+            bellCount = 0;
+            bellBadge.style.display = 'none';
+        }
+
+        // ==========================================
+        // MANEJADOR DE CLIC: CAMPANA DE NOTIFICACIONES
+        // ==========================================
+        document.getElementById('btn-bell').onclick = (e) => {
+            e.stopPropagation();
+            clearBellBadge();
+            
+            document.getElementById('view-messenger').style.display = 'none';
+            document.getElementById('view-notifications').style.display = 'flex';
+
+            const rightPanel = document.getElementById('right-panel-container');
+            if (window.innerWidth < 768) {
+                rightPanel.style.position = 'fixed';
+                rightPanel.style.top = '0';
+                rightPanel.style.left = '0';
+                rightPanel.style.width = '100%';
+                rightPanel.style.height = '100%';
+                rightPanel.style.zIndex = '200';
+                rightPanel.style.background = 'white';
+                rightPanel.classList.remove('hidden');
+                rightPanel.classList.add('flex');
+            }
+        };
+
+        document.getElementById('btn-messenger').onclick = (e) => {
+            e.stopPropagation();
+            clearMessageBadge();
+
+            document.getElementById('view-notifications').style.display = 'none';
+            document.getElementById('view-messenger').style.display = 'flex';
+
+            const messengerIframe = document.getElementById('messenger-iframe');
+            if (messengerIframe.src.includes('about:blank') || messengerIframe.src === '') {
+                messengerIframe.src = fixPath('apps/messenger.html');
+            }
+
+            const rightPanel = document.getElementById('right-panel-container');
+            if (window.innerWidth < 768) {
+                rightPanel.style.position = 'fixed';
+                rightPanel.style.top = '0';
+                rightPanel.style.left = '0';
+                rightPanel.style.width = '100%';
+                rightPanel.style.height = '100%';
+                rightPanel.style.zIndex = '200';
+                rightPanel.style.background = 'white';
+                rightPanel.classList.remove('hidden');
+                rightPanel.classList.add('flex');
+            }
+        };
+
+        document.getElementById('btn-close-messenger').onclick = () => {
+            document.getElementById('view-messenger').style.display = 'none';
+            document.getElementById('view-notifications').style.display = 'flex';
+            
+            const rightPanel = document.getElementById('right-panel-container');
+            if (window.innerWidth < 768) {
+                rightPanel.style.position = '';
+                rightPanel.style.top = '';
+                rightPanel.style.left = '';
+                rightPanel.style.width = '';
+                rightPanel.style.height = '';
+                rightPanel.style.zIndex = '';
+                rightPanel.style.background = '';
+                rightPanel.classList.add('hidden');
+                rightPanel.classList.remove('flex');
+            }
+        };
+
+        document.getElementById('btn-show-notifs-mobile').onclick = () => {
+            document.getElementById('notif-mobile-modal').style.display = 'flex';
+        };
+        document.getElementById('btn-close-notif-mobile-modal').onclick = () => {
+            document.getElementById('notif-mobile-modal').style.display = 'none';
+        };
+        document.getElementById('btn-close-notifs-mobile').onclick = () => {
+            document.getElementById('right-panel-container').classList.add('hidden');
+        };
+
+        async function initSharedDatabases() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(REGAS_DB_NAME, REGAS_DB_VERSION);
+
+                request.onupgradeneeded = (e) => {
+                    const idb = e.target.result;
+                    console.log(`[CIC-OS] Actualizando estructura de ${REGAS_DB_NAME}...`);
+                    if (idb.objectStoreNames.contains("registros")) idb.deleteObjectStore("registros");
+                    if (idb.objectStoreNames.contains("catalogos")) idb.deleteObjectStore("catalogos");
+                    idb.createObjectStore("registros", { keyPath: "id" });
+                    idb.createObjectStore("catalogos", { keyPath: "id" });
+                };
+
+                request.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const hasRegistros = idb.objectStoreNames.contains("registros");
+                    const hasCatalogos = idb.objectStoreNames.contains("catalogos");
+                    
+                    if (!hasRegistros || !hasCatalogos) {
+                        console.warn(`[CIC-OS] Corrupción detectada en ${REGAS_DB_NAME}. Auto-reparando...`);
+                        idb.close();
+                        const deleteReq = indexedDB.deleteDatabase(REGAS_DB_NAME);
+                        deleteReq.onsuccess = () => { window.location.reload(); };
+                        deleteReq.onerror = () => reject(`Error crítico al purgar ${REGAS_DB_NAME}`);
+                        return; 
+                    }
+
+                    try {
+                        const tx = idb.transaction("catalogos", "readonly");
+                        const store = tx.objectStore("catalogos");
+                        const countReq = store.count();
+                        
+                        countReq.onsuccess = () => {
+                            if (countReq.result === 0) {
+                                console.warn(`[CIC-OS] Catálogos vacíos detectados. Forzando descarga inicial...`);
+                                if (typeof window.Download_DB === 'function') {
+                                    window.Download_DB(["Catalogos"]);
+                                }
+                            }
+                            console.log(`[CIC-OS] Bases de datos globales listas.`);
+                            idb.close(); 
+                            resolve(true);
+                        };
+                        
+                        countReq.onerror = () => {
+                            idb.close();
+                            resolve(true);
+                        };
+                    } catch(err) {
+                        idb.close();
+                        resolve(true);
+                    }
+                };
+
+                request.onerror = (e) => reject(e);
+                request.onblocked = () => {
+                    console.warn(`[CIC-OS] BD ${REGAS_DB_NAME} en uso por otra pestaña.`);
+                };
+            });
+        }
+
+        async function saveLocal(data) {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const tx = idb.transaction(AVISOS_STORE_NAME, "readwrite");
+                tx.objectStore(AVISOS_STORE_NAME).put(data, "vigentes");
+                tx.oncomplete = () => { idb.close(); resolve(); };
+            });
+        }
+
+        async function loadLocal() {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const req = idb.transaction(AVISOS_STORE_NAME, "readonly").objectStore(AVISOS_STORE_NAME).get("vigentes");
+                req.onsuccess = () => { idb.close(); resolve(req.result || {}); };
+            });
+        }
+
+        // --- NUEVAS FUNCIONES DE CACHÉ PARA NOTIFICACIONES ---
+        async function saveLocalNotifs(data) {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const tx = idb.transaction(AVISOS_STORE_NAME, "readwrite");
+                tx.objectStore(AVISOS_STORE_NAME).put(data, "notificaciones");
+                tx.oncomplete = () => { idb.close(); resolve(); };
+            });
+        }
+
+        async function loadLocalNotifs() {
+            const idb = await openIDBAvisos();
+            return new Promise((resolve) => {
+                const req = idb.transaction(AVISOS_STORE_NAME, "readonly").objectStore(AVISOS_STORE_NAME).get("notificaciones");
+                req.onsuccess = () => { idb.close(); resolve(req.result || {}); };
+                req.onerror = () => { idb.close(); resolve({}); };
+            });
+        }
+
+        window.openApp = (route, iconPath = '../ico/cic.ico', bgColor = '') => {
+            
+            if (route.startsWith('http://') || route.startsWith('https://')) {
+                window.open(route, '_blank'); 
+                return;
+            }
+
+            const mainIcon = document.getElementById('main-os-icon');
+            const btnHamburger = document.getElementById('btn-hamburger');
+            
+            if (mainIcon) mainIcon.src = iconPath;
+            if (btnHamburger) btnHamburger.style.backgroundColor = bgColor; 
+
+            if (route !== 'inicio') {
+                localStorage.setItem('cic_os_last_app', JSON.stringify({ route, iconPath, bgColor }));
+            } else {
+                localStorage.removeItem('cic_os_last_app');
+            }
+
+            if (profileView) profileView.style.display = 'none';
+
+            if (route === 'inicio') {
+                desktopView.style.display = 'flex';
+                appView.style.display = 'none';
+                return;
+            }
+
+            desktopView.style.display = 'none';
+            appView.style.display = 'block';
+
+            Object.values(loadedAppsIframes).forEach(iframe => iframe.style.display = 'none');
+            const fixedRoute = fixPath(route);
+
+            if (!loadedAppsIframes[fixedRoute]) {
+                
+                if (iframeHistory.length >= MAX_IFRAMES_IN_RAM) {
+                    const oldestRoute = iframeHistory.shift(); 
+                    if (loadedAppsIframes[oldestRoute]) {
+                        console.log(`[CIC-OS GC] Destruyendo instancia antigua: ${oldestRoute}`);
+                        loadedAppsIframes[oldestRoute].remove(); 
+                        delete loadedAppsIframes[oldestRoute];
+                    }
+                }
+
+                const iframe = document.createElement('iframe');
+                iframe.src = fixedRoute;
+                iframe.className = 'w-full h-full border-none absolute inset-0';
+                appView.appendChild(iframe);
+                
+                loadedAppsIframes[fixedRoute] = iframe;
+                iframeHistory.push(fixedRoute);
+                
+            } else {
+                loadedAppsIframes[fixedRoute].style.display = 'block';
+                iframeHistory = iframeHistory.filter(r => r !== fixedRoute);
+                iframeHistory.push(fixedRoute);
+            }
+        };
+
+        let viewBeforeProfile = 'desktop'; 
+
+        window.openProfile = () => {
+            if (desktopView.style.display !== 'none') {
+                viewBeforeProfile = 'desktop';
+            } else if (appView.style.display === 'block') {
+                viewBeforeProfile = 'app';
+            }
+
+            desktopView.style.display = 'none';
+            appView.style.display = 'none';
+
+            profileView.style.display = 'block';
+
+            if (profileIframe.src.includes('about:blank') || profileIframe.src === '') {
+                profileIframe.src = fixPath('../secciones/mods/cco/MiPerfil.html');
+            }
+        };
+
+        window.closeProfile = () => {
+            profileView.style.display = 'none';
+
+            if (viewBeforeProfile === 'desktop') {
+                desktopView.style.display = 'flex';
+            } else {
+                appView.style.display = 'block';
+            }
+        };
+
+        function loadApps() {
+            const appsRef = ref(db, 'apps');
+            onValue(appsRef, (snapshot) => {
+                const data = snapshot.val();
+                
+                appsContainer.innerHTML = `
+                    <button onclick="window.openApp('inicio', '../ico/cic.ico', ''); toggleDrawer();" class="flex flex-row items-center justify-start w-full h-[50px] px-3 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 group cursor-pointer shadow-sm relative overflow-hidden">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-110 bg-white border border-gray-200">
+                            <img src="../ico/cic.ico" class="w-5 h-5 object-contain" alt="Inicio">
+                        </div>
+                        <span class="text-xs font-bold text-gray-700 ml-3 group-hover:text-red-600 transition-colors uppercase tracking-wider">Escritorio</span>
+                    </button>
+                `;
+                
+                if (!data) return;
+                const appsArray = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+                appsArray.sort((a, b) => (a.index || 99) - (b.index || 99));
+
+                appsArray.forEach(appData => {
+                    const iconPath = fixPath(appData.icono);
+                    const appRoute = appData.ruta;
+                    const bgColor = appData.background || '#f3f4f6';
+
+                    const btn = document.createElement('button');
+                    btn.className = "flex flex-row items-center justify-start w-full h-[50px] px-3 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 group cursor-pointer shadow-sm relative overflow-hidden";
+                    btn.onclick = () => {
+                        toggleDrawer(); 
+                        window.openApp(appRoute, iconPath, bgColor); 
+                    };
+                    
+                    btn.innerHTML = `
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-110" style="background-color: ${bgColor}">
+                            <img src="${iconPath}" class="w-4 h-4 object-contain icon-hover-white" alt="Icono ${appData.id}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828304.png'">
+                        </div>
+                        <span class="text-xs font-bold text-gray-700 ml-3 group-hover:text-red-600 transition-colors uppercase tracking-wider text-left truncate flex-1">${appData.id}</span>
+                    `;
+                    appsContainer.appendChild(btn);
+                });
+            });
+        }
+
+        // ==========================================
+        // FLUJO DE NOTIFICACIONES (RTDB) Y VISTO POR
+        // ==========================================
+        let validNotifsMem = [];
+        let localNotifsData = {};
+        let renderTimeout;
+        
+        function queueRenderNotifications() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(() => {
+                renderNotificationsListAsync();
+            }, 100);
+        }
+        
+        function rebuildValidNotifsMem() {
+            validNotifsMem = Object.keys(localNotifsData)
+                .filter(key => key !== 'ultima-vista' && !isNaN(Number(key)))
+                .map(key => ({ key, ...localNotifsData[key] }));
+            queueRenderNotifications();
+        }
+
+        async function initBackendNotifications(user) {
+            const uid = user.uid;
+
+            localNotifsData = await loadLocalNotifs();
+
+            let cacheUpdated = false;
+            for (const k of Object.keys(localNotifsData)) {
+                if (k === 'ultima-vista' || isNaN(Number(k))) {
+                    delete localNotifsData[k];
+                    cacheUpdated = true;
+                }
+            }
+            if (cacheUpdated) saveLocalNotifs(localNotifsData);
+
+            rebuildValidNotifsMem();
+
+            const uvRef = ref(db, `notificaciones/ultima-vista/${uid}`);
+            
+            try {
+                const uvSnap = await get(uvRef);
+                let lastTs = uvSnap.exists() ? uvSnap.val() : null;
+
+                let notifsQuery;
+                if (lastTs) {
+                    notifsQuery = query(ref(db, 'notificaciones'), orderByKey(), startAfter(String(lastTs)));
+                } else {
+                    notifsQuery = ref(db, 'notificaciones');
+                }
+
+                const allNotifsSnap = await get(notifsQuery);
+
+                let newMaxTs = lastTs || 0;
+                let fetchedNew = false;
+                let dbUpdates = {};
+
+                if (allNotifsSnap.exists()) {
+                    let data = allNotifsSnap.val();
+                    delete data['ultima-vista']; 
+
+                    for (const key of Object.keys(data)) {
+                        if (key === 'ultima-vista' || isNaN(Number(key))) continue;
+                        
+                        const notif = data[key];
+                        const ts = Number(key);
+                        
+                        localNotifsData[key] = notif;
+
+                        fetchedNew = true;
+                        if (ts > newMaxTs) newMaxTs = ts;
+
+                        if (!notif['visto-por'] || !notif['visto-por'][uid]) {
+                            dbUpdates[`notificaciones/${key}/visto-por/${uid}`] = true;
+                            incrementBellBadge();
+                        }
+                    }
+                }
+
+                if (fetchedNew) {
+                    await saveLocalNotifs(localNotifsData);
+                    rebuildValidNotifsMem();
+
+                    dbUpdates[`notificaciones/ultima-vista/${uid}`] = newMaxTs;
+                    try { await update(ref(db), dbUpdates); } 
+                    catch (e) { console.error("Error confirmando notificaciones vistas", e); }
+                }
+
+                const liveQuery = query(ref(db, 'notificaciones'), orderByKey(), startAfter(String(newMaxTs)));
+                onChildAdded(liveQuery, (snap) => {
+                    if (snap.key === 'ultima-vista' || isNaN(Number(snap.key))) return;
+                    
+                    const notif = snap.val();
+                    const ts = Number(snap.key);
+
+                    update(ref(db), {
+                        [`notificaciones/${snap.key}/visto-por/${uid}`]: true,
+                        [`notificaciones/ultima-vista/${uid}`]: ts
+                    });
+                    
+                    incrementBellBadge();
+                    
+                    localNotifsData[snap.key] = notif;
+                    saveLocalNotifs(localNotifsData);
+                    rebuildValidNotifsMem();
+                });
+                
+                onChildChanged(ref(db, 'notificaciones'), (snap) => {
+                    if (snap.key === 'ultima-vista' || isNaN(Number(snap.key))) return;
+                    const notif = snap.val();
+                    if (localNotifsData[snap.key]) {
+                        localNotifsData[snap.key]['visto-por'] = notif['visto-por'];
+                        saveLocalNotifs(localNotifsData);
+                        rebuildValidNotifsMem();
+                    }
+                });
+                
+            } catch (err) {
+                console.error("[CIC-OS] Error al inicializar notificaciones:", err);
+            }
+        }
+
+        async function renderNotificationsListAsync() {
+            const panel = document.getElementById('notifications-panel');
+            
+            if(validNotifsMem.length === 0) {
+                panel.innerHTML = '<p class="text-center text-gray-400 text-[10px] italic uppercase tracking-widest py-10">Bandeja Vacía</p>';
+                return;
+            }
+
+            validNotifsMem.sort((a, b) => Number(b.key) - Number(a.key)); 
+
+            // Paginación en DOM para proteger el hilo principal
+            const notifsToRender = validNotifsMem.slice(0, 50);
+
+            // Creamos un contenedor temporal en memoria
+            const tempDiv = document.createElement('div');
+            tempDiv.className = "flex flex-col gap-3 content-start";
+
+            for (const notif of notifsToRender) {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex gap-3 items-start group";
+                
+                const thumb = notif['url-miniatura'] 
+                    ? `<img src="${notif['url-miniatura']}" class="w-10 h-10 rounded-lg object-cover shrink-0 border border-gray-200">` 
+                    : `<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 border border-gray-200"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg></div>`;
+
+                // Construir la sección de "Visto por"
+                let seenByHTML = '';
+                let seenByNames = [];
+                
+                if (notif['visto-por']) {
+                    const uids = Object.keys(notif['visto-por']);
+                    const displayUids = uids.slice(0, 5); // Mostrar máximo 5 fotos
+                    
+                    for (const u of displayUids) {
+                        const uInfo = await getUserInfo(u);
+                        seenByHTML += `<img src="${uInfo.photoUrl}" class="w-[18px] h-[18px] rounded-full border border-white shrink-0 -ml-1.5 first:ml-0 object-cover bg-gray-100 shadow-sm relative hover:z-10" alt="${uInfo.name}">`;
+                        seenByNames.push(uInfo.name.split(' ')[0]); // Solo primer nombre para no saturar
+                    }
+                    
+                    if (uids.length > 5) {
+                        seenByHTML += `<div class="w-[18px] h-[18px] rounded-full border border-white shrink-0 -ml-1.5 bg-gray-100 flex items-center justify-center text-[6px] font-black text-gray-500 shadow-sm relative hover:z-10">+${uids.length - 5}</div>`;
+                        seenByNames.push(`y ${uids.length - 5} más`);
+                    }
+                }
+
+                div.innerHTML = `
+                    ${thumb}
+                    <div class="flex-col flex-grow overflow-hidden">
+                        <h4 class="text-xs font-bold text-gray-800 truncate group-hover:text-purple-600 transition-colors">${notif.title || 'Notificación'}</h4>
+                        <p class="text-[10px] text-gray-500 leading-tight mt-0.5 line-clamp-2">${notif.mensaje || ''}</p>
+                        
+                        <div class="flex items-end justify-between mt-2">
+                            <span class="text-[8px] text-gray-400 font-bold uppercase">${new Date(Number(notif.key)).toLocaleString()}</span>
+                            
+                            <!-- Componente Visto Por con Nubecita (Tooltip) -->
+                            ${seenByHTML ? `
+                            <div class="relative group/seen flex items-center h-[18px]">
+                                <div class="flex items-center">
+                                    ${seenByHTML}
+                                </div>
+                                <div class="absolute bottom-full right-0 mb-1 hidden group-hover/seen:block bg-gray-800/90 backdrop-blur text-white text-[9px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-[100] pointer-events-none">
+                                    Visto por: ${seenByNames.join(', ')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                if (notif.url) {
+                    div.onclick = () => openNotificationIframe(notif.url);
+                }
+
+                tempDiv.appendChild(div);
+            }
+            
+            // Indicador de más notificaciones
+            if (validNotifsMem.length > 50) {
+                const moreMsg = document.createElement('p');
+                moreMsg.className = "text-center text-gray-400 text-[9px] font-bold uppercase tracking-widest py-4 bg-gray-100/50 rounded-lg border border-gray-100 mt-2";
+                moreMsg.innerText = `+${validNotifsMem.length - 50} Notificaciones Anteriores Ocultas`;
+                tempDiv.appendChild(moreMsg);
+            }
+            
+            // Reemplazar DOM en una sola operación
+            panel.innerHTML = '';
+            panel.appendChild(tempDiv);
+        }
+
+        // ==========================================
+        // CONTROL VISUAL: IFRAME DE NOTIFICACIONES 
+        // ==========================================
+        function openNotificationIframe(url) {
+            document.getElementById('left-panel-avisos').classList.add('hidden');
+            document.getElementById('left-panel-avisos').classList.remove('flex');
+            
+            const iframeContainer = document.getElementById('left-panel-iframe-container');
+            iframeContainer.classList.remove('hidden');
+            iframeContainer.classList.add('flex');
+            
+            document.getElementById('notif-content-iframe').src = fixPath(url);
+        }
+
+        document.getElementById('btn-close-notif-iframe').onclick = () => {
+            const iframeContainer = document.getElementById('left-panel-iframe-container');
+            iframeContainer.classList.add('hidden');
+            iframeContainer.classList.remove('flex');
+            
+            const avisosContainer = document.getElementById('left-panel-avisos');
+            avisosContainer.classList.remove('hidden');
+            avisosContainer.classList.add('flex');
+            
+            document.getElementById('notif-content-iframe').src = 'about:blank';
+        };
+
+        // --- AVISOS SYNC ---
+        async function syncAvisos() {
+            const snapTS = await get(ref(db, 'updates/avisos'));
+            const remoteTS = snapTS.val();
+            const localTS = localStorage.getItem('update_avisos');
+
+            if (!localTS || localTS != remoteTS) {
+                const snap = await get(ref(db, 'avisos'));
+                localData = snap.val() || {};
+                await saveLocal(localData);
+                localStorage.setItem('update_avisos', remoteTS || Date.now());
+            } else {
+                localData = await loadLocal();
+            }
+            renderNotices();
+            initAvisosListeners();
+        }
+
+        function initAvisosListeners() {
+            const avisosRef = ref(db, 'avisos');
+            onChildAdded(avisosRef, async (snap) => {
+                if (localData[snap.key]) return; 
+                localData[snap.key] = snap.val();
+                await saveAndSyncTimestamp();
+            });
+            onChildChanged(avisosRef, async (snap) => {
+                localData[snap.key] = snap.val();
+                await saveAndSyncTimestamp();
+            });
+            onChildRemoved(avisosRef, async (snap) => {
+                if (localData[snap.key]) {
+                    delete localData[snap.key];
+                    await saveAndSyncTimestamp();
+                }
+            });
+        }
+
+        async function saveAndSyncTimestamp() {
+            await saveLocal(localData);
+            const ts = Date.now();
+            localStorage.setItem('update_avisos', ts);
+            await set(ref(db, 'updates/avisos'), ts);
+            renderNotices();
+        }
+
+        let lastRenderHash = "";
+        async function renderNotices() {
+            const now = new Date();
+            const sorted = Object.entries(localData)
+                .map(([id, val]) => ({ id, ...val }))
+                .filter(n => new Date(n.start) <= now && new Date(n.expiry) > now)
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            const currentHash = JSON.stringify(sorted);
+            if (currentHash === lastRenderHash) return;
+            lastRenderHash = currentHash;
+
+            container.innerHTML = "";
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-400 text-xs py-10 italic uppercase tracking-widest">Sin comunicados de red vigentes.</div>';
+                return;
+            }
+
+            for (const not of sorted) {
+                const photoPath = await fetchPhotoUrl(not.authorId || 'default');
+                const div = document.createElement('div');
+                div.className = "p-5 bg-white rounded-xl border-l-[4px] border-red-500 shadow-sm border border-gray-100 flex flex-col justify-between";
+                div.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="font-extrabold text-gray-800 text-sm tracking-tight leading-tight">${not.title}</p>
+                            <span class="text-[9px] text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded ml-2 shrink-0">Expira: ${new Date(not.expiry).toLocaleDateString()}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">${not.body}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <img src="${photoPath}" class="user-thumb !w-6 !h-6 !border-gray-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
+                            <span class="text-[9px] text-gray-400 font-bold">Por: <span class="text-gray-600">${not.author}</span></span>
+                        </div>
+                        <span class="text-[8px] text-gray-300 font-bold uppercase">${new Date(not.timestamp).toLocaleDateString()}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('es-MX', { hour12: false });
+            document.getElementById('date').innerText = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            if (now.getSeconds() % 10 === 0) renderNotices();
+        }
+
+        async function fetchWeather() {
+            const getWeather = async (lat, lon) => {
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                    const data = await res.json();
+                    if(data.current_weather) {
+                        document.getElementById('temp').innerText = `${Math.round(data.current_weather.temperature)}°C`;
+                    }
+                } catch (e) {
+                    console.warn("[CIC-OS] Error recuperando clima local.");
+                }
+            };
+
+            // Intentar geolocalización, con fallback a Monterrey
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => getWeather(position.coords.latitude, position.coords.longitude),
+                    (error) => getWeather(25.6866, -100.3161) // Monterrey
+                );
+            } else {
+                getWeather(25.6866, -100.3161);
+            }
+        }
+
+        document.getElementById('btn-add-notice').onclick = () => {
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 86400000);
+            const fmt = (d) => { d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); };
+            document.getElementById('not-start').value = fmt(now);
+            document.getElementById('not-expiry').value = fmt(tomorrow);
+            modal.style.display = 'flex';
+        };
+
+        document.getElementById('btn-cancel').onclick = () => modal.style.display = 'none';
+
+        document.getElementById('btn-save-notice').onclick = async () => {
+            const title = document.getElementById('not-title').value;
+            const body = document.getElementById('not-body').value;
+            const start = document.getElementById('not-start').value;
+            const expiry = document.getElementById('not-expiry').value;
+            if(!title || !body || !start || !expiry) return;
+            
+            try {
+                const newRef = push(ref(db, 'avisos'));
+                const ts = Date.now();
+                await set(newRef, { title, body, start, expiry, author: userName, authorId: currentUserPhotoId, timestamp: ts });
+                
+                await set(ref(db, 'updates/avisos'), ts); 
+                
+                modal.style.display = 'none';
+                window.showToast('Aviso de Red Publicado', 'success');
+                
+                document.getElementById('not-title').value = '';
+                document.getElementById('not-body').value = '';
+                
+            } catch (error) {
+                console.error("[CIC-OS] Error al publicar el aviso de red:", error);
+                window.showToast('Error al publicar. Verifica tu conexión o permisos.', 'error');
+            }
+        };
+
+        document.getElementById('btn-logout').onclick = async () => {
+            document.body.style.cursor = 'wait';
+            window.showToast('Cerrando sesión, limpiando memoria...', 'info');
+            
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Error al cerrar sesión de Firebase:", error);
+            }
+
+            // Destruimos rastros temporales y locales
+            sessionStorage.clear(); 
+            localStorage.removeItem('cic_os_last_app');
+            localStorage.removeItem('updates_regas');
+            localStorage.removeItem('update_avisos');
+
+            // LIMPIEZA NUCLEAR: Destruimos la base de datos interna de Firebase Auth
+            // Esto evita que al reingresar con otra cuenta haya un conflicto de tokens fantasma
+            try {
+                indexedDB.deleteDatabase('firebaseLocalStorageDb');
+            } catch(e) {}
+
+            // Damos 500ms al navegador para borrar los archivos físicos antes de salir
+            setTimeout(() => {
+                document.body.style.cursor = 'default';
+                window.location.replace('../index.html');
+            }, 500);
+        };
+
+        // Banderas de seguridad
+        let isAppInitialized = false;
+        let currentAuthUid = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Previene ejecución doble si la sesión se refresca internamente pero el usuario no cambió
+                if (currentAuthUid === user.uid && isAppInitialized) return;
+                currentAuthUid = user.uid;
+
+                try {
+                    // FORZAR ACTUALIZACIÓN DE TOKEN
+                    await user.getIdToken(true);
+                } catch (e) {
+                    console.error("[CIC-OS] Error al refrescar token:", e);
+                    sessionStorage.clear();
+                    window.location.href = '../index.html';
+                    return;
+                }
+                
+                // Cargar Caché de usuarios antes que nada para agilizar renderización
+                await loadGlobalUsersCache();
+
+                // Obtener ID de la foto solo si es necesario (Optimización de lectura)
+                const userSnap = await get(ref(db, `usuarios/${user.uid}/ID`));
+                if (userSnap.exists()) {
+                    const freshPhotoId = userSnap.val();
+                    if (currentUserPhotoId !== freshPhotoId) {
+                        currentUserPhotoId = freshPhotoId;
+                        document.getElementById('current-user-photo').src = await fetchPhotoUrl(currentUserPhotoId);
+                    }
+                }
+
+                // Inicialización segura. Obligamos al OS a esperar a que Firebase confirme la sesión
+                if (!isAppInitialized) {
+                    isAppInitialized = true;
+                    
+                    // Le damos a Firebase 300ms para propagar el token a todos sus servicios internos
+                    setTimeout(() => {
+                        initBackendNotifications(user);
+
+                        const msgRef = ref(messengerDb, user.uid);
+                        let isInitialLoad = true;
+                        
+                        onValue(msgRef, () => { 
+                            isInitialLoad = false; 
+                        }, { onlyOnce: true });
+
+                        const checkAndNotify = (snap) => {
+                            const data = snap.val();
+                            if (!data || typeof data !== 'object') return;
+                            
+                            let lastMsg;
+                            const keys = Object.keys(data);
+                            if (keys.length === 0) return;
+
+                            if (typeof data[keys[keys.length - 1]] === 'object') {
+                                lastMsg = data[keys[keys.length - 1]];
+                            } else {
+                                lastMsg = data;
+                            }
+
+                            const senderId = lastMsg.senderId;
+                            
+                            if (senderId && String(senderId) !== String(user.uid)) {
+                                incrementMessageBadge();
+                            }
+                        };
+
+                        onChildAdded(msgRef, (snap) => {
+                            if (!isInitialLoad) checkAndNotify(snap);
+                        });
+
+                        onChildChanged(msgRef, (snap) => {
+                            checkAndNotify(snap);
+                        });
+
+                        loadApps();
+                        syncAvisos();
+                        
+                        initSharedDatabases().then(() => {
+                            if (typeof window.Download_DB === 'function') {
+                                window.Download_DB("AUTO"); 
+                            }
+                        }).catch(console.error);
+                        
+                    }, 300);
+                }
+
+            } else {
+                console.warn("[CIC-OS] Esperando validación de Firebase Auth...");
+                setTimeout(() => {
+                    if (!auth.currentUser) {
+                        window.showToast('Sesión inválida o expirada. Redirigiendo...', 'error');
+                        setTimeout(() => {
+                            sessionStorage.clear();
+                            window.location.href = '../index.html';
+                        }, 1500);
+                    }
+                }, 2000);
+            }
+        });
+
+        document.getElementById('user-name').innerText = userName;
+        document.getElementById('user-role').innerText = sessionStorage.getItem('cic_os_role') || 'Colaborador';
+        setInterval(updateClock, 1000);
+        updateClock();
+        fetchWeather();
+        setInterval(fetchWeather, 300000); // Refresca el clima cada 5 minutos
+
+        const lastAppStr = localStorage.getItem('cic_os_last_app');
+        if (lastAppStr) {
+            try {
+                if (lastAppStr.startsWith('{')) {
+                    const lastApp = JSON.parse(lastAppStr);
+                    window.openApp(lastApp.route, lastApp.iconPath, lastApp.bgColor);
+                } else {
+                    window.openApp(lastAppStr); 
+                }
+            } catch(e) {
+                window.openApp(lastAppStr);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creador de Notificaciones (DevTool)</title>
+    <!-- Usamos el CSS de Tailwind compilado localmente -->
+    <link href="../style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Open Sans', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="bg-purple-600 p-4 shrink-0">
+            <h2 class="text-white font-bold tracking-widest uppercase text-sm flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Generador de Notificaciones
+            </h2>
+            <p class="text-purple-200 text-[10px] mt-1">Herramienta de desarrollo para inyectar en RTDB</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Título de la Notificación</label>
+                <input type="text" id="n-title" placeholder="Ej: Nuevo Reporte Generado" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-purple-500 transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Mensaje Breve</label>
+                <textarea id="n-msg" rows="2" placeholder="Ej: Se ha detectado una nueva incidencia en la Caseta Norte." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-purple-500 transition-colors resize-none"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">URL Miniatura (Opcional - Link de imagen)</label>
+                <input type="text" id="n-thumb" placeholder="https://ejemplo.com/icono.png" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-purple-500 transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">URL de Destino (Opcional - Iframe interno)</label>
+                <input type="text" id="n-url" placeholder="Ej: apps/reportes.html" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-purple-500 transition-colors">
+            </div>
+
+            <div id="status-msg" class="hidden p-3 rounded-lg text-xs font-bold text-center"></div>
+        </div>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+            <button id="btn-send" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition text-xs tracking-widest shadow-md flex items-center gap-2">
+                ENVIAR AL SISTEMA
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Misma configuración que el CCO
+        const firebaseConfig = {
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/",
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const btnSend = document.getElementById('btn-send');
+        const statusBox = document.getElementById('status-msg');
+
+        function showStatus(msg, isError = false) {
+            statusBox.textContent = msg;
+            statusBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if(isError) {
+                statusBox.classList.add('bg-red-100', 'text-red-700');
+            } else {
+                statusBox.classList.add('bg-green-100', 'text-green-700');
+            }
+            setTimeout(() => { statusBox.classList.add('hidden'); }, 3000);
+        }
+
+        btnSend.addEventListener('click', async () => {
+            const title = document.getElementById('n-title').value.trim();
+            const mensaje = document.getElementById('n-msg').value.trim();
+            const thumb = document.getElementById('n-thumb').value.trim();
+            const url = document.getElementById('n-url').value.trim();
+
+            if (!title || !mensaje) {
+                showStatus("El título y el mensaje son obligatorios", true);
+                return;
+            }
+
+            btnSend.disabled = true;
+            btnSend.classList.add('opacity-50');
+            btnSend.innerText = 'ENVIANDO...';
+
+            try {
+                const ts = Date.now().toString(); // El timestamp es la llave
+                const notifRef = ref(db, `notificaciones/${ts}`);
+                
+                const notifData = {
+                    title: title,
+                    mensaje: mensaje
+                };
+
+                if (thumb) notifData['url-miniatura'] = thumb;
+                if (url) notifData['url'] = url;
+
+                await set(notifRef, notifData);
+
+                showStatus("¡Notificación enviada con éxito!");
+                
+                // Limpiar form
+                document.getElementById('n-title').value = '';
+                document.getElementById('n-msg').value = '';
+                document.getElementById('n-thumb').value = '';
+                document.getElementById('n-url').value = '';
+
+            } catch (error) {
+                console.error(error);
+                showStatus("Error al enviar a Firebase", true);
+            } finally {
+                btnSend.disabled = false;
+                btnSend.classList.remove('opacity-50');
+                btnSend.innerHTML = `ENVIAR AL SISTEMA <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>`;
+            }
+        });
+    </script>
+</body>
+</html>

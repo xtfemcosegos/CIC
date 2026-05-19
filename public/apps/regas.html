@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RegAs - Registro de Asistencia</title>
+    <!-- NOTA DE PRODUCCIÓN: Para el despliegue final, se recomienda compilar este CSS usando Node.js 
+         (npx tailwindcss) en lugar del CDN para mejorar sustancialmente el rendimiento de carga. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fuchsia-dark: #700070;
+            --fuchsia-soft: rgba(112, 0, 112, 0.05);
+        }
+
+        body, html {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f8fafc;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .main-panel {
+            background: #f8fafc;
+            height: 100vh;
+            width: 100vw;
+            display: none; 
+            position: relative;
+            flex-direction: row; 
+        }
+
+        /* Nav Sidebar - OPTIMIZADO Y COMPACTADO HORIZONTALMENTE */
+        .nav-sidebar {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(20px); 
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6px; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 60px; 
+            z-index: 20;
+            height: fit-content; 
+            margin: auto 0; 
+            border-radius: 0 20px 20px 0; 
+        }
+
+        .nav-sidebar.expanded { width: 170px; } 
+
+        #toggle-labels {
+            position: absolute;
+            left: 48px; 
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--fuchsia-dark);
+            color: white;
+            border-radius: 50%;
+            width: 22px; 
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(112, 0, 112, 0.4);
+            z-index: 30;
+            transition: left 0.3s;
+        }
+        
+        .nav-sidebar.expanded + #toggle-labels { left: 158px; } 
+
+        /* Items con menores márgenes de separación y padding compactado */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px; 
+            margin: 3px 0; 
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.7); 
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* Colores dinámicos y vibrantes al activar cada sección */
+        .nav-item[data-sec="inicio"].active { background: #be185d; box-shadow: 0 4px 12px rgba(190, 24, 93, 0.4); color: white; }
+        .nav-item[data-sec="planeacion"].active { background: #1d4ed8; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4); color: white; }
+        .nav-item[data-sec="reportes"].active { background: #047857; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.4); color: white; }
+        .nav-item[data-sec="elementos"].active { background: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4); color: white; }
+        .nav-item[data-sec="casetas"].active { background: #6d28d9; box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4); color: white; }
+        .nav-item[data-sec="eventos"].active { background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); color: white; }
+        .nav-item[data-sec="recorridos"].active { background: #0d9488; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4); color: white; }
+
+        /* Efectos de hover suaves con el color correspondiente */
+        .nav-item[data-sec="inicio"]:hover:not(.active) { background: rgba(190, 24, 93, 0.15); color: #f472b6; }
+        .nav-item[data-sec="planeacion"]:hover:not(.active) { background: rgba(29, 78, 216, 0.15); color: #60a5fa; }
+        .nav-item[data-sec="reportes"]:hover:not(.active) { background: rgba(4, 120, 87, 0.15); color: #34d399; }
+        .nav-item[data-sec="elementos"]:hover:not(.active) { background: rgba(217, 119, 6, 0.15); color: #fbbf24; }
+        .nav-item[data-sec="casetas"]:hover:not(.active) { background: rgba(109, 40, 217, 0.15); color: #c084fc; }
+        .nav-item[data-sec="eventos"]:hover:not(.active) { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }
+        .nav-item[data-sec="recorridos"]:hover:not(.active) { background: rgba(13, 148, 136, 0.15); color: #2dd4bf; }
+
+        .nav-text {
+            margin-left: 10px; 
+            font-weight: 600;
+            font-size: 13px; 
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .expanded .nav-text { opacity: 1; }
+
+        /* Overlays */
+        #sync-overlay, #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #login-overlay { display: none; z-index: 110; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+
+        .fuchsia-text { color: var(--fuchsia-dark); }
+        
+        /* Login Card */
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 50px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .icon-container-circle {
+            background: var(--fuchsia-dark);
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 10px 15px -3px rgba(112, 0, 112, 0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            outline: none;
+            background: #f8fafc;
+            transition: all 0.3s;
+        }
+        
+        input:focus { border-color: var(--fuchsia-dark); background: white; }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: var(--fuchsia-dark);
+            color: white;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        #standalone-brand {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 120;
+            display: none;
+        }
+
+        .brand-icon-box {
+            background: var(--fuchsia-dark);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sync-btn {
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-fast { animation: spin 0.8s linear infinite; }
+
+        /* --- RESPONSIVIDAD: DOCK PARA MÓVILES --- */
+        @media (max-width: 768px) {
+            .main-panel {
+                flex-direction: column-reverse !important; 
+            }
+            
+            .nav-sidebar {
+                width: calc(100% - 24px) !important; 
+                height: auto !important;
+                min-height: 52px;
+                flex-direction: row !important;
+                padding: 4px 12px !important;
+                border-right: none !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 20px !important; 
+                margin: 0 12px 12px 12px !important; 
+            }
+
+            .nav-sidebar .space-y-1 {
+                display: flex;
+                flex-direction: row;
+                flex-grow: 1;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .nav-item {
+                margin: 0 !important;
+                padding: 8px !important;
+                justify-content: center;
+                border-radius: 12px;
+            }
+
+            .sync-btn {
+                border-top: none !important;
+                border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+                padding-left: 15px !important;
+                margin-left: 5px !important;
+                display: flex;
+                align-items: center;
+            }
+
+            .nav-text {
+                display: none !important;
+            }
+
+            #toggle-labels {
+                display: none !important;
+            }
+            
+            .nav-item svg {
+                width: 22px;
+                height: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="standalone-brand">
+        <div class="brand-icon-box">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        </div>
+    </div>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="icon-container-circle">
+                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            </div>
+            <h2 class="text-3xl font-extrabold mb-2 text-slate-800">Acceso RegAs</h2>
+            <p class="text-slate-400 text-sm mb-10 font-medium uppercase tracking-[0.15em]">Sistema de Asistencia</p>
+            <div class="text-left">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Email Institucional</label>
+                <input type="email" id="login-email" placeholder="usuario@cic.com">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Contraseña</label>
+                <input type="password" id="login-pass" placeholder="••••••••">
+            </div>
+            <button class="btn-login" id="btn-do-login">INICIAR SESIÓN</button>
+            <p id="login-error" class="text-red-500 text-xs mt-6 hidden font-semibold">Credenciales no válidas</p>
+        </div>
+    </div>
+
+    <!-- Pantalla de Splash / Sincronización Inicial -->
+    <div id="sync-overlay">
+        <div class="icon-container-circle scale-110 mb-8">
+             <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </div>
+        <div class="w-14 h-14 border-[3px] border-slate-100 border-t-[#700070] rounded-full animate-spin mb-6"></div>
+        <p class="font-bold fuchsia-text animate-pulse text-xl tracking-tighter">RegAs | Iniciando</p>
+        <p id="sync-status" class="text-[10px] text-slate-400 mt-2 text-center max-w-xs uppercase tracking-[0.25em] font-bold">Preparando entorno de trabajo</p>
+    </div>
+
+    <!-- CONTENEDOR DE TOASTS NATIVOS (Reemplazo de Alerts de Navegador) -->
+    <div id="toast-container" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[150] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- PANEL FLOTANTE DE PASOS DE SINCRONIZACIÓN EN TIEMPO REAL -->
+    <div id="sync-progress-card" class="fixed bottom-24 left-6 bg-slate-900/95 text-white p-5 rounded-2xl shadow-2xl border border-slate-800 backdrop-blur-md z-50 transition-all duration-500 transform translate-y-24 opacity-0 pointer-events-none w-80">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-fuchsia-500 animate-pulse" id="sync-dot"></div>
+                <span class="text-xs font-bold tracking-widest uppercase text-slate-400">Vigía de Datos</span>
+            </div>
+            <span id="sync-percentage" class="text-xs font-extrabold text-fuchsia-400">0%</span>
+        </div>
+        
+        <!-- Barra de progreso -->
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">
+            <div id="sync-progress-bar" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+
+        <!-- Lista de etiquetas e indicadores de lo que sucede en la base de datos -->
+        <div class="space-y-2.5 text-xs text-slate-300" id="sync-steps-list">
+            <div id="step-rtdb" class="flex items-center justify-between text-slate-500 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="status-icon text-center w-4 inline-block">○</span>
+                    <span>Validando estado en nube</span>
+                </span>
+            </div>
+            <div id="step-clear" class="flex items-center justify-between text-slate-500 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="status-icon text-center w-4 inline-block">○</span>
+                    <span>Limpiando caché local</span>
+                </span>
+            </div>
+            <div id="step-idb" class="flex items-center justify-between text-slate-500 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="status-icon text-center w-4 inline-block">○</span>
+                    <span>Estructurando IndexedDB</span>
+                </span>
+            </div>
+            <div id="step-shifts" class="flex items-center justify-between text-slate-500 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="status-icon text-center w-4 inline-block">○</span>
+                    <span>Descargando turnos</span>
+                </span>
+            </div>
+            <div id="step-cats" class="flex items-center justify-between text-slate-500 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="status-icon text-center w-4 inline-block">○</span>
+                    <span>Actualizando catálogos</span>
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800 text-[10px] text-slate-400 tracking-wider uppercase font-bold text-center" id="sync-current-action">
+            Entorno preparado
+        </div>
+    </div>
+
+    <div class="main-panel" id="appFrame">
+        <nav class="nav-sidebar" id="sidebar">
+            <div class="space-y-1">
+                <div class="nav-item" onclick="switchSection('inicio', this)" data-sec="inicio" title="Inicio">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span class="nav-text">Inicio</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('planeacion', this)" data-sec="planeacion" title="Planeación">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="nav-text">Planeación</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('reportes', this)" data-sec="reportes" title="Reportes">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span class="nav-text">Reportes</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('elementos', this)" data-sec="elementos" title="Elementos">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span class="nav-text">Elementos</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('casetas', this)" data-sec="casetas" title="Casetas">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span class="nav-text">Casetas</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('eventos', this)" data-sec="eventos" title="Eventos">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span class="nav-text">Eventos</span>
+                </div>
+                <div class="nav-item" onclick="switchSection('recorridos', this)" data-sec="recorridos" title="Recorridos">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    <span class="nav-text">Recorridos</span>
+                </div>
+            </div>
+
+            <!-- Botón de Sincronización Manual -->
+            <div class="sync-btn">
+                <div class="nav-item" onclick="forceSync()" title="Sincronizar Datos">
+                    <svg id="sync-icon-svg" class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span class="nav-text">Actualizar DB</span>
+                </div>
+            </div>
+        </nav>
+        <div id="toggle-labels" onclick="document.getElementById('sidebar').classList.toggle('expanded')">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <main class="flex-grow relative bg-white overflow-hidden rounded-l-2xl shadow-xl ml-[-12px] z-10 sm:ml-0 sm:shadow-none sm:rounded-none">
+            <iframe id="section-iframe" class="w-full h-full border-none" src="about:blank"></iframe>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            messagingSenderId: "628160285586",
+            appId: "1:628160285586:web:cb265d10e256697ab68f4b",
+            measurementId: "G-Y76LMVF819",
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com/"
+        };
+
+        let app, auth, db, fs;
+        const syncStatusText = document.getElementById('sync-status');
+        const iframe = document.getElementById('section-iframe');
+        const DB_NAME = "CIC_OS_RegAs";
+
+        // --- SISTEMA UNIFICADO DE TOASTS ---
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3.5 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto max-w-sm border backdrop-blur-md`;
+            
+            if (type === 'success') {
+                toast.className += ` bg-emerald-950/95 text-emerald-200 border-emerald-800/50`;
+                toast.innerHTML = `<span class="text-base">✓</span> <span class="leading-tight">${message}</span>`;
+            } else if (type === 'error') {
+                toast.className += ` bg-red-950/95 text-red-200 border-red-800/50`;
+                toast.innerHTML = `<span class="text-base">✗</span> <span class="leading-tight">${message}</span>`;
+            } else if (type === 'warning') {
+                toast.className += ` bg-amber-950/95 text-amber-200 border-amber-800/50`;
+                toast.innerHTML = `<span class="text-base">⚠</span> <span class="leading-tight">${message}</span>`;
+            } else {
+                toast.className += ` bg-slate-900/95 text-slate-200 border-slate-700/50`;
+                toast.innerHTML = `<span class="text-base">ℹ</span> <span class="leading-tight">${message}</span>`;
+            }
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        };
+
+        async function initApp() {
+            const configStr = sessionStorage.getItem('cic_os_config') || localStorage.getItem('cic_os_config');
+            const token = sessionStorage.getItem('cic_os_token') || localStorage.getItem('cic_os_token');
+            const isIframe = window.self !== window.top;
+            const config = configStr ? JSON.parse(configStr) : defaultFirebaseConfig;
+
+            const syncBtnContainer = document.querySelector('.sync-btn');
+            if (syncBtnContainer) {
+                syncBtnContainer.style.display = isIframe ? 'none' : '';
+            }
+
+            try {
+                app = getApps().length > 0 ? getApp() : initializeApp(config);
+                auth = getAuth(app);
+                db = getDatabase(app);
+                fs = getFirestore(app);
+
+                if (isIframe) {
+                    if (!token) return window.location.href = '../index.html';
+                    finishSync(); 
+                } else {
+                    document.getElementById('standalone-brand').style.display = 'block';
+                    if (token) {
+                        finishSync();
+                    } else {
+                        document.getElementById('sync-overlay').style.display = 'none';
+                        document.getElementById('login-overlay').style.display = 'flex';
+                    }
+                }
+            } catch (e) { 
+                console.error(e);
+                finishSync(); 
+            }
+        }
+
+        // --- SISTEMA DE CONTROL DE ETIQUETAS DE PROGRESO DE SINCRONIZACIÓN ---
+        const progressCard = document.getElementById('sync-progress-card');
+        const progressBar = document.getElementById('sync-progress-bar');
+        const progressPercentage = document.getElementById('sync-percentage');
+        const progressCurrentAction = document.getElementById('sync-current-action');
+        const syncDot = document.getElementById('sync-dot');
+
+        function updateProgressUI(percentage, actionText, currentStepId = null, stepStatus = 'active') {
+            // Actualizar textos globales
+            if (progressPercentage) progressPercentage.innerText = `${percentage}%`;
+            if (progressBar) progressBar.style.width = `${percentage}%`;
+            if (progressCurrentAction) progressCurrentAction.innerText = actionText;
+            if (syncStatusText) syncStatusText.innerText = actionText;
+
+            // Manejo de estados de la lista de etiquetas
+            if (currentStepId) {
+                const steps = ['step-rtdb', 'step-clear', 'step-idb', 'step-shifts', 'step-cats'];
+                steps.forEach(step => {
+                    const el = document.getElementById(step);
+                    if (!el) return;
+                    const icon = el.querySelector('.status-icon');
+
+                    if (step === currentStepId) {
+                        el.className = "flex items-center justify-between text-fuchsia-400 font-semibold transition-colors duration-200";
+                        if (stepStatus === 'active') {
+                            if (icon) icon.innerHTML = `<span class="inline-block animate-spin">⏳</span>`;
+                        } else if (stepStatus === 'success') {
+                            el.className = "flex items-center justify-between text-emerald-400 transition-colors duration-200";
+                            if (icon) icon.innerHTML = "✓";
+                        } else if (stepStatus === 'error') {
+                            el.className = "flex items-center justify-between text-red-400 transition-colors duration-200";
+                            if (icon) icon.innerHTML = "✗";
+                        }
+                    } else {
+                        // Si el paso es anterior, lo dejamos marcado como completado de forma preventiva si ya pasamos
+                        const stepIndex = steps.indexOf(step);
+                        const currentIndex = steps.indexOf(currentStepId);
+                        if (stepIndex < currentIndex) {
+                            el.className = "flex items-center justify-between text-emerald-400 transition-colors duration-200";
+                            if (icon) icon.innerHTML = "✓";
+                        } else {
+                            el.className = "flex items-center justify-between text-slate-500 transition-colors duration-200";
+                            if (icon) icon.innerHTML = "○";
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- SISTEMA DE DESCARGA MANUAL DE BASES DE DATOS (REFACTORIZADO, BLINDADO Y CON ETIQUETAS UI) ---
+        window.forceSync = async function() {
+            const icon = document.getElementById('sync-icon-svg');
+            if(icon) icon.classList.add('animate-spin-fast');
+            
+            // Mostrar tarjeta de etiquetas visuales en la interfaz
+            if (progressCard) {
+                progressCard.classList.remove('opacity-0', 'translate-y-24', 'pointer-events-none');
+                progressCard.classList.add('opacity-100', 'translate-y-0');
+            }
+            if (syncDot) syncDot.className = "w-2.5 h-2.5 rounded-full bg-fuchsia-500 animate-pulse";
+
+            // Reiniciar pasos
+            updateProgressUI(5, "Inicializando sincronizador...", 'step-rtdb', 'active');
+
+            try {
+                // 1. Verificar el Timestamp de actualización en RTDB
+                const updatesRef = ref(db, 'updates/RegAs');
+                const updatesSnap = await get(updatesRef);
+                const remoteTimestamp = updatesSnap.val();
+                const localTimestamp = localStorage.getItem('updates_regas');
+
+                if (remoteTimestamp && String(remoteTimestamp) === String(localTimestamp)) {
+                    updateProgressUI(100, "Caché de datos al día", 'step-rtdb', 'success');
+                    // Completar visualmente todas las etiquetas
+                    ['step-clear', 'step-idb', 'step-shifts', 'step-cats'].forEach(step => {
+                        const el = document.getElementById(step);
+                        if (el) {
+                            el.className = "flex items-center justify-between text-emerald-400 transition-colors duration-200";
+                            const icon = el.querySelector('.status-icon');
+                            if (icon) icon.innerHTML = "✓";
+                        }
+                    });
+                    
+                    window.showToast("El sistema ya está al día. Datos cargados desde caché local.", "success");
+                    finishSync();
+                    return;
+                }
+
+                updateProgressUI(20, "Limpiando base de datos...", 'step-clear', 'active');
+
+                // 2. Eliminar IndexedDB manejando conexiones bloqueadas
+                await new Promise((resolve, reject) => {
+                    const deleteReq = indexedDB.deleteDatabase(DB_NAME);
+                    deleteReq.onsuccess = resolve;
+                    deleteReq.onerror = (e) => {
+                        console.error("Error al borrar IndexedDB:", e);
+                        reject(e);
+                    };
+                    // Manejo robusto de IndexedDB bloqueado por otras pestañas del navegador
+                    deleteReq.onblocked = () => {
+                        updateProgressUI(20, "Bloqueo detectado", 'step-clear', 'error');
+                        window.showToast("Memoria local en uso por otra pestaña. Recargando para corregir...", "warning");
+                        setTimeout(() => {
+                            window.location.reload(); 
+                        }, 2500);
+                    };
+                });
+
+                updateProgressUI(40, "Estructurando nueva memoria...", 'step-idb', 'active');
+
+                // 3. Re-crear IndexedDB
+                const idb = await new Promise((resolve, reject) => {
+                    const openReq = indexedDB.open(DB_NAME, 1);
+                    openReq.onupgradeneeded = (e) => {
+                        const database = e.target.result;
+                        if (!database.objectStoreNames.contains("registros")) database.createObjectStore("registros", { keyPath: "id" });
+                        if (!database.objectStoreNames.contains("catalogos")) database.createObjectStore("catalogos", { keyPath: "id" });
+                    };
+                    openReq.onsuccess = (e) => resolve(e.target.result);
+                    openReq.onerror = reject;
+                });
+
+                // Envoltura segura de transacciones
+                try {
+                    const saveToIDB = (storeName, dataObj) => {
+                        return new Promise((resolve, reject) => {
+                            const tx = idb.transaction(storeName, "readwrite");
+                            const store = tx.objectStore(storeName);
+                            store.put(dataObj);
+                            tx.oncomplete = resolve;
+                            tx.onerror = reject;
+                        });
+                    };
+
+                    updateProgressUI(60, "Descargando turnos...", 'step-shifts', 'active');
+
+                    // 4. Descargar REGISTROS de Firestore
+                    const regDocRef = doc(fs, "RegAs", "Registros");
+                    const regDocSnap = await getDoc(regDocRef);
+                    
+                    if (regDocSnap.exists()) {
+                        const dataRegistros = regDocSnap.data();
+                        for (const anio in dataRegistros) {
+                            const meses = dataRegistros[anio];
+                            for (const mes in meses) {
+                                const entryId = `${anio}_${mes}`;
+                                await saveToIDB("registros", { id: entryId, data: meses[mes] });
+                            }
+                        }
+                    }
+
+                    updateProgressUI(80, "Descargando catálogos...", 'step-cats', 'active');
+
+                    // 5. Descargar CATÁLOGOS de Firestore
+                    const catDocRef = doc(fs, "RegAs", "Catalogos");
+                    const catDocSnap = await getDoc(catDocRef);
+                    
+                    if (catDocSnap.exists()) {
+                        const dataCatalogos = catDocSnap.data();
+                        if (dataCatalogos.ElementosPP) await saveToIDB("catalogos", { id: "ElementosPP", data: dataCatalogos.ElementosPP });
+                        if (dataCatalogos.Casetas) await saveToIDB("catalogos", { id: "Casetas", data: dataCatalogos.Casetas });
+                    }
+
+                } finally {
+                    idb.close(); 
+                }
+
+                // 6. Actualizar el Timestamp local
+                if (remoteTimestamp) {
+                    localStorage.setItem('updates_regas', String(remoteTimestamp));
+                }
+
+                updateProgressUI(100, "Base de datos al día", 'step-cats', 'success');
+                if (syncDot) syncDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                
+                window.showToast("¡Base de datos sincronizada correctamente!", "success");
+
+            } catch (error) {
+                console.error("[RegAs Standalone] Error de sincronización:", error);
+                
+                // Indicar error visualmente en las etiquetas
+                if (progressBar) progressBar.className = "bg-gradient-to-r from-red-600 to-pink-600 h-full w-full transition-all duration-300";
+                if (progressPercentage) progressPercentage.innerText = "ERROR";
+                if (progressCurrentAction) progressCurrentAction.innerText = "Error en la descarga";
+                if (syncDot) syncDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
+                
+                window.showToast("Ocurrió un error al intentar sincronizar con la nube.", "error");
+            } finally {
+                if(icon) icon.classList.remove('animate-spin-fast');
+                
+                // Retrasar el cierre de la tarjeta para que el usuario aprecie el estado final
+                setTimeout(() => {
+                    if (progressCard) {
+                        progressCard.classList.add('opacity-0', 'translate-y-24', 'pointer-events-none');
+                        progressCard.classList.remove('opacity-100', 'translate-y-0');
+                    }
+                    // Restaurar color original de la barra de progreso
+                    setTimeout(() => {
+                        if (progressBar) progressBar.className = "bg-gradient-to-r from-fuchsia-600 to-pink-500 h-full w-0 transition-all duration-300";
+                    }, 500);
+                }, 4000);
+
+                finishSync();
+            }
+        };
+
+        function finishSync() {
+            document.getElementById('sync-overlay').style.opacity = '0';
+            document.getElementById('appFrame').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('sync-overlay').style.display = 'none';
+                if (!iframe.src || iframe.src === 'about:blank' || iframe.src.includes('about:blank')) {
+                    // PERSISTENCIA: Recuperar la última sección abierta de localStorage
+                    const lastSection = localStorage.getItem('regas_last_section') || 'inicio';
+                    const targetItem = document.querySelector(`.nav-item[data-sec="${lastSection}"]`) || document.querySelector('.nav-item');
+                    switchSection(lastSection, targetItem);
+                }
+            }, 300);
+        }
+
+        window.switchSection = function(name, el) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if(el) {
+                el.classList.add('active');
+            } else {
+                const target = document.querySelector(`.nav-item[data-sec="${name}"]`);
+                if (target) target.classList.add('active');
+            }
+            
+            localStorage.setItem('regas_last_section', name);
+            iframe.src = `../secciones/apps/regas/${name}.html`;
+        };
+
+        // --- SISTEMA DE LOGIN (Modo Standalone) ---
+        document.getElementById('btn-do-login').onclick = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            if(!email || !pass) return;
+            
+            try {
+                const res = await signInWithEmailAndPassword(auth, email, pass);
+                sessionStorage.setItem('cic_os_token', await res.user.getIdToken());
+                sessionStorage.setItem('cic_os_config', JSON.stringify(defaultFirebaseConfig));
+                
+                document.getElementById('login-overlay').style.display = 'none';
+                
+                // Forzar sincronización con AWAIT para respetar la línea de tiempo de ejecución
+                await forceSync();
+                
+            } catch (e) { 
+                document.getElementById('login-error').classList.remove('hidden'); 
+            }
+        };
+
+        // Arrancar
+        initApp();
+    </script>
+</body>
+</html>
