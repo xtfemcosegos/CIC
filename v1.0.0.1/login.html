@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('https://firebasestorage.googleapis.com/v0/b/cic-os.firebasestorage.app/o/multimedia%2FGemini_Generated_Image_yaqcniyaqcniyaqc.png?alt=media&token=d2457076-2c8f-4f95-9431-7fd4f9b92d42');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: 'Open Sans', sans-serif;
+        }
+        .login-box {
+            background-color: rgba(0, 0, 0, 0.5); /* Fondo negro con 90% de transparencia (10% opacidad) */
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Sombra ajustada para el fondo oscuro */
+            text-align: center;
+            color: #ffffff; /* Texto blanco para que resalte en fondo negro */
+            width: 100%;
+            max-width: 320px;
+        }
+        .login-box img {
+            width: 72px;
+            margin-bottom: 24px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #cccccc; /* Letra más clara para los labels */
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #555555; /* Borde más oscuro para integrarse al fondo */
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: rgba(0, 0, 0, 0.1); /* Fondo negro con 90% de transparencia en los controles */
+            color: #ffffff; /* Texto blanco en los controles */
+            font-family: 'Open Sans', sans-serif;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Open Sans', sans-serif;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <img src="ico/cic.ico" alt="Icono Sistema">
+        <div class="input-group">
+            <label for="email">Usuario / Correo</label>
+            <input type="email" id="email" placeholder="Ingresa tu correo">
+        </div>
+        <div class="input-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="Ingresa tu contraseña">
+        </div>
+        
+        <button id="login-btn">Iniciar Sesión</button>
+        
+        <div style="margin-top: 20px;">
+            <button style="background:none; border:none; color:#66b3ff; text-decoration:underline; font-size:12px;" onclick="window.parent.postMessage({action: 'switchFrame', target: 'iframe-home'}, '*')">Volver al Inicio</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importamos auth y la función de login desde nuestra configuración centralizada
+        import { auth, signInWithEmailAndPassword } from './js/firebase.js';
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert("Por favor ingresa tu correo y contraseña.");
+                return;
+            }
+
+            // Intentar iniciar sesión
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    // Guardar estado de la sesión en el navegador
+                    localStorage.setItem('isLoggedIn', 'true');
+                    // ¡Acceso correcto! Le pedimos al index que muestre el iframe de la App
+                    window.parent.postMessage({action: 'switchFrame', target: 'iframe-app'}, '*');
+                })
+                .catch((error) => {
+                    alert("Error al iniciar sesión: Verifique sus credenciales.");
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marbetes - Shell</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-base: #006B4E; /* Verde esmeralda oscuro */
+            --bg-glossy: linear-gradient(145deg, #2a2a2a 0%, #000000 100%);
+            --hover-color: rgba(255, 255, 255, 0.15);
+            --active-color: rgba(0, 107, 78, 0.6); /* Verde esmeralda transparente */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--color-base);
+            overflow: hidden;
+            display: flex;
+            transition: all 0.3s ease;
+        }
+
+        /* --- SIDEBAR NEGRO BRILLANTE --- */
+        #sidebar {
+            background: var(--bg-glossy);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.8), inset 1px 1px 0px rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 100;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Brillo sutil superior del sidebar */
+        #sidebar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 30%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            padding: 15px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+        }
+
+        .identity-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .identity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            margin: 0 auto;
+            transition: transform 0.2s;
+        }
+
+        .identity-icon:hover {
+            transform: scale(1.05);
+        }
+
+        .view-controls {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 5px;
+            margin-top: 15px;
+            width: 100%;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: none;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 4px;
+            padding: 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .control-btn:hover { background: var(--hover-color); }
+        .control-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;}
+
+        /* --- NAVEGACIÓN --- */
+        .nav-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 10px 0;
+            gap: 5px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #ccc;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--hover-color);
+            color: #fff;
+        }
+
+        .nav-btn.active {
+            background-color: var(--active-color);
+            color: #fff;
+            border-left: 3px solid var(--color-base);
+        }
+
+        .nav-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
+        .nav-btn span {
+            margin-left: 15px;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            display: none;
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        #main-content {
+            flex: 1;
+            background-color: #f0f0f0;
+            position: relative;
+        }
+
+        #content-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* --- BOTÓN FLOTANTE (Para Modo Oculto) --- */
+        #floating-identity {
+            position: fixed;
+            top: 15px;
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            background-color: #000;
+            padding: 2px;
+            transition: transform 0.2s;
+        }
+        #floating-identity:hover { transform: scale(1.05); }
+
+        /* ================= ESTADOS Y MODOS (ESCRITORIO) ================= */
+        /* POSICIONES */
+        body.pos-left { flex-direction: row; }
+        body.pos-right { flex-direction: row-reverse; }
+        body.pos-left #floating-identity { left: 15px; }
+        body.pos-right #floating-identity { right: 15px; }
+
+        /* MODO: ETIQUETAS */
+        body.mode-labels #sidebar { width: 220px; }
+        body.mode-labels .identity-icon { margin: 0; }
+        body.mode-labels .view-controls { display: flex; opacity: 1; }
+        body.mode-labels .nav-btn span { display: block; opacity: 1; }
+        body.mode-labels .nav-btn svg { margin: 0; }
+
+        /* MODO: ICONOS (Sidebar compacto) */
+        body.mode-icons #sidebar { width: 70px; }
+        body.mode-icons .view-controls { display: none; }
+
+        /* MODO: OCULTO */
+        body.mode-hidden #sidebar {
+            position: fixed;
+            height: 100%;
+            transform: translateX(-100%);
+        }
+        body.mode-hidden.pos-right #sidebar { transform: translateX(100%); }
+        body.mode-hidden #floating-identity { display: block; }
+        
+        /* OVERLAY TEMPORAL (Cuando se abre el menú en modo oculto) */
+        body.mode-hidden.show-overlay #sidebar {
+            transform: translateX(0);
+            width: 220px; /* Expande temporalmente para ver opciones */
+        }
+        body.mode-hidden.show-overlay .nav-btn span, body.mode-hidden.show-overlay .view-controls {
+            display: flex; opacity: 1;
+        }
+        body.mode-hidden.show-overlay .nav-btn svg, body.mode-hidden.show-overlay .identity-icon { margin: 0; }
+
+        /* ================= VISTA MÓVIL (DOCK SUPERIOR) ================= */
+        @media (max-width: 768px) {
+            body { flex-direction: column !important; }
+            
+            /* Modos Icons y Labels se convierten en Dock Superior */
+            body.mode-labels #sidebar, body.mode-icons #sidebar {
+                width: 100% !important;
+                height: 60px;
+                flex-direction: row;
+                position: static;
+                transform: none;
+            }
+
+            .sidebar-header { border-bottom: none; border-right: 1px solid rgba(255,255,255,0.1); padding: 5px 15px; justify-content: center; }
+            .view-controls { display: none !important; } /* Oculta controles en móvil para ahorrar espacio */
+            .identity-icon { width: 32px; height: 32px; margin: 0; }
+            
+            .nav-list { flex-direction: row; padding: 0 10px; align-items: center; }
+            .nav-btn { padding: 10px; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-btn.active { border-left: none; border-bottom: 3px solid var(--color-base); }
+            .nav-btn span { display: none !important; } /* Siempre oculta texto en dock móvil */
+            .nav-btn svg { margin: 0; width: 20px; height: 20px;}
+
+            /* Modo Oculto en móvil */
+            body.mode-hidden #sidebar {
+                position: fixed; top: 0; left: 0; height: auto; transform: translateY(-100%);
+            }
+            body.mode-hidden #floating-identity { top: 10px; left: 10px; right: auto; width: 40px; height: 40px;}
+            body.mode-hidden.show-overlay #sidebar { transform: translateY(0); width: 100% !important; height: auto; flex-direction: column;}
+            body.mode-hidden.show-overlay .nav-list { flex-direction: column; align-items: stretch;}
+            body.mode-hidden.show-overlay .nav-btn span { display: block !important; }
+            body.mode-hidden.show-overlay .view-controls { display: flex !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón Identidad Flotante (Para Modo Oculto) -->
+    <img src="../../ico/marbetes.ico" id="floating-identity" alt="Marbetes" onclick="toggleOverlay()">
+
+    <!-- Sidebar / Dock -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <div class="identity-container" onclick="toggleSettings()">
+                <img src="../../ico/marbetes.ico" class="identity-icon" alt="Marbetes">
+            </div>
+            <!-- Controles de Vista -->
+            <div class="view-controls" id="view-controls">
+                <div class="control-btn" onclick="setConfig('mode', 'hidden')" title="Modo Oculto">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </div>
+                <div class="control-btn" onclick="setConfig('mode', 'labels')" title="Sidebar Completo">
+                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                </div>
+                <div class="control-btn" onclick="setConfig('mode', 'icons')" title="Solo Iconos">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                </div>
+                <div class="control-btn" onclick="togglePosition()" title="Cambiar Lado">
+                    <svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
+                </div>
+            </div>
+        </div>
+        <div class="nav-list" id="nav-list">
+            <!-- Secciones generadas dinámicamente -->
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main id="main-content">
+        <iframe id="content-iframe" src=""></iframe>
+    </main>
+
+    <script>
+        // Definición de las secciones y sus iconos SVG para Marbetes
+        const SECTIONS = [
+            { id: 'inicio', title: 'Inicio', icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>' },
+            { id: 'Curacion', title: 'Curación', icon: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>' },
+            { id: 'Versiones', title: 'Versiones', icon: '<polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline>' },
+            { id: 'historial', title: 'Historial', icon: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' }
+        ];
+
+        // Configuración inicial desde LocalStorage (clave única para Marbetes)
+        const CONFIG_KEY = 'marbetesShellConfig';
+        let config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
+            mode: 'labels', // 'labels', 'icons', 'hidden'
+            position: 'left', // 'left', 'right'
+            lastSection: 'inicio'
+        };
+
+        // --- Inicialización del DOM ---
+        function init() {
+            const navList = document.getElementById('nav-list');
+            
+            // Generar botones
+            SECTIONS.forEach(sec => {
+                const a = document.createElement('a');
+                a.className = 'nav-btn';
+                a.setAttribute('data-section', sec.id);
+                a.innerHTML = `<svg viewBox="0 0 24 24">${sec.icon}</svg><span>${sec.title}</span>`;
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    navigate(sec.id);
+                    document.body.classList.remove('show-overlay'); // Cierra overlay temporal
+                };
+                navList.appendChild(a);
+            });
+
+            applyConfig();
+            
+            // Restaurar estado e inyectar punto inicial nativo
+            window.history.replaceState({ section: config.lastSection }, "", "");
+            navigate(config.lastSection, false);
+        }
+
+        // --- Lógica de Navegación ---
+        function navigate(sectionId, saveHistory = true) {
+            document.getElementById('content-iframe').src = sectionId + '.html';
+            
+            // Actualizar botones activos
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`[data-section="${sectionId}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            config.lastSection = sectionId;
+            saveConfig();
+
+            if (saveHistory) {
+                window.history.pushState({ section: sectionId }, "", "");
+            }
+        }
+
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.section) {
+                navigate(e.state.section, false);
+            }
+        });
+
+        // --- Lógica de Vistas e Interfaz ---
+        function applyConfig() {
+            document.body.className = `mode-${config.mode} pos-${config.position}`;
+        }
+
+        function saveConfig() {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        }
+
+        function setConfig(key, value) {
+            config[key] = value;
+            saveConfig();
+            applyConfig();
+            document.body.classList.remove('show-overlay');
+        }
+
+        function togglePosition() {
+            setConfig('position', config.position === 'left' ? 'right' : 'left');
+        }
+
+        function toggleOverlay() {
+            document.body.classList.toggle('show-overlay');
+        }
+
+        function toggleSettings() {
+            // En modo iconos, hacer click al icono de la app abre los controles temporalmente
+            if(config.mode === 'icons') {
+                setConfig('mode', 'labels');
+            }
+        }
+
+        // Arrancar
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIC-OS</title>
+    <link rel="icon" type="image/x-icon" href="ico/cic.ico">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Evita scrolls dobles */
+            background-color: #ffffff;
+        }
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: transparent; /* Transparente para permitir overlays */
+            top: 0;
+            left: 0;
+            display: none; /* Ocultos por defecto */
+        }
+    </style>
+</head>
+<body>
+    <!-- Iframe 1: Home Público -->
+    <iframe id="iframe-home" src="public/home.html"></iframe>
+
+    <!-- Iframe 2: Login -->
+    <iframe id="iframe-login" src="login.html"></iframe>
+
+    <!-- Iframe 3: Dinámico (por defecto mod/cco.html) -->
+    <iframe id="iframe-app" src="mod/cco.html"></iframe>
+
+    <!-- Script de la interfaz (Funciona siempre, incluso haciendo doble clic en el archivo local) -->
+    <script type="module">
+        import { switchFrame, goBack, goForward, initIndexedDB } from './js/script.js';
+
+        // Escucha mensajes de los iframes para evitar problemas de CORS/SecurityError (archivos locales)
+        window.addEventListener('message', (event) => {
+            if (event.data) {
+                if (event.data.action === 'switchFrame') {
+                    switchFrame(event.data.target);
+                } else if (event.data.action === 'goBack') {
+                    goBack();
+                } else if (event.data.action === 'goForward') {
+                    goForward();
+                }
+            }
+        });
+
+        // Detecta cuando el usuario usa los botones de "Atrás" o "Adelante" del navegador web
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.frameId) {
+                // Cambiamos el iframe sin registrarlo de nuevo en el historial (true)
+                switchFrame(event.state.frameId, true);
+            }
+        });
+
+        // Inicialización basada en la sesión al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar la base de datos local IndexedDB
+            initIndexedDB().then(() => console.log("IndexedDB 'cic-os' cargada correctamente."))
+                           .catch(console.error);
+
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const initialFrame = isLoggedIn ? 'iframe-app' : 'iframe-home';
+            
+            // Registramos el punto inicial en el historial del navegador al cargar la página
+            window.history.replaceState({ frameId: initialFrame }, "", "");
+            
+            switchFrame(initialFrame, true);
+        });
+    </script>
+</body>
+</html>

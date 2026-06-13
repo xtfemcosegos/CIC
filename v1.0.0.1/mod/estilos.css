@@ -1,0 +1,370 @@
+html, body {
+    height: 100%;
+    width: 100%;
+}
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url('https://firebasestorage.googleapis.com/v0/b/cic-os.firebasestorage.app/o/multimedia%2FGemini_Generated_Image_yaqcniyaqcniyaqc.png?alt=media&token=d2457076-2c8f-4f95-9431-7fd4f9b92d42');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-family: 'Open Sans', sans-serif;
+    overflow: hidden; /* Evita scrolls para mantener sensación de escritorio */
+}
+
+/* --- CONTENEDOR DE APLICACIONES EN EJECUCIÓN --- */
+.running-app-iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 73px); /* Deja espacio exacto para la altura del dock */
+    border: none;
+    display: none; /* Oculto hasta que se abra una app */
+    z-index: 50;
+    background-color: #ffffff; /* Fondo blanco sólido para las apps */
+}
+
+/* --- DOCK DE NAVEGACIÓN --- */
+.dock {
+    position: fixed; /* Fixed asegura que siempre se ancle a la pantalla, incluso en iframes */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo negro con 50% de transparencia */
+    backdrop-filter: blur(10px); /* Efecto cristalino */
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between; /* Separa los iconos a los extremos */
+    gap: 20px;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4); /* Sombra hacia arriba */
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Solo borde superior brillante */
+    z-index: 100;
+}
+
+.dock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dock-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+.dock-btn img {
+    width: 36px;
+    height: 36px;
+}
+
+.dock-btn svg {
+    width: 30px;
+    height: 30px;
+    stroke: #ffffff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* --- CONTENEDOR IZQUIERDO DEL DOCK --- */
+.dock-left {
+    display: flex;
+    align-items: center;
+}
+
+.running-apps-list {
+    display: flex;
+    gap: 10px;
+    margin-left: 15px;
+    padding-left: 15px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2); /* Separador visual */
+    overflow-x: auto;
+    -ms-overflow-style: none; /* Ocultar scrollbar en IE y Edge */
+    scrollbar-width: none; /* Ocultar scrollbar en Firefox */
+}
+.running-apps-list::-webkit-scrollbar {
+    display: none; /* Ocultar scrollbar en Chrome/Safari */
+}
+
+.running-app-btn.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 -3px 0 #ffffff; /* Indicador inferior de app enfocada */
+}
+
+/* --- CONTENEDOR DERECHO DEL DOCK --- */
+.dock-right {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+/* --- WIDGET RELOJ Y CLIMA --- */
+.clock-widget {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+    gap: 12px;
+    color: #ffffff;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+.clock-widget .weather {
+    font-size: 15px;
+    font-weight: 600;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    padding-right: 12px;
+}
+.clock-widget .datetime {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.clock-widget .time {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+.clock-widget .date {
+    font-size: 10px;
+    color: #cccccc;
+    text-transform: uppercase;
+}
+
+/* --- TARJETA DE USUARIO EN EL DOCK --- */
+.user-card {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+    gap: 12px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+.user-photo {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background-color: rgba(0,0,0,0.5);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+    text-align: center;
+}
+
+.user-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.user-id {
+    font-size: 11px;
+    color: #cccccc;
+    white-space: nowrap;
+}
+
+/* --- MENÚ DE APLICACIONES --- */
+.start-menu {
+    position: fixed; /* Fixed garantiza que no se desborde del contenedor */
+    bottom: 70px; /* Ajustado porque el dock ahora está más abajo */
+    left: 20px; /* Alineado a la izquierda sobre el botón */
+    background-color: rgba(0, 0, 0, 0.85); /* Un poco más oscuro para que resalten los iconos */
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    padding: 25px;
+    display: none; /* Oculto por defecto */
+    flex-direction: column; /* Cambia a lista vertical */
+    gap: 5px; /* Menos espacio entre filas */
+    width: 280px; /* Un poco más estrecho para lista */
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 90;
+}
+
+.start-menu.show {
+    display: flex;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.app-item {
+    display: flex;
+    flex-direction: row; /* Icono y texto en horizontal */
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    height: 50px; /* Altura solicitada de 50px */
+    box-sizing: border-box;
+    padding: 0 10px;
+    border-radius: 8px; /* Bordes suaves para el hover */
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: left; /* Alineado a la izquierda */
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.app-item:hover {
+    transform: scale(1.02); /* Escala más sutil */
+    background-color: rgba(255, 255, 255, 0.1); /* Fondo claro al pasar el mouse */
+}
+
+.app-icon-container {
+    width: 34px; /* Icono más pequeño para caber en 50px */
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 15px; /* Espacio a la derecha hacia el texto */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    flex-shrink: 0; /* Evita que el contenedor del icono se aplaste */
+}
+
+.app-icon-container img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.app-item span {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* --- PANEL DE NOTIFICACIONES --- */
+.notif-panel {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    width: 320px;
+    max-height: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 90;
+}
+
+.notif-panel.show {
+    display: flex;
+    animation: fadeInNotif 0.2s ease-out;
+}
+
+@keyframes fadeInNotif {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.notif-item {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #ffffff;
+    transition: background-color 0.2s;
+}
+
+.notif-item:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.notif-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-right: 15px;
+    flex-shrink: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.notif-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+}
+
+.notif-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notif-desc {
+    font-size: 12px;
+    color: #cccccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 4px;
+}
+
+/* --- RESPONSIVE MÓVIL --- */
+@media (max-width: 768px) {
+    .dock {
+        padding: 10px;
+        gap: 10px;
+    }
+    .dock-left {
+        flex: 1;
+        overflow: hidden; /* Necesario para que la lista de apps haga scroll interno */
+    }
+    .running-apps-list {
+        margin-left: 10px;
+        padding-left: 10px;
+        flex: 1;
+    }
+    .start-menu {
+        width: calc(100% - 40px); /* Ocupar casi todo el ancho disponible */
+        left: 20px;
+        padding: 15px;
+    }
+    /* Ajustes cuando los widgets se mueven al menú de inicio en móvil */
+    .start-menu .user-card,
+    .start-menu .clock-widget {
+        margin-bottom: 10px;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.05);
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}

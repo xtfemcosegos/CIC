@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <!-- Contenedor para iframes de aplicaciones en ejecución -->
+    <div id="apps-container"></div>
+
+    <!-- Panel del Menú de Inicio -->
+    <div class="start-menu" id="start-menu">
+        <div id="mobile-widgets" style="display: flex; flex-direction: column;"></div>
+        <div id="apps-menu-list" style="display: flex; flex-direction: column; gap: 5px;"></div>
+    </div>
+
+    <!-- Panel de Notificaciones -->
+    <div class="notif-panel" id="notif-panel">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 15px; font-size: 16px;">Notificaciones</h3>
+        <div id="notif-list" style="overflow-y: auto; max-height: 330px;"></div>
+    </div>
+
+    <!-- Dock / Barra inferior -->
+    <div class="dock">
+        <div class="dock-left">
+            <!-- Botón Menú Sistema (Apps) -->
+            <button class="dock-btn" id="sys-btn" title="Menú de Aplicaciones">
+                <img src="../ico/cic.ico" alt="Menú Sistema">
+            </button>
+            
+            <!-- Accesos directos de apps abiertas -->
+            <div id="running-apps" class="running-apps-list"></div>
+        </div>
+        
+        <!-- Contenedor Derecho -->
+        <div class="dock-right">
+            <!-- Tarjeta de Usuario -->
+            <div class="user-card" id="user-card" style="display: none;">
+                <img src="../ico/cic.ico" alt="Foto de perfil" class="user-photo" id="user-photo">
+                <div class="user-info">
+                    <div class="user-name" id="user-name">Cargando...</div>
+                    <div class="user-id" id="user-id"></div>
+                </div>
+            </div>
+
+            <!-- Widget Reloj y Clima -->
+            <div class="clock-widget">
+                <div class="weather" id="weather-temp">--°C</div>
+                <div class="datetime">
+                    <div class="time" id="clock-time">--:--</div>
+                    <div class="date" id="clock-date">--/--</div>
+                </div>
+            </div>
+
+            <!-- Botón Sync / Offline -->
+            <button class="dock-btn" id="sync-btn" title="Sistema Online" style="position: relative;">
+                <svg id="sync-icon" viewBox="0 0 24 24" stroke="#10b981" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span id="sync-badge" style="display:none; position:absolute; top:2px; right:2px; background:#ef4444; color:white; border-radius:50%; font-size:9px; width:14px; height:14px; align-items:center; justify-content:center; font-weight:bold;">0</span>
+            </button>
+
+            <!-- Botón Notificaciones -->
+            <button class="dock-btn" id="bell-btn" title="Notificaciones">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importamos Firebase app y módulos de Realtime Database
+        import { app } from '../js/firebase.js';
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref as dbRef, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { renderApps, downloadNotifications, renderUserCard, renderNotifPanel, restoreRunningApps, processFirebaseQueue } from '../js/script.js';
+
+        // 2. Control visual del Menú de Aplicaciones (Abrir/Cerrar)
+        const startMenu = document.getElementById('start-menu');
+        const sysBtn = document.getElementById('sys-btn');
+
+        sysBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startMenu.classList.toggle('show');
+        });
+
+        const notifPanel = document.getElementById('notif-panel');
+        const bellBtn = document.getElementById('bell-btn');
+
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notifPanel.classList.toggle('show');
+            if (currentUserUid) renderNotifPanel(currentUserUid);
+        });
+
+        // Cerrar menús si das clic fuera de ellos
+        document.addEventListener('click', (event) => {
+            if (!startMenu.contains(event.target) && !sysBtn.contains(event.target)) {
+                startMenu.classList.remove('show');
+            }
+            if (!notifPanel.contains(event.target) && !bellBtn.contains(event.target)) {
+                notifPanel.classList.remove('show');
+            }
+        });
+
+        // 3. Autenticación y Descarga de Notificaciones
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let currentUserUid = null;
+
+        // 3.1 Mostrar tarjeta inmediatamente si existe en caché (Offline-first puro)
+        const cachedUserInfo = localStorage.getItem('userInfo');
+        if (cachedUserInfo) {
+            try {
+                const userData = JSON.parse(cachedUserInfo)[0];
+                if (userData) renderUserCard(userData);
+            } catch (e) {
+                console.warn("Error leyendo userInfo local", e);
+            }
+        }
+
+        // 3.2 Sincronización en segundo plano con Firebase
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                // Iniciamos la descarga de notificaciones en background
+                downloadNotifications(currentUserUid);
+
+                // Si NO había caché, consultamos la base de datos de Firebase
+                if (!cachedUserInfo) {
+                    try {
+                        const userNodeRef = dbRef(db, `usuarios/${currentUserUid}`);
+                        const snapshot = await get(userNodeRef);
+                        if (snapshot.exists()) {
+                            const userData = snapshot.val();
+                            localStorage.setItem('userInfo', JSON.stringify([userData]));
+                            renderUserCard(userData);
+                        }
+                    } catch (error) {
+                        console.error("Error al obtener la información del usuario: ", error);
+                    }
+                }
+            }
+        });
+
+        // Actualizamos panel si hay notificaciones nuevas (Evento disparado desde script.js)
+        window.addEventListener('notificacionesActualizadas', () => {
+            if (currentUserUid) renderNotifPanel(currentUserUid);
+        });
+
+        // 4. Cargar catálogo de Apps
+        function loadApps() {
+            const cachedApps = localStorage.getItem('appsList');
+            if (cachedApps) {
+                // 1. Si existen localmente, se renderizan al instante
+                renderApps(JSON.parse(cachedApps), 'apps-menu-list');
+                restoreRunningApps();
+            } else {
+                // 2. Si no, se descargan de Realtime Database
+                const appsRef = dbRef(db, 'apps');
+                get(appsRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        // Convertimos el nodo apps a un arreglo nativo
+                        const appsArray = Object.keys(data).map(key => ({
+                            id: key,
+                            ...data[key]
+                        }));
+
+                        // Ordenamos numéricamente según el campo 'index'
+                        appsArray.sort((a, b) => (a.index || 0) - (b.index || 0));
+                        
+                        // Guardar la lista de aplicaciones en local storage
+                        localStorage.setItem('appsList', JSON.stringify(appsArray));
+
+                        renderApps(appsArray, 'apps-menu-list');
+                        restoreRunningApps();
+                    } else {
+                        document.getElementById('apps-menu-list').innerHTML = '<p style="color:#aaa; text-align:center; width:100%;">No hay aplicaciones instaladas.</p>';
+                    }
+                }).catch(error => {
+                    console.error("Error al cargar las apps desde la DB:", error);
+                    document.getElementById('apps-menu-list').innerHTML = '<p style="color:#ff4d4d; text-align:center; width:100%;">Error de conexión a la Base de Datos.</p>';
+                });
+            }
+        }
+
+        loadApps();
+
+        // Escuchar evento para forzar la actualización de Apps
+        window.addEventListener('refreshApps', () => {
+            localStorage.removeItem('appsList');
+            document.getElementById('apps-menu-list').innerHTML = '<p style="color:#aaa; text-align:center; width:100%; margin-top: 20px;">Actualizando...</p>';
+            loadApps();
+        });
+
+        // 5. Reloj y Clima del Sistema
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+            document.getElementById('clock-time').innerText = timeStr;
+            document.getElementById('clock-date').innerText = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock(); // Llamada inicial
+
+        // Coordenadas predeterminadas (Ej. CDMX)
+        let weatherLat = 19.42847;
+        let weatherLon = -99.12766;
+
+        async function fetchWeather(lat, lon) {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await res.json();
+                if (data && data.current_weather) {
+                    document.getElementById('weather-temp').innerText = Math.round(data.current_weather.temperature) + '°C';
+                }
+            } catch (e) { console.warn("Error al actualizar clima local:", e); }
+        }
+
+        function initWeather() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        weatherLat = position.coords.latitude;
+                        weatherLon = position.coords.longitude;
+                        fetchWeather(weatherLat, weatherLon);
+                    },
+                    (error) => {
+                        console.warn("Geolocalización denegada o no disponible. Usando coordenadas por defecto.", error);
+                        fetchWeather(weatherLat, weatherLon);
+                    }
+                );
+            } else {
+                fetchWeather(weatherLat, weatherLon);
+            }
+        }
+        
+        initWeather();
+        setInterval(() => fetchWeather(weatherLat, weatherLon), 30 * 60 * 1000); // Actualiza el clima cada 30 minutos
+
+        // 6. Adaptabilidad Móvil (Mover widgets al Menú de Inicio)
+        function handleMobileLayout() {
+            const dockRight = document.querySelector('.dock-right');
+            const mobileWidgets = document.getElementById('mobile-widgets');
+            const userCard = document.getElementById('user-card');
+            const clockWidget = document.querySelector('.clock-widget');
+            const bellBtn = document.getElementById('bell-btn');
+            
+            if (window.innerWidth <= 768) {
+                if (userCard.parentElement === dockRight) {
+                    mobileWidgets.appendChild(userCard);
+                    mobileWidgets.appendChild(clockWidget);
+                }
+            } else {
+                if (userCard.parentElement === mobileWidgets) {
+                    dockRight.insertBefore(userCard, bellBtn);
+                    dockRight.insertBefore(clockWidget, bellBtn);
+                }
+            }
+        }
+        window.addEventListener('resize', handleMobileLayout);
+        handleMobileLayout(); // Ejecución inicial
+
+        // 7. Sistema de Sincronización y Estado de Red
+        const syncBtn = document.getElementById('sync-btn');
+        const syncIcon = document.getElementById('sync-icon');
+        const syncBadge = document.getElementById('sync-badge');
+
+        function updateSyncUI() {
+            const queue = JSON.parse(localStorage.getItem('cic_sync_queue')) || [];
+            const count = queue.length;
+            
+            if (!navigator.onLine) {
+                syncBtn.title = "Sin Conexión (Modo Offline)";
+                syncIcon.setAttribute('stroke', '#ef4444'); // Rojo (Desconectado)
+                syncIcon.innerHTML = `<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>`;
+            } else if (count > 0) {
+                syncBtn.title = `Pendientes por subir: ${count}`;
+                syncIcon.setAttribute('stroke', '#f59e0b'); // Amarillo/Naranja (Subiendo)
+                syncIcon.innerHTML = `<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path>`;
+            } else {
+                syncBtn.title = "Sistema Online (Sincronizado)";
+                syncIcon.setAttribute('stroke', '#10b981'); // Verde (Seguro)
+                syncIcon.innerHTML = `<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>`;
+            }
+
+            if (count > 0 && navigator.onLine) processFirebaseQueue(); // Intenta procesar la cola
+            syncBadge.innerText = count;
+            syncBadge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        window.addEventListener('online', updateSyncUI);
+        window.addEventListener('offline', updateSyncUI);
+
+        // Detecta instantáneamente si OTRA aplicación (como Regas) guardó un dato local
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'cic_sync_queue') updateSyncUI();
+        });
+
+        syncBtn.addEventListener('click', () => {
+            if (navigator.onLine) {
+                processFirebaseQueue();
+                updateSyncUI();
+            } else alert("Estás en modo offline. Los cambios de tus aplicaciones se guardarán en tu caché y se subirán cuando te conectes.");
+        });
+
+        updateSyncUI(); // Comprobación al arranque
+    </script>
+</body>
+</html>

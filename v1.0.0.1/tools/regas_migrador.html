@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrador de Datos CIC-OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-red-950 text-gray-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Encabezado Principal -->
+    <header class="bg-red-900 border-b border-red-800 shadow-xl p-5 sticky top-0 z-40">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-700 p-2.5 rounded-lg border border-red-500 shadow-inner">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider text-white">CIC-OS</h1>
+                    <p class="text-xs text-red-200 uppercase font-semibold tracking-widest">Migrador de Datos de Asistencia (RegAs)</p>
+                </div>
+            </div>
+            <a href="index.html" class="bg-red-950 hover:bg-red-800 border border-red-700 text-red-100 font-bold px-5 py-2.5 rounded-lg transition text-sm shadow flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Volver al Portal
+            </a>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container mx-auto p-4 md:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Panel Izquierdo: Configuración e Instancias de Firebase (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Proyecto Origen: Firestore -->
+            <div class="bg-red-900/40 border border-red-900/60 rounded-xl p-6 shadow-2xl backdrop-blur">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-red-900/40">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse" id="fuente-status-dot"></span>
+                        <h2 class="text-xl font-bold text-red-200">Proyecto Fuente (Firestore)</h2>
+                    </div>
+                    <span id="fuente-status-text" class="text-xs bg-red-900/80 px-3 py-1 rounded-full font-mono text-red-300">Conectando...</span>
+                </div>
+
+                <!-- Credenciales manuales (Opcional) -->
+                <div class="mb-4 bg-red-950/50 p-4 rounded-lg border border-red-900/40">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-semibold text-red-300 flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            Autenticación Admin <span class="text-xs font-normal text-gray-400">(Opcional)</span>
+                        </h3>
+                        <span class="text-[10px] bg-red-900/50 text-red-200 px-2 py-0.5 rounded uppercase">Usa si falla acceso anónimo</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input type="email" id="email-fuente" placeholder="Email Administrativo" class="bg-red-950 border border-red-800 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono">
+                        <input type="password" id="pass-fuente" placeholder="Contraseña" class="bg-red-950 border border-red-800 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono">
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="loginManual('fuente')" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-xs transition uppercase tracking-wider">
+                            Iniciar Sesión en Fuente
+                        </button>
+                        <button onclick="clearConfigAndCredentials('fuente')" title="Limpiar datos guardados de origen" class="bg-red-900 hover:bg-red-850 text-red-300 px-3 rounded text-xs transition border border-red-800">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Toggle Configuración Avanzada -->
+                <details class="group">
+                    <summary class="text-xs text-red-300 hover:text-white cursor-pointer select-none font-semibold flex items-center gap-1">
+                        <svg class="w-3 h-3 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        Ver/Editar Credenciales de Firebase de Origen (Autoguardado)
+                    </summary>
+                    <div class="mt-3 bg-red-950/80 p-4 rounded-lg border border-red-900/60 text-xs font-mono">
+                        <textarea id="config-fuente-json" rows="8" class="w-full bg-red-950 border border-red-800 rounded p-2 text-red-200 focus:outline-none" placeholder="Pega el objeto JSON de Firebase Config aquí..."></textarea>
+                        <button onclick="reinitApp('fuente')" class="mt-2 bg-red-800 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition">Guardar y Actualizar Instancia</button>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Proyecto Destino: Realtime Database -->
+            <div class="bg-red-900/40 border border-red-900/60 rounded-xl p-6 shadow-2xl backdrop-blur">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-red-900/40">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse" id="destino-status-dot"></span>
+                        <h2 class="text-xl font-bold text-red-200">Proyecto Destino (RTDB RegAs)</h2>
+                    </div>
+                    <span id="destino-status-text" class="text-xs bg-red-900/80 px-3 py-1 rounded-full font-mono text-red-300">Conectando...</span>
+                </div>
+
+                <!-- Credenciales manuales (Opcional) -->
+                <div class="mb-4 bg-red-950/50 p-4 rounded-lg border border-red-900/40">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-semibold text-red-300 flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            Autenticación Admin <span class="text-xs font-normal text-gray-400">(Opcional)</span>
+                        </h3>
+                        <span class="text-[10px] bg-red-900/50 text-red-200 px-2 py-0.5 rounded uppercase">Usa si falla acceso anónimo</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input type="email" id="email-destino" placeholder="Email Administrativo" class="bg-red-950 border border-red-800 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono">
+                        <input type="password" id="pass-destino" placeholder="Contraseña" class="bg-red-950 border border-red-800 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono">
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="loginManual('destino')" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-xs transition uppercase tracking-wider">
+                            Iniciar Sesión en Destino
+                        </button>
+                        <button onclick="clearConfigAndCredentials('destino')" title="Limpiar datos guardados de destino" class="bg-red-900 hover:bg-red-850 text-red-300 px-3 rounded text-xs transition border border-red-800">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Toggle Configuración Avanzada -->
+                <details class="group">
+                    <summary class="text-xs text-red-300 hover:text-white cursor-pointer select-none font-semibold flex items-center gap-1">
+                        <svg class="w-3 h-3 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        Ver/Editar Credenciales de Firebase de Destino (Autoguardado)
+                    </summary>
+                    <div class="mt-3 bg-red-950/80 p-4 rounded-lg border border-red-900/60 text-xs font-mono">
+                        <textarea id="config-destino-json" rows="8" class="w-full bg-red-950 border border-red-800 rounded p-2 text-red-200 focus:outline-none" placeholder="Pega el objeto JSON de Firebase Config aquí..."></textarea>
+                        <button onclick="reinitApp('destino')" class="mt-2 bg-red-800 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition">Guardar y Actualizar Instancia</button>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Parámetros, Control & Terminal Logs (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Panel de Control de Migración -->
+            <div class="bg-red-900/40 border border-red-900/60 rounded-xl p-6 shadow-2xl backdrop-blur flex flex-col gap-4">
+                <h2 class="text-xl font-bold text-red-200 pb-3 border-b border-red-900/40 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    Parámetros de Migración
+                </h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-red-300 uppercase tracking-wider mb-1">Año</label>
+                        <input type="text" id="anio" placeholder="Ej. 2026" class="w-full bg-red-950 border border-red-800 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-red-600 font-bold font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-red-300 uppercase tracking-wider mb-1">Mes</label>
+                        <input type="text" id="mes" placeholder="Ej. 05" class="w-full bg-red-950 border border-red-800 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-red-600 font-bold font-mono">
+                    </div>
+                </div>
+
+                <!-- Visualización de Rutas -->
+                <div class="bg-red-950/80 p-4 rounded-lg border border-red-900/60 space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-red-400 font-semibold">Ruta Firestore Origen:</span>
+                        <code class="font-mono bg-red-900/40 px-2 py-0.5 rounded text-white" id="path-firestore-view">CIC/RegAs/...</code>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-red-400 font-semibold">Ruta RTDB Destino:</span>
+                        <span class="text-[10px] text-gray-400 font-mono italic">Base de datos: https://regas.firebaseio.com/</span>
+                        <code class="font-mono bg-red-900/40 px-2 py-0.5 rounded text-white overflow-x-auto whitespace-nowrap block" id="path-rtdb-view">regas/...</code>
+                    </div>
+                </div>
+
+                <button onclick="ejecutarMigracion()" class="w-full bg-gradient-to-r from-red-700 to-red-800 hover:from-red-600 hover:to-red-700 border border-red-500 text-white py-3.5 rounded-xl font-bold text-base transition shadow-lg uppercase tracking-wider flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 animate-spin hidden" id="spinner-migration" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Iniciar Migración
+                </button>
+            </div>
+
+            <!-- Terminal de Registro de Logs -->
+            <div class="bg-black/80 border border-red-900/80 rounded-xl p-5 shadow-2xl flex-1 flex flex-col min-h-[250px] relative">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-red-900/40">
+                    <div class="flex items-center gap-1.5 text-xs font-mono text-red-400 font-bold">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                        Consola de Procesamiento
+                    </div>
+                    <button onclick="clearConsole()" class="text-[10px] text-gray-400 hover:text-white underline font-mono uppercase">
+                        Limpiar Logs
+                    </button>
+                </div>
+                <div id="terminal-logs" class="flex-1 overflow-y-auto text-xs font-mono text-green-400 space-y-1.5 max-h-[300px]">
+                    <div class="text-gray-500">[SISTEMA] Listo para iniciar migración. Acceso anónimo activo por defecto.</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toasts flotantes -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
+
+    <!-- Firebase Logic Integrations -->
+    <script type="module">
+        import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración por defecto para Destino (CIC-OS) - Actualizado a regas.firebaseio.com
+        const defaultDestConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            databaseURL: "https://regas.firebaseio.com/",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            messagingSenderId: "628160285586",
+            appId: "1:628160285586:web:cb265d10e256697ab68f4b",
+            measurementId: "G-Y76LMVF819"
+        };
+
+        // Configuración por defecto para Fuente
+        const defaultSrcConfig = {
+            apiKey: "AIzaSyA05gexuh4zNt4ro_Rh2TJFMYfoicW8nbg",
+            authDomain: "cic-os.firebaseapp.com",
+            databaseURL: "https://cic-os-default-rtdb.firebaseio.com",
+            projectId: "cic-os",
+            storageBucket: "cic-os.firebasestorage.app",
+            messagingSenderId: "628160285586",
+            appId: "1:628160285586:web:cb265d10e256697ab68f4b",
+            measurementId: "G-Y76LMVF819"
+        };
+
+        // Instancias globales
+        let appFuente, appDestino;
+        let authFuente, authDestino;
+        let firestoreFuente;
+        let rtdbDestino;
+
+        // Toast customizado
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2 px-5 py-3 rounded-lg shadow-2xl text-white font-semibold transition transform translate-y-2 opacity-0 text-sm border ${
+                type === 'error' ? 'bg-red-800 border-red-600' : 'bg-green-700 border-green-500'
+            }`;
+            toast.innerHTML = `
+                <span>${type === 'error' ? '⚠️' : '✅'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // Log en Consola Virtual
+        window.addLog = (msg, level = 'info') => {
+            const container = document.getElementById('terminal-logs');
+            const item = document.createElement('div');
+            const now = new Date().toLocaleTimeString();
+            let color = 'text-green-400';
+            if (level === 'error') color = 'text-red-400 font-bold';
+            if (level === 'warn') color = 'text-yellow-400';
+            
+            item.className = `${color} leading-relaxed`;
+            item.innerHTML = `[${now}] ${msg}`;
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight;
+        };
+
+        window.clearConsole = () => {
+            document.getElementById('terminal-logs').innerHTML = `<div class="text-gray-500">[SISTEMA] Listo para iniciar migración. Acceso anónimo activo por defecto.</div>`;
+        };
+
+        // Escucha cambios en inputs para actualizar la vista de rutas
+        const updatePathViews = () => {
+            const anio = document.getElementById('anio').value || '{año}';
+            const mes = document.getElementById('mes').value || '{mes}';
+            document.getElementById('path-firestore-view').innerText = `CIC/RegAs/${anio}/${mes}`;
+            document.getElementById('path-rtdb-view').innerText = `${anio}/${mes}`;
+        };
+        document.getElementById('anio').addEventListener('input', updatePathViews);
+        document.getElementById('mes').addEventListener('input', updatePathViews);
+
+        // Guardar configuración y credenciales en localStorage
+        window.saveConfigAndCredentials = (tipo) => {
+            const configText = document.getElementById(`config-${tipo}-json`).value;
+            const email = document.getElementById(`email-${tipo}`).value;
+            const pass = document.getElementById(`pass-${tipo}`).value;
+
+            try {
+                // Verificar que sea JSON válido antes de guardar
+                JSON.parse(configText);
+                localStorage.setItem(`cicos_config_${tipo}`, configText);
+                localStorage.setItem(`cicos_email_${tipo}`, email);
+                localStorage.setItem(`cicos_pass_${tipo}`, pass);
+                return true;
+            } catch (e) {
+                showToast(`El JSON de configuración de ${tipo} no es válido`, 'error');
+                addLog(`Error al validar JSON de ${tipo}: ${e.message}`, 'error');
+                return false;
+            }
+        };
+
+        // Eliminar configuración y credenciales de localStorage
+        window.clearConfigAndCredentials = (tipo) => {
+            localStorage.removeItem(`cicos_config_${tipo}`);
+            localStorage.removeItem(`cicos_email_${tipo}`);
+            localStorage.removeItem(`cicos_pass_${tipo}`);
+            
+            document.getElementById(`email-${tipo}`).value = "";
+            document.getElementById(`pass-${tipo}`).value = "";
+            
+            if (tipo === 'fuente') {
+                document.getElementById('config-fuente-json').value = JSON.stringify(defaultSrcConfig, null, 2);
+            } else {
+                document.getElementById('config-destino-json').value = JSON.stringify(defaultDestConfig, null, 2);
+            }
+            
+            showToast(`Configuración y credenciales de ${tipo} eliminadas del dispositivo`, 'info');
+            addLog(`Datos de ${tipo} eliminados de LocalStorage.`);
+            
+            // Recargar servicios para volver al estado por defecto
+            reinitApp(tipo);
+        };
+
+        // Inicializador de servicios
+        async function initAppServices(tipo) {
+            try {
+                const configText = document.getElementById(`config-${tipo}-json`).value;
+                const config = JSON.parse(configText);
+
+                if (tipo === 'fuente') {
+                    // Inicializar APP Fuente
+                    try { appFuente = getApp("fuenteApp"); } catch {
+                        appFuente = initializeApp(config, "fuenteApp");
+                    }
+                    authFuente = getAuth(appFuente);
+                    firestoreFuente = getFirestore(appFuente);
+                    
+                    // Escucha Auth Fuente
+                    onAuthStateChanged(authFuente, (user) => {
+                        const statusDot = document.getElementById('fuente-status-dot');
+                        const statusText = document.getElementById('fuente-status-text');
+                        if (user) {
+                            statusDot.className = "w-3.5 h-3.5 rounded-full bg-green-500";
+                            statusText.innerText = user.isAnonymous ? `Anónimo (${user.uid})` : user.email;
+                            addLog(`Proyecto Fuente: Conectado. Autenticación: ${user.isAnonymous ? 'Anónimo' : user.email}`);
+                        } else {
+                            statusDot.className = "w-3.5 h-3.5 rounded-full bg-red-500";
+                            statusText.innerText = "Sin Sesión";
+                        }
+                    });
+
+                    // Intentar iniciar sesión con credenciales guardadas si existen, o ir directo como anónimo
+                    const email = document.getElementById('email-fuente').value;
+                    const pass = document.getElementById('pass-fuente').value;
+
+                    if (email && pass) {
+                        addLog("Proyecto Fuente: Intentando iniciar sesión con credenciales almacenadas...");
+                        signInWithEmailAndPassword(authFuente, email, pass).catch(err => {
+                            addLog(`Proyecto Fuente: Error en credenciales almacenadas (${err.message}). Intentando acceso anónimo...`, 'warn');
+                            signInAnonymously(authFuente).catch(e => {
+                                addLog(`Proyecto Fuente: Error al conectar como anónimo (${e.message}). Verifica que esté habilitado el 'Proveedor Anónimo' en la consola de Firebase.`, 'error');
+                            });
+                        });
+                    } else {
+                        addLog("Proyecto Fuente: Conectando de forma anónima...");
+                        signInAnonymously(authFuente).catch(err => {
+                            addLog(`Proyecto Fuente: Error al conectar de forma anónima (${err.message}). Activa el 'Proveedor Anónimo' en la consola de Firebase.`, 'error');
+                        });
+                    }
+
+                } else {
+                    // Inicializar APP Destino
+                    try { appDestino = getApp("destinoApp"); } catch {
+                        appDestino = initializeApp(config, "destinoApp");
+                    }
+                    authDestino = getAuth(appDestino);
+                    
+                    // Forzar el uso de la base de datos de destino específica https://regas.firebaseio.com/
+                    rtdbDestino = getDatabase(appDestino, "https://regas.firebaseio.com/");
+
+                    // Escucha Auth Destino
+                    onAuthStateChanged(authDestino, (user) => {
+                        const statusDot = document.getElementById('destino-status-dot');
+                        const statusText = document.getElementById('destino-status-text');
+                        if (user) {
+                            statusDot.className = "w-3.5 h-3.5 rounded-full bg-green-500";
+                            statusText.innerText = user.isAnonymous ? `Anónimo (${user.uid})` : user.email;
+                            addLog(`Proyecto Destino: Conectado a regas.firebaseio.com. Autenticación: ${user.isAnonymous ? 'Anónimo' : user.email}`);
+                        } else {
+                            statusDot.className = "w-3.5 h-3.5 rounded-full bg-red-500";
+                            statusText.innerText = "Sin Sesión";
+                        }
+                    });
+
+                    // Intentar iniciar sesión con credenciales guardadas si existen, o ir directo como anónimo
+                    const email = document.getElementById('email-destino').value;
+                    const pass = document.getElementById('pass-destino').value;
+
+                    if (email && pass) {
+                        addLog("Proyecto Destino: Intentando iniciar sesión con credenciales almacenadas...");
+                        signInWithEmailAndPassword(authDestino, email, pass).catch(err => {
+                            addLog(`Proyecto Destino: Error en credenciales almacenadas (${err.message}). Intentando acceso anónimo...`, 'warn');
+                            signInAnonymously(authDestino).catch(e => {
+                                addLog(`Proyecto Destino: Error al conectar como anónimo (${e.message}). Activa el 'Proveedor Anónimo' en la consola de Firebase.`, 'error');
+                            });
+                        });
+                    } else {
+                        addLog("Proyecto Destino: Conectando de forma anónima...");
+                        signInAnonymously(authDestino).catch(err => {
+                            addLog(`Proyecto Destino: Error al conectar de forma anónima (${err.message}). Activa el 'Proveedor Anónimo' en la consola de Firebase.`, 'error');
+                        });
+                    }
+                }
+            } catch (error) {
+                addLog(`Error al inicializar instancia de ${tipo}: ${error.message}`, 'error');
+                showToast(`Error de configuración en ${tipo}`, 'error');
+            }
+        }
+
+        // Permitir reinicio manual de configuraciones desde la vista avanzada (y autoguardar)
+        window.reinitApp = async (tipo) => {
+            if (saveConfigAndCredentials(tipo)) {
+                addLog(`Guardando configuración e inicializando proyecto ${tipo.toUpperCase()}...`);
+                await initAppServices(tipo);
+                showToast(`Configuración de ${tipo} guardada y aplicada`, 'success');
+            }
+        };
+
+        // Login Manual mediante Email y Password (y autoguardar)
+        window.loginManual = async (tipo) => {
+            const email = document.getElementById(`email-${tipo}`).value;
+            const pass = document.getElementById(`pass-${tipo}`).value;
+
+            if (!email || !pass) {
+                return showToast("Introduce email y contraseña", "error");
+            }
+
+            const auth = tipo === 'fuente' ? authFuente : authDestino;
+            try {
+                addLog(`Iniciando sesión manual en ${tipo} con ${email}...`);
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Guardar la configuración y credenciales automáticamente al lograr autenticación exitosa
+                if (saveConfigAndCredentials(tipo)) {
+                    showToast(`Acceso exitoso y credenciales guardadas en ${tipo}`, 'success');
+                } else {
+                    showToast(`Acceso exitoso en ${tipo}`, 'success');
+                }
+            } catch (error) {
+                addLog(`Error de login en ${tipo}: ${error.message}`, 'error');
+                showToast(`Fallo en login de ${tipo}`, 'error');
+            }
+        };
+
+        // Proceso de Migración
+        window.ejecutarMigracion = async () => {
+            const anio = document.getElementById('anio').value;
+            const mes = document.getElementById('mes').value;
+            const spinner = document.getElementById('spinner-migration');
+
+            if (!anio || !mes) {
+                showToast("Por favor ingresa año y mes", "error");
+                addLog("Campos año/mes obligatorios omitidos.", "warn");
+                return;
+            }
+
+            // Cambiar UI al estado de carga
+            spinner.classList.remove('hidden');
+            addLog(`Iniciando proceso de migración de registros de asistencia para el periodo: ${mes}/${anio}...`);
+
+            try {
+                // 1. Obtener datos desde Firestore Fuente (CIC/RegAs/{año}/{mes})
+                addLog("Petición de lectura enviada a Firestore en Fuente...");
+                const docRef = doc(firestoreFuente, "CIC", "RegAs", anio, mes);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    addLog(`Error: El documento solicitado en la ruta Firestore de origen (CIC/RegAs/${anio}/${mes}) no existe.`, "error");
+                    showToast("No existen registros de asistencia para migrar.", "error");
+                    spinner.classList.add('hidden');
+                    return;
+                }
+
+                const data = docSnap.data();
+                const fechasRegistradas = Object.keys(data).filter(k => k !== 'ultima-actualizacion');
+                addLog(`Documento encontrado exitosamente con ${fechasRegistradas.length} fechas registradas.`);
+
+                // 2. Escribir datos al Proyecto de Destino (Realtime Database: regas/{año}/{mes})
+                addLog("Estableciendo conexión con la base de datos de destino https://regas.firebaseio.com/...");
+                const destRef = ref(rtdbDestino, `${anio}/${mes}`);
+
+                // Si hay un registro con el mismo nombre, se elimina primero para asegurar que prevalezcan los datos nuevos sin residuos
+                addLog(`Eliminando registros anteriores en ${anio}/${mes} para garantizar que prevalezcan los datos nuevos...`);
+                await remove(destRef);
+                addLog("Registros anteriores removidos con éxito.");
+
+                // Inyectamos el nuevo paquete de datos estructurados
+                addLog("Enviando nuevos datos estructurados a la Realtime Database (RTDB) en Destino...");
+                await set(destRef, data);
+
+                addLog(`¡Sincronización completada! Todos los registros para el mes ${mes}/${anio} han sido inyectados en la RTDB destino (https://regas.firebaseio.com/) exitosamente.`, 'info');
+                showToast("Migración completada con éxito.", "success");
+
+            } catch (error) {
+                addLog(`Error detectado durante la migración: ${error.message}`, 'error');
+                if (error.code === 'permission-denied') {
+                    addLog("Sugerencia: Autentíquese con un usuario administrativo en el bloque correspondiente.", "warn");
+                }
+                showToast("La migración ha fallado.", "error");
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        };
+
+        // Inicialización de las dos instancias por defecto al cargar (Cargando datos locales si existen)
+        window.addEventListener('DOMContentLoaded', async () => {
+            addLog("Inicializando módulo de migración CIC-OS...");
+            
+            // Cargar datos guardados de localStorage
+            const savedSrcConfig = localStorage.getItem('cicos_config_fuente');
+            const savedDestConfig = localStorage.getItem('cicos_config_destino');
+            const savedSrcEmail = localStorage.getItem('cicos_email_fuente');
+            const savedSrcPass = localStorage.getItem('cicos_pass_fuente');
+            const savedDestEmail = localStorage.getItem('cicos_email_destino');
+            const savedDestPass = localStorage.getItem('cicos_pass_destino');
+
+            if (savedSrcConfig) {
+                document.getElementById('config-fuente-json').value = savedSrcConfig;
+                addLog("Cargada configuración guardada para el Proyecto Fuente.");
+            } else {
+                document.getElementById('config-fuente-json').value = JSON.stringify(defaultSrcConfig, null, 2);
+            }
+
+            if (savedDestConfig) {
+                document.getElementById('config-destino-json').value = savedDestConfig;
+                addLog("Cargada configuración guardada para el Proyecto Destino.");
+            } else {
+                document.getElementById('config-destino-json').value = JSON.stringify(defaultDestConfig, null, 2);
+            }
+
+            if (savedSrcEmail) document.getElementById('email-fuente').value = savedSrcEmail;
+            if (savedSrcPass) document.getElementById('pass-fuente').value = savedSrcPass;
+            if (savedDestEmail) document.getElementById('email-destino').value = savedDestEmail;
+            if (savedDestPass) document.getElementById('pass-destino').value = savedDestPass;
+
+            if (savedSrcEmail || savedDestEmail) {
+                addLog("Cargadas credenciales administrativas locales del navegador.");
+            }
+
+            updatePathViews();
+
+            await initAppServices('fuente');
+            await initAppServices('destino');
+        });
+    </script>
+</body>
+</html>

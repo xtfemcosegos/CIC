@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regas - Shell</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-base: #8B0056; /* Fiusha oscuro */
+            --bg-glossy: linear-gradient(145deg, #2a2a2a 0%, #000000 100%);
+            --hover-color: rgba(255, 255, 255, 0.15);
+            --active-color: rgba(139, 0, 86, 0.6); /* Fiusha oscuro transparente */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--color-base);
+            overflow: hidden;
+            display: flex;
+            transition: all 0.3s ease;
+        }
+
+        /* --- SIDEBAR NEGRO BRILLANTE --- */
+        #sidebar {
+            background: var(--bg-glossy);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.8), inset 1px 1px 0px rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 100;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Brillo sutil superior del sidebar */
+        #sidebar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 30%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            padding: 15px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+            position: relative;
+        }
+
+        .identity-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .identity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            margin: 0 auto;
+            transition: transform 0.2s;
+        }
+
+        .identity-icon:hover {
+            transform: scale(1.05);
+        }
+
+        /* Botón Hamburguesa Móvil */
+        .hamburger-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            margin-left: auto;
+        }
+        .hamburger-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;}
+
+        .view-controls {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 5px;
+            margin-top: 15px;
+            width: 100%;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: none;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 4px;
+            padding: 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .control-btn:hover { background: var(--hover-color); }
+        .control-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;}
+
+        /* --- NAVEGACIÓN --- */
+        .nav-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 10px 0;
+            gap: 5px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #ccc;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--hover-color);
+            color: #fff;
+        }
+
+        .nav-btn.active {
+            background-color: var(--active-color);
+            color: #fff;
+            border-left: 3px solid var(--color-base);
+        }
+
+        .nav-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
+        .nav-btn span {
+            margin-left: 15px;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            display: none;
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        #main-content {
+            flex: 1;
+            background-color: #f0f0f0;
+            position: relative;
+        }
+
+        .section-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        .section-iframe.active {
+            display: block;
+        }
+
+        /* --- BOTÓN FLOTANTE (Para Modo Oculto) --- */
+        #floating-identity {
+            position: fixed;
+            top: 15px;
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            background-color: #000;
+            padding: 2px;
+            transition: transform 0.2s;
+        }
+        #floating-identity:hover { transform: scale(1.05); }
+
+        /* ================= ESTADOS Y MODOS (ESCRITORIO) ================= */
+        /* POSICIONES */
+        body.pos-left { flex-direction: row; }
+        body.pos-right { flex-direction: row-reverse; }
+        body.pos-left #floating-identity { left: 15px; }
+        body.pos-right #floating-identity { right: 15px; }
+
+        /* MODO: ETIQUETAS */
+        body.mode-labels #sidebar { width: 220px; }
+        body.mode-labels .identity-icon { margin: 0; }
+        body.mode-labels .view-controls { display: flex; opacity: 1; }
+        body.mode-labels .nav-btn span { display: block; opacity: 1; }
+        body.mode-labels .nav-btn svg { margin: 0; }
+
+        /* MODO: ICONOS (Sidebar compacto) */
+        body.mode-icons #sidebar { width: 70px; }
+        body.mode-icons .view-controls { display: none; }
+
+        /* MODO: OCULTO */
+        body.mode-hidden #sidebar {
+            position: fixed;
+            height: 100%;
+            transform: translateX(-100%);
+        }
+        body.mode-hidden.pos-right #sidebar { transform: translateX(100%); }
+        body.mode-hidden #floating-identity { display: block; }
+        
+        /* OVERLAY TEMPORAL (Cuando se abre el menú en modo oculto) */
+        body.mode-hidden.show-overlay #sidebar {
+            transform: translateX(0);
+            width: 220px; /* Expande temporalmente para ver opciones */
+        }
+        body.mode-hidden.show-overlay .nav-btn span, body.mode-hidden.show-overlay .view-controls {
+            display: flex; opacity: 1;
+        }
+        body.mode-hidden.show-overlay .nav-btn svg, body.mode-hidden.show-overlay .identity-icon { margin: 0; }
+
+        /* ================= VISTA MÓVIL (DOCK SUPERIOR) ================= */
+        @media (max-width: 768px) {
+            body { flex-direction: column !important; }
+            
+            /* Sidebar se vuelve una barra superior completa */
+            body.mode-labels #sidebar, body.mode-icons #sidebar, body.mode-hidden #sidebar {
+                width: 100% !important;
+                height: 55px;
+                flex-direction: row;
+                position: static;
+                transform: none;
+                align-items: center;
+                padding: 0 10px;
+                box-sizing: border-box;
+                z-index: 1000;
+            }
+
+            .sidebar-header { 
+                border: none; 
+                padding: 0; 
+                flex-direction: row; 
+                align-items: center;
+                margin-right: 5px;
+            }
+            .identity-container { width: auto; gap: 0; }
+            .identity-icon { width: 34px; height: 34px; margin: 0; }
+            
+            .hamburger-btn { display: flex; }
+            
+            .nav-list { 
+                flex-direction: row; 
+                padding: 0 5px; 
+                align-items: center; 
+                overflow-x: auto; 
+                flex: 1; 
+                -ms-overflow-style: none;  
+                scrollbar-width: none; 
+            }
+            .nav-list::-webkit-scrollbar { display: none; }
+            
+            .nav-btn { padding: 8px 12px; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-btn.active { border-left: none; border-bottom: 3px solid var(--color-base); }
+            .nav-btn span { display: none !important; } 
+            .nav-btn svg { margin: 0; width: 22px; height: 22px;}
+
+            .view-controls { 
+                display: none !important; 
+                position: absolute; top: 60px; left: 10px; background: var(--bg-glossy); flex-direction: row; padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 2000; width: auto; gap: 10px;
+            }
+            .view-controls.mobile-show { display: flex !important; }
+            .control-btn { padding: 10px 15px; }
+
+            body.mode-hidden #floating-identity { display: none !important; } /* Siempre barra superior en móvil */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón Identidad Flotante (Para Modo Oculto) -->
+    <img src="../../ico/asistencia.ico" id="floating-identity" alt="Regas" onclick="toggleOverlay()">
+
+    <!-- Sidebar / Dock -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <div class="identity-container" onclick="toggleSettings()">
+                <img src="../../ico/asistencia.ico" class="identity-icon" alt="Regas">
+            </div>
+            <button class="hamburger-btn" onclick="document.getElementById('view-controls').classList.toggle('mobile-show')">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <!-- Controles de Vista -->
+            <div class="view-controls" id="view-controls">
+                <div class="control-btn" onclick="setConfig('mode', 'hidden')" title="Modo Oculto">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </div>
+                <div class="control-btn" onclick="setConfig('mode', 'labels')" title="Sidebar Completo">
+                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                </div>
+                <div class="control-btn" onclick="setConfig('mode', 'icons')" title="Solo Iconos">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                </div>
+                <div class="control-btn" onclick="togglePosition()" title="Cambiar Lado">
+                    <svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
+                </div>
+            </div>
+        </div>
+        <div class="nav-list" id="nav-list">
+            <!-- Secciones generadas dinámicamente -->
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main id="main-content">
+        <!-- Iframes generados dinámicamente -->
+    </main>
+
+    <script>
+        // Definición de las secciones y sus iconos SVG
+        const SECTIONS = [
+            { id: 'inicio', title: 'Inicio', icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>' },
+            { id: 'Planeación', title: 'Planeación', icon: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>' },
+            { id: 'Reportes', title: 'Reportes', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline>' },
+            { id: 'Recorridos', title: 'Recorridos', icon: '<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line>' },
+            { id: 'Elementos', title: 'Elementos', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>' },
+            { id: 'Casetas', title: 'Casetas', icon: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>' },
+            { id: 'Eventos', title: 'Eventos', icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' }
+        ];
+
+        // Configuración inicial desde LocalStorage
+        const CONFIG_KEY = 'regasShellConfig';
+        let config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
+            mode: 'labels', // 'labels', 'icons', 'hidden'
+            position: 'left', // 'left', 'right'
+            lastSection: 'inicio'
+        };
+
+        // --- Inicialización del DOM ---
+        function init() {
+            const navList = document.getElementById('nav-list');
+            
+            // Generar botones
+            SECTIONS.forEach(sec => {
+                const a = document.createElement('a');
+                a.className = 'nav-btn';
+                a.setAttribute('data-section', sec.id);
+                a.innerHTML = `<svg viewBox="0 0 24 24">${sec.icon}</svg><span>${sec.title}</span>`;
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    navigate(sec.id);
+                    document.body.classList.remove('show-overlay'); // Cierra overlay temporal
+                };
+                navList.appendChild(a);
+            });
+
+            applyConfig();
+            
+            // Restaurar estado e inyectar punto inicial nativo
+            window.history.replaceState({ section: config.lastSection }, "", "");
+            navigate(config.lastSection, false);
+        }
+
+        // --- Lógica de Navegación ---
+        function navigate(sectionId, saveHistory = true) {
+            // 1. Ocultar todos los iframes activos
+            document.querySelectorAll('.section-iframe').forEach(ifr => ifr.classList.remove('active'));
+            
+            // 2. Crear iframe si no existe (Carga Diferida) o mostrarlo si ya existe
+            let iframe = document.getElementById('iframe-' + sectionId);
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'iframe-' + sectionId;
+                iframe.className = 'section-iframe';
+                iframe.src = sectionId + '.html';
+                document.getElementById('main-content').appendChild(iframe);
+            }
+            iframe.classList.add('active');
+
+            // Actualizar botones activos
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`[data-section="${sectionId}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            config.lastSection = sectionId;
+            saveConfig();
+
+            if (saveHistory) {
+                window.history.pushState({ section: sectionId }, "", "");
+            }
+        }
+
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.section) {
+                navigate(e.state.section, false);
+            }
+        });
+
+        // --- Lógica de Vistas e Interfaz ---
+        function applyConfig() {
+            document.body.className = `mode-${config.mode} pos-${config.position}`;
+        }
+
+        function saveConfig() {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        }
+
+        function setConfig(key, value) {
+            config[key] = value;
+            saveConfig();
+            applyConfig();
+            document.body.classList.remove('show-overlay');
+        }
+
+        function togglePosition() {
+            setConfig('position', config.position === 'left' ? 'right' : 'left');
+        }
+
+        function toggleOverlay() {
+            document.body.classList.toggle('show-overlay');
+        }
+
+        function toggleSettings() {
+            // En modo iconos, hacer click al icono de la app abre los controles temporalmente
+            if(config.mode === 'icons') {
+                setConfig('mode', 'labels');
+            }
+        }
+
+        // Arrancar
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Hora del Sistema</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f4f6f8; color: #333; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        h1 { color: #8B0056; margin-top: 0; }
+        .data { font-size: 1.1em; margin-bottom: 15px; padding: 10px; background: #f1f5f9; border-radius: 6px; font-family: monospace; border: 1px solid #e2e8f0; color: #0f172a; }
+        .logic { margin-top: 20px; padding: 15px; border-left: 4px solid #10b981; background: #ecfdf5; border-radius: 4px; }
+        .note { font-size: 0.85em; color: #64748b; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Reloj del Sistema (JavaScript)</h1>
+        
+        <p><strong>Objeto Date completo devuelto por tu navegador:</strong></p>
+        <div class="data" id="fullDate">Cargando...</div>
+
+        <p><strong>Hora detectada (<code>getHours()</code>):</strong></p>
+        <div class="data" id="hours">Cargando...</div>
+
+        <div class="logic" id="logic">Cargando lógica...</div>
+        
+        <p class="note">Si la hora mostrada arriba no coincide con tu reloj de la barra de tareas, revisa la configuración de zona horaria de tu sistema operativo o navegador.</p>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const s = now.getSeconds();
+
+            document.getElementById('fullDate').innerText = now.toString();
+            document.getElementById('hours').innerText = `${h} (Formato 24h: ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')})`;
+
+            let turno = "Fuera de Rango";
+            if (h >= 5 && h < 12) turno = "Matutino (5:00 a 11:59)";
+            else if (h >= 12 && h < 17) turno = "Vespertino (12:00 a 16:59)";
+            else if (h >= 17 || h < 5) turno = "Nocturno (17:00 a 4:59)";
+
+            document.getElementById('logic').innerHTML = `<strong>Evaluación de Turno actual:</strong><br>El sistema te permitiría dar entradas en: <strong style="color:#059669;">${turno}</strong>`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000); // Actualiza cada segundo
+    </script>
+</body>
+</html>

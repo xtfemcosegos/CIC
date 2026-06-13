@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regas - Inicio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <!-- Fila de Fechas (Top) -->
+    <div class="date-strip" id="date-strip">
+        <div class="nav-date-col">
+            <button class="nav-date-btn-small hide-mobile" onclick="moveDate(-7)">Hace 1 sem</button>
+            <button class="nav-date-btn-small" onclick="moveDate(-1)">Ayer</button>
+        </div>
+        <div class="dynamic-dates" id="dynamic-dates"></div>
+        <div class="nav-date-col">
+            <button class="nav-date-btn-small" onclick="moveDate(1)">Mañana</button>
+            <button class="nav-date-btn-small hide-mobile" onclick="moveDate(7)">En 1 sem</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Panel Izquierdo (Oculto por defecto) -->
+        <aside class="side-panel" id="left-panel">
+            <div style="padding: 20px; color: #888; text-align: center; overflow-y: auto; flex: 1;">[ Panel Izquierdo ]</div>
+            <div class="side-resizer right-edge" id="left-resizer"></div>
+        </aside>
+
+        <!-- Panel Central -->
+        <main class="center-panel">
+            <!-- Barra de Redimensionamiento -->
+            <div class="split-resizer" id="split-resizer"></div>
+
+            <header class="center-header">
+                <!-- Encabezado Fijo para Vista Dividida -->
+                <div class="split-turno-header">En Turno</div>
+
+                <!-- Vista Escritorio: Pestañas -->
+                <div class="tabs-container" id="tabs-desktop">
+                    <div class="tab active" onclick="selectTab('turno')">En turno</div>
+                    <div class="tab" onclick="selectTab('matutino')">
+                        Matutino 
+                        <button class="btn-tab-report" title="Generar Reporte" onclick="event.stopPropagation(); selectTab('matutino'); openReportPanel('matutino');">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </button>
+                    </div>
+                    <div class="tab" onclick="selectTab('vespertino')">
+                        Vespertino
+                        <button class="btn-tab-report" title="Generar Reporte" onclick="event.stopPropagation(); selectTab('vespertino'); openReportPanel('vespertino');">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </button>
+                    </div>
+                    <div class="tab" onclick="selectTab('nocturno')">
+                        Nocturno
+                        <button class="btn-tab-report" title="Generar Reporte" onclick="event.stopPropagation(); selectTab('nocturno'); openReportPanel('nocturno');">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </button>
+                    </div>
+                    <div class="tab" onclick="selectTab('ausentismos')">Ausentismos</div>
+                </div>
+
+            <!-- Hamburguesa Móvil -->
+            <button class="header-hamburger hide-desktop" onclick="document.getElementById('header-actions').classList.toggle('mobile-show')">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+
+                <!-- Botones de Acción -->
+            <div class="actions-container" id="header-actions">
+                    <!-- Botón de Reporte Móvil -->
+                <button class="action-btn hide-desktop" id="btn-mobile-report" title="Generar Reporte" onclick="const active = document.querySelector('.tab-content.active'); if(active) openReportPanel(active.id.replace('content-', ''))" style="display: none;">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </button>
+                    <!-- Vista dividida -->
+                    <button class="action-btn" title="Vista Dividida" onclick="togglePanels()">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+                    </button>
+                    <!-- Agregar Elemento -->
+                <button class="action-btn" title="Agregar Elemento" onclick="openAddPanel()">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <!-- Mostrar casetas ocultas -->
+                    <button class="action-btn" id="btn-toggle-hidden" title="Mostrar Casetas Ocultas" onclick="toggleHiddenCasetas()">
+                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                    <!-- Selector de fecha -->
+                    <button class="action-btn" title="Selector de Fecha" onclick="document.getElementById('hidden-date-picker').showPicker()">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </button>
+                    <input type="date" id="hidden-date-picker" style="visibility: hidden; position: absolute; right: 20px; top: 60px;" onchange="onDatePickerChange(this.value)">
+                </div>
+            </header>
+
+            <div class="center-content">
+                <div id="content-turno" class="tab-content active"><p style="text-align: center; color: #888;">Cargando casetas...</p></div>
+                <div id="content-matutino" class="tab-content"></div>
+                <div id="content-vespertino" class="tab-content"></div>
+                <div id="content-nocturno" class="tab-content"></div>
+                <div id="content-ausentismos" class="tab-content"></div>
+            </div>
+        </main>
+
+        <!-- Panel Derecho (Oculto por defecto) -->
+        <aside class="side-panel" id="right-panel">
+            <div class="side-resizer left-edge" id="right-resizer"></div>
+            <!-- Sub-Panel de Detalle -->
+            <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                        <div class="detail-text-group">
+                            <h3 id="detail-name">Detalles</h3>
+                            <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
+                <div class="detail-tabs">
+                    <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
+                    <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
+                    <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
+                </div>
+                <div id="content-perfil" class="d-content">
+                    <p style="color: #888; text-align: center; margin-top: 20px;">Información del perfil...</p>
+                </div>
+                <div id="content-turno-detail" class="d-content active">
+                    <div id="turno-details-container"></div>
+                </div>
+                <div id="content-patrones" class="d-content">
+                    <p style="color: #888; text-align: center; margin-top: 20px;">Patrones de asistencia...</p>
+                </div>
+            </div>
+
+            <!-- Sub-Panel de Catálogo de Elementos (Nuevo) -->
+            <div id="right-panel-add" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <div class="detail-text-group">
+                            <h3 style="font-size: 14px; margin: 0;">Catálogo</h3>
+                            <span style="font-size: 11px; opacity: 0.8;">Buscar y asignar elemento</span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" id="search-elemento-input" placeholder="Buscar por Nombre o ID..." onkeyup="filterElementosList()" class="form-select" style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div id="add-elemento-list" style="flex: 1; overflow-y: auto; padding: 0;">
+                    <!-- Lista inyectada por JS -->
+                </div>
+            </div>
+
+            <!-- Sub-Panel de Reporte (Nuevo) -->
+            <div id="right-panel-report" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <div class="detail-text-group">
+                            <h3 style="font-size: 14px; margin: 0;">Reporte de Distribución</h3>
+                            <span id="report-date-subtitle" style="font-size: 11px; opacity: 0.8;"></span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;">
+                            <input type="checkbox" id="chk-report-empty" checked style="accent-color: var(--fiusha); width: 16px; height: 16px;" onchange="generateReportContent()"> Mostrar casetas sin elementos
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;">
+                            <input type="checkbox" id="chk-report-time" checked style="accent-color: var(--fiusha); width: 16px; height: 16px;" onchange="generateReportContent()"> Mostrar hora de entrada
+                        </label>
+                    </div>
+                    <button onclick="copyReportToClipboard(this)" class="btn-action-main" title="Copiar al Portapapeles" style="padding: 0; background: #10b981; margin: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 8px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                </div>
+                
+                <div id="report-content" style="flex: 1; overflow-y: auto; padding: 15px; font-family: monospace; white-space: pre-wrap; font-size: 12px; color: #333; background: #fff;">
+                    <!-- Texto del reporte inyectado aquí -->
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modal Personalización -->
+    <div id="customize-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; backdrop-filter: blur(5px);">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:450px; max-width:90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h3 id="customize-title" style="margin-top:0; color:var(--fiusha);">Personalizar Encabezado</h3>
+            
+            <div id="customize-preview" style="height:60px; border-radius:6px; margin-bottom:20px; border:1px solid #ccc; display:flex; align-items:center; padding:0 15px; font-weight:600; color:white; text-shadow:1px 1px 2px rgba(0,0,0,0.5);">Vista Previa</div>
+
+            <div class="cust-group">
+                <label>Muestras Profesionales</label>
+                <div id="preset-palettes" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 5px;"></div>
+            </div>
+            
+            <div class="cust-group">
+                <label>Paleta de 5 Colores</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="color" id="color1" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color2" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color3" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color4" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color5" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                </div>
+            </div>
+
+            <div class="cust-group">
+                <label>Estilo / Patrón de Fondo</label>
+                <select id="cust-type" onchange="updatePreview()" style="padding:8px; border-radius:4px; border:1px solid #ccc; font-family: inherit;">
+                    <option value="0">Sutil Borde Izquierdo</option>
+                    <option value="1">Degradado Diagonal Suave</option>
+                    <option value="3">Resplandor Radial Superior</option>
+                    <option value="4">Cinta Lateral (Ribbon)</option>
+                    <option value="custom_linear">Arcoíris (Usa los 5 colores)</option>
+                </select>
+            </div>
+
+            <div class="cust-group" id="angle-container">
+                <label>Dirección del Degradado: <span id="angle-val">135</span>°</label>
+                <input type="range" id="cust-angle" min="0" max="360" value="135" oninput="updatePreview()">
+            </div>
+
+            <div class="cust-group">
+                <label>Transparencia (Opacidad): <span id="op-val">100</span>%</label>
+                <input type="range" id="cust-opacity" min="0.1" max="1" step="0.05" oninput="updatePreview()">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+                <button onclick="closeCustomizeModal()" style="padding:10px 15px; border:none; border-radius:4px; cursor:pointer; background:#eee; color:#333; font-weight: 600;">Cancelar</button>
+                <button onclick="saveCustomizeModal()" style="padding:10px 15px; border:none; border-radius:4px; background:var(--fiusha); color:white; cursor:pointer; font-weight:600;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Menú Contextual (Flotante) -->
+    <div id="element-context-menu"></div>
+
+    <script type="module">
+        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, createMotivoAusentismo, moveElementoRegas, openDetailPanel, closeRightPanel, selectDetailTab } from './scrpt.js';
+        import './mc_script.js';
+        import { auth } from '../../js/firebase.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            applyHeaderStyles, 
+            openCustomizeModal, 
+            closeCustomizeModal, 
+            updatePreview, 
+            saveCustomizeModal, 
+            applyPalette, 
+            renderPalettes 
+        } from '../../js/script.js';
+
+        // Exponer funciones importadas al objeto window para el uso en onclick del HTML
+        window.applyHeaderStyles = applyHeaderStyles;
+        window.openCustomizeModal = openCustomizeModal;
+        window.closeCustomizeModal = closeCustomizeModal;
+        window.updatePreview = updatePreview;
+        window.saveCustomizeModal = saveCustomizeModal;
+        window.applyPalette = applyPalette;
+
+        window.openDetailPanel = async function(...args) {
+            await openDetailPanel(...args);
+            if (typeof saveInicioConfig === 'function') saveInicioConfig();
+        };
+        window.closeRightPanel = function() {
+            closeRightPanel();
+            if (typeof saveInicioConfig === 'function') saveInicioConfig();
+        };
+        window.selectDetailTab = function(tab) {
+            selectDetailTab(tab);
+            if (typeof saveInicioConfig === 'function') saveInicioConfig();
+        };
+
+        // Renderizar las muestras de colores en el modal
+        renderPalettes();
+
+        // Lógica para sincronizar pestañas y combobox
+        window.selectTab = function(tabId, save = true) {
+            if (document.body.classList.contains('split-mode') && tabId === 'turno') return;
+            
+            // Actualizar pestañas escritorio
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const targetTab = document.querySelector(`.tab[onclick="selectTab('${tabId}')"]`);
+            if(targetTab) targetTab.classList.add('active');
+
+            // Sincronizar combobox en móvil
+            const mobileSelect = document.getElementById('tabs-mobile');
+            if(mobileSelect && mobileSelect.value !== tabId) {
+                mobileSelect.value = tabId;
+            }
+
+            // Cambiar contenido visible
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            const targetContent = document.getElementById('content-' + tabId);
+            if(targetContent) targetContent.classList.add('active');
+
+            // Mostrar/Ocultar botón de reporte en versión móvil
+            const mobRepBtn = document.getElementById('btn-mobile-report');
+            if (mobRepBtn) {
+                if (['matutino', 'vespertino', 'nocturno'].includes(tabId)) mobRepBtn.style.display = 'flex';
+                else mobRepBtn.style.display = 'none';
+            }
+
+            console.log('Cambiando a vista:', tabId);
+            
+            if (typeof updateDynamicBackgrounds === 'function') updateDynamicBackgrounds();
+            if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
+        }
+
+        // --- LÓGICA DE FECHAS DINÁMICAS ---
+        let selectedDate = new Date();
+        let renderedStartDate = new Date();
+        let renderedEndDate = new Date();
+        let isFetchingDates = false;
+
+        function initDateStrip(baseDate = new Date()) {
+            const container = document.getElementById('dynamic-dates');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            renderedStartDate = new Date(baseDate);
+            renderedStartDate.setDate(renderedStartDate.getDate() - 30); // 1 mes antes
+            
+            renderedEndDate = new Date(baseDate);
+            renderedEndDate.setDate(renderedEndDate.getDate() + 30); // 1 mes después
+
+            const fragment = document.createDocumentFragment();
+            let curr = new Date(renderedStartDate);
+            
+            while(curr <= renderedEndDate) {
+                fragment.appendChild(createDateButton(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+            
+            container.style.scrollBehavior = 'auto'; // Quitar animacion para que no brinque al cargar
+            container.appendChild(fragment);
+            
+            centerDate(selectedDate);
+            setTimeout(() => container.style.scrollBehavior = 'smooth', 50);
+        }
+
+        function createDateButton(dateObj) {
+            const d = new Date(dateObj);
+            const btn = document.createElement('div');
+            btn.className = 'complex-date-btn';
+            btn.setAttribute('data-date', d.toDateString());
+            
+            if(d.toDateString() === new Date().toDateString()) btn.classList.add('today');
+            if(d.toDateString() === selectedDate.toDateString()) btn.classList.add('selected');
+
+            const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            
+            btn.innerHTML = `
+                <span class="d-week">${days[d.getDay()]}</span>
+                <span class="d-num">${d.getDate()}</span>
+                <span class="d-month">${months[d.getMonth()]}</span>
+            `;
+            
+            btn.onclick = () => {
+                selectedDate = new Date(d);
+                updateSelectedDateUI();
+                centerDate(selectedDate);
+                loadRegasData(); 
+            };
+            
+            return btn;
+        }
+
+        function updateSelectedDateUI() {
+            document.querySelectorAll('.complex-date-btn.selected').forEach(b => b.classList.remove('selected'));
+            const target = document.querySelector(`.complex-date-btn[data-date="${selectedDate.toDateString()}"]`);
+            if (target) target.classList.add('selected');
+            if (typeof updateDynamicBackgrounds === 'function') updateDynamicBackgrounds();
+        }
+
+        function centerDate(dateObj) {
+            const container = document.getElementById('dynamic-dates');
+            const target = document.querySelector(`.complex-date-btn[data-date="${dateObj.toDateString()}"]`);
+            if (target && container) {
+                const scrollPos = target.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (target.clientWidth / 2);
+                container.scrollTo({ left: scrollPos });
+            }
+        }
+
+        function handleDateScroll(e) {
+            if(isFetchingDates) return;
+            const container = e.target;
+            const threshold = 150; // Aprox 3 botones de distancia
+            
+            // Scroll hacia la izquierda (Pasado)
+            if (container.scrollLeft < threshold) {
+                isFetchingDates = true;
+                const oldScrollWidth = container.scrollWidth;
+                
+                const newStart = new Date(renderedStartDate);
+                newStart.setDate(newStart.getDate() - 30);
+                
+                let curr = new Date(renderedStartDate);
+                curr.setDate(curr.getDate() - 1);
+                
+                const fragment = document.createDocumentFragment();
+                const tempDates = [];
+                while(curr >= newStart) {
+                    tempDates.push(new Date(curr));
+                    curr.setDate(curr.getDate() - 1);
+                }
+                
+                container.style.scrollBehavior = 'auto';
+                tempDates.reverse().forEach(d => fragment.appendChild(createDateButton(d)));
+                container.prepend(fragment);
+                renderedStartDate = new Date(newStart);
+                
+                const newScrollWidth = container.scrollWidth;
+                container.scrollLeft = container.scrollLeft + (newScrollWidth - oldScrollWidth);
+                
+                setTimeout(() => { container.style.scrollBehavior = 'smooth'; isFetchingDates = false; }, 50);
+            }
+            
+            // Scroll hacia la derecha (Futuro)
+            if (container.scrollLeft + container.clientWidth > container.scrollWidth - threshold) {
+                isFetchingDates = true;
+                const newEnd = new Date(renderedEndDate);
+                newEnd.setDate(newEnd.getDate() + 30);
+                
+                let curr = new Date(renderedEndDate);
+                curr.setDate(curr.getDate() + 1);
+                
+                const fragment = document.createDocumentFragment();
+                while(curr <= newEnd) {
+                    fragment.appendChild(createDateButton(curr));
+                    curr.setDate(curr.getDate() + 1);
+                }
+                
+                container.appendChild(fragment);
+                renderedEndDate = new Date(newEnd);
+                isFetchingDates = false;
+            }
+        }
+
+        window.moveDate = function(days) {
+            selectedDate.setDate(selectedDate.getDate() + days);
+            if (selectedDate < renderedStartDate || selectedDate > renderedEndDate) {
+                initDateStrip(selectedDate);
+            } else {
+                updateSelectedDateUI();
+                centerDate(selectedDate);
+            }
+            loadRegasData();
+        }
+
+        window.onDatePickerChange = function(val) {
+            if(val) {
+                const parts = val.split('-');
+                selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                if (selectedDate < renderedStartDate || selectedDate > renderedEndDate) {
+                    initDateStrip(selectedDate);
+                } else {
+                    updateSelectedDateUI();
+                    centerDate(selectedDate);
+                }
+                loadRegasData();
+            }
+        }
+
+    window.addEventListener('resize', () => {
+        centerDate(selectedDate);
+        if (window.innerWidth <= 768 && isSplitMode) {
+            isSplitMode = false;
+            document.body.classList.remove('split-mode');
+            const btn = document.querySelector('button[title="Vista Dividida"]');
+            if (btn) btn.classList.remove('active');
+        }
+    });
+
+        const dynContainer = document.getElementById('dynamic-dates');
+        if(dynContainer) {
+            dynContainer.addEventListener('scroll', handleDateScroll);
+            // Soporte para mover la cinta lateralmente usando la rueda vertical normal del ratón
+            dynContainer.addEventListener('wheel', (e) => {
+                if (Math.abs(e.deltaY) > 0) {
+                    e.preventDefault();
+                    dynContainer.scrollLeft += e.deltaY;
+                }
+            });
+        }
+
+        setTimeout(() => initDateStrip(), 50); 
+
+        // --- PERSISTENCIA DE LA VISTA (LOCALSTORAGE) ---
+        window.saveInicioConfig = function() {
+            const rightPanel = document.getElementById('right-panel');
+            const activeTabEl = document.querySelector('.tab-content.active');
+            const detailIdEl = document.getElementById('detail-id');
+            const detailNameEl = document.getElementById('detail-name');
+            const activeDetailTabEl = document.querySelector('.d-tab.active');
+            
+            const isAdd = document.getElementById('right-panel-add') && document.getElementById('right-panel-add').style.display === 'flex';
+            const isReport = document.getElementById('right-panel-report') && document.getElementById('right-panel-report').style.display === 'flex';
+            
+            const config = {
+                isSplitMode: isSplitMode,
+                splitPos: document.body.style.getPropertyValue('--split-pos') || '50%',
+                activeTab: activeTabEl ? activeTabEl.id.replace('content-', '') : 'turno',
+                rightPanelOpen: rightPanel && rightPanel.style.display === 'flex',
+                rightPanelMode: isAdd ? 'add' : (isReport ? 'report' : 'detail'),
+                detailId: detailIdEl ? detailIdEl.innerText.replace('ID: ', '') : '',
+                detailName: detailNameEl ? detailNameEl.innerText : '',
+                detailTab: activeDetailTabEl ? activeDetailTabEl.id.replace('tab-', '') : 'turno',
+                leftPanelWidth: document.body.style.getPropertyValue('--left-panel-width') || '250px',
+                rightPanelWidth: document.body.style.getPropertyValue('--right-panel-width') || '33.333%',
+                reportTab: typeof currentReportTab !== 'undefined' ? currentReportTab : ''
+            };
+            localStorage.setItem('regasInicioConfig', JSON.stringify(config));
+        };
+
+        window.applyInicioConfig = function() {
+            const saved = localStorage.getItem('regasInicioConfig');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    if (config.activeTab) selectTab(config.activeTab, false);
+                    if (config.isSplitMode) {
+                    if (window.innerWidth > 768) {
+                        isSplitMode = false; // Se restablece para que togglePanels lo active
+                        togglePanels(false);
+                    } else {
+                        isSplitMode = false; // Forza un solo panel
+                        document.body.classList.remove('split-mode');
+                    }
+                    }
+                    if (config.splitPos) {
+                        document.body.style.setProperty('--split-pos', config.splitPos);
+                    }
+                    if (config.leftPanelWidth) {
+                        document.body.style.setProperty('--left-panel-width', config.leftPanelWidth);
+                    }
+                    if (config.rightPanelWidth) {
+                        document.body.style.setProperty('--right-panel-width', config.rightPanelWidth);
+                    }
+                } catch (e) { console.error("Error cargando config visual", e); }
+            }
+        };
+
+        // --- LÓGICA DE VISTA DIVIDIDA ---
+        let isSplitMode = false;
+        window.togglePanels = function(save = true) {
+        if (window.innerWidth <= 768) {
+            alert("La vista dividida no está disponible en dispositivos móviles.");
+            return;
+        }
+            isSplitMode = !isSplitMode;
+            const body = document.body;
+            const btn = document.querySelector('button[title="Vista Dividida"]');
+            
+            if (isSplitMode) {
+                body.classList.add('split-mode');
+                if (btn) btn.classList.add('active');
+                
+                // Si estaba en 'En turno', cambiar a 'Matutino' para ver la división
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab && activeTab.id === 'content-turno') {
+                    selectTab('matutino', false);
+                }
+            } else {
+                body.classList.remove('split-mode');
+                if (btn) btn.classList.remove('active');
+            }
+            
+            if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
+        }
+
+        // --- LÓGICA DE FONDOS DINÁMICOS ---
+        window.updateDynamicBackgrounds = function() {
+            const isToday = selectedDate.toDateString() === new Date().toDateString();
+            const darkGray = '#334155'; // Gris oscuro para "En Turno"
+            const pastelGreen = '#dcfce7'; // Verde pastel para el día de hoy
+            const lightGray = '#e2e8f0'; // Gris claro para días pasados o futuros
+            
+            const nonTurnoBg = isToday ? pastelGreen : lightGray;
+            
+            document.body.style.setProperty('--bg-turno', darkGray);
+            document.body.style.setProperty('--bg-non-turno', nonTurnoBg);
+            
+            const activeTabEl = document.querySelector('.tab-content.active');
+            if (activeTabEl) {
+                const activeTab = activeTabEl.id.replace('content-', '');
+                document.body.style.setProperty('--active-bg-color', activeTab === 'turno' ? darkGray : nonTurnoBg);
+            }
+        };
+
+        // Aplicar configuraciones estructurales de la interfaz de inmediato
+        applyInicioConfig();
+        updateDynamicBackgrounds();
+
+        // --- LÓGICA DE REDIMENSIONAMIENTO (VISTA DIVIDIDA) ---
+        const resizer = document.getElementById('split-resizer');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            if (!document.body.classList.contains('split-mode')) return;
+            isResizing = true;
+            resizer.classList.add('is-resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none'; // Evita seleccionar texto por accidente al arrastrar
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const centerPanel = document.querySelector('.center-panel');
+            const rect = centerPanel.getBoundingClientRect();
+            
+            let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+            if (newWidth < 20) newWidth = 20; // Límite mínimo (No menos del 20%)
+            if (newWidth > 80) newWidth = 80; // Límite máximo (No más del 80%)
+            
+            document.body.style.setProperty('--split-pos', `${newWidth}%`);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('is-resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                if (typeof saveInicioConfig === 'function') saveInicioConfig();
+            }
+        });
+
+        // --- LÓGICA DE REDIMENSIONAMIENTO (PANEL IZQUIERDO) ---
+        const leftResizer = document.getElementById('left-resizer');
+        let isLeftResizing = false;
+
+        if (leftResizer) {
+            leftResizer.addEventListener('mousedown', (e) => {
+                isLeftResizing = true;
+                leftResizer.classList.add('is-resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isLeftResizing) return;
+            let newWidth = e.clientX;
+            if (newWidth < 150) newWidth = 150; // Límite mínimo
+            if (newWidth > 500) newWidth = 500; // Límite máximo
+            document.body.style.setProperty('--left-panel-width', `${newWidth}px`);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isLeftResizing) {
+                isLeftResizing = false;
+                if (leftResizer) leftResizer.classList.remove('is-resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                if (typeof saveInicioConfig === 'function') saveInicioConfig();
+            }
+        });
+
+        // --- LÓGICA DE REDIMENSIONAMIENTO (PANEL DERECHO) ---
+        const rightResizer = document.getElementById('right-resizer');
+        let isRightResizing = false;
+
+        if (rightResizer) {
+            rightResizer.addEventListener('mousedown', (e) => {
+                isRightResizing = true;
+                rightResizer.classList.add('is-resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isRightResizing) return;
+            let newWidth = window.innerWidth - e.clientX;
+            if (newWidth < 300) newWidth = 300; // Límite mínimo
+            if (newWidth > 800) newWidth = 800; // Límite máximo
+            document.body.style.setProperty('--right-panel-width', `${newWidth}px`);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isRightResizing) {
+                isRightResizing = false;
+                if (rightResizer) rightResizer.classList.remove('is-resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                if (typeof saveInicioConfig === 'function') saveInicioConfig();
+            }
+        });
+
+        // --- LÓGICA PARA MOSTRAR/OCULTAR CASETAS VACÍAS ---
+        let showHiddenCasetas = false;
+        window.toggleHiddenCasetas = function() {
+            showHiddenCasetas = !showHiddenCasetas;
+            const btn = document.getElementById('btn-toggle-hidden');
+            if (btn) {
+                if (showHiddenCasetas) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+            updateCasetasVisibility();
+        };
+
+        function updateCasetasVisibility() {
+            document.querySelectorAll('.caseta-container').forEach(c => {
+                const body = c.querySelector('.caseta-body');
+                if (body.children.length === 0 && !showHiddenCasetas) {
+                    c.classList.add('hidden-caseta');
+                } else {
+                    c.classList.remove('hidden-caseta');
+                }
+            });
+        }
+
+        // --- CARGA Y CRUCE DE DATOS GLOBALES ---
+        let casetasGlobal = [];
+        let motivosGlobal = [];
+        let elementosGlobal = [];
+        let elementosMap = {}; // Mapa para consultas instantáneas
+
+        window.restoreRightPanelState = async function() {
+            const saved = localStorage.getItem('regasInicioConfig');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    if (config.rightPanelOpen) {
+                        if (config.rightPanelMode === 'add') {
+                            openAddPanel(false);
+                        } else if (config.rightPanelMode === 'report') {
+                            if (config.reportTab) openReportPanel(config.reportTab, false);
+                        } else if (config.rightPanelMode === 'detail' && config.detailId) {
+                            const reqDate = selectedDate;
+                            const isToday = reqDate.toDateString() === new Date().toDateString();
+                            const anio = reqDate.getFullYear().toString();
+                            const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                            const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                            
+                            const existingRecord = await downloadRegas(anio, mes, dia, config.detailId);
+                            openDetailPanel(config.detailId, config.detailName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+                            if (config.detailTab) selectDetailTab(config.detailTab);
+                        }
+                    }
+                } catch (e) { console.error("Error restaurando panel", e); }
+            }
+        };
+
+        async function initializeRegasView() {
+            try {
+                // 1. Descargamos las bases principales en paralelo
+                const [casetas, elementos, motivos] = await Promise.all([
+                    downloadCasetas(),
+                    downloadElementos(),
+                    downloadMotivosAusentismo()
+                ]);
+
+                casetasGlobal = casetas;
+            elementosGlobal = elementos;
+                motivosGlobal = motivos;
+
+                elementos.forEach(el => {
+                    // El ID numérico está dentro como el.ID, y el nombre del elemento es la llave principal (el.id)
+                    const realId = el.ID ? String(el.ID) : String(el.id);
+                    elementosMap[realId] = el.id; 
+                });
+                
+                buildContainers();
+                loadRegasData();
+                restoreRightPanelState(); // Recuperar panel lateral una vez cargada la BD
+            } catch (error) {
+                console.error("Error inicializando vista:", error);
+                document.getElementById('content-turno').innerHTML = '<p style="color:red; text-align:center;">Error de sincronización con la base de datos.</p>';
+            }
+        }
+
+    // --- LÓGICA DEL PANEL LATERAL DE CATÁLOGO ---
+    window.openAddPanel = function(save = true) {
+        const rightPanel = document.getElementById('right-panel');
+        document.getElementById('right-panel-detail').style.display = 'none';
+        const reportDiv = document.getElementById('right-panel-report');
+        if (reportDiv) reportDiv.style.display = 'none';
+        document.getElementById('right-panel-add').style.display = 'flex';
+        rightPanel.style.display = 'flex';
+        
+        document.getElementById('search-elemento-input').value = '';
+        const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+        renderElementosList(activeElementos);
+        
+        if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
+    };
+
+    window.renderElementosList = function(elementos) {
+        const listContainer = document.getElementById('add-elemento-list');
+        listContainer.innerHTML = '';
+        
+        // 1. Agrupar por Caseta Base
+        const grouped = {};
+        elementos.forEach(el => {
+            const casetaId = (el.Operativa && el.Operativa.AccesoPredeterminado) ? el.Operativa.AccesoPredeterminado : 'Sin Asignar';
+            if (!grouped[casetaId]) grouped[casetaId] = [];
+            grouped[casetaId].push(el);
+        });
+
+        // 2. Ordenar los grupos por el índice de la caseta
+        const getCasetaIndex = (cId) => {
+            if (cId === 'Sin Asignar') return 9999;
+            const c = casetasGlobal.find(x => x.id === cId);
+            return c ? (c.index || 0) : 9998; // Fallback alto si la caseta no se halla
+        };
+        
+        const sortedCasetaIds = Object.keys(grouped).sort((a, b) => getCasetaIndex(a) - getCasetaIndex(b));
+
+        // 3. Renderizar encabezados y elementos
+        sortedCasetaIds.forEach(casetaId => {
+            // Header del grupo
+            const header = document.createElement('div');
+            header.className = 'add-element-group-header';
+            header.innerText = casetaId;
+            listContainer.appendChild(header);
+
+            // Elementos del grupo
+            grouped[casetaId].forEach(el => {
+                const elId = el.ID ? String(el.ID) : String(el.id);
+                const elName = el.id; 
+                
+                const div = document.createElement('div');
+                div.className = 'add-element-item';
+                div.setAttribute('draggable', 'true');
+                div.innerHTML = `
+                    <img class="add-element-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" data-emp-id-add="${elId}">
+                    <div class="add-element-info">
+                        <span class="add-element-name">${elName}</span>
+                        <span class="add-element-id">ID: ${elId}</span>
+                    </div>
+                `;
+                
+                div.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        idElemento: elId, isNew: true 
+                    }));
+                    setTimeout(() => document.body.classList.add('is-dragging'), 0);
+                });
+                div.addEventListener('dragend', () => document.body.classList.remove('is-dragging'));
+                
+                div.onclick = async () => {
+                    const reqDate = selectedDate;
+                    const isToday = reqDate.toDateString() === new Date().toDateString();
+                    const anio = reqDate.getFullYear().toString();
+                    const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                    const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                    
+                    const existingRecord = await downloadRegas(anio, mes, dia, elId);
+                    openDetailPanel(elId, elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+                };
+
+                listContainer.appendChild(div);
+                getFotoElemento(elId).then(fotoUrl => {
+                    const img = div.querySelector(`img[data-emp-id-add="${elId}"]`);
+                    if(img) img.src = fotoUrl;
+                });
+            });
+        });
+    };
+
+    window.filterElementosList = function() {
+        const query = document.getElementById('search-elemento-input').value.toLowerCase();
+        const filtered = elementosGlobal.filter(el => {
+            const isActive = el.Operativa && el.Operativa.Estado === 'Activo';
+            if (!isActive) return false;
+            
+            const elId = el.ID ? String(el.ID).toLowerCase() : String(el.id).toLowerCase();
+            const elName = String(el.id).toLowerCase();
+            return elName.includes(query) || elId.includes(query);
+        });
+        renderElementosList(filtered);
+    };
+
+        // Crea los contenedores visuales vacíos
+        function buildContainers() {
+            const tabsCasetas = ['turno', 'matutino', 'vespertino', 'nocturno'];
+            tabsCasetas.forEach(tabId => {
+                const container = document.getElementById('content-' + tabId);
+                if (container) {
+                    container.innerHTML = '';
+
+                    casetasGlobal.forEach(c => container.appendChild(createCard(c, 'casetas', 'casetas')));
+                }
+            });
+
+            const containerAus = document.getElementById('content-ausentismos');
+            if (containerAus) {
+                containerAus.innerHTML = '';
+                motivosGlobal.forEach(m => containerAus.appendChild(createCard(m, 'motivosAusentismo', 'motivosausentismo')));
+            }
+            
+            updateCasetasVisibility(); // Ocultar todas inicialmente si no hay datos
+        }
+
+        function createCard(item, storeName, dbPath) {
+            const casetaDiv = document.createElement('div');
+            casetaDiv.className = 'caseta-container';
+            casetaDiv.setAttribute('data-id', item.id);
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'caseta-header';
+            
+            const headerTitle = document.createElement('span');
+            headerTitle.innerText = item.id;
+            
+            const configBtn = document.createElement('button');
+            configBtn.className = 'btn-customize';
+            configBtn.title = 'Personalizar Fondo';
+            configBtn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
+            configBtn.onclick = () => openCustomizeModal(item, {
+                storeName: storeName,
+                dbUrl: 'https://regas.firebaseio.com',
+                dbPath: dbPath,
+                onSave: () => {
+                    // Actualizar color en vivo en todas las tarjetas de este ID sin borrar a los empleados
+                    document.querySelectorAll('.caseta-container').forEach(container => {
+                        if (container.getAttribute('data-id') === item.id) {
+                            applyHeaderStyles(container.querySelector('.caseta-header'), item.bgHeader);
+                        }
+                    });
+                }
+            });
+            
+            applyHeaderStyles(headerDiv, item.bgHeader);
+            
+            headerDiv.appendChild(headerTitle);
+            headerDiv.appendChild(configBtn);
+            
+            const bodyDiv = document.createElement('div');
+            bodyDiv.className = 'caseta-body';
+            
+            casetaDiv.appendChild(headerDiv);
+            casetaDiv.appendChild(bodyDiv);
+
+            // EVENTOS DRAG AND DROP - ZONA DE CAÍDA (DROP TARGET)
+            casetaDiv.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Permitir caída
+                casetaDiv.classList.add('drag-over');
+            });
+            casetaDiv.addEventListener('dragleave', () => {
+                casetaDiv.classList.remove('drag-over');
+            });
+            casetaDiv.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                casetaDiv.classList.remove('drag-over');
+                
+                const dataStr = e.dataTransfer.getData('text/plain');
+                if (!dataStr) return;
+                const data = JSON.parse(dataStr);
+                
+                const newCasetaId = casetaDiv.getAttribute('data-id');
+                if (!data.isNew && data.oldCaseta === newCasetaId) return; // No se movió
+                
+                const tabContent = casetaDiv.closest('.tab-content');
+                const dropTab = tabContent ? tabContent.id.replace('content-', '') : 'matutino';
+
+                // Recalcular la fecha objetivo
+                let dTarget = selectedDate;
+                if (data.targetDateStr) {
+                    dTarget = new Date(data.targetDateStr);
+                } else if (data.isNew) {
+                    dTarget = dropTab === 'turno' ? new Date() : selectedDate;
+                }
+
+                const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                const anio = dTarget.getFullYear().toString();
+                const mes = meses[dTarget.getMonth()];
+                const dia = dTarget.getDate().toString().padStart(2, '0') + (dTarget.getMonth()+1).toString().padStart(2, '0') + dTarget.getFullYear().toString();
+                
+                try {
+                    const isAusentismo = storeName === 'motivosAusentismo';
+                    let finalDbKey = data.dbKey;
+                    let extraData = null;
+                    
+                    if (data.isNew) {
+                        // Si es nuevo del catálogo, detectamos dinámicamente qué turno asignar
+                        if (isAusentismo) {
+                            finalDbKey = 'ausentismo';
+                        } else if (['matutino', 'vespertino', 'nocturno'].includes(dropTab)) {
+                            finalDbKey = dropTab;
+                        } else if (dropTab === 'turno') {
+                            const now = new Date();
+                            const h = now.getHours();
+                            
+                            if (h >= 5 && h < 12) {
+                                finalDbKey = 'matutino';
+                            } else if (h >= 12 && h < 17) {
+                                finalDbKey = 'vespertino';
+                            } else if (h >= 17 && h < 23) {
+                                finalDbKey = 'nocturno';
+                            } else {
+                                alert("Asignación no permitida: Fuera del horario de turnos (5:00 AM - 11:00 PM).");
+                                return; // Cancela la asignación
+                            }
+                            
+                            const hh = String(now.getHours()).padStart(2, '0');
+                            const mm = String(now.getMinutes()).padStart(2, '0');
+                            extraData = { entrada_real: `${hh}:${mm}` };
+                        } else {
+                            finalDbKey = 'matutino'; // Fallback
+                        }
+                    }
+
+                    await moveElementoRegas(anio, mes, dia, data.idElemento, finalDbKey, newCasetaId, isAusentismo, extraData);
+                    loadRegasData(); // Recargar Interfaz
+                } catch (error) { console.error("Drop error:", error); }
+            });
+
+            return casetaDiv;
+        }
+
+        async function loadRegasData() {
+            document.querySelectorAll('.caseta-body').forEach(el => el.innerHTML = ''); // Limpiamos las tablas
+            
+            const realHoy = new Date();
+            const realAyer = new Date(realHoy);
+            realAyer.setDate(realAyer.getDate() - 1);
+            const dSel = new Date(selectedDate);
+
+            const formatReq = (d) => {
+                const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                return [d.getFullYear().toString(), meses[d.getMonth()], d.getDate().toString().padStart(2, '0') + (d.getMonth()+1).toString().padStart(2, '0') + d.getFullYear().toString()];
+            };
+
+            const reqRealHoy = formatReq(realHoy);
+            const reqRealAyer = formatReq(realAyer);
+            const reqSel = formatReq(dSel);
+
+            // Descargar Regas (En tiempo real y la fecha seleccionada)
+            const [dataRealHoy, dataRealAyer, dataSel] = await Promise.all([
+                downloadRegas(reqRealHoy[0], reqRealHoy[1], reqRealHoy[2]),
+                downloadRegas(reqRealAyer[0], reqRealAyer[1], reqRealAyer[2]),
+                downloadRegas(reqSel[0], reqSel[1], reqSel[2])
+            ]);
+
+            processRegasData(dataRealAyer, ['turno'], realAyer);
+            processRegasData(dataRealHoy, ['turno'], realHoy);
+            processRegasData(dataSel, ['matutino', 'vespertino', 'nocturno', 'ausentismos'], dSel);
+            
+            updateCasetasVisibility(); // Ocultar/Mostrar cajas basado en los nuevos resultados
+            if (typeof generateReportContent === 'function') generateReportContent(); // Refresca reporte si está abierto
+        }
+
+        function processRegasData(data, allowedTabs, contextDate) {
+            if (!data || !data.registros) return;
+            
+            Object.keys(data.registros).forEach(idElemento => {
+                const record = data.registros[idElemento];
+                const empleadoNombre = elementosMap[idElemento] || idElemento;
+
+                // Buscar si el registro tiene los nodos Matutino, Vespertino, Nocturno o Ausentismo
+                const shifts = [];
+                Object.keys(record).forEach(k => {
+                    const lowerK = k.toLowerCase();
+                    if (['matutino', 'vespertino', 'nocturno', 'ausentismo'].includes(lowerK)) {
+                        shifts.push({ name: lowerK, dbKey: k, data: record[k] });
+                    }
+                });
+
+                shifts.forEach(shift => {
+                    // Para ausentismos buscamos "motivo", si es turno normal "Caseta" (soportando diff. mayúsculas)
+                    let boxId = shift.data.motivo || shift.data.Motivo || shift.data.Caseta || 'Desconocido';
+                    boxId = String(boxId).trim();
+                    
+                    // Si es un ausentismo y el motivo no existe, lo creamos dinámicamente
+                    if (shift.name === 'ausentismo' && boxId !== 'Desconocido') {
+                        const exists = motivosGlobal.find(m => m.id.toLowerCase() === boxId.toLowerCase());
+                        if (!exists) {
+                            // Crear estructura base con color gris para personalización futura
+                            const newMotivo = { id: boxId, index: 99, bgHeader: { preset: 0, customColors: ["#4b5563", "#6b7280", "#000000", "#000000", "#000000"] } };
+                            motivosGlobal.push(newMotivo);
+                            createMotivoAusentismo(newMotivo); // Guarda en Firebase y Local
+                            
+                            const containerAus = document.getElementById('content-ausentismos');
+                            if (containerAus) {
+                                containerAus.appendChild(createCard(newMotivo, 'motivosAusentismo', 'motivosausentismo'));
+                            }
+                        }
+                    }
+
+                    // Crear renglón del empleado
+                    const row = document.createElement('div');
+                    row.style.cssText = "padding: 5px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;";
+                    
+                    // ATRIBUTOS DRAG AND DROP (Los eventos se asignan al clonar)
+                    row.setAttribute('draggable', 'true'); // Asegura que cloneNode lo copie intacto
+                    row.className = 'draggable-row';
+                    row.setAttribute('data-emp-name', empleadoNombre);
+                    if (shift.data.entrada_real) {
+                        row.setAttribute('data-entrada', shift.data.entrada_real);
+                    }
+
+                    const leftCol = document.createElement('div');
+                    leftCol.style.display = 'flex'; 
+                    leftCol.style.alignItems = 'center'; 
+                    leftCol.style.gap = '10px';
+                    leftCol.style.overflow = 'hidden';
+                    leftCol.style.flex = '1';
+
+                    // Avatar (Imagen)
+                    const avatarImg = document.createElement('img');
+                    avatarImg.src = 'data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E'; // Silueta predeterminada rápida
+                    avatarImg.style.cssText = "width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #e0e0e0;";
+                    avatarImg.setAttribute('data-emp-id', idElemento);
+                    avatarImg.setAttribute('draggable', 'false'); // Evita que se arrastre solo la foto
+                    
+                    getFotoElemento(idElemento).then(fotoUrl => { 
+                        avatarImg.src = fotoUrl; // Actualiza el original
+                        // Busca todas las copias clonadas en el DOM y las actualiza al instante
+                        document.querySelectorAll(`img[data-emp-id="${idElemento}"]`).forEach(img => img.src = fotoUrl);
+                    });
+
+                    // Contenedor de Texto (Nombre e ID)
+                    const textInfo = document.createElement('div');
+                    textInfo.style.display = 'flex'; textInfo.style.flexDirection = 'column';
+                    textInfo.style.overflow = 'hidden';
+                    textInfo.style.flex = '1';
+                    textInfo.style.minWidth = '0';
+                    
+                    let tagsHtml = '';
+                    const isIncActive = (val) => val === true || String(val).toLowerCase() === 'true' || String(val).toLowerCase() === 'si';
+                    if (isIncActive(shift.data.es_extra)) tagsHtml += `<span class="inc-tag inc-tag-extra">Ext</span>`;
+                    if (isIncActive(shift.data.es_recuperacion)) tagsHtml += `<span class="inc-tag inc-tag-recup">Rec</span>`;
+                    if (isIncActive(shift.data.es_festivo)) tagsHtml += `<span class="inc-tag inc-tag-festivo">Fes</span>`;
+                    if (isIncActive(shift.data.retardo)) tagsHtml += `<span class="inc-tag inc-tag-retardo">Ret</span>`;
+
+                    textInfo.innerHTML = `
+                        <span style="font-weight: 600; font-size: 12px; font-family: 'Open Sans', sans-serif; color: var(--text-color); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${empleadoNombre}</span>
+                        ${tagsHtml ? `<div class="inc-tags-container">${tagsHtml}</div>` : ''}
+                    `;
+                    
+                    leftCol.appendChild(avatarImg);
+                    leftCol.appendChild(textInfo);
+                    
+                    row.appendChild(leftCol);
+
+                    // Búsqueda Case-Insensitive para evitar errores como "falta" vs "Falta"
+                    const appendToTab = (tabId, searchId) => {
+                        if (!allowedTabs.includes(tabId)) return;
+
+                        const tabContainer = document.getElementById(`content-${tabId}`);
+                        if (!tabContainer) return;
+                        
+                        const containers = Array.from(tabContainer.querySelectorAll('.caseta-container'));
+                        let targetBox = containers.find(c => c.getAttribute('data-id').toLowerCase() === searchId.toLowerCase());
+                        
+                        // Si no lo encuentra por error de dedo, lo manda al contenedor genérico "Desconocido"
+                        if (!targetBox && tabId === 'ausentismos') targetBox = containers.find(c => c.getAttribute('data-id').toLowerCase() === 'desconocido');
+                        
+                        if (targetBox) {
+                            const clonedRow = row.cloneNode(true);
+                            
+                            // Validar estrictamente si existe entrada o salida real (filtro anti-basura)
+                            let hasEntrada = false;
+                            if (shift.data.entrada_real) {
+                                const val = String(shift.data.entrada_real).trim().toLowerCase();
+                                if (val !== '' && val !== 'null' && val !== 'false' && val !== 'undefined') hasEntrada = true;
+                            }
+                            
+                            let hasSalida = false;
+                            if (shift.data.salida_real) {
+                                const valS = String(shift.data.salida_real).trim().toLowerCase();
+                                if (valS !== '' && valS !== 'null' && valS !== 'false' && valS !== 'undefined') hasSalida = true;
+                            }
+
+                            const isEnTurno = hasEntrada && !hasSalida && shift.name !== 'ausentismo';
+
+                            // 1. BORDE VERDE EN LA FOTO SI ESTÁ EN TURNO
+                            if (isEnTurno) {
+                                const imgInClone = clonedRow.querySelector('img');
+                                if (imgInClone) {
+                                    imgInClone.style.border = '2px solid #10b981';
+                                    imgInClone.style.padding = '1px';
+                                }
+                            }
+                            
+                            // --- BOTÓN DE SALIDA RÁPIDA ---
+                            // Mostrar si está en la pestaña 'turno', o si está en su pestaña normal y sigue En Turno
+                            if (tabId === 'turno' || (['matutino', 'vespertino', 'nocturno'].includes(tabId) && isEnTurno)) {
+                                const btnSalida = document.createElement('button');
+                                btnSalida.title = 'Marcar Salida Automática';
+                                btnSalida.style.cssText = "background-color: #991b1b !important; color: #ffffff !important; border: 1px solid #7f1d1d !important; border-radius: 6px; padding: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; transition: transform 0.2s;";
+                                btnSalida.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
+                                
+                                btnSalida.onmouseover = () => btnSalida.style.transform = 'scale(1.1)';
+                                btnSalida.onmouseout = () => btnSalida.style.transform = 'scale(1)';
+
+                                btnSalida.addEventListener('click', async (e) => {
+                                    e.stopPropagation(); 
+                                    
+                                    if (!confirm(`¿Marcar la salida de ${empleadoNombre} en este momento?`)) return;
+                                    
+                                    const now = new Date();
+                                    const hh = String(now.getHours()).padStart(2, '0');
+                                    const mm = String(now.getMinutes()).padStart(2, '0');
+                                    const ss = String(now.getSeconds()).padStart(2, '0');
+                                    const timeStr = `${hh}:${mm}:${ss}`;
+                                    
+                                    btnSalida.disabled = true;
+                                    btnSalida.style.opacity = '0.5';
+                                    
+                                    const reqDate = contextDate;
+                                    const anio = reqDate.getFullYear().toString();
+                                    const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                                    const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                                    
+                                    try {
+                                        const isAusentismo = shift.name === 'ausentismo';
+                                        await moveElementoRegas(anio, mes, dia, idElemento, shift.dbKey, targetBox.getAttribute('data-id'), isAusentismo, { salida_real: timeStr });
+                                        loadRegasData(); 
+                                    } catch(err) {
+                                        console.error("Error marcando salida rápida", err);
+                                        btnSalida.disabled = false;
+                                        btnSalida.style.opacity = '1';
+                                    }
+                                });
+                                clonedRow.appendChild(btnSalida);
+                            }
+
+                            // --- ESTADOS Y BOTÓN DE ENTRADA RÁPIDA ---
+                            const evalNow = new Date();
+                            const evalHour = evalNow.getHours();
+                            
+                            const isToday = contextDate.getDate() === evalNow.getDate() && 
+                                            contextDate.getMonth() === evalNow.getMonth() && 
+                                            contextDate.getFullYear() === evalNow.getFullYear();
+                            
+                            const pastLimit = new Date(evalNow.getFullYear(), evalNow.getMonth(), evalNow.getDate()).getTime();
+                            const isPast = contextDate.getTime() < pastLimit;
+                            
+                            if (['matutino', 'vespertino', 'nocturno'].includes(tabId)) {
+                                if (!hasEntrada) {
+                                    let showEntrada = false;
+                                    let isMissed = false;
+                                    let isWaiting = false;
+                                    const nodoTurno = shift.name; 
+                                    
+                                    if (isToday) {
+                                        if (nodoTurno === 'matutino') {
+                                            if (evalHour >= 5 && evalHour < 12) showEntrada = true;
+                                            else if (evalHour >= 12) isMissed = true;
+                                            else isWaiting = true;
+                                        } else if (nodoTurno === 'vespertino') {
+                                            if (evalHour >= 12 && evalHour < 17) showEntrada = true;
+                                            else if (evalHour >= 17) isMissed = true;
+                                            else isWaiting = true;
+                                        } else if (nodoTurno === 'nocturno') {
+                                            if (evalHour >= 17 || evalHour < 5) showEntrada = true;
+                                            else isWaiting = true;
+                                        }
+                                    } else if (isPast) {
+                                        isMissed = true; 
+                                    } else {
+                                        isWaiting = true; 
+                                    }
+                                    
+                                    if (showEntrada) {
+                                        const btnEntrada = document.createElement('button');
+                                        btnEntrada.title = 'Marcar Entrada Automática';
+                                        btnEntrada.style.cssText = "background-color: #10b981 !important; color: #ffffff !important; border: 1px solid #059669 !important; border-radius: 6px; padding: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; transition: transform 0.2s;";
+                                        btnEntrada.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>';
+                                        
+                                        btnEntrada.onmouseover = () => btnEntrada.style.transform = 'scale(1.1)';
+                                        btnEntrada.onmouseout = () => btnEntrada.style.transform = 'scale(1)';
+                                        
+                                        btnEntrada.addEventListener('click', async (e) => {
+                                            e.stopPropagation();
+                                            if (!confirm(`¿Dar entrada a ${empleadoNombre} en este momento?`)) return;
+                                            
+                                            const clickNow = new Date();
+                                            const timeStr = `${String(clickNow.getHours()).padStart(2, '0')}:${String(clickNow.getMinutes()).padStart(2, '0')}:${String(clickNow.getSeconds()).padStart(2, '0')}`;
+                                            
+                                            btnEntrada.disabled = true;
+                                            btnEntrada.style.opacity = '0.5';
+                                            
+                                            const anio = contextDate.getFullYear().toString();
+                                            const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][contextDate.getMonth()];
+                                            const dia = contextDate.getDate().toString().padStart(2, '0') + (contextDate.getMonth()+1).toString().padStart(2, '0') + contextDate.getFullYear().toString();
+                                            
+                                            try {
+                                                await moveElementoRegas(anio, mes, dia, idElemento, shift.dbKey, targetBox.getAttribute('data-id'), false, { entrada_real: timeStr });
+                                                loadRegasData(); 
+                                            } catch(err) {
+                                                console.error("Error marcando entrada rápida", err);
+                                                btnEntrada.disabled = false;
+                                                btnEntrada.style.opacity = '1';
+                                            }
+                                        });
+                                        clonedRow.appendChild(btnEntrada);
+                                    } else if (isMissed) {
+                                        clonedRow.style.borderLeft = '4px solid #ef4444'; 
+                                        const missedLabel = document.createElement('span');
+                                        missedLabel.style.cssText = 'font-size: 9px; color: #ef4444; font-weight: 700; margin-left: auto; padding-right: 10px; flex-shrink: 0;';
+                                        missedLabel.innerText = 'RETRASO';
+                                        clonedRow.appendChild(missedLabel);
+                                    } else if (isWaiting) {
+                                        const waitLabel = document.createElement('span');
+                                        waitLabel.style.cssText = 'font-size: 9px; color: #94a3b8; font-weight: 700; margin-left: auto; padding-right: 10px; flex-shrink: 0;';
+                                        waitLabel.innerText = 'EN ESPERA';
+                                        clonedRow.appendChild(waitLabel);
+                                    }
+                                } else if (hasEntrada && hasSalida) {
+                                    const statusLabel = document.createElement('span');
+                                    statusLabel.style.cssText = 'font-size: 9px; font-weight: 700; margin-left: auto; padding-right: 10px; flex-shrink: 0; color: #10b981;';
+                                    statusLabel.innerText = 'COMPLETADO';
+                                    clonedRow.appendChild(statusLabel);
+                                }
+                            }
+
+                            // Evento de Click Derecho (Menú Contextual)
+                            clonedRow.addEventListener('contextmenu', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                let bgHeaderToPass = null;
+                                const actualBoxId = targetBox.getAttribute('data-id');
+                                const casetaItem = casetasGlobal.find(c => c.id === actualBoxId);
+                                if (casetaItem) {
+                                    bgHeaderToPass = casetaItem.bgHeader;
+                                } else {
+                                    const motivoItem = motivosGlobal.find(m => m.id === actualBoxId);
+                                    if (motivoItem) bgHeaderToPass = motivoItem.bgHeader;
+                                }
+                                
+                                window.showContextMenu(e, idElemento, empleadoNombre, record, shift, actualBoxId, contextDate, bgHeaderToPass, casetasGlobal, motivosGlobal);
+                            });
+
+                            // Asignar los eventos a la copia final
+                            clonedRow.addEventListener('dragstart', (e) => {
+                                e.dataTransfer.setData('text/plain', JSON.stringify({
+                                    idElemento: idElemento, 
+                                    dbKey: shift.dbKey, 
+                                    targetDateStr: contextDate.toISOString(), 
+                                    oldCaseta: targetBox.getAttribute('data-id')
+                                }));
+                                // El setTimeout permite que el navegador tome la "foto" del elemento antes de alterar la interfaz
+                                setTimeout(() => {
+                                    document.body.classList.add('is-dragging');
+                                    clonedRow.style.opacity = '0.5';
+                                }, 0);
+                            });
+                            clonedRow.addEventListener('dragend', () => {
+                                document.body.classList.remove('is-dragging');
+                                clonedRow.style.opacity = '1';
+                            });
+                            clonedRow.addEventListener('click', () => {
+                                // --- Lógica Intercambio (Cruzar turnos) ---
+                                if (window.intercambioData) {
+                                    document.body.style.cursor = '';
+                                    const source = window.intercambioData;
+                                    window.intercambioData = null;
+                                    
+                                    if (source.idElemento === idElemento) return; // No intercambiar consigo mismo
+                                    
+                                    if (confirm(`¿Intercambiar el turno de ${source.empleadoNombre} con ${empleadoNombre}?`)) {
+                                        const anio = contextDate.getFullYear().toString();
+                                        const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][contextDate.getMonth()];
+                                        const dia = contextDate.getDate().toString().padStart(2, '0') + (contextDate.getMonth()+1).toString().padStart(2, '0') + contextDate.getFullYear().toString();
+                                        
+                                        const isAusSource = source.shift.name === 'ausentismo';
+                                        const isAusTarget = shift.name === 'ausentismo';
+                                        
+                                        // Mover uno al otro y actualizar
+                                        (async () => {
+                                            await moveElementoRegas(anio, mes, dia, source.idElemento, shift.name, targetBox.getAttribute('data-id'), isAusTarget, null);
+                                            await moveElementoRegas(anio, mes, dia, idElemento, source.shift.name, source.currentCaseta, isAusSource, null);
+                                            loadRegasData();
+                                        })();
+                                    }
+                                    return;
+                                }
+
+                                let bgHeaderToPass = null;
+                                const actualBoxId = targetBox.getAttribute('data-id');
+                                const casetaItem = casetasGlobal.find(c => c.id === actualBoxId);
+                                if (casetaItem) {
+                                    bgHeaderToPass = casetaItem.bgHeader;
+                                } else {
+                                    const motivoItem = motivosGlobal.find(m => m.id === actualBoxId);
+                                    if (motivoItem) bgHeaderToPass = motivoItem.bgHeader;
+                                }
+                                
+                                // Computar parámetros precisos de fecha del turno clickeado
+                                const reqDate = contextDate;
+                                const isToday = reqDate.toDateString() === new Date().toDateString();
+                                const anio = reqDate.getFullYear().toString();
+                                const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                                const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+
+                                openDetailPanel(idElemento, empleadoNombre, record, shift.name, bgHeaderToPass, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+                            });
+                            targetBox.querySelector('.caseta-body').appendChild(clonedRow);
+                        }
+                    };
+
+                    if (shift.data.entrada_real && !shift.data.salida_real && shift.name !== 'ausentismo') {
+                        appendToTab('turno', shift.data.Caseta || boxId);
+                    }
+
+                    const tabId = shift.name === 'ausentismo' ? 'ausentismos' : shift.name;
+                    appendToTab(tabId, boxId);
+                });
+            });
+        }
+
+        // Re-dibuja el panel central automáticamente cuando alteras un dato desde el panel lateral
+        window.addEventListener('regasUpdated', () => {
+            loadRegasData();
+        });
+
+        // Iniciar motor de regas solo cuando Firebase confirme la sesión
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                initializeRegasView();
+            }
+        });
+
+        // --- LÓGICA DE REPORTES AUTOMÁTICOS ---
+        let currentReportTab = '';
+        
+        window.openReportPanel = function(tabId, save = true) {
+            currentReportTab = tabId;
+            const rightPanel = document.getElementById('right-panel');
+            
+            document.getElementById('right-panel-detail').style.display = 'none';
+            document.getElementById('right-panel-add').style.display = 'none';
+            
+            const reportPanel = document.getElementById('right-panel-report');
+            if (reportPanel) reportPanel.style.display = 'flex';
+            rightPanel.style.display = 'flex';
+            
+            generateReportContent();
+            
+            if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
+        };
+
+        window.generateReportContent = function() {
+            if (!currentReportTab) return;
+            const reportPanel = document.getElementById('right-panel-report');
+            if (reportPanel && reportPanel.style.display === 'none') return; // No generar si no está visible
+            
+            const showEmpty = document.getElementById('chk-report-empty').checked;
+            const showTime = document.getElementById('chk-report-time').checked;
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = selectedDate.toLocaleDateString('es-ES', options);
+            document.getElementById('report-date-subtitle').innerText = dateStr;
+            
+            let reportText = `*DISTRIBUCIÓN TURNO ${currentReportTab.toUpperCase()}*\n`;
+            reportText += `\`\`\`${dateStr}\`\`\`\n\n`;
+            
+            const tabContainer = document.getElementById(`content-${currentReportTab}`);
+            if (!tabContainer) return;
+            
+            const containers = Array.from(tabContainer.querySelectorAll('.caseta-container'));
+            
+            containers.forEach(c => {
+                const casetaName = c.getAttribute('data-id');
+                const rows = c.querySelectorAll('.draggable-row');
+                
+                if (rows.length === 0 && !showEmpty) return; 
+                
+                reportText += `*${casetaName.toUpperCase()}*\n`;
+                
+                if (rows.length === 0) {
+                    reportText += `~Sin elementos~\n\n`;
+                } else {
+                    rows.forEach(row => {
+                        const empName = row.getAttribute('data-emp-name') || 'Desconocido';
+                        const entrada = row.getAttribute('data-entrada');
+                        
+                        let line = '';
+                        const hasEntradaValid = (entrada && String(entrada).trim() !== '' && String(entrada).trim() !== 'null');
+                        
+                        if (hasEntradaValid) {
+                            if (showTime) {
+                                const timeFmt = String(entrada).substring(0, 5); // Asegura formato HH:MM
+                                line = `${timeFmt} Hrs. ${empName}`;
+                            } else {
+                                line = empName;
+                            }
+                        } else {
+                            line = `Falta. ${empName}`;
+                        }
+                        
+                        const tags = Array.from(row.querySelectorAll('.inc-tag')).map(t => t.innerText.toLowerCase());
+                        if (tags.length > 0) {
+                            line += ` (${tags.join(',')})`;
+                        }
+                        
+                        reportText += `${line}\n`;
+                    });
+                    reportText += `\n`;
+                }
+            });
+            
+            document.getElementById('report-content').innerText = reportText.trim();
+        };
+
+        window.copyReportToClipboard = function(btn) {
+            const content = document.getElementById('report-content').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                btn.style.background = '#059669';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.background = '#10b981';
+                }, 2000);
+            }).catch(err => console.error('Error copiando:', err));
+        };
+
+        // --- CERRAR MENÚ DE ACCIONES MÓVIL AUTOMÁTICAMENTE ---
+        document.addEventListener('click', (e) => {
+            const headerActions = document.getElementById('header-actions');
+            const hamburger = document.querySelector('.header-hamburger');
+            if (headerActions && headerActions.classList.contains('mobile-show')) {
+                // Cierra el menú si se hace clic fuera de él, o si se pulsa un botón de acción
+                if ((!headerActions.contains(e.target) && !hamburger.contains(e.target)) || e.target.closest('.action-btn')) {
+                    headerActions.classList.remove('mobile-show');
+                }
+            }
+        });
+
+        // --- LÓGICA DE GESTOS TÁCTILES (SWIPE PARA CAMBIAR PESTAÑAS) ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        const centerContent = document.querySelector('.center-content');
+        if (centerContent) {
+            centerContent.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, {passive: true});
+
+            centerContent.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                
+                if (window.innerWidth > 768) return; // Solo aplicable en móviles
+
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
+                const swipeThreshold = 50; // Distancia mínima para considerar que fue un 'Swipe'
+
+                // Validar que el movimiento fue horizontal y no el scroll normal vertical
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+                    const tabs = ['turno', 'matutino', 'vespertino', 'nocturno', 'ausentismos'];
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (!activeContent) return;
+                    
+                    const currentId = activeContent.id.replace('content-', '');
+                    const currentIndex = tabs.indexOf(currentId);
+
+                    if (diffX > 0 && currentIndex < tabs.length - 1) selectTab(tabs[currentIndex + 1]); // Desliza Izquierda -> Siguiente
+                    else if (diffX < 0 && currentIndex > 0) selectTab(tabs[currentIndex - 1]); // Desliza Derecha -> Anterior
+                }
+            }, {passive: true});
+        }
+
+    </script>
+</body>
+</html>
