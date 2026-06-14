@@ -1,4 +1,4 @@
-import { app } from '../../js/firebase.js';
+import { app, functions, httpsCallable } from '../../js/firebase.js';
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { initIndexedDB, applyHeaderStyles, syncCloudUpdate } from '../../js/script.js';
@@ -979,6 +979,558 @@ function renderProfileForm(container, elData, elementKey) {
     });
 }
 
+// Helper Interno: Renderizar formulario de patrones
+function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, casetasList) {
+    const formatYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    const startDate = new Date(contextDate);
+    const endDate = new Date(contextDate);
+    endDate.setMonth(endDate.getMonth() + 3); // 3 Meses por defecto
+
+    const html = `
+        <div class="form-group-box compact">
+            <h4 class="profile-section-title">
+                <svg viewBox="0 0 24 24" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Generador de Patrones
+            </h4>
+            <p style="font-size: 11px; color: #64748b; margin-top: 0; line-height: 1.4;">Asigna turnos automáticamente para un rango de fechas. <strong style="color:#ef4444;">Precaución:</strong> esto sobrescribirá cualquier turno o ausentismo existente en los días que abarque el patrón.</p>
+            
+            <button id="btn-ai-suggest" class="btn-new-shift" style="width: 100%; border-color: #c026d3; color: #a21caf; background: #fdf4ff; box-shadow: 0 2px 4px rgba(192, 38, 211, 0.1); margin-bottom: 5px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 5px; vertical-align: middle;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg>
+                ✨ Analizar y Sugerir Patrón (IA)
+            </button>
+            <div id="ai-suggestion-text" style="font-size: 11px; color: #059669; margin-bottom: 10px; font-weight: 600; text-align: center;"></div>
+            
+            <div class="detail-row">
+                <div class="input-col"><label>Fecha de Inicio</label><input type="date" id="pat-start-date" class="form-select" value="${formatYMD(startDate)}"></div>
+                <div class="input-col"><label>Fecha de Fin</label><input type="date" id="pat-end-date" class="form-select" value="${formatYMD(endDate)}"></div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="input-col">
+                    <label>Caseta Base (Asignación)</label>
+                    <select id="pat-caseta" class="form-select">
+                        <option value="">Seleccione...</option>
+                        ${casetasList.map(c => `<option value="${c.id}">${c.id}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="detail-row" style="grid-template-columns: 1fr;">
+                <div class="input-col">
+                    <label>Tipo de Patrón</label>
+                    <select id="pat-type" class="form-select">
+                        <option value="2x2x2x2">Rotativo: 2M - 2V - 2N - 2 Descansos</option>
+                        <option value="fijo_dia">Fijo de Día (L-V) y Fin de Semana Descanso</option>
+                        <option value="fijo_tarde">Fijo de Tarde (L-S) y Dom Descanso</option>
+                        <option value="custom_weekly">Personalizado Semanal (Fijo por Día)</option>
+                        <option value="custom_cyclic">Personalizado Cíclico (Secuencia infinita)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="pat-custom-container" style="display: none;">
+            <!-- Contenedor del Timeline Visual -->
+            <div class="form-group-box compact" style="background: #f8fafc; border: 1px solid #cbd5e1; margin-top: 10px;">
+                <label style="font-size: 11px; font-weight: 800; color: #334155;">1. Arrastra turnos al Timeline</label>
+                <div class="pat-palette" style="display: flex; gap: 10px; margin-top: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <div class="pat-drag-item" draggable="true" data-type="matutino" style="padding:6px 12px; border-radius:6px; cursor:grab; font-weight:bold; font-size:11px; color:#713f12; background:#fef08a; box-shadow:0 2px 4px rgba(0,0,0,0.05);">[M] Matutino</div>
+                    <div class="pat-drag-item" draggable="true" data-type="vespertino" style="padding:6px 12px; border-radius:6px; cursor:grab; font-weight:bold; font-size:11px; color:#1e3a8a; background:#bfdbfe; box-shadow:0 2px 4px rgba(0,0,0,0.05);">[V] Vespertino</div>
+                    <div class="pat-drag-item" draggable="true" data-type="nocturno" style="padding:6px 12px; border-radius:6px; cursor:grab; font-weight:bold; font-size:11px; color:#ffffff; background:#000000; box-shadow:0 2px 4px rgba(0,0,0,0.05);">[N] Nocturno</div>
+                    <div class="pat-drag-item" draggable="true" data-type="descanso" style="padding:6px 12px; border-radius:6px; cursor:grab; font-weight:bold; font-size:11px; color:#475569; background:#f1f5f9; border:1px dashed #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.05);">[D] Descanso</div>
+                </div>
+
+                <label style="font-size: 11px; font-weight: 800; color: #334155;">2. Diseña la Secuencia (Clic en un turno para detalles)</label>
+                <div class="pat-timeline" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; min-height: 90px; align-items: stretch;">
+                    <!-- Columnas inyectadas aquí -->
+                </div>
+                <button class="pat-add-day btn-new-shift" style="width:100%; margin-top:5px; display:none;">+ Agregar Día a la Secuencia</button>
+            </div>
+            
+            <!-- Modal en línea para detalles de turno -->
+            <div class="pat-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; backdrop-filter:blur(2px);"></div>
+            <div class="pat-details-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3); z-index:10001; width: 320px; max-width: 90vw;">
+                <h4 style="margin-top:0; color:var(--fiusha); font-size:14px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">Detalles del Turno <span class="pat-det-title" style="color:#64748b; font-size:11px;"></span></h4>
+                
+                <div class="input-col" style="margin-bottom:12px;">
+                    <label>Hora Programada</label>
+                    <input type="time" class="pat-det-prog form-select">
+                </div>
+                <div class="input-col" style="margin-bottom:12px;">
+                    <label>Comentarios / Notas</label>
+                    <textarea class="pat-det-com form-textarea" placeholder="Opcional..." style="min-height:50px; resize:none;"></textarea>
+                </div>
+                <label style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; display:block; text-transform: uppercase;">Incidencias Pre-Cargadas</label>
+                <div class="incidents-row" style="margin-bottom:15px;">
+                    <button class="incident-btn inc-extra pat-det-ext">Extra</button>
+                    <button class="incident-btn inc-recup pat-det-rec">Recup.</button>
+                    <button class="incident-btn inc-festivo pat-det-fes">Festivo</button>
+                </div>
+                
+                <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; margin-bottom:20px; color:#0284c7; font-weight:700; background:#f0f9ff; padding:8px; border-radius:6px;">
+                    <input type="checkbox" class="pat-det-apply-all" style="width:16px; height:16px; accent-color:#0284c7;"> Aplicar a todos los turnos iguales
+                </label>
+                
+                <div style="display:flex; justify-content:space-between; gap:10px; border-top:1px solid #e2e8f0; padding-top:15px;">
+                    <button class="pat-det-del" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:8px 12px; cursor:pointer; font-weight:bold; transition:all 0.2s;">Eliminar</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="pat-det-cancel" style="background:#f1f5f9; color:#475569; border:none; border-radius:6px; padding:8px 12px; cursor:pointer; font-weight:bold;">Cancelar</button>
+                        <button class="pat-det-save" style="background:var(--fiusha); color:white; border:none; border-radius:6px; padding:8px 20px; cursor:pointer; font-weight:bold; box-shadow:0 4px 6px rgba(139,0,86,0.2);">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: center;">
+            <button id="btn-apply-pattern" class="btn-action-main" style="background: linear-gradient(135deg, #0284c7, #0ea5e9);">Generar Patrón a ${empleadoNombre}</button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // Intentar auto-cargar la caseta predeterminada desde su Perfil Operativo
+    initIndexedDB().then(dbLocal => {
+        const req = dbLocal.transaction('elementos', 'readonly').objectStore('elementos').get(empleadoNombre);
+        req.onsuccess = () => {
+            if (req.result && req.result.Operativa && req.result.Operativa.AccesoPredeterminado) {
+                const sel = container.querySelector('#pat-caseta');
+                if (sel) sel.value = req.result.Operativa.AccesoPredeterminado;
+            }
+        };
+    });
+
+    const patType = container.querySelector('#pat-type');
+    const customContainer = container.querySelector('#pat-custom-container');
+    
+    // Elementos del Timeline D&D
+    const timeline = container.querySelector('.pat-timeline');
+    const btnAddDay = container.querySelector('.pat-add-day');
+    const modal = container.querySelector('.pat-details-modal');
+    const overlay = container.querySelector('.pat-overlay');
+    let activeShiftElement = null;
+    
+    const closeDetModal = () => { modal.style.display = 'none'; overlay.style.display = 'none'; activeShiftElement = null; };
+    container.querySelector('.pat-det-cancel').onclick = closeDetModal;
+    container.querySelector('.pat-det-del').onclick = () => { if(activeShiftElement) activeShiftElement.remove(); closeDetModal(); };
+    
+    // Toggle para botones de incidencia en el modal
+    const toggleIncBtn = (sel) => {
+        const b = container.querySelector(sel);
+        if(b) b.onclick = () => b.classList.toggle('active');
+    };
+    toggleIncBtn('.pat-det-ext'); toggleIncBtn('.pat-det-rec'); toggleIncBtn('.pat-det-fes');
+    
+    // Guardar detalles del turno
+    container.querySelector('.pat-det-save').onclick = () => {
+        if(!activeShiftElement) return;
+        const type = activeShiftElement.getAttribute('data-type');
+        const details = {};
+        
+        const prog = container.querySelector('.pat-det-prog').value;
+        const com = container.querySelector('.pat-det-com').value;
+        if(prog) details.entrada_programada = prog;
+        if(com) details.comentarios = com;
+        
+        if(container.querySelector('.pat-det-ext').classList.contains('active')) details.es_extra = true;
+        if(container.querySelector('.pat-det-rec').classList.contains('active')) details.es_recuperacion = true;
+        if(container.querySelector('.pat-det-fes').classList.contains('active')) details.es_festivo = true;
+        
+        const detailsStr = JSON.stringify(details);
+        activeShiftElement.setAttribute('data-details', detailsStr);
+        
+        const hasDetails = Object.keys(details).length > 0;
+        const letter = type==='matutino'?'M':(type==='vespertino'?'V':(type==='nocturno'?'N':'D'));
+        activeShiftElement.innerHTML = `<span>[${letter}]</span> <span style="font-size:10px; opacity:0.8;">${hasDetails ? '✎*' : '✎'}</span>`;
+
+        // Magia: Aplicar a todos los turnos iguales
+        if (container.querySelector('.pat-det-apply-all').checked) {
+            container.querySelectorAll(`.pat-dropped-shift[data-type="${type}"]`).forEach(sh => {
+                sh.setAttribute('data-details', detailsStr);
+                sh.innerHTML = `<span>[${letter}]</span> <span style="font-size:10px; opacity:0.8;">${hasDetails ? '✎*' : '✎'}</span>`;
+            });
+        }
+        closeDetModal();
+    };
+    
+    // Lógica para dibujar el timeline
+    const buildTimelineUI = (mode) => {
+        timeline.innerHTML = '';
+        const createCol = (title, dayIndex) => {
+            const col = document.createElement('div');
+            col.className = 'pat-day-col';
+            col.setAttribute('data-index', dayIndex);
+            col.style.cssText = 'min-width: 70px; flex: 1; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; padding: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);';
+            
+            const hdr = document.createElement('div');
+            hdr.style.cssText = 'font-size:10px; font-weight:bold; color:#64748b; margin-bottom:5px; text-transform:uppercase;';
+            hdr.innerText = title;
+            
+            const dropzone = document.createElement('div');
+            dropzone.className = 'pat-dropzone';
+            dropzone.style.cssText = 'width:100%; flex:1; min-height:60px; display:flex; flex-direction:column; gap:5px; align-items:center; border: 2px dashed transparent; border-radius:4px; padding:2px; transition:border 0.2s;';
+            
+            dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor = 'var(--fiusha)'; });
+            dropzone.addEventListener('dragleave', () => dropzone.style.borderColor = 'transparent');
+            dropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'transparent';
+                const type = e.dataTransfer.getData('type');
+                if(type) addShiftToZone(dropzone, type, {});
+            });
+            
+            col.appendChild(hdr);
+            col.appendChild(dropzone);
+            return col;
+        };
+
+        if (mode === 'custom_weekly') {
+            btnAddDay.style.display = 'none';
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            days.forEach((d, i) => timeline.appendChild(createCol(d, i)));
+        } else {
+            btnAddDay.style.display = 'block';
+            let cyclicDays = 1;
+            timeline.appendChild(createCol(`Día 1`, 0));
+            btnAddDay.onclick = () => {
+                cyclicDays++;
+                timeline.appendChild(createCol(`Día ${cyclicDays}`, cyclicDays-1));
+            };
+        }
+    };
+
+    // Activar Draggables de la Paleta
+    container.querySelectorAll('.pat-drag-item').forEach(item => {
+        item.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('type', item.getAttribute('data-type'));
+        });
+    });
+
+    // Lógica para añadir tarjeta al soltar
+    const addShiftToZone = (zone, type, details) => {
+        const el = document.createElement('div');
+        el.className = 'pat-dropped-shift';
+        el.setAttribute('data-type', type);
+        el.setAttribute('data-details', JSON.stringify(details));
+        
+        let bg, col, letter;
+        if(type==='matutino'){ bg='#fef08a'; col='#713f12'; letter='M'; }
+        else if(type==='vespertino'){ bg='#bfdbfe'; col='#1e3a8a'; letter='V'; }
+        else if(type==='nocturno'){ bg='#000000'; col='#ffffff'; letter='N'; }
+        else { bg='#f1f5f9'; col='#475569'; letter='D'; } // Descanso
+        
+        el.style.cssText = `background:${bg}; color:${col}; padding:6px; border-radius:4px; font-size:12px; font-weight:bold; width:100%; text-align:center; cursor:pointer; box-sizing:border-box; box-shadow:0 1px 2px rgba(0,0,0,0.1); display:flex; justify-content:space-between; align-items:center; transition: opacity 0.2s;`;
+        if (type === 'descanso') el.style.border = '1px dashed #cbd5e1';
+        
+        el.onmouseover = () => el.style.opacity = '0.8';
+        el.onmouseout = () => el.style.opacity = '1';
+
+        const updateUI = () => {
+            const d = JSON.parse(el.getAttribute('data-details') || '{}');
+            const hasDetails = Object.keys(d).length > 0;
+            el.innerHTML = `<span>[${letter}]</span> <span style="font-size:10px; opacity:0.8;">${hasDetails ? '✎*' : '✎'}</span>`;
+        };
+        updateUI();
+
+        el.onclick = () => {
+            activeShiftElement = el;
+            const d = JSON.parse(el.getAttribute('data-details') || '{}');
+            container.querySelector('.pat-det-title').innerText = `(${type.toUpperCase()})`;
+            container.querySelector('.pat-det-prog').value = d.entrada_programada || '';
+            container.querySelector('.pat-det-com').value = d.comentarios || '';
+            
+            const setBtn = (sel, val) => { const b = container.querySelector(sel); if(val) b.classList.add('active'); else b.classList.remove('active'); };
+            setBtn('.pat-det-ext', d.es_extra); setBtn('.pat-det-rec', d.es_recuperacion); setBtn('.pat-det-fes', d.es_festivo);
+            
+            container.querySelector('.pat-det-apply-all').checked = false;
+            modal.style.display = 'block'; overlay.style.display = 'block';
+        };
+        zone.appendChild(el);
+    };
+
+    patType.addEventListener('change', () => {
+        const val = patType.value;
+        customContainer.style.display = val.startsWith('custom_') ? 'block' : 'none';
+        if (val.startsWith('custom_')) {
+            buildTimelineUI(val);
+        }
+    });
+
+    // --- MAGIA DE LA IA (GENKIT) ---
+    const btnAi = container.querySelector('#btn-ai-suggest');
+    const aiText = container.querySelector('#ai-suggestion-text');
+    if (btnAi) {
+        btnAi.addEventListener('click', async (e) => {
+            e.preventDefault();
+            btnAi.disabled = true;
+            btnAi.style.opacity = '0.6';
+            btnAi.innerHTML = 'Analizando 30 días de historial...';
+            aiText.innerText = '';
+            aiText.style.color = '#059669';
+            
+            try {
+                // 1. Extraer últimos 30 días de IndexedDB
+                let historyStr = "";
+                const contextD = new Date(contextDate);
+                for(let i=30; i>=1; i--) {
+                    const d = new Date(contextD);
+                    d.setDate(d.getDate() - i);
+                    const y = d.getFullYear().toString();
+                    const mStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][d.getMonth()];
+                    const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + y;
+                    
+                    const rec = await downloadRegas(y, mStr, dStr, idElemento);
+                    let shiftName = "descanso"; // Asumimos descanso si no hay nada en la BD local
+                    if (rec) {
+                        if(rec.matutino) shiftName = "matutino";
+                        else if(rec.vespertino) shiftName = "vespertino";
+                        else if(rec.nocturno) shiftName = "nocturno";
+                        else if(rec.ausentismo) shiftName = "descanso";
+                    }
+                    historyStr += `${d.toLocaleDateString()}: ${shiftName}\n`;
+                }
+                
+                // 2. Llamar a la Cloud Function de Genkit
+                const sugerirPatron = httpsCallable(functions, 'sugerirpatron');
+                const res = await sugerirPatron({ historial: historyStr });
+                const data = res.data;
+                
+                aiText.innerText = `💡 ${data.razonamiento}`;
+                
+                // 3. Aplicar la sugerencia a la Interfaz
+                patType.value = data.tipoPatron;
+                patType.dispatchEvent(new Event('change')); // Fuerza a que se dibuje el timeline vacío
+                
+                if (data.tipoPatron === 'custom_cyclic' && data.secuencia) {
+                    timeline.innerHTML = ''; // Limpiamos el día 1 genérico
+                    let cyclicDays = 0;
+                    
+                    data.secuencia.forEach((turnoStr, index) => {
+                        cyclicDays++;
+                        const col = document.createElement('div');
+                        col.className = 'pat-day-col';
+                        col.setAttribute('data-index', index);
+                        col.style.cssText = 'min-width: 70px; flex: 1; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; padding: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);';
+                        
+                        col.innerHTML = `<div style="font-size:10px; font-weight:bold; color:#64748b; margin-bottom:5px; text-transform:uppercase;">Día ${cyclicDays}</div>`;
+                        
+                        const dropzone = document.createElement('div');
+                        dropzone.className = 'pat-dropzone';
+                        dropzone.style.cssText = 'width:100%; flex:1; min-height:60px; display:flex; flex-direction:column; gap:5px; align-items:center; border: 2px dashed transparent; border-radius:4px; padding:2px; transition:border 0.2s;';
+                        col.appendChild(dropzone);
+                        timeline.appendChild(col);
+                        
+                        const t = turnoStr.toLowerCase();
+                        if(['matutino', 'vespertino', 'nocturno', 'descanso'].includes(t)) {
+                            addShiftToZone(dropzone, t, {}); // Inyectamos las tarjetas según la IA
+                        }
+                    });
+                }
+                
+            } catch(err) {
+                console.error("Error Genkit:", err);
+                aiText.style.color = '#ef4444';
+                aiText.innerText = err.message || "Error al analizar. Verifica tu conexión a internet o el servidor.";
+            }
+            
+            btnAi.disabled = false;
+            btnAi.style.opacity = '1';
+            btnAi.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 5px; vertical-align: middle;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> ✨ Analizar y Sugerir Patrón (IA)';
+        });
+    }
+
+    // --- MOTOR DE GENERACIÓN DEL PATRÓN ---
+    const btnApply = container.querySelector('#btn-apply-pattern');
+    btnApply.addEventListener('click', async () => {
+        const sDateStr = container.querySelector('#pat-start-date').value;
+        const eDateStr = container.querySelector('#pat-end-date').value;
+        const casetaId = container.querySelector('#pat-caseta').value;
+        const type = container.querySelector('#pat-type').value;
+
+        if (!sDateStr || !eDateStr || !casetaId) {
+            alert("Completa las fechas y la caseta de asignación.");
+            return;
+        }
+
+        // Forzar horario local para evitar corrimientos por zonas horarias al leer "YYYY-MM-DD"
+        const parseYMD = (str) => {
+            const p = str.split('-');
+            return new Date(p[0], p[1]-1, p[2]);
+        };
+
+        const sD = parseYMD(sDateStr);
+        const eD = parseYMD(eDateStr);
+        
+        if (sD > eD) {
+            alert("La fecha de inicio debe ser anterior a la de fin.");
+            return;
+        }
+
+        const diffDays = Math.ceil((eD - sD) / (1000 * 60 * 60 * 24));
+        if (diffDays > 365) {
+            if(!confirm("Estás a punto de generar más de 1 año de turnos de forma masiva. ¿Deseas continuar?")) return;
+        }
+
+        // configPatron = Array de Días, cada Día es un Array de Turnos (Objetos con tipo y detalles)
+        let configPatron = [];
+        let isWeekly = false;
+
+        if (type.startsWith('custom_')) {
+            isWeekly = (type === 'custom_weekly');
+            const dayCols = container.querySelectorAll('.pat-day-col');
+            if (dayCols.length === 0) { alert("El timeline está vacío."); return; }
+            
+            dayCols.forEach((col) => {
+                const dayShifts = [];
+                col.querySelectorAll('.pat-dropped-shift').forEach(shEl => {
+                    dayShifts.push({
+                        type: shEl.getAttribute('data-type'),
+                        details: JSON.parse(shEl.getAttribute('data-details') || '{}')
+                    });
+                });
+                configPatron.push(dayShifts);
+            });
+            
+            if (isWeekly && configPatron.length !== 7) { alert("Error: Faltan días en la configuración."); return; }
+            
+        } else {
+            // Patrones Prediseñados (Adaptados a la nueva estructura)
+            const b = (t) => t === 'descanso' ? [{type: 'descanso', details: {}}] : [{type: t, details: {}}];
+            if (type === '2x2x2x2') {
+                configPatron = [b('matutino'), b('matutino'), b('vespertino'), b('vespertino'), b('nocturno'), b('nocturno'), b('descanso'), b('descanso')];
+            } else if (type === 'fijo_dia') {
+                isWeekly = true;
+                configPatron = [b('descanso'), b('matutino'), b('matutino'), b('matutino'), b('matutino'), b('matutino'), b('descanso')];
+            } else if (type === 'fijo_tarde') {
+                isWeekly = true;
+                configPatron = [b('descanso'), b('vespertino'), b('vespertino'), b('vespertino'), b('vespertino'), b('vespertino'), b('vespertino')];
+            }
+            
+            if (configPatron.length === 0) {
+                return;
+            }
+        }
+
+        btnApply.disabled = true;
+        btnApply.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Procesando Lote...';
+        btnApply.style.opacity = '0.7';
+
+        const updates = {};
+        const localUpdatesByYear = {}; 
+        const ts = Date.now();
+        let currDate = new Date(sD);
+        let seqIndex = 0;
+
+        const fullMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        // Construcción masiva en milisegundos
+        while(currDate <= eD) {
+            const y = currDate.getFullYear().toString();
+            const m = fullMeses[currDate.getMonth()];
+            const dayKey = String(currDate.getDate()).padStart(2, '0') + String(currDate.getMonth()+1).padStart(2, '0') + y;
+            
+            let dailyShifts = isWeekly ? configPatron[currDate.getDay()] : configPatron[seqIndex % configPatron.length];
+            if (!isWeekly) seqIndex++;
+
+            const basePath = `${y}/${m}/${dayKey}/${idElemento}`;
+            
+            // 1. Preparamos el nodo para limpiar cualquier turno basura que tuviera ese día
+            updates[`${basePath}/matutino`] = null;
+            updates[`${basePath}/vespertino`] = null;
+            updates[`${basePath}/nocturno`] = null;
+            updates[`${basePath}/ausentismo`] = null;
+            updates[`${y}/${m}/${dayKey}/ultima_actualizacion`] = ts;
+
+            if(!localUpdatesByYear[y]) localUpdatesByYear[y] = {};
+            if(!localUpdatesByYear[y][m]) localUpdatesByYear[y][m] = {};
+            if(!localUpdatesByYear[y][m][dayKey]) localUpdatesByYear[y][m][dayKey] = {};
+
+            // 2. Inyectar todos los turnos asignados a ese día
+            if (dailyShifts && dailyShifts.length > 0) {
+                localUpdatesByYear[y][m][dayKey]['_delete_all'] = true; // Forzamos limpieza profunda
+                
+                dailyShifts.forEach(shiftDef => {
+                    const isDescanso = shiftDef.type === 'descanso';
+                    const finalDbKey = isDescanso ? 'ausentismo' : shiftDef.type;
+                    
+                    const shiftData = { ultima_edicion: ts, ...shiftDef.details };
+                    if (isDescanso) shiftData.motivo = 'Descanso';
+                    else shiftData.Caseta = casetaId;
+                    
+                    updates[`${basePath}/${finalDbKey}`] = shiftData;
+                    localUpdatesByYear[y][m][dayKey][finalDbKey] = shiftData;
+                });
+            } else {
+                localUpdatesByYear[y][m][dayKey]['_delete_all'] = true;
+            }
+
+            currDate.setDate(currDate.getDate() + 1);
+        }
+
+        try {
+            // Enviar Lote Masivo a Firebase
+            await syncCloudUpdate("https://regas.firebaseio.com", updates);
+
+            // Enviar Lote Masivo a IndexedDB
+            const dbLocal = await initIndexedDB();
+            for (const [y, mObj] of Object.entries(localUpdatesByYear)) {
+                await new Promise((resolve, reject) => {
+                    const tx = dbLocal.transaction('regas', 'readwrite');
+                    const store = tx.objectStore('regas');
+                    const req = store.get(y);
+                    req.onsuccess = () => {
+                        let localAnio = req.result || { id: y, meses: {} };
+                        
+                        for (const [m, dObj] of Object.entries(mObj)) {
+                            if (!localAnio.meses[m]) localAnio.meses[m] = { dias: {} };
+                            for (const [dayKey, shiftObj] of Object.entries(dObj)) {
+                                if (!localAnio.meses[m].dias[dayKey]) localAnio.meses[m].dias[dayKey] = { registros: {} };
+                                if (!localAnio.meses[m].dias[dayKey].registros[idElemento]) localAnio.meses[m].dias[dayKey].registros[idElemento] = {};
+                                
+                                delete localAnio.meses[m].dias[dayKey].registros[idElemento].matutino;
+                                delete localAnio.meses[m].dias[dayKey].registros[idElemento].vespertino;
+                                delete localAnio.meses[m].dias[dayKey].registros[idElemento].nocturno;
+                                delete localAnio.meses[m].dias[dayKey].registros[idElemento].ausentismo;
+                                
+                                for (const [shiftType, shiftData] of Object.entries(shiftObj)) {
+                                    if (shiftType !== '_delete_all') {
+                                        localAnio.meses[m].dias[dayKey].registros[idElemento][shiftType] = shiftData;
+                                    }
+                                }
+                                localAnio.meses[m].dias[dayKey].ultima_actualizacion = ts;
+                            }
+                        }
+                        store.put(localAnio);
+                        resolve();
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+
+            btnApply.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Patrón Aplicado!';
+            btnApply.style.background = '#059669';
+            btnApply.style.opacity = '1';
+            
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('regasUpdated'));
+                if(window.selectDetailTab) window.selectDetailTab('turno');
+            }, 1000);
+
+        } catch (e) {
+            console.error("Error aplicando patrón", e);
+            alert("Ocurrió un error de red aplicando el patrón.");
+            btnApply.disabled = false;
+            btnApply.innerText = `Generar Patrón a ${empleadoNombre}`;
+            btnApply.style.opacity = '1';
+        }
+    });
+}
+
 // --- LÓGICA DEL PANEL DERECHO (DETALLES) ---
 
 export function closeRightPanel() {
@@ -1070,6 +1622,12 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
     }
 
     selectDetailTab('turno'); // Mueve a pestaña turno
+    
+    // Renderizar pestaña de Patrones
+    const contentPatrones = document.getElementById('content-patrones');
+    if (contentPatrones) {
+        renderPatronesForm(contentPatrones, idElemento, empleadoNombre, contextDate, casetasList);
+    }
     
     const container = document.getElementById('turno-details-container');
     if (container) {

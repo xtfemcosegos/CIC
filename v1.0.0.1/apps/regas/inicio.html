@@ -497,6 +497,21 @@
             }
         }
 
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'regasTargetDate' && e.newValue) {
+                const targetDate = new Date(e.newValue);
+                selectedDate = targetDate;
+                if (selectedDate < renderedStartDate || selectedDate > renderedEndDate) {
+                    initDateStrip(selectedDate);
+                } else {
+                    updateSelectedDateUI();
+                    centerDate(selectedDate);
+                }
+                loadRegasData();
+                localStorage.removeItem('regasTargetDate');
+            }
+        });
+
         // --- LÓGICA ALTERNAR VISTA COMPACTA/NORMAL ---
         window.toggleViewMode = function() {
             const body = document.body;

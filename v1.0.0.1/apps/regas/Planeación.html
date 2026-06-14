@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regas - Planeación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
+            display: flex; flex-direction: column; background: var(--bg-color); 
+        }
+        
+        .planning-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        /* Envoltorio de la Cuadrícula con Scroll */
+        .grid-wrapper {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background-color: var(--active-bg-color, #e2e8f0);
+        }
+
+        table.planning-table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 100%;
+            background: #ffffff;
+        }
+
+        .planning-table th, .planning-table td {
+            border: 1px solid var(--border-color);
+            padding: 0;
+            text-align: center;
+            vertical-align: middle;
+            width: 48px; /* Ancho idéntico al alto */
+            height: 48px;
+            min-width: 48px;
+            max-width: 48px;
+            box-sizing: border-box;
+        }
+
+        /* Cabecera Superior (Fechas) Fija */
+        .planning-table thead th {
+            position: sticky;
+            top: 0;
+            background: #000000;
+            z-index: 10;
+            border-bottom: none;
+        }
+
+        /* Columna Izquierda (Elementos) Fija */
+        .planning-table tbody th, .planning-table thead th.sticky-col {
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            z-index: 11;
+            width: 220px;
+            min-width: 220px;
+            max-width: 220px;
+            text-align: left;
+            padding: 0 15px;
+            color: #334155;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .planning-table tbody th:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Esquina Superior Izquierda Fija */
+        .planning-table thead th.sticky-col {
+            z-index: 20;
+            background: #000000;
+            color: #ffffff;
+            text-align: center;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            border-right: 1px solid #333;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+        }
+
+        /* Cabeceras de Agrupación (Casetas) */
+        .planning-table .group-header th, 
+        .planning-table .group-header td {
+            height: 24px !important;
+            max-height: 24px !important;
+        }
+        .planning-table tbody .group-header th {
+            background: var(--fiusha);
+            color: #ffffff !important;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+            padding-left: 15px;
+            position: sticky;
+            left: 0;
+            z-index: 11;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Igual que caseta-header en inicio */
+        }
+        .group-header td {
+            background: rgba(139, 0, 86, 0.1);
+            border-top: 1px solid var(--fiusha);
+            border-bottom: 1px solid var(--fiusha);
+        }
+
+        /* Botones de Fecha Exactamente como en inicio.html */
+        .date-cell-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #aaaaaa;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .date-cell-content:hover {
+            background-color: rgba(0,0,0,0.2);
+        }
+        .date-cell-content .d-week { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; line-height: 1;}
+        .date-cell-content .d-num { font-size: 18px; font-weight: 600; margin: 1px 0; color: #ffffff; line-height: 1;}
+        .date-cell-content .d-month { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; line-height: 1;}
+        
+        .date-today .date-cell-content {
+            background-color: rgba(139, 0, 86, 0.3);
+            border: 1px solid var(--fiusha);
+            color: #ffffff;
+        }
+        .date-today .date-cell-content .d-week, 
+        .date-today .date-cell-content .d-month { color: #ffffff; }
+
+        /* Insignias de Turnos en las Celdas */
+        .planning-table td {
+            background-color: #f8fafc;
+            transition: background 0.2s;
+        }
+        .planning-table tr:hover td {
+            background-color: #f1f5f9;
+        }
+        .shift-badges-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+        .shift-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .shift-badge:hover { opacity: 0.8; }
+        .shift-M { background: #fef08a; color: #713f12; } /* Amarillo Pastel */
+        .shift-V { background: #bfdbfe; color: #1e3a8a; } /* Azul Pastel */
+        .shift-N { background: #000000; color: #ffffff; } /* Negro */
+        .shift-Aus { background: #f1f5f9; color: #475569; width: auto; padding: 0 3px; font-size: 9px; border: 1px dashed #cbd5e1; } /* Gris Claro */
+
+        /* Ocultamiento rápido */
+        .hidden-row {
+            display: none !important;
+        }
+        #plan-context-menu {
+            font-size: 12px;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="planning-container">
+        <!-- Cuadrícula -->
+        <div class="grid-wrapper" id="grid-wrapper">
+            <table class="planning-table" id="planning-table">
+                <thead>
+                    <tr id="dates-row">
+                        <th class="sticky-col">Casetas / Elementos</th>
+                    </tr>
+                </thead>
+                <tbody id="grid-body">
+                    <tr><td colspan="100" style="padding:20px; text-align:left; color:#64748b;">Cargando catálogo y planeación de turnos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Panel Derecho (Oculto, para Perfil y Turnos) -->
+    <aside class="side-panel" id="right-panel" style="display: none; position: fixed; right: 0; top: 0; height: 100%; z-index: 1000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); width: 350px;">
+        <div class="side-resizer left-edge" id="right-resizer"></div>
+        <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="detail-header">
+                <div class="detail-header-info">
+                    <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                    <div class="detail-text-group">
+                        <h3 id="detail-name">Detalles</h3>
+                        <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
+                    </div>
+                </div>
+                <button onclick="closeRightPanel()">×</button>
+            </div>
+            <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
+            <div class="detail-tabs">
+                <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
+                <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
+                <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
+            </div>
+            <div id="content-perfil" class="d-content"></div>
+            <div id="content-turno-detail" class="d-content active">
+                <div id="turno-details-container"></div>
+            </div>
+            <div id="content-patrones" class="d-content"></div>
+        </div>
+        
+        <!-- Sub-Panel de Intercambio (Nuevo) -->
+        <div id="right-panel-swap" style="display: none; flex-direction: column; height: 100%;">
+            <div class="detail-header">
+                <div class="detail-header-info">
+                    <div class="detail-text-group">
+                        <h3 style="font-size: 14px; margin: 0;">Intercambiar Turno</h3>
+                        <span id="swap-subtitle" style="font-size: 11px; opacity: 0.8;">Selecciona un turno</span>
+                    </div>
+                </div>
+                <button onclick="closeRightPanel()">×</button>
+            </div>
+            <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);">
+                <input type="text" id="search-swap-input" placeholder="Buscar por Nombre o ID..." oninput="window.filterSwapList()" class="form-select" style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div id="swap-element-list" style="flex: 1; overflow-y: auto; padding: 0;">
+                <!-- Lista inyectada por JS -->
+            </div>
+        </div>
+    </aside>
+
+    <!-- Menús Contextuales -->
+    <div id="element-context-menu"></div>
+    <div id="plan-context-menu" style="display:none; position:fixed; background:#ffffff; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:9999; border-radius:8px; padding:5px 0; min-width: 150px;"></div>
+
+    <script type="module">
+        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, openDetailPanel, closeRightPanel, selectDetailTab, deleteShiftKey, updateShiftDataLocal, updateShiftDataCloud } from './scrpt.js';
+        import { applyHeaderStyles } from '../../js/script.js';
+        import './mc_script.js';
+
+        window.closeRightPanel = function() {
+            closeRightPanel();
+            window.intercambioData = null;
+            document.body.style.cursor = '';
+        };
+        window.selectDetailTab = selectDetailTab;
+        window.openDetailPanel = openDetailPanel;
+        window.getFotoElemento = getFotoElemento;
+
+        let casetasGlobal = [];
+        let elementosGlobal = [];
+        let motivosGlobal = [];
+        let regasCache = {}; // Guardará por formato: "YYYY-Mes" -> datos
+        
+        let renderedDates = []; // Guarda registro de los días que ya se dibujaron
+        let isFetchingDates = false; // Candado para no descargar 2 veces al mismo tiempo
+        let startDate = new Date();
+        startDate.setDate(1); // Ir al día 1 del mes actual
+        startDate.setMonth(startDate.getMonth() - 1); // Retroceder al día 1 del mes anterior
+        let daysToShow = 90; // Cargar 3 meses completos de golpe (Anterior, Actual, Siguiente)
+        const fullMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        window.getAusentismoStyle = function(motivoId) {
+            const motivoItem = motivosGlobal.find(m => m.id === motivoId);
+            if (motivoItem && motivoItem.bgHeader && motivoItem.bgHeader.customColors) {
+                const c = motivoItem.bgHeader.customColors;
+                return `background: linear-gradient(135deg, ${c[0]}, ${c[1] || c[0]}); color: #ffffff; border: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);`;
+            }
+            return 'background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1;'; // Gris por defecto
+        };
+
+        async function init() {
+            try {
+                const [casetas, elementos, motivos] = await Promise.all([
+                    downloadCasetas(),
+                    downloadElementos(),
+                    downloadMotivosAusentismo()
+                ]);
+                casetasGlobal = casetas;
+                elementosGlobal = elementos.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+                motivosGlobal = motivos;
+                
+                await renderGrid();
+            } catch (error) {
+                console.error("Error inicializando planeación:", error);
+                document.getElementById('grid-body').innerHTML = '<tr><td colspan="100" style="padding:20px; color:red;">Error conectando a la base de datos.</td></tr>';
+            }
+        }
+
+        async function fetchRegasForDateRange(start, days) {
+            let dates = [];
+            let curr = new Date(start);
+            for(let i=0; i<days; i++) {
+                dates.push(new Date(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            // Identificar qué meses están involucrados en este rango
+            let monthsToFetch = new Set();
+            const mesesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            dates.forEach(d => {
+                monthsToFetch.add(`${d.getFullYear()}-${mesesStr[d.getMonth()]}`);
+            });
+
+            // Descargar meses faltantes desde Firebase
+            for(const ym of monthsToFetch) {
+                const [anio, mes] = ym.split('-');
+                if (!regasCache[`${anio}-${mes}`]) {
+                    const data = await downloadRegas(anio, mes);
+                    regasCache[`${anio}-${mes}`] = data || { dias: {} };
+                }
+            }
+            return dates;
+        }
+
+        async function renderGrid() {
+            renderedDates = await fetchRegasForDateRange(startDate, daysToShow);
+            const dates = renderedDates;
+            const daysArr = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            const monthsArr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            
+            // 1. Dibujar Fila de Fechas
+            const datesRow = document.getElementById('dates-row');
+            datesRow.innerHTML = '<th class="sticky-col">Casetas / Elementos</th>';
+            
+            dates.forEach(d => {
+                const th = document.createElement('th');
+                if (d.toDateString() === new Date().toDateString()) th.className = 'date-today';
+                th.innerHTML = `
+                    <div class="date-cell-content">
+                        <span class="d-week">${daysArr[d.getDay()]}</span>
+                        <span class="d-num">${d.getDate()}</span>
+                        <span class="d-month">${monthsArr[d.getMonth()]}</span>
+                    </div>
+                `;
+                
+                th.onclick = () => {
+                    localStorage.setItem('regasTargetDate', d.toISOString());
+                    window.parent.postMessage({action: 'switchFrame', target: 'iframe-regas'}, '*');
+                };
+                
+                datesRow.appendChild(th);
+            });
+
+            // 2. Agrupar Elementos Operativos por Caseta
+            const grouped = {};
+            elementosGlobal.forEach(el => {
+                const casetaId = (el.Operativa && el.Operativa.AccesoPredeterminado) ? el.Operativa.AccesoPredeterminado : 'Sin Asignar';
+                if (!grouped[casetaId]) grouped[casetaId] = [];
+                grouped[casetaId].push(el);
+            });
+
+            const getCasetaIndex = (cId) => {
+                if (cId === 'Sin Asignar') return 9999;
+                const c = casetasGlobal.find(x => x.id === cId);
+                return c ? (c.index || 0) : 9998;
+            };
+            
+            const sortedCasetaIds = Object.keys(grouped).sort((a, b) => getCasetaIndex(a) - getCasetaIndex(b));
+            const tbody = document.getElementById('grid-body');
+            tbody.innerHTML = '';
+
+            // 3. Generar Filas y Celdas de Cruce
+            sortedCasetaIds.forEach(casetaId => {
+                // Fila Cabecera de Grupo (Caseta)
+                const trHead = document.createElement('tr');
+                trHead.className = 'group-header';
+                
+                const thHead = document.createElement('th');
+                thHead.colSpan = 1;
+                thHead.innerText = casetaId;
+                
+                const casetaData = casetasGlobal.find(c => c.id === casetaId);
+                if (casetaData) applyHeaderStyles(thHead, casetaData.bgHeader);
+                
+                trHead.appendChild(thHead);
+                dates.forEach(() => { const td = document.createElement('td'); trHead.appendChild(td); });
+                
+                trHead.oncontextmenu = (e) => window.showPlanContextMenu(e, 'caseta', casetaId, trHead);
+                tbody.appendChild(trHead);
+
+                // Filas de Elementos
+                grouped[casetaId].forEach(el => {
+                    const elId = el.ID ? String(el.ID) : String(el.id);
+                    const elName = el.id;
+
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-el-id', elId);
+                    tr.setAttribute('data-el-name', elName);
+                    tr.setAttribute('data-caseta-id', casetaId);
+                    
+                    const thEl = document.createElement('th');
+                    thEl.className = 'sticky-col';
+                    thEl.title = elName;
+                    thEl.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <img data-emp-id-plan="${elId}" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border: 1px solid #ccc; flex-shrink:0;">
+                            <span style="overflow:hidden; text-overflow:ellipsis;">${elName}</span>
+                        </div>
+                    `;
+                    thEl.oncontextmenu = (e) => window.showPlanContextMenu(e, 'elemento', elName, tr);
+                    thEl.onclick = () => {
+                        const anio = startDate.getFullYear().toString();
+                        const mes = fullMeses[startDate.getMonth()];
+                        const dia = startDate.getDate().toString().padStart(2, '0') + (startDate.getMonth()+1).toString().padStart(2, '0') + startDate.getFullYear().toString();
+                        openDetailPanel(elId, elName, {}, null, null, casetasGlobal, motivosGlobal, false, anio, mes, dia);
+                        selectDetailTab('perfil');
+                    };
+                    tr.appendChild(thEl);
+                    
+                    getFotoElemento(elId).then(url => {
+                        const img = thEl.querySelector(`img[data-emp-id-plan="${elId}"]`);
+                        if(img) img.src = url;
+                    });
+                    
+                    // Celdas de Turno por Día
+                    dates.forEach(d => {
+                        const anio = d.getFullYear().toString();
+                        const mes = fullMeses[d.getMonth()];
+                        const dia = d.getDate().toString().padStart(2, '0') + (d.getMonth()+1).toString().padStart(2, '0') + d.getFullYear().toString();
+                        
+                        let badgesHtml = '';
+                        const mesData = regasCache[`${anio}-${mes}`];
+                        
+                        if (mesData && mesData.dias && mesData.dias[dia] && mesData.dias[dia].registros && mesData.dias[dia].registros[elId]) {
+                            const record = mesData.dias[dia].registros[elId];
+                            
+                            if (record.matutino) badgesHtml += `<div class="shift-badge shift-M" title="Turno Matutino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'matutino')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'matutino')">M</div>`;
+                            if (record.vespertino) badgesHtml += `<div class="shift-badge shift-V" title="Turno Vespertino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'vespertino')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'vespertino')">V</div>`;
+                            if (record.nocturno) badgesHtml += `<div class="shift-badge shift-N" title="Turno Nocturno" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'nocturno')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'nocturno')">N</div>`;
+                            
+                            if (record.ausentismo && record.ausentismo.motivo) {
+                                const mot = record.ausentismo.motivo;
+                                const short = mot.substring(0,3).charAt(0).toUpperCase() + mot.substring(1,3).toLowerCase();
+                                const bgStyle = window.getAusentismoStyle(mot);
+                                badgesHtml += `<div class="shift-badge shift-Aus" title="Ausentismo: ${mot}" style="${bgStyle}" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')">${short}</div>`;
+                            }
+                        }
+
+                        const td = document.createElement('td');
+                        td.innerHTML = `<div class="shift-badges-container">${badgesHtml}</div>`;
+                        td.style.cursor = 'pointer';
+                        td.onclick = (e) => openShiftDetail(e, elId, elName, anio, mes, dia, null);
+                        td.oncontextmenu = (e) => openEmptyShiftContextMenu(e, elId, elName, anio, mes, dia, casetaId);
+                        tr.appendChild(td);
+                    });
+
+                    tbody.appendChild(tr);
+                });
+            });
+            
+            // Auto-Centrar el Scroll horizontal en el día de "Hoy" al cargar
+            setTimeout(() => {
+                const todayCol = document.querySelector('.date-today');
+                const wrapper = document.getElementById('grid-wrapper');
+                if (todayCol && wrapper && wrapper.scrollLeft === 0) {
+                    wrapper.scrollLeft = todayCol.offsetLeft - (wrapper.clientWidth / 2);
+                }
+            }, 150);
+        }
+
+        window.openShiftDetail = async function(event, elId, elName, anio, mes, dia, shiftName) {
+            event.stopPropagation();
+            const mIndex = fullMeses.indexOf(mes);
+            const dTarget = new Date(parseInt(anio), mIndex, parseInt(dia.substring(0,2)));
+            const isToday = dTarget.toDateString() === new Date().toDateString();
+            
+            const record = await downloadRegas(anio, mes, dia, elId);
+            
+            openDetailPanel(elId, elName, record || {}, shiftName, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+            selectDetailTab('turno');
+        };
+
+        // --- MENÚ CONTEXTUAL PARA TURNOS (REUTILIZANDO EL DE INICIO) ---
+        window.openShiftContextMenu = async function(event, elId, elName, anio, mes, dia, shiftName) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const record = await downloadRegas(anio, mes, dia, elId);
+            if(!record || !record[shiftName]) return;
+            
+            const mIndex = fullMeses.indexOf(mes);
+            const dTarget = new Date(parseInt(anio), mIndex, parseInt(dia.substring(0,2)));
+            
+            const shiftData = record[shiftName];
+            const shiftObj = { name: shiftName, data: shiftData, dbKey: shiftName };
+            const currentCaseta = shiftData.Caseta || shiftData.motivo || 'Desconocido';
+            
+            let bgHeaderToPass = null;
+            const casetaItem = casetasGlobal.find(c => c.id === currentCaseta);
+            if (casetaItem) bgHeaderToPass = casetaItem.bgHeader;
+            
+            window.showContextMenu(event, elId, elName, record, shiftObj, currentCaseta, dTarget, bgHeaderToPass, casetasGlobal, motivosGlobal);
+        };
+
+        // --- MENÚ CONTEXTUAL PARA CELDAS VACÍAS ---
+        window.openEmptyShiftContextMenu = async function(event, elId, elName, anio, mes, dia, casetaId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const record = await downloadRegas(anio, mes, dia, elId);
+            const mIndex = fullMeses.indexOf(mes);
+            const dTarget = new Date(parseInt(anio), mIndex, parseInt(dia.substring(0,2)));
+            
+            let bgHeaderToPass = null;
+            const casetaItem = casetasGlobal.find(c => c.id === casetaId);
+            if (casetaItem) bgHeaderToPass = casetaItem.bgHeader;
+            
+            window.showContextMenu(event, elId, elName, record, null, casetaId, dTarget, bgHeaderToPass, casetasGlobal, motivosGlobal);
+        };
+
+        // --- MENÚ PARA OCULTAR CASETAS / ELEMENTOS ---
+        window.showPlanContextMenu = function(e, type, name, rowElement) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Asegurar que el menú de turnos se cierre
+            const menuTurnos = document.getElementById('element-context-menu');
+            if (menuTurnos) menuTurnos.style.display = 'none';
+            
+            const menu = document.getElementById('plan-context-menu');
+            menu.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'ctx-item';
+            item.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="margin-right:8px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> Ocultar ${type === 'caseta' ? 'Caseta' : 'Elemento'}`;
+            item.style.cssText = "padding: 8px 15px; cursor: pointer; display: flex; align-items: center; color: #ef4444; font-weight: 600; transition: background 0.2s;";
+            
+            item.onmouseover = () => item.style.background = '#fef2f2';
+            item.onmouseout = () => item.style.background = 'transparent';
+            
+            item.onclick = () => {
+                if (type === 'caseta') {
+                    let nextRow = rowElement.nextElementSibling;
+                    rowElement.classList.add('hidden-row');
+                    while (nextRow && !nextRow.classList.contains('group-header')) {
+                        nextRow.classList.add('hidden-row');
+                        nextRow = nextRow.nextElementSibling;
+                    }
+                } else {
+                    rowElement.classList.add('hidden-row');
+                }
+                menu.style.display = 'none';
+            };
+            
+            menu.appendChild(item);
+            menu.style.display = 'block';
+            
+            let x = e.clientX;
+            let y = e.clientY;
+            const rect = menu.getBoundingClientRect();
+            if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 5;
+            if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 5;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        };
+
+        // --- LÓGICA DEL PANEL LATERAL DE INTERCAMBIO (ESPEJO DE INICIO) ---
+        window.openSwapPanel = function() {
+            const rightPanel = document.getElementById('right-panel');
+            const detailDiv = document.getElementById('right-panel-detail');
+            if (detailDiv) detailDiv.style.display = 'none';
+            
+            const swapDiv = document.getElementById('right-panel-swap');
+            if (swapDiv) swapDiv.style.display = 'flex';
+            rightPanel.style.display = 'flex';
+            
+            const searchInput = document.getElementById('search-swap-input');
+            if (searchInput) searchInput.value = '';
+            
+            const sourceData = window.intercambioData;
+            if (sourceData) {
+                document.getElementById('swap-subtitle').innerText = `Turno de ${sourceData.empleadoNombre}`;
+                
+                // Extraer datos del día específico de la cuadrícula
+                const dTarget = sourceData.contextDate;
+                const anio = dTarget.getFullYear().toString();
+                const mes = fullMeses[dTarget.getMonth()];
+                const dia = dTarget.getDate().toString().padStart(2, '0') + (dTarget.getMonth()+1).toString().padStart(2, '0') + dTarget.getFullYear().toString();
+                
+                const mesData = regasCache[`${anio}-${mes}`];
+                window.currentRegasData = (mesData && mesData.dias && mesData.dias[dia]) ? mesData.dias[dia].registros : {};
+            }
+            
+            const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+            window.renderSwapList(activeElementos);
+        };
+
+        window.renderSwapList = function(elementos) {
+            const sourceData = window.intercambioData;
+            if (!sourceData) return;
+            const listContainer = document.getElementById('swap-element-list');
+            listContainer.innerHTML = '';
+
+            if (elementos.length === 0) {
+                listContainer.innerHTML = '<p style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No se encontraron resultados.</p>';
+                return;
+            }
+
+            elementos.forEach(el => {
+                const elId = el.ID ? String(el.ID) : String(el.id);
+                if (elId === sourceData.idElemento) return;
+
+                const record = window.currentRegasData ? window.currentRegasData[elId] : null;
+                const shifts = [];
+                if (record) {
+                    Object.keys(record).forEach(k => {
+                        const lowerK = k.toLowerCase();
+                        if (['matutino', 'vespertino', 'nocturno', 'ausentismo'].includes(lowerK)) {
+                            shifts.push({ name: lowerK, data: record[k] });
+                        }
+                    });
+                }
+
+                const div = document.createElement('div');
+                div.style.cssText = 'display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;';
+                div.onmouseover = () => div.style.background = '#f8fafc';
+                div.onmouseout = () => div.style.background = 'transparent';
+
+                const elName = el.id;
+                let html = `
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                        <img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" data-emp-id-swap="${elId}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0;">
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-weight:600; font-size:12px; color:#334155;">${elName}</span>
+                            <span style="font-size:10px; color:#64748b; margin-top:2px;">ID: ${elId}</span>
+                        </div>
+                    </div>
+                `;
+
+                if (shifts.length > 0) {
+                    html += `<div style="display: flex; gap: 5px; flex-wrap: wrap; width: 100%;">`;
+                    shifts.forEach(sh => {
+                        const caseta = sh.data.Caseta || sh.data.motivo || 'Desconocido';
+                        const isAus = sh.name === 'ausentismo';
+                        const color = isAus ? '#64748b' : (sh.name === 'matutino' ? '#ca8a04' : (sh.name === 'vespertino' ? '#1d4ed8' : '#000000'));
+                        const bgColor = isAus ? '#f1f5f9' : (sh.name === 'matutino' ? '#fef08a' : (sh.name === 'vespertino' ? '#dbeafe' : '#e2e8f0'));
+
+                        html += `<button class="btn-swap-shift" data-shift="${sh.name}" style="flex: 1; padding: 6px; border: 1px solid ${color}; background-color: ${bgColor}; color: ${color}; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: bold; transition: opacity 0.2s;">
+                            ${sh.name.toUpperCase()} (${caseta})
+                        </button>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div style="width: 100%;"><button class="btn-swap-shift" data-shift="ninguno" style="width: 100%; padding: 6px; border: 1px dashed #cbd5e1; background-color: transparent; color: #64748b; border-radius: 6px; cursor: pointer; font-size: 10px; transition: background 0.2s;">Intercambiar y dejar sin turno</button></div>`;
+                }
+
+                div.innerHTML = html;
+
+                const btns = div.querySelectorAll('.btn-swap-shift');
+                btns.forEach(btn => {
+                    btn.addEventListener('mouseover', () => btn.style.opacity = '0.8');
+                    btn.addEventListener('mouseout', () => btn.style.opacity = '1');
+                    if(btn.getAttribute('data-shift') === 'ninguno') {
+                        btn.addEventListener('mouseover', () => btn.style.backgroundColor = '#f1f5f9');
+                        btn.addEventListener('mouseout', () => btn.style.backgroundColor = 'transparent');
+                    }
+
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const targetShiftName = btn.getAttribute('data-shift');
+                        const targetShiftDesc = targetShiftName === 'ninguno' ? 'Ninguno' : targetShiftName.toUpperCase();
+                        
+                        if (confirm(`¿Confirmas el intercambio de turnos?\n\n1. ${sourceData.empleadoNombre} recibe: ${targetShiftDesc}\n2. ${elName} recibe: ${sourceData.shift.name.toUpperCase()}`)) {
+                            btn.innerText = 'Intercambiando...';
+                            btn.disabled = true;
+                            await window.executeSwap(sourceData, elId, targetShiftName);
+                        }
+                    });
+                });
+
+                listContainer.appendChild(div);
+                if (window.getFotoElemento) {
+                    window.getFotoElemento(elId).then(fotoUrl => {
+                        const img = div.querySelector(`img[data-emp-id-swap="${elId}"]`);
+                        if(img) img.src = fotoUrl;
+                    });
+                }
+            });
+        };
+
+        window.filterSwapList = function() {
+            try {
+                const input = document.getElementById('search-swap-input');
+                if (!input) return;
+                let query = (input.value || "").trim().toLowerCase();
+                if (typeof query.normalize === 'function') query = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const filtered = (elementosGlobal || []).filter(el => {
+                    if (!el || !el.Operativa || el.Operativa.Estado !== 'Activo') return false;
+                    let elId = el.ID ? String(el.ID).toLowerCase() : (el.id ? String(el.id).toLowerCase() : "");
+                    let elName = el.id ? String(el.id).toLowerCase() : "";
+                    if (typeof elName.normalize === 'function') {
+                        elId = elId.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        elName = elName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    }
+                    return elName.includes(query) || elId.includes(query);
+                });
+                if (window.renderSwapList) window.renderSwapList(filtered);
+            } catch(e) { console.error(e); }
+        };
+
+        window.executeSwap = async function(sourceData, targetId, targetShiftName) {
+            const reqDate = sourceData.contextDate;
+            const anio = reqDate.getFullYear().toString();
+            const mes = fullMeses[reqDate.getMonth()];
+            const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+
+            const sourceId = sourceData.idElemento;
+            const sourceShiftName = sourceData.shift.name;
+            const sourceShiftData = sourceData.shift.data;
+
+            const targetRecord = window.currentRegasData ? window.currentRegasData[targetId] : null;
+            let targetShiftData = null;
+            if (targetRecord && targetShiftName !== 'ninguno') {
+                targetShiftData = targetRecord[targetShiftName];
+            }
+
+            try {
+                await deleteShiftKey(anio, mes, dia, sourceId, sourceShiftName);
+                if (targetShiftData) await deleteShiftKey(anio, mes, dia, targetId, targetShiftName);
+
+                const ts = Date.now();
+                
+                await updateShiftDataLocal(anio, mes, dia, targetId, sourceShiftName, sourceShiftData);
+                await updateShiftDataCloud(anio, mes, dia, targetId, sourceShiftName, sourceShiftData, ts);
+
+                if (targetShiftData) {
+                    await updateShiftDataLocal(anio, mes, dia, sourceId, targetShiftName, targetShiftData);
+                    await updateShiftDataCloud(anio, mes, dia, sourceId, targetShiftName, targetShiftData, ts);
+                }
+
+                window.closeRightPanel();
+                window.dispatchEvent(new CustomEvent('regasUpdated'));
+            } catch (error) {
+                console.error("Error al intercambiar turnos:", error);
+                alert("Ocurrió un error al intercambiar.");
+            }
+        };
+
+        document.addEventListener('click', (e) => {
+            const planMenu = document.getElementById('plan-context-menu');
+            if (planMenu && !planMenu.contains(e.target)) planMenu.style.display = 'none';
+        });
+
+        window.appendNextMonth = async function() {
+            if (isFetchingDates || renderedDates.length === 0) return;
+            isFetchingDates = true;
+            
+            const lastDate = renderedDates[renderedDates.length - 1];
+            const nextDate = new Date(lastDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+            
+            const daysToLoad = 30; // Cargar 1 mes adicional
+            
+            try {
+                const newDates = await fetchRegasForDateRange(nextDate, daysToLoad);
+                const daysArr = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+                const monthsArr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                
+                const datesRow = document.getElementById('dates-row');
+                const tbody = document.getElementById('grid-body');
+                
+                // 1. Agregar las nuevas cabeceras de fechas a la derecha
+                newDates.forEach(d => {
+                    const th = document.createElement('th');
+                    if (d.toDateString() === new Date().toDateString()) th.className = 'date-today';
+                    th.innerHTML = `
+                        <div class="date-cell-content">
+                            <span class="d-week">${daysArr[d.getDay()]}</span>
+                            <span class="d-num">${d.getDate()}</span>
+                            <span class="d-month">${monthsArr[d.getMonth()]}</span>
+                        </div>
+                    `;
+                    th.onclick = () => {
+                        localStorage.setItem('regasTargetDate', d.toISOString());
+                        window.parent.postMessage({action: 'switchFrame', target: 'iframe-regas'}, '*');
+                    };
+                    datesRow.appendChild(th);
+                });
+                
+                // 2. Inyectar las nuevas celdas de turnos en cada fila existente
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(tr => {
+                    if (tr.classList.contains('group-header')) {
+                        newDates.forEach(() => tr.appendChild(document.createElement('td')));
+                    } else {
+                        const elId = tr.getAttribute('data-el-id');
+                        const elName = tr.getAttribute('data-el-name');
+                        const casetaId = tr.getAttribute('data-caseta-id') || 'Desconocido';
+                        if (!elId) return;
+                        
+                        newDates.forEach(d => {
+                            const anio = d.getFullYear().toString();
+                            const mes = fullMeses[d.getMonth()];
+                            const dia = d.getDate().toString().padStart(2, '0') + (d.getMonth()+1).toString().padStart(2, '0') + d.getFullYear().toString();
+                            
+                            let badgesHtml = '';
+                            const mesData = regasCache[`${anio}-${mes}`];
+                            
+                            if (mesData && mesData.dias && mesData.dias[dia] && mesData.dias[dia].registros && mesData.dias[dia].registros[elId]) {
+                                const record = mesData.dias[dia].registros[elId];
+                                
+                                if (record.matutino) badgesHtml += `<div class="shift-badge shift-M" title="Turno Matutino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'matutino')">M</div>`;
+                                if (record.vespertino) badgesHtml += `<div class="shift-badge shift-V" title="Turno Vespertino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'vespertino')">V</div>`;
+                                if (record.nocturno) badgesHtml += `<div class="shift-badge shift-N" title="Turno Nocturno" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'nocturno')">N</div>`;
+                                
+                                if (record.ausentismo && record.ausentismo.motivo) {
+                                    const mot = record.ausentismo.motivo;
+                                    const short = mot.substring(0,3).charAt(0).toUpperCase() + mot.substring(1,3).toLowerCase();
+                                    const bgStyle = window.getAusentismoStyle(mot);
+                                    badgesHtml += `<div class="shift-badge shift-Aus" title="Ausentismo: ${mot}" style="${bgStyle}" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')">${short}</div>`;
+                                }
+                            }
+
+                            const td = document.createElement('td');
+                            td.innerHTML = `<div class="shift-badges-container">${badgesHtml}</div>`;
+                            td.style.cursor = 'pointer';
+                            td.onclick = (e) => openShiftDetail(e, elId, elName, anio, mes, dia, null);
+                            td.oncontextmenu = (e) => openEmptyShiftContextMenu(e, elId, elName, anio, mes, dia, casetaId);
+                            tr.appendChild(td);
+                        });
+                    }
+                });
+                
+                // 3. Actualizar la memoria y la etiqueta de rango
+                renderedDates = renderedDates.concat(newDates);
+                
+            } catch (err) {
+                console.error("Error cargando el siguiente mes:", err);
+            }
+            isFetchingDates = false;
+        };
+
+        window.prependPreviousMonth = async function() {
+            if (isFetchingDates || renderedDates.length === 0) return;
+            isFetchingDates = true;
+            
+            const firstDate = renderedDates[0];
+            const prevDateStart = new Date(firstDate);
+            prevDateStart.setDate(prevDateStart.getDate() - 30);
+            
+            const daysToLoad = 30; // Cargar 1 mes hacia atrás
+            
+            try {
+                const newDates = await fetchRegasForDateRange(prevDateStart, daysToLoad);
+                const daysArr = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+                const monthsArr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                
+                const datesRow = document.getElementById('dates-row');
+                const tbody = document.getElementById('grid-body');
+                const wrapper = document.getElementById('grid-wrapper');
+                const oldScrollWidth = wrapper.scrollWidth;
+                
+                const firstDataTh = datesRow.children[1]; // Ignorar la cabecera fija de la izquierda
+                
+                newDates.forEach(d => {
+                    const th = document.createElement('th');
+                    if (d.toDateString() === new Date().toDateString()) th.className = 'date-today';
+                    th.innerHTML = `
+                        <div class="date-cell-content">
+                            <span class="d-week">${daysArr[d.getDay()]}</span>
+                            <span class="d-num">${d.getDate()}</span>
+                            <span class="d-month">${monthsArr[d.getMonth()]}</span>
+                        </div>
+                    `;
+                    th.onclick = () => {
+                        localStorage.setItem('regasTargetDate', d.toISOString());
+                        window.parent.postMessage({action: 'switchFrame', target: 'iframe-regas'}, '*');
+                    };
+                    datesRow.insertBefore(th, firstDataTh);
+                });
+                
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(tr => {
+                    const firstDataTd = tr.children[1];
+                    if (tr.classList.contains('group-header')) {
+                        newDates.forEach(() => tr.insertBefore(document.createElement('td'), firstDataTd));
+                    } else {
+                        const elId = tr.getAttribute('data-el-id');
+                        const elName = tr.getAttribute('data-el-name');
+                        const casetaId = tr.getAttribute('data-caseta-id') || 'Desconocido';
+                        if (!elId) return;
+                        
+                        newDates.forEach(d => {
+                            const anio = d.getFullYear().toString();
+                            const mes = fullMeses[d.getMonth()];
+                            const dia = d.getDate().toString().padStart(2, '0') + (d.getMonth()+1).toString().padStart(2, '0') + d.getFullYear().toString();
+                            
+                            let badgesHtml = '';
+                            const mesData = regasCache[`${anio}-${mes}`];
+                            if (mesData && mesData.dias && mesData.dias[dia] && mesData.dias[dia].registros && mesData.dias[dia].registros[elId]) {
+                                const record = mesData.dias[dia].registros[elId];
+                                if (record.matutino) badgesHtml += `<div class="shift-badge shift-M" title="Turno Matutino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'matutino')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'matutino')">M</div>`;
+                                if (record.vespertino) badgesHtml += `<div class="shift-badge shift-V" title="Turno Vespertino" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'vespertino')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'vespertino')">V</div>`;
+                                if (record.nocturno) badgesHtml += `<div class="shift-badge shift-N" title="Turno Nocturno" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'nocturno')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'nocturno')">N</div>`;
+                                if (record.ausentismo && record.ausentismo.motivo) {
+                                    const mot = record.ausentismo.motivo;
+                                    const short = mot.substring(0,3).charAt(0).toUpperCase() + mot.substring(1,3).toLowerCase();
+                                    const bgStyle = window.getAusentismoStyle(mot);
+                                    badgesHtml += `<div class="shift-badge shift-Aus" title="Ausentismo: ${mot}" style="${bgStyle}" onclick="openShiftDetail(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')" oncontextmenu="openShiftContextMenu(event, '${elId}', '${elName}', '${anio}', '${mes}', '${dia}', 'ausentismo')">${short}</div>`;
+                                }
+                            }
+                            const td = document.createElement('td');
+                            td.innerHTML = `<div class="shift-badges-container">${badgesHtml}</div>`;
+                            td.style.cursor = 'pointer';
+                            td.onclick = (e) => openShiftDetail(e, elId, elName, anio, mes, dia, null);
+                            td.oncontextmenu = (e) => openEmptyShiftContextMenu(e, elId, elName, anio, mes, dia, casetaId);
+                            tr.insertBefore(td, firstDataTd);
+                        });
+                    }
+                });
+                
+                renderedDates = newDates.concat(renderedDates);
+                
+                wrapper.scrollLeft += (wrapper.scrollWidth - oldScrollWidth);
+                
+            } catch (err) {
+                console.error("Error cargando el mes anterior:", err);
+            }
+            isFetchingDates = false;
+        };
+
+        // --- EVENTO DE SCROLL INFINITO ---
+        document.getElementById('grid-wrapper').addEventListener('scroll', function() {
+            // Hacia el Futuro (Derecha)
+            if (this.scrollLeft + this.clientWidth >= this.scrollWidth - 150) {
+                appendNextMonth();
+            }
+            // Hacia el Pasado (Izquierda)
+            else if (this.scrollLeft <= 150) {
+                prependPreviousMonth();
+            }
+        });
+
+        // --- REDIMENSIONAMIENTO DEL PANEL DERECHO ---
+        const rightResizer = document.getElementById('right-resizer');
+        let isRightResizing = false;
+
+        if (rightResizer) {
+            rightResizer.addEventListener('mousedown', (e) => {
+                isRightResizing = true;
+                rightResizer.style.backgroundColor = 'var(--fiusha)';
+                rightResizer.style.opacity = '0.5';
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isRightResizing) return;
+            let newWidth = window.innerWidth - e.clientX;
+            if (newWidth < 300) newWidth = 300; 
+            if (newWidth > 800) newWidth = 800; 
+            document.getElementById('right-panel').style.width = `${newWidth}px`;
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isRightResizing) {
+                isRightResizing = false;
+                if (rightResizer) rightResizer.style.backgroundColor = 'transparent';
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+
+        // Refrescar cuadricula si se hacen cambios desde el menú contextual
+        window.addEventListener('regasUpdated', () => {
+            regasCache = {}; // Limpiamos memoria para forzar lectura de IndexedDB
+            renderGrid();
+        });
+
+        // Arrancar
+        init();
+    </script>
+</body>
+</html>

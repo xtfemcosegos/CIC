@@ -1,5 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -17,4 +19,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-export { app, auth, signInWithEmailAndPassword };
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LfMdh4tAAAAAIso_7lN3m0EpNFeIUDRf7oM6pNb'),
+  isTokenAutoRefreshEnabled: true // Permite que el token invisible se renueve automáticamente
+});
+const functions = getFunctions(app);
+
+export { app, auth, signInWithEmailAndPassword, functions, httpsCallable };
