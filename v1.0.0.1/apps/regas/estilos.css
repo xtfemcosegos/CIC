@@ -376,7 +376,7 @@ body.is-dragging .caseta-container * {
     flex: 1 1 200px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible; /* Permitir que las tarjetas se expandan hacia afuera de la caseta */
     background-color: #ffffff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
@@ -473,6 +473,8 @@ body.split-mode .tab[onclick*="'turno'"] {
     font-size: 12px;
     font-weight: 600;
     color: #ffffff;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 .btn-customize {
@@ -516,11 +518,116 @@ body.split-mode .tab[onclick*="'turno'"] {
     color: #555;
 }
 .caseta-body {
-    padding: 0;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+    align-content: flex-start;
     min-height: 50px;
     color: #555;
     font-size: 12px;
     font-family: 'Open Sans', sans-serif;
+    transition: all 0.3s ease; /* Transición suave al cambiar layout */
+}
+
+/* =========================================
+   VISTAS DE CASETAS: NORMAL Y COMPACTA
+   ========================================= */
+.emp-compact-card {
+    padding: 2px !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px solid transparent !important;
+    overflow: hidden;
+    cursor: grab;
+    flex-shrink: 0;
+    position: relative; /* Requerido para que el z-index flote correctamente */
+    margin-right: 0;
+    transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                background-color 0.3s ease,
+                border-color 0.3s ease,
+                box-shadow 0.3s ease,
+                padding 0.3s ease,
+                border-radius 0.3s ease;
+}
+
+.emp-compact-card:active {
+    cursor: grabbing;
+}
+
+/* Contenedor izquierdo: mantiene ancho solo en vista compacta para no aplastar el texto en la animación */
+body.vista-compacta .emp-compact-card > div:first-child {
+    min-width: 140px; 
+}
+body:not(.vista-compacta) .emp-compact-card > div:first-child {
+    min-width: 0;
+}
+
+.text-info-container {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Evita que los botones se deformen al contraerse */
+.emp-compact-card > button,
+.emp-compact-card > span {
+    flex-shrink: 0;
+}
+
+/* --- VISTA NORMAL (Por defecto, expandida siempre en columna) --- */
+body:not(.vista-compacta) .caseta-body {
+    flex-direction: column;
+}
+body:not(.vista-compacta) .emp-compact-card {
+    width: 100% !important;
+    min-height: 44px;
+    border-radius: 8px !important;
+    padding: 5px 8px !important;
+    background: #ffffff;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+body:not(.vista-compacta) .text-info-container {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* --- VISTA COMPACTA (Fotos en fila) --- */
+body.vista-compacta .caseta-body {
+    flex-direction: row;
+}
+body.vista-compacta .emp-compact-card {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 22px !important;
+}
+body.vista-compacta .text-info-container {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+/* VISTA COMPACTA: HOVER EN LA CASETA (Expande todo a columna) */
+body.vista-compacta .caseta-container:hover .caseta-body,
+body.vista-compacta .caseta-container:focus-within .caseta-body {
+    flex-direction: column;
+}
+body.vista-compacta .caseta-container:hover .emp-compact-card,
+body.vista-compacta .caseta-container:focus-within .emp-compact-card {
+    width: 100% !important;
+    background: #ffffff;
+    border-color: #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 5px 8px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+body.vista-compacta .caseta-container:hover .text-info-container,
+body.vista-compacta .caseta-container:focus-within .text-info-container {
+    opacity: 1;
+    transform: translateX(0);
+    transition-delay: 0.1s;
 }
 
 @media (min-width: 769px) {

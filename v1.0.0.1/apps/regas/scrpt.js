@@ -994,9 +994,11 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
     const detailDiv = document.getElementById('right-panel-detail');
     const addDiv = document.getElementById('right-panel-add');
     const reportDiv = document.getElementById('right-panel-report');
+    const swapDiv = document.getElementById('right-panel-swap');
     if (detailDiv) detailDiv.style.display = 'flex';
     if (addDiv) addDiv.style.display = 'none';
     if (reportDiv) reportDiv.style.display = 'none';
+    if (swapDiv) swapDiv.style.display = 'none';
 
     let localRecord = record || {};
     rightPanel.style.display = 'flex';

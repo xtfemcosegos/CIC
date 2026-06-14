@@ -8,9 +8,12 @@ document.addEventListener('click', (e) => {
     if (menu && menu.style.display === 'flex' && !menu.contains(e.target)) {
         menu.style.display = 'none';
     }
-    if (window.intercambioData && !e.target.closest('.draggable-row')) {
-        window.intercambioData = null;
-        document.body.style.cursor = '';
+    if (window.intercambioData && !e.target.closest('.draggable-row') && !e.target.closest('#right-panel')) {
+        const swapPanel = document.getElementById('right-panel-swap');
+        if (!swapPanel || swapPanel.style.display !== 'flex') {
+            window.intercambioData = null;
+            document.body.style.cursor = '';
+        }
     }
 });
 
@@ -131,6 +134,10 @@ window.handleMenuAction = async function(action, param) {
         }
     } else if (action === 'intercambiar') {
         window.intercambioData = data;
-        document.body.style.cursor = 'crosshair';
+        if (window.openSwapPanel) {
+            window.openSwapPanel();
+        } else {
+            document.body.style.cursor = 'crosshair';
+        }
     }
 };

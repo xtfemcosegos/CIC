@@ -69,6 +69,10 @@
 
                 <!-- Botones de Acción -->
             <div class="actions-container" id="header-actions">
+                <!-- Alternar Vista Normal/Compacta -->
+                <button class="action-btn" id="btn-toggle-view" title="Alternar Vista Compacta/Normal" onclick="toggleViewMode()">
+                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </button>
                     <!-- Botón de Reporte Móvil -->
                 <button class="action-btn hide-desktop" id="btn-mobile-report" title="Generar Reporte" onclick="const active = document.querySelector('.tab-content.active'); if(active) openReportPanel(active.id.replace('content-', ''))" style="display: none;">
                         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -146,9 +150,28 @@
                     <button onclick="closeRightPanel()">×</button>
                 </div>
                 <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);">
-                    <input type="text" id="search-elemento-input" placeholder="Buscar por Nombre o ID..." onkeyup="filterElementosList()" class="form-select" style="width: 100%; box-sizing: border-box;">
+                    <input type="text" id="search-elemento-input" placeholder="Buscar por Nombre o ID..." oninput="window.filterElementosList()" class="form-select" style="width: 100%; box-sizing: border-box;">
                 </div>
                 <div id="add-elemento-list" style="flex: 1; overflow-y: auto; padding: 0;">
+                    <!-- Lista inyectada por JS -->
+                </div>
+            </div>
+
+            <!-- Sub-Panel de Intercambio (Nuevo) -->
+            <div id="right-panel-swap" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <div class="detail-text-group">
+                            <h3 style="font-size: 14px; margin: 0;">Intercambiar Turno</h3>
+                            <span id="swap-subtitle" style="font-size: 11px; opacity: 0.8;">Selecciona un turno</span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" id="search-swap-input" placeholder="Buscar por Nombre o ID..." oninput="window.filterSwapList()" class="form-select" style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div id="swap-element-list" style="flex: 1; overflow-y: auto; padding: 0;">
                     <!-- Lista inyectada por JS -->
                 </div>
             </div>
@@ -241,7 +264,7 @@
     <div id="element-context-menu"></div>
 
     <script type="module">
-        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, createMotivoAusentismo, moveElementoRegas, openDetailPanel, closeRightPanel, selectDetailTab } from './scrpt.js';
+        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, createMotivoAusentismo, moveElementoRegas, openDetailPanel, closeRightPanel, selectDetailTab, deleteShiftKey, updateShiftDataLocal, updateShiftDataCloud } from './scrpt.js';
         import './mc_script.js';
         import { auth } from '../../js/firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -262,6 +285,10 @@
         window.updatePreview = updatePreview;
         window.saveCustomizeModal = saveCustomizeModal;
         window.applyPalette = applyPalette;
+        window.deleteShiftKey = deleteShiftKey;
+        window.updateShiftDataLocal = updateShiftDataLocal;
+        window.updateShiftDataCloud = updateShiftDataCloud;
+        window.getFotoElemento = getFotoElemento;
 
         window.openDetailPanel = async function(...args) {
             await openDetailPanel(...args);
@@ -269,6 +296,8 @@
         };
         window.closeRightPanel = function() {
             closeRightPanel();
+            window.intercambioData = null;
+            document.body.style.cursor = '';
             if (typeof saveInicioConfig === 'function') saveInicioConfig();
         };
         window.selectDetailTab = function(tab) {
@@ -468,6 +497,23 @@
             }
         }
 
+        // --- LÓGICA ALTERNAR VISTA COMPACTA/NORMAL ---
+        window.toggleViewMode = function() {
+            const body = document.body;
+            body.classList.toggle('vista-compacta');
+            const btn = document.getElementById('btn-toggle-view');
+            if (body.classList.contains('vista-compacta')) {
+                btn.classList.add('active');
+                // Icono de Lista (Sugiere: Click para volver a vista normal)
+                btn.innerHTML = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'; 
+            } else {
+                btn.classList.remove('active');
+                // Icono de Cuadrícula (Sugiere: Click para cambiar a vista compacta)
+                btn.innerHTML = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+            }
+            if (typeof saveInicioConfig === 'function') saveInicioConfig();
+        };
+
     window.addEventListener('resize', () => {
         centerDate(selectedDate);
         if (window.innerWidth <= 768 && isSplitMode) {
@@ -514,7 +560,8 @@
                 detailTab: activeDetailTabEl ? activeDetailTabEl.id.replace('tab-', '') : 'turno',
                 leftPanelWidth: document.body.style.getPropertyValue('--left-panel-width') || '250px',
                 rightPanelWidth: document.body.style.getPropertyValue('--right-panel-width') || '33.333%',
-                reportTab: typeof currentReportTab !== 'undefined' ? currentReportTab : ''
+                reportTab: typeof currentReportTab !== 'undefined' ? currentReportTab : '',
+                isCompactView: document.body.classList.contains('vista-compacta')
             };
             localStorage.setItem('regasInicioConfig', JSON.stringify(config));
         };
@@ -542,6 +589,14 @@
                     }
                     if (config.rightPanelWidth) {
                         document.body.style.setProperty('--right-panel-width', config.rightPanelWidth);
+                    }
+                    if (config.isCompactView) {
+                        document.body.classList.add('vista-compacta');
+                        const btn = document.getElementById('btn-toggle-view');
+                        if (btn) {
+                            btn.classList.add('active');
+                            btn.innerHTML = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>';
+                        }
                     }
                 } catch (e) { console.error("Error cargando config visual", e); }
             }
@@ -781,12 +836,18 @@
     window.openAddPanel = function(save = true) {
         const rightPanel = document.getElementById('right-panel');
         document.getElementById('right-panel-detail').style.display = 'none';
+        const swapDiv = document.getElementById('right-panel-swap');
+        if (swapDiv) swapDiv.style.display = 'none';
         const reportDiv = document.getElementById('right-panel-report');
         if (reportDiv) reportDiv.style.display = 'none';
         document.getElementById('right-panel-add').style.display = 'flex';
         rightPanel.style.display = 'flex';
         
-        document.getElementById('search-elemento-input').value = '';
+        const searchInput = document.getElementById('search-elemento-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
         const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
         renderElementosList(activeElementos);
         
@@ -797,6 +858,11 @@
         const listContainer = document.getElementById('add-elemento-list');
         listContainer.innerHTML = '';
         
+        if (elementos.length === 0) {
+            listContainer.innerHTML = '<p style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No se encontraron resultados.</p>';
+            return;
+        }
+
         // 1. Agrupar por Caseta Base
         const grouped = {};
         elementos.forEach(el => {
@@ -867,16 +933,230 @@
     };
 
     window.filterElementosList = function() {
-        const query = document.getElementById('search-elemento-input').value.toLowerCase();
-        const filtered = elementosGlobal.filter(el => {
-            const isActive = el.Operativa && el.Operativa.Estado === 'Activo';
-            if (!isActive) return false;
+        try {
+            const input = document.getElementById('search-elemento-input');
+            if (!input) return;
             
-            const elId = el.ID ? String(el.ID).toLowerCase() : String(el.id).toLowerCase();
-            const elName = String(el.id).toLowerCase();
-            return elName.includes(query) || elId.includes(query);
+            let query = (input.value || "").trim().toLowerCase();
+            if (typeof query.normalize === 'function') {
+                query = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            }
+            
+            const filtered = (elementosGlobal || []).filter(el => {
+                if (!el || !el.Operativa || el.Operativa.Estado !== 'Activo') return false;
+                
+                let elId = el.ID ? String(el.ID).toLowerCase() : (el.id ? String(el.id).toLowerCase() : "");
+                let elName = el.id ? String(el.id).toLowerCase() : "";
+                
+                if (typeof elName.normalize === 'function') {
+                    elId = elId.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    elName = elName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                }
+                
+                return elName.includes(query) || elId.includes(query);
+            });
+            
+            if (typeof window.renderElementosList === 'function') {
+                window.renderElementosList(filtered);
+            }
+        } catch(e) { console.error("Error filtrando elementos", e); }
+    };
+
+    // --- LÓGICA DEL PANEL LATERAL DE INTERCAMBIO ---
+    window.openSwapPanel = function() {
+        const rightPanel = document.getElementById('right-panel');
+        document.getElementById('right-panel-detail').style.display = 'none';
+        const addDiv = document.getElementById('right-panel-add');
+        if (addDiv) addDiv.style.display = 'none';
+        const reportDiv = document.getElementById('right-panel-report');
+        if (reportDiv) reportDiv.style.display = 'none';
+        
+        const swapDiv = document.getElementById('right-panel-swap');
+        if (swapDiv) swapDiv.style.display = 'flex';
+        rightPanel.style.display = 'flex';
+        
+        const searchInput = document.getElementById('search-swap-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        const sourceData = window.intercambioData;
+        if (sourceData) {
+            document.getElementById('swap-subtitle').innerText = `Turno de ${sourceData.empleadoNombre}`;
+        }
+        
+        const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+        renderSwapList(activeElementos);
+    };
+
+    window.renderSwapList = function(elementos) {
+        const sourceData = window.intercambioData;
+        if (!sourceData) return; // Validación temprana de seguridad
+        const listContainer = document.getElementById('swap-element-list');
+        listContainer.innerHTML = '';
+
+        if (elementos.length === 0) {
+            listContainer.innerHTML = '<p style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No se encontraron resultados.</p>';
+            return;
+        }
+
+        elementos.forEach(el => {
+            const elId = el.ID ? String(el.ID) : String(el.id);
+            if (elId === sourceData.idElemento) return; // No intercambiar consigo mismo
+
+            const record = window.currentRegasData ? window.currentRegasData[elId] : null;
+            
+            const shifts = [];
+            if (record) {
+                Object.keys(record).forEach(k => {
+                    const lowerK = k.toLowerCase();
+                    if (['matutino', 'vespertino', 'nocturno', 'ausentismo'].includes(lowerK)) {
+                        shifts.push({ name: lowerK, data: record[k] });
+                    }
+                });
+            }
+
+            const div = document.createElement('div');
+            div.className = 'add-element-item';
+            div.style.flexDirection = 'column';
+            div.style.alignItems = 'flex-start';
+            div.style.gap = '8px';
+
+            const elName = el.id;
+            
+            let html = `
+                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                    <img class="add-element-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" data-emp-id-swap="${elId}">
+                    <div class="add-element-info">
+                        <span class="add-element-name">${elName}</span>
+                        <span class="add-element-id">ID: ${elId}</span>
+                    </div>
+                </div>
+            `;
+
+            if (shifts.length > 0) {
+                html += `<div style="display: flex; gap: 5px; flex-wrap: wrap; width: 100%;">`;
+                shifts.forEach(sh => {
+                    const caseta = sh.data.Caseta || sh.data.motivo || 'Desconocido';
+                    const isAus = sh.name === 'ausentismo';
+                    const color = isAus ? '#64748b' : (sh.name === 'matutino' ? '#ca8a04' : (sh.name === 'vespertino' ? '#1d4ed8' : '#000000'));
+                    const bgColor = isAus ? '#f1f5f9' : (sh.name === 'matutino' ? '#fef08a' : (sh.name === 'vespertino' ? '#dbeafe' : '#e2e8f0'));
+
+                    html += `<button class="btn-swap-shift" data-shift="${sh.name}" style="flex: 1; padding: 6px; border: 1px solid ${color}; background-color: ${bgColor}; color: ${color}; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: bold; transition: opacity 0.2s;">
+                        ${sh.name.toUpperCase()} (${caseta})
+                    </button>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="width: 100%;"><button class="btn-swap-shift" data-shift="ninguno" style="width: 100%; padding: 6px; border: 1px dashed #cbd5e1; background-color: transparent; color: #64748b; border-radius: 6px; cursor: pointer; font-size: 10px; transition: background 0.2s;">Intercambiar y dejar sin turno</button></div>`;
+            }
+
+            div.innerHTML = html;
+
+            const btns = div.querySelectorAll('.btn-swap-shift');
+            btns.forEach(btn => {
+                btn.addEventListener('mouseover', () => btn.style.opacity = '0.8');
+                btn.addEventListener('mouseout', () => btn.style.opacity = '1');
+                if(btn.getAttribute('data-shift') === 'ninguno') {
+                    btn.addEventListener('mouseover', () => btn.style.backgroundColor = '#f1f5f9');
+                    btn.addEventListener('mouseout', () => btn.style.backgroundColor = 'transparent');
+                }
+
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const targetShiftName = btn.getAttribute('data-shift');
+                    const targetShiftDesc = targetShiftName === 'ninguno' ? 'Ninguno' : targetShiftName.toUpperCase();
+                    
+                    if (confirm(`¿Confirmas el intercambio de turnos?\n\n1. ${sourceData.empleadoNombre} recibe: ${targetShiftDesc}\n2. ${elName} recibe: ${sourceData.shift.name.toUpperCase()}`)) {
+                        btn.innerText = 'Intercambiando...';
+                        btn.disabled = true;
+                        await executeSwap(sourceData, elId, targetShiftName);
+                    }
+                });
+            });
+
+            listContainer.appendChild(div);
+            
+            if (window.getFotoElemento) {
+                window.getFotoElemento(elId).then(fotoUrl => {
+                    const img = div.querySelector(`img[data-emp-id-swap="${elId}"]`);
+                    if(img) img.src = fotoUrl;
+                });
+            }
         });
-        renderElementosList(filtered);
+    };
+
+    window.filterSwapList = function() {
+        try {
+            const input = document.getElementById('search-swap-input');
+            if (!input) return;
+            
+            let query = (input.value || "").trim().toLowerCase();
+            if (typeof query.normalize === 'function') {
+                query = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            }
+            
+            const filtered = (elementosGlobal || []).filter(el => {
+                if (!el || !el.Operativa || el.Operativa.Estado !== 'Activo') return false;
+                
+                let elId = el.ID ? String(el.ID).toLowerCase() : (el.id ? String(el.id).toLowerCase() : "");
+                let elName = el.id ? String(el.id).toLowerCase() : "";
+                
+                if (typeof elName.normalize === 'function') {
+                    elId = elId.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    elName = elName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                }
+                
+                return elName.includes(query) || elId.includes(query);
+            });
+            
+            if (typeof window.renderSwapList === 'function') {
+                window.renderSwapList(filtered);
+            }
+        } catch(e) { console.error("Error filtrando swap", e); }
+    };
+
+    window.executeSwap = async function(sourceData, targetId, targetShiftName) {
+        const reqDate = sourceData.contextDate;
+        const anio = reqDate.getFullYear().toString();
+        const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+        const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+
+        const sourceId = sourceData.idElemento;
+        const sourceShiftName = sourceData.shift.name;
+        const sourceShiftData = sourceData.shift.data;
+
+        const targetRecord = window.currentRegasData ? window.currentRegasData[targetId] : null;
+        let targetShiftData = null;
+        if (targetRecord && targetShiftName !== 'ninguno') {
+            targetShiftData = targetRecord[targetShiftName];
+        }
+
+        try {
+            // Se borran los turnos originales primero
+            await window.deleteShiftKey(anio, mes, dia, sourceId, sourceShiftName);
+            if (targetShiftData) {
+                await window.deleteShiftKey(anio, mes, dia, targetId, targetShiftName);
+            }
+
+            const ts = Date.now();
+            
+            // Asignar el turno del Origen al Destino
+            await window.updateShiftDataLocal(anio, mes, dia, targetId, sourceShiftName, sourceShiftData);
+            await window.updateShiftDataCloud(anio, mes, dia, targetId, sourceShiftName, sourceShiftData, ts);
+
+            // Asignar el turno del Destino al Origen
+            if (targetShiftData) {
+                await window.updateShiftDataLocal(anio, mes, dia, sourceId, targetShiftName, targetShiftData);
+                await window.updateShiftDataCloud(anio, mes, dia, sourceId, targetShiftName, targetShiftData, ts);
+            }
+
+            window.closeRightPanel();
+            loadRegasData(); // Recargar la pantalla para ver el efecto final
+        } catch (error) {
+            console.error("Error al intercambiar turnos:", error);
+            alert("Ocurrió un error al intercambiar los turnos.");
+        }
     };
 
         // Crea los contenedores visuales vacíos
@@ -1041,6 +1321,8 @@
                 downloadRegas(reqSel[0], reqSel[1], reqSel[2])
             ]);
 
+            window.currentRegasData = dataSel ? dataSel.registros : {};
+
             processRegasData(dataRealAyer, ['turno'], realAyer);
             processRegasData(dataRealHoy, ['turno'], realHoy);
             processRegasData(dataSel, ['matutino', 'vespertino', 'nocturno', 'ausentismos'], dSel);
@@ -1088,11 +1370,10 @@
 
                     // Crear renglón del empleado
                     const row = document.createElement('div');
-                    row.style.cssText = "padding: 5px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;";
                     
                     // ATRIBUTOS DRAG AND DROP (Los eventos se asignan al clonar)
                     row.setAttribute('draggable', 'true'); // Asegura que cloneNode lo copie intacto
-                    row.className = 'draggable-row';
+                    row.className = 'draggable-row emp-compact-card';
                     row.setAttribute('data-emp-name', empleadoNombre);
                     if (shift.data.entrada_real) {
                         row.setAttribute('data-entrada', shift.data.entrada_real);
@@ -1120,6 +1401,7 @@
 
                     // Contenedor de Texto (Nombre e ID)
                     const textInfo = document.createElement('div');
+                    textInfo.className = 'text-info-container';
                     textInfo.style.display = 'flex'; textInfo.style.flexDirection = 'column';
                     textInfo.style.overflow = 'hidden';
                     textInfo.style.flex = '1';
@@ -1432,6 +1714,8 @@
             
             document.getElementById('right-panel-detail').style.display = 'none';
             document.getElementById('right-panel-add').style.display = 'none';
+            const swapDiv = document.getElementById('right-panel-swap');
+            if (swapDiv) swapDiv.style.display = 'none';
             
             const reportPanel = document.getElementById('right-panel-report');
             if (reportPanel) reportPanel.style.display = 'flex';

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cic-os-cache-1.0.0.18';
+const CACHE_NAME = 'cic-os-cache-1.0.0.32';
 
 self.addEventListener('install', event => {
     // Forzamos al Service Worker a instalarse de inmediato
