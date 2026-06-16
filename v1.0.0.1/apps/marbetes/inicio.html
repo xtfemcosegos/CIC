@@ -8,40 +8,64 @@
     <style>
         body {
             margin: 0;
-            padding: 20px;
             background-color: #f4f6f8;
             font-family: 'Open Sans', sans-serif;
             color: #334155;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .center-panel {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
         }
 
         .header-bar {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #065f46 0%, #064e3b 50%, #047857 100%);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 20px;
             flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 5;
         }
 
         .header-bar h2 {
             margin: 0;
-            color: #0f172a;
+            color: #ffffff;
             font-size: 26px;
             font-weight: 800;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         #search-input {
             padding: 10px 15px;
-            border: 1px solid #cbd5e1;
+            border: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
             min-width: 250px;
             flex: 1;
             max-width: 400px;
+        }
+        #search-input:focus {
+            outline: 2px solid #34d399;
         }
 
         .loading-text {
@@ -53,9 +77,20 @@
         }
 
         .marbetes-grid {
+            padding: 0 20px 20px 20px;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
+        }
+
+        .date-group-header {
+            grid-column: 1 / -1;
+            font-size: 15px;
+            font-weight: 800;
+            color: #065f46;
+            margin-top: 5px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
         }
 
         .marbete-card {
@@ -63,13 +98,20 @@
             border-radius: 12px;
             padding: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border-top: 4px solid #0ea5e9;
+            border-top: 4px solid #059669;
             transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
         }
 
         .marbete-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .marbete-card.exact-match {
+            border-top-color: #f59e0b;
+            background-color: #fffbeb;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
         }
 
         .card-header {
@@ -82,7 +124,7 @@
         }
 
         .folio-label { font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; }
-        .folio-val { font-size: 18px; font-weight: 800; color: #0369a1; margin-left: 5px; }
+        .folio-val { font-size: 18px; font-weight: 800; color: #065f46; margin-left: 5px; }
 
         .badge {
             padding: 4px 10px;
@@ -119,21 +161,192 @@
             border: 1px solid #e2e8f0;
         }
         .vehicle-title { font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+
+        /* --- ESTILOS DEL PANEL LATERAL TIPO REGAS --- */
+        .side-panel {
+            width: 340px;
+            background-color: #ffffff;
+            border-left: 1px solid #cbd5e1;
+            display: none;
+            flex-direction: column;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 10;
+            position: relative;
+        }
+        .side-resizer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            cursor: col-resize;
+            z-index: 100;
+            background-color: transparent;
+            transition: background-color 0.2s;
+        }
+        .side-resizer.left-edge { left: -4px; }
+        .side-resizer:hover, .side-resizer.is-resizing { background-color: #059669; opacity: 0.5; }
+        .detail-header {
+            padding: 15px;
+            background: linear-gradient(135deg, #065f46 0%, #064e3b 50%, #047857 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: inset 0 -2px 10px rgba(0,0,0,0.2);
+        }
+        .detail-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+            background: #f8fafc;
+        }
+        .form-group-box {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #065f46;
+            text-transform: uppercase;
+            margin: 0 0 5px 0;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 5px;
+        }
+        .input-col { display: flex; flex-direction: column; width: 100%; }
+        .input-col label { font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+        .form-select {
+            width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 13px; color: #334155; background-color: #ffffff; box-sizing: border-box; transition: all 0.2s;
+        }
+        .form-select:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); }
+
+        /* --- VISUALIZADOR DEL MARBETE (COLGANTE METÁLICO) --- */
+        .marbete-tag {
+            --bg-hole: #f8fafc;
+            width: 80px;
+            height: 126px;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset -1px -1px 4px rgba(0,0,0,0.5), inset 1px 1px 3px rgba(255,255,255,0.3), 0 6px 12px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 12px;
+        }
+        .marbete-tag::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background: var(--bg-hole);
+            border-radius: 50%;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+        .marbete-tag::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            margin-left: 0px;
+            width: 8px;
+            height: 26px;
+            background: var(--bg-hole);
+            transform: rotate(20deg);
+            z-index: 2;
+        }
+        .marbete-digits {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 34px;
+            font-weight: 900;
+            line-height: 0.9;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+        }
+
+        /* --- VARIANTES DE COLOR --- */
+        .marbete-tag.marbete-red { background: linear-gradient(135deg, #b91c1c 0%, #450a0a 50%, #991b1b 100%); }
+        .marbete-tag.marbete-red .marbete-digits { color: #e2e8f0; text-shadow: 1px 1px 3px rgba(0,0,0,0.8), -1px -1px 1px rgba(255,255,255,0.4); }
+        
+        .marbete-tag.marbete-blue { background: linear-gradient(135deg, #2563eb 0%, #172554 50%, #1e40af 100%); }
+        .marbete-tag.marbete-blue .marbete-digits { color: #e2e8f0; text-shadow: 1px 1px 3px rgba(0,0,0,0.8), -1px -1px 1px rgba(255,255,255,0.4); }
+        
+        .marbete-tag.marbete-white { background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 50%, #e2e8f0 100%); }
+        .marbete-tag.marbete-white .marbete-digits { color: #0f172a; text-shadow: 1px 1px 2px rgba(255,255,255,0.8), -1px -1px 1px rgba(0,0,0,0.3); }
+
+        .marbete-tag.mini.marbete-red .marbete-digits { text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        .marbete-tag.mini.marbete-blue .marbete-digits { text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        .marbete-tag.mini.marbete-white .marbete-digits { text-shadow: 1px 1px 1px rgba(255,255,255,0.8); }
+        
+        /* Variante mini para las tarjetas del grid */
+        .marbete-tag.mini {
+            width: 40px;
+            height: 64px;
+            border-radius: 5px;
+            padding-bottom: 6px;
+            box-shadow: inset -1px -1px 2px rgba(0,0,0,0.5), inset 1px 1px 1px rgba(255,255,255,0.3), 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .marbete-tag.mini::before {
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+        }
+        .marbete-tag.mini::after {
+            top: -2px;
+            width: 4px;
+            height: 14px;
+        }
+        .marbete-tag.mini .marbete-digits {
+            font-size: 16px;
+            letter-spacing: 0;
+        }
     </style>
 </head>
 <body>
-    <div class="header-bar">
-        <h2>Directorio de Marbetes</h2>
-        <input type="search" id="search-input" placeholder="Buscar por Nombre, Folio, Placas...">
-    </div>
+    <div class="main-layout">
+        <div class="center-panel">
+            <div class="header-bar">
+                <h2>Directorio de Marbetes</h2>
+                <input type="search" id="search-input" placeholder="Buscar por Nombre, Folio, Placas...">
+            </div>
 
-    <div id="loading" class="loading-text">Cargando base de datos de marbetes...</div>
-    
-    <div class="marbetes-grid" id="marbetes-container"></div>
+            <div id="loading" class="loading-text">Cargando base de datos de marbetes...</div>
+            
+            <div class="marbetes-grid" id="marbetes-container"></div>
+        </div>
+
+        <div id="right-panel" class="side-panel">
+            <div class="side-resizer left-edge" id="right-resizer"></div>
+            <div class="detail-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="header-marbete-preview"></div>
+                    <h3 style="margin:0; font-size:16px; font-weight:700;" id="detail-title">Detalle del Marbete</h3>
+                </div>
+                <button onclick="closeRightPanel()" style="background:none; border:none; color:white; font-size:24px; line-height:1; cursor:pointer;">&times;</button>
+            </div>
+            <div class="detail-content" id="right-panel-content">
+                <!-- El formulario se renderizará aquí dinámicamente -->
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { initIndexedDB } from '../../js/script.js';
 
@@ -154,6 +367,9 @@
         const auth = getAuth(app);
 
         let allMarbetes = [];
+
+        // Normaliza texto: Protege de nulos/números y quita acentos para búsquedas exactas
+        const normalizeStr = (str) => (str == null ? '' : String(str)).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         async function downloadMarbetes() {
             try {
@@ -196,16 +412,26 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     const marbetesArray = [];
+
                     const tx = dbLocal.transaction('marbetes', 'readwrite');
                     const store = tx.objectStore('marbetes');
                     store.clear();
                     
+                    // Si el campo no existe en la nube, lo generamos para sincronizar a todos los clientes
+                    if (!remoteUpdateDate) {
+                        remoteUpdateDate = Date.now();
+                        try {
+                            await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: remoteUpdateDate });
+                        } catch (e) {
+                            console.warn("No se pudo escribir la fecha en Firebase por permisos:", e);
+                        }
+                    }
+
+                    // Guardar la fecha en la caché local para futuras comprobaciones
+                    store.put({ id: 'ultima_actualizacion', updateDate: remoteUpdateDate });
+
                     for (const key in data) {
-                        if (key === 'ultima_actualizacion') {
-                            const val = data[key];
-                            const uDate = (typeof val === 'object' && val !== null) ? val.updateDate : val;
-                            store.put({ id: 'ultima_actualizacion', updateDate: uDate });
-                        } else {
+                        if (key !== 'ultima_actualizacion') {
                             const marbete = { id: key, ...data[key] };
                             marbetesArray.push(marbete);
                             store.put(marbete);
@@ -236,21 +462,57 @@
                 document.getElementById('loading').innerHTML = '<span style="color:#ef4444;">Error de conexión. No se pudieron cargar los marbetes.</span>';
             }
 
-            // Normaliza texto: Protege de nulos/números y quita acentos para búsquedas exactas
-            const normalizeStr = (str) => (str == null ? '' : String(str)).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
             const searchInput = document.getElementById('search-input');
             searchInput.addEventListener('input', () => {
                 const query = normalizeStr(searchInput.value).trim();
                 const filtered = allMarbetes.filter(m => {
                     const nombre = normalizeStr(m.Nombre);
                     const folio = normalizeStr(m.Folio);
+                    const pureFolio = normalizeStr(getMarbeteGraphics(m.Folio).pureFolio);
                     const placas = normalizeStr(m.Placas);
                     const noSocio = normalizeStr(m['No de socio']);
-                    return nombre.includes(query) || folio.includes(query) || placas.includes(query) || noSocio.includes(query);
+                    return nombre.includes(query) || folio.includes(query) || pureFolio.includes(query) || placas.includes(query) || noSocio.includes(query);
                 });
-                renderMarbetes(filtered);
+                renderMarbetes(filtered, query);
             });
+
+            // --- LÓGICA DE REDIMENSIONAMIENTO DEL PANEL DERECHO ---
+            const rightPanel = document.getElementById('right-panel');
+            const rightResizer = document.getElementById('right-resizer');
+            let isResizing = false;
+
+            // Restaurar el ancho del panel desde localStorage si existe
+            const savedWidth = localStorage.getItem('marbetesRightPanelWidth');
+            if (savedWidth && rightPanel) {
+                rightPanel.style.width = savedWidth;
+            }
+
+            if (rightResizer) {
+                rightResizer.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    document.body.style.cursor = 'col-resize';
+                    rightResizer.classList.add('is-resizing');
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    let newWidth = window.innerWidth - e.clientX;
+                    if (newWidth < 300) newWidth = 300; // Ancho mínimo
+                    if (newWidth > window.innerWidth * 0.8) newWidth = window.innerWidth * 0.8; // Ancho máximo
+                    rightPanel.style.width = newWidth + 'px';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        document.body.style.cursor = '';
+                        rightResizer.classList.remove('is-resizing');
+                        // Guardar el nuevo ancho en localStorage al terminar de arrastrar
+                        localStorage.setItem('marbetesRightPanelWidth', rightPanel.style.width);
+                    }
+                });
+            }
         });
 
         function getBadgeClass(estatus) {
@@ -261,37 +523,145 @@
             return 'status-default';
         }
 
+        // Exponer función de cerrado de panel al HTML
+        window.closeRightPanel = () => { document.getElementById('right-panel').style.display = 'none'; };
+
         function parseDate(dateStr) {
-            const str = dateStr == null ? '' : String(dateStr);
-            if (!str.includes('/')) return new Date(0);
-            const parts = str.split('/');
-            return new Date(parts[2], parts[1] - 1, parts[0]);
+            const str = dateStr == null ? '' : String(dateStr).trim();
+            if (str === '') return new Date(0);
+
+            // Manejo de fecha serial de Excel (ej. 44562)
+            if (!isNaN(str) && Number(str) > 10000) {
+                const serial = Number(str);
+                const d = new Date(Math.floor(serial - 25569) * 86400 * 1000);
+                return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+            }
+
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]);
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(0);
         }
 
-        function renderMarbetes(data) {
+        // Función inteligente para calcular colores y cortes de los folios
+        function getMarbeteGraphics(folioVal) {
+            let f = (folioVal != null && folioVal !== '') ? String(folioVal).trim() : '';
+            if (f.toLowerCase() === 'sin folio' || f.toLowerCase() === 'n/a' || f.toLowerCase() === 'n/d') f = '';
+            let color = 'marbete-white';
+            
+            if (f.length >= 5) {
+                if (f.startsWith('1')) color = 'marbete-red';
+                else if (f.startsWith('2')) color = 'marbete-blue';
+            }
+            
+            let displayFolio = '--';
+            let pureFolio = '';
+            let top = '-', bottom = '-';
+            
+            if (f !== '') {
+                pureFolio = f.length >= 5 ? f.slice(-4) : f;
+                displayFolio = pureFolio.padStart(4, '0').slice(-4);
+                top = displayFolio.substring(0, 2);
+                bottom = displayFolio.substring(2, 4);
+            }
+            
+            
+            return { color, digitsCls: '', top, bottom, pureFolio };
+        }
+
+        // Helper para refrescar visualmente el grid al editar
+        function refreshGrid() {
+            const query = normalizeStr(document.getElementById('search-input').value).trim();
+            const filtered = allMarbetes.filter(m => {
+                const nombre = normalizeStr(m.Nombre);
+                const folio = normalizeStr(m.Folio);
+                const pureFolio = normalizeStr(getMarbeteGraphics(m.Folio).pureFolio);
+                const placas = normalizeStr(m.Placas);
+                const noSocio = normalizeStr(m['No de socio']);
+                return nombre.includes(query) || folio.includes(query) || pureFolio.includes(query) || placas.includes(query) || noSocio.includes(query);
+            });
+            renderMarbetes(filtered, query);
+        }
+
+        function renderMarbetes(data, exactQuery = '') {
             const container = document.getElementById('marbetes-container');
             container.innerHTML = '';
 
-            // Ordenar por fecha de asignación (más nuevo primero)
+            // Ordenar por fecha de solicitud y entrega (más nuevo primero), dando máxima prioridad al folio
             data.sort((a, b) => {
-                const dateA = parseDate(a['Fecha de asignacion']);
-                const dateB = parseDate(b['Fecha de asignacion']);
-                return dateB - dateA;
+                if (exactQuery) {
+                    const exactA = normalizeStr(a.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(a.Folio).pureFolio) === exactQuery;
+                    const exactB = normalizeStr(b.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(b.Folio).pureFolio) === exactQuery;
+                    if (exactA && !exactB) return -1;
+                    if (!exactA && exactB) return 1;
+                }
+                
+                const dateA_sol = parseDate(a['Fecha de solicitud']);
+                const dateB_sol = parseDate(b['Fecha de solicitud']);
+                
+                if (dateB_sol.getTime() !== dateA_sol.getTime()) {
+                    return dateB_sol - dateA_sol; // Orden descendente (más nuevo primero)
+                }
+                
+                const dateA_ent = parseDate(a['Fecha de asignacion']);
+                const dateB_ent = parseDate(b['Fecha de asignacion']);
+                return dateB_ent - dateA_ent; // Desempate por entrega
             });
 
-            data.forEach(m => {
+            let currentDateGroup = null;
+
+            // Limitar a los primeros 50 elementos para optimizar la interfaz
+            data.slice(0, 50).forEach(m => {
+                const solDateObj = parseDate(m['Fecha de solicitud']);
+                let solDateStr = "Sin Fecha de Solicitud";
+                if (solDateObj.getTime() > 0) {
+                    // Obtener formato agradable (ej: Lunes, 15 de enero de 2024) y capitalizar primera letra
+                    const rawDate = solDateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    solDateStr = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
+                }
+
+                // Si detecta una nueva fecha, inserta el separador antes de inyectar las tarjetas correspondientes
+                if (solDateStr !== currentDateGroup) {
+                    currentDateGroup = solDateStr;
+                    const header = document.createElement('div');
+                    header.className = 'date-group-header';
+                    header.innerText = solDateStr;
+                    container.appendChild(header);
+                }
+
                 const card = document.createElement('div');
                 card.className = 'marbete-card';
+                if (exactQuery && (normalizeStr(m.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(m.Folio).pureFolio) === exactQuery)) {
+                    card.classList.add('exact-match');
+                }
+                card.onclick = () => openDetailPanel(m);
 
                 // Limpiar nombre de caracteres extraños iniciales como guiones
                 const rawNombre = m.Nombre == null ? '' : String(m.Nombre);
                 const nombreLimpio = rawNombre.replace(/^[-.]\s*/, '').trim() || 'Sin Nombre';
 
+                // Obtener propiedades gráficas del marbete
+                const gfx = getMarbeteGraphics(m.Folio);
+
                 card.innerHTML = `
                     <div class="card-header">
-                        <div>
-                            <span class="folio-label">Folio</span>
-                            <span class="folio-val">${m.Folio !== undefined && m.Folio !== '' ? m.Folio : 'N/D'}</span>
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div class="marbete-tag mini ${gfx.color}" style="--bg-hole: #ffffff;">
+                                <div class="marbete-digits ${gfx.digitsCls}">
+                                    <span>${gfx.top}</span>
+                                    <span>${gfx.bottom}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span class="folio-label">Folio</span>
+                                ${gfx.pureFolio !== '' ? `<span class="folio-val" style="margin-left:0; font-size: 22px; line-height: 1;">${gfx.pureFolio}</span>` : `<button class="btn-asignar-folio" style="margin-top: 5px; padding: 6px 10px; font-size: 11px; background-color: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Asignar Folio</button>`}
+                            </div>
                         </div>
                         <div class="badge ${getBadgeClass(m.Estatus)}">${m.Estatus || 'SIN ESTATUS'}</div>
                     </div>
@@ -342,7 +712,407 @@
                     </div>
                 `;
 
+                const btnAsignar = card.querySelector('.btn-asignar-folio');
+                if (btnAsignar) {
+                    btnAsignar.onclick = (e) => {
+                        e.stopPropagation();
+                        openAsignarFolioDialog(m);
+                    };
+                }
+
                 container.appendChild(card);
+            });
+        }
+
+        function openAsignarFolioDialog(m) {
+            let modal = document.getElementById('asignar-folio-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'asignar-folio-modal';
+                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:flex; justify-content:center; align-items:center; backdrop-filter: blur(2px);';
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div style="background:#fff; padding:20px; border-radius:12px; width:340px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                    <h3 style="margin-top:0; color:#065f46; font-size: 16px;">Asignar Folio a ${m.Nombre ? m.Nombre.split(' ')[0] : 'Colaborador'}</h3>
+                    
+                    <div style="display:flex; gap:15px; margin-bottom: 20px; align-items: flex-start;">
+                        <div style="display: flex; flex-direction: column;">
+                            <label style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Color</label>
+                            <div style="display: flex; gap: 8px; align-items: center; height: 38px;" id="modal-color-selector">
+                                <div class="modal-color-opt" data-color="white" style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #f8fafc, #e2e8f0); border:1px solid #cbd5e1; cursor:pointer; transition:all 0.2s;"></div>
+                                <div class="modal-color-opt" data-color="red" style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #991b1b; cursor:pointer; transition:all 0.2s;"></div>
+                                <div class="modal-color-opt" data-color="blue" style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #1e40af); border:1px solid #1e40af; cursor:pointer; transition:all 0.2s;"></div>
+                            </div>
+                            <input type="hidden" id="modal-folio-color" value="red">
+                        </div>
+                        <div style="display: flex; flex-direction: column; flex: 1;">
+                            <label style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Folio (Max 4)</label>
+                            <input type="text" id="modal-folio-num" maxlength="4" placeholder="Ej. 105" style="display: block; width: 100%; min-width: 100px; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 14px; color: #334155; box-sizing: border-box; background-color: #ffffff; outline: none;">
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:flex-end; gap:10px;">
+                        <button id="modal-folio-cancel" style="padding:8px 12px; border:none; background:#e2e8f0; color:#334155; border-radius:6px; cursor:pointer; font-weight:bold; transition: background 0.2s;">Cancelar</button>
+                        <button id="modal-folio-save" style="padding:8px 12px; border:none; background:#059669; color:#fff; border-radius:6px; cursor:pointer; font-weight:bold; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">Guardar</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+            
+            setTimeout(() => {
+                const inp = document.getElementById('modal-folio-num');
+                if(inp) inp.focus();
+            }, 50);
+
+            document.getElementById('modal-folio-cancel').onclick = () => modal.style.display = 'none';
+
+            const colorInput = document.getElementById('modal-folio-color');
+            const colorOpts = modal.querySelectorAll('.modal-color-opt');
+            const updateSelection = (selectedColor) => {
+                colorOpts.forEach(opt => {
+                    if(opt.getAttribute('data-color') === selectedColor) {
+                        opt.style.boxShadow = '0 0 0 2px #fff, 0 0 0 3px #059669';
+                        opt.style.transform = 'scale(1.1)';
+                    } else {
+                        opt.style.boxShadow = 'none';
+                        opt.style.transform = 'scale(1)';
+                    }
+                });
+                colorInput.value = selectedColor;
+                
+                const inp = document.getElementById('modal-folio-num');
+                if(inp) inp.focus();
+            };
+            updateSelection('red'); // Rojo seleccionado por defecto
+            colorOpts.forEach(opt => opt.onclick = () => updateSelection(opt.getAttribute('data-color')));
+
+            document.getElementById('modal-folio-save').onclick = async () => {
+                const btn = document.getElementById('modal-folio-save');
+                const num = document.getElementById('modal-folio-num').value.trim();
+                const color = document.getElementById('modal-folio-color').value;
+
+                if (num === '') return alert('Ingresa un número de folio válido.');
+
+                btn.disabled = true;
+                btn.innerHTML = 'Guardando...';
+                btn.style.opacity = '0.7';
+
+                let realFolio = num;
+                if (color === 'red') realFolio = '1' + num.padStart(4, '0').slice(-4);
+                else if (color === 'blue') realFolio = '2' + num.padStart(4, '0').slice(-4);
+                else realFolio = num.padStart(4, '0').slice(-4);
+
+                const today = new Date();
+                const currentDateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+                try {
+                    const dbLocal = await initIndexedDB();
+                    const tx = dbLocal.transaction('marbetes', 'readwrite');
+                    const store = tx.objectStore('marbetes');
+                    m.Folio = realFolio;
+                    m.Estatus = 'Entregado';
+                    m['Fecha de asignacion'] = currentDateStr;
+                    store.put(m);
+
+                    await update(ref(db, `marbetes/${m.id}`), { 
+                        Folio: realFolio,
+                        Estatus: 'Entregado',
+                        'Fecha de asignacion': currentDateStr
+                    });
+                    await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Éxito!';
+                    btn.style.background = '#059669';
+                    btn.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                        refreshGrid();
+                    }, 1200);
+                } catch (error) {
+                    console.error("Error al asignar folio:", error);
+                    alert("Error al guardar el folio.");
+                    btn.disabled = false;
+                    btn.innerText = 'Guardar';
+                    btn.style.opacity = '1';
+                }
+            };
+        }
+
+        function openDetailPanel(m) {
+            document.getElementById('right-panel').style.display = 'flex';
+            document.getElementById('detail-title').innerText = `Marbete ${getMarbeteGraphics(m.Folio).pureFolio || 'N/D'}`;
+            const container = document.getElementById('right-panel-content');
+
+            const createInput = (label, field, val, type = 'text') => {
+                let safeVal = (val || '').toString().replace(/"/g, '&quot;');
+                
+                // Conversión al formato YYYY-MM-DD para compatibilidad estricta de selectores <input type="date">
+                if (type === 'date' && safeVal) {
+                    if (!isNaN(safeVal) && Number(safeVal) > 10000) {
+                        const serial = Number(safeVal);
+                        const d = new Date(Math.floor(serial - 25569) * 86400 * 1000);
+                        safeVal = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+                    } else if (safeVal.includes('/')) {
+                        const p = safeVal.split('/');
+                        if (p.length === 3) safeVal = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                    } else if (safeVal.includes('-')) {
+                        const p = safeVal.split('-');
+                        if (p.length === 3 && p[0].length !== 4) safeVal = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                    }
+                }
+                return `
+                    <div class="input-col">
+                        <label>${label}</label>
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <input type="${type}" class="form-select marbete-input" data-field="${field}" value="${safeVal}" style="padding-right:25px;">
+                            <div class="save-status" style="position:absolute; right:8px; display:flex; align-items:center; pointer-events:none;"></div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const createSelect = (label, field, val, options) => {
+                let optsHtml = options.map(opt => `<option value="${opt.value}" ${val === opt.value ? 'selected' : ''}>${opt.text}</option>`).join('');
+                return `
+                    <div class="input-col">
+                        <label>${label}</label>
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <select class="form-select marbete-input" data-field="${field}" style="padding-right:25px;">
+                                <option value="">Seleccione...</option>
+                                ${optsHtml}
+                            </select>
+                            <div class="save-status" style="position:absolute; right:20px; display:flex; align-items:center; pointer-events:none;"></div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Obtener propiedades gráficas del marbete
+            const gfx = getMarbeteGraphics(m.Folio);
+
+            const headerPreview = document.getElementById('header-marbete-preview');
+            if (headerPreview) {
+                headerPreview.innerHTML = `
+                    <div class="marbete-tag mini ${gfx.color}" id="detail-tag-preview" style="--bg-hole: #064e3b; margin: 0; box-shadow: inset -1px -1px 2px rgba(0,0,0,0.5), inset 1px 1px 1px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.3);">
+                        <div class="marbete-digits ${gfx.digitsCls}" id="detail-digits-preview">
+                            <span>${gfx.top}</span>
+                            <span>${gfx.bottom}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="form-group-box">
+                    <h4 class="section-title">Control Interno</h4>
+                    <div style="display:flex; gap:10px;">
+                        <div class="input-col" style="flex: 0.7;">
+                            <label>Color</label>
+                            <div class="color-picker-bg" style="position:relative; display:flex; gap:8px; align-items:center; height:34px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent; transition: all 0.2s; margin-top:2px;">
+                                <div class="detail-color-opt" data-color="white" style="width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, #f8fafc, #e2e8f0); border:1px solid #cbd5e1; cursor:pointer; transition:all 0.2s;"></div>
+                                <div class="detail-color-opt" data-color="red" style="width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #991b1b; cursor:pointer; transition:all 0.2s;"></div>
+                                <div class="detail-color-opt" data-color="blue" style="width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #1e40af); border:1px solid #1e40af; cursor:pointer; transition:all 0.2s;"></div>
+                                <input type="hidden" class="marbete-color-select" value="${gfx.color === 'marbete-red' ? 'red' : (gfx.color === 'marbete-blue' ? 'blue' : 'white')}">
+                                <div class="save-status" id="color-save-status" style="position:absolute; right:-15px; display:flex; align-items:center; pointer-events:none;"></div>
+                            </div>
+                        </div>
+                        <div class="input-col">
+                            <label>Folio (Max 4)</label>
+                            <div style="position:relative; display:flex; align-items:center;">
+                                <input type="text" class="form-select marbete-folio-input" value="${gfx.pureFolio}" maxlength="4" style="padding-right:25px;">
+                                <div class="save-status" id="folio-save-status" style="position:absolute; right:8px; display:flex; align-items:center; pointer-events:none;"></div>
+                            </div>
+                        </div>
+                        ${createSelect('Estatus', 'Estatus', m.Estatus, [
+                            {value:'Entregado', text:'Entregado'},
+                            {value:'Baja', text:'Baja'},
+                            {value:'Pendiente', text:'Pendiente'}
+                        ])}
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        ${createInput('F. Solicitud', 'Fecha de solicitud', m['Fecha de solicitud'], 'date')}
+                        ${createInput('F. Entrega', 'Fecha de asignacion', m['Fecha de asignacion'], 'date')}
+                    </div>
+                </div>
+
+                <div class="form-group-box">
+                    <h4 class="section-title">Datos del Colaborador</h4>
+                    ${createInput('Nombre Completo', 'Nombre', m.Nombre)}
+                    <div style="display:flex; gap:10px;">
+                        ${createInput('No. de Socio', 'No de socio', m['No de socio'])}
+                        ${createInput('Teléfono', 'Teléfono', m.Teléfono)}
+                    </div>
+                    ${createInput('Puesto', 'Puesto', m.Puesto)}
+                    ${createInput('Área / Departamento', 'Area', m.Area)}
+                </div>
+
+                <div class="form-group-box">
+                    <h4 class="section-title">Información del Vehículo</h4>
+                    <div style="display:flex; gap:10px;">
+                        ${createInput('Marca', 'Marca', m.Marca)}
+                        ${createInput('Modelo', 'Modelo', m.Modelo)}
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        ${createInput('Color', 'Color', m.Color)}
+                        ${createInput('Placas', 'Placas', m.Placas)}
+                    </div>
+                </div>
+            `;
+
+            // Auto-guardado para Folio Compuesto
+            const colorSel = container.querySelector('.marbete-color-select');
+            const folioInp = container.querySelector('.marbete-folio-input');
+            const colorBg = container.querySelector('.color-picker-bg');
+            const colorOptsDetail = container.querySelectorAll('.detail-color-opt');
+            
+            const updateDetailSelection = (color) => {
+                colorOptsDetail.forEach(opt => {
+                    if (opt.getAttribute('data-color') === color) {
+                        opt.style.boxShadow = '0 0 0 2px #fff, 0 0 0 3px #0ea5e9';
+                        opt.style.transform = 'scale(1.15)';
+                    } else {
+                        opt.style.boxShadow = 'none';
+                        opt.style.transform = 'scale(1)';
+                    }
+                });
+                if(colorSel.value !== color) {
+                    colorSel.value = color;
+                    colorSel.dispatchEvent(new Event('change'));
+                    colorSel.dispatchEvent(new Event('input'));
+                }
+            };
+            
+            colorOptsDetail.forEach(opt => {
+                if (opt.getAttribute('data-color') === colorSel.value) {
+                    opt.style.boxShadow = '0 0 0 2px #fff, 0 0 0 3px #0ea5e9';
+                    opt.style.transform = 'scale(1.15)';
+                }
+                opt.onclick = () => updateDetailSelection(opt.getAttribute('data-color'));
+            });
+            
+            const livePreviewFolio = () => {
+                let v = folioInp.value.trim();
+                let c = colorSel.value;
+                let realFolio = v;
+                if (v !== '') {
+                    if (c === 'red') realFolio = '1' + v.padStart(4, '0').slice(-4);
+                    else if (c === 'blue') realFolio = '2' + v.padStart(4, '0').slice(-4);
+                    else realFolio = v.padStart(4, '0').slice(-4);
+                }
+                
+                const newGfx = getMarbeteGraphics(realFolio);
+                const tagEl = document.getElementById('detail-tag-preview');
+                const digEl = document.getElementById('detail-digits-preview');
+                if (tagEl && digEl) {
+                    tagEl.className = `marbete-tag mini ${newGfx.color}`;
+                    digEl.className = `marbete-digits ${newGfx.digitsCls}`;
+                    digEl.innerHTML = `<span>${newGfx.top}</span><span>${newGfx.bottom}</span>`;
+                }
+            };
+            
+            const handleFolioChange = async () => {
+                const fStatus = container.querySelector('#folio-save-status');
+                const cStatus = container.querySelector('#color-save-status');
+                if(fStatus) fStatus.innerHTML = svgClock;
+                if(cStatus) cStatus.innerHTML = svgClock;
+                folioInp.style.backgroundColor = '#fef08a';
+                if(colorBg) { colorBg.style.backgroundColor = '#fef08a'; colorBg.style.borderColor = '#fde047'; }
+                
+                let v = folioInp.value.trim();
+                let c = colorSel.value;
+                let realFolio = v;
+                if (v !== '') {
+                    if (c === 'red') realFolio = '1' + v.padStart(4, '0').slice(-4);
+                    else if (c === 'blue') realFolio = '2' + v.padStart(4, '0').slice(-4);
+                    else realFolio = v.padStart(4, '0').slice(-4);
+                }
+                
+                try {
+                    const dbLocal = await initIndexedDB();
+                    const tx = dbLocal.transaction('marbetes', 'readwrite');
+                    const store = tx.objectStore('marbetes');
+                    m.Folio = realFolio;
+                    store.put(m);
+                    if (fStatus) fStatus.innerHTML = svgCheckGray;
+
+                    await update(ref(db, `marbetes/${m.id}`), { Folio: realFolio });
+                    await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+                    
+                    if (fStatus) fStatus.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
+                    if (cStatus) cStatus.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
+                    folioInp.style.backgroundColor = '#dcfce7';
+                    if(colorBg) { colorBg.style.backgroundColor = '#dcfce7'; colorBg.style.borderColor = '#86efac'; }
+                    refreshGrid();
+                    setTimeout(() => { folioInp.style.backgroundColor = ''; if(colorBg) { colorBg.style.backgroundColor = ''; colorBg.style.borderColor = 'transparent'; } if(fStatus) fStatus.innerHTML = ''; if(cStatus) cStatus.innerHTML = ''; }, 2500);
+                    
+                    livePreviewFolio();
+                    if (v !== '') folioInp.value = getMarbeteGraphics(realFolio).pureFolio; 
+                } catch (err) {
+                    console.error("Error guardando folio:", err);
+                    if (fStatus) fStatus.innerHTML = `<span style="color:#ef4444; font-weight:bold; font-size:14px;">!</span>`;
+                    if (cStatus) cStatus.innerHTML = `<span style="color:#ef4444; font-weight:bold; font-size:14px;">!</span>`;
+                    folioInp.style.backgroundColor = '#fee2e2';
+                    if(colorBg) { colorBg.style.backgroundColor = '#fee2e2'; colorBg.style.borderColor = '#fca5a5'; }
+                    setTimeout(() => { folioInp.style.backgroundColor = ''; if(colorBg) { colorBg.style.backgroundColor = ''; colorBg.style.borderColor = 'transparent'; } if(fStatus) fStatus.innerHTML = ''; if(cStatus) cStatus.innerHTML = ''; }, 2500);
+                }
+            };
+            
+            if(colorSel && folioInp) {
+                colorSel.addEventListener('change', handleFolioChange);
+                folioInp.addEventListener('change', handleFolioChange);
+                colorSel.addEventListener('input', livePreviewFolio);
+                folioInp.addEventListener('input', livePreviewFolio);
+            }
+
+            // --- LÓGICA DE AUTOGUARDADO (AUTO-SAVE) ---
+            const svgClock = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="#94a3b8" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+            const svgCheckGray = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            const svgCheckGreen = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+            container.querySelectorAll('.marbete-input').forEach(input => {
+                input.addEventListener('change', async (e) => {
+                    const field = input.getAttribute('data-field');
+                    let value = e.target.value;
+                    
+                    // Al guardar, revertir el formato a DD/MM/YYYY para mantener limpieza en base de datos
+                    if (input.type === 'date' && value) {
+                        const [y, mn, d] = value.split('-');
+                        if (y && mn && d) value = `${d}/${mn}/${y}`;
+                    }
+                    
+                    const statusDiv = input.parentNode.querySelector('.save-status');
+                    if (statusDiv) statusDiv.innerHTML = svgClock;
+                    input.style.backgroundColor = '#fef08a'; // Guardando
+
+                    try {
+                        // 1. Guardar en IndexedDB Local y RAM
+                        const dbLocal = await initIndexedDB();
+                        const tx = dbLocal.transaction('marbetes', 'readwrite');
+                        const store = tx.objectStore('marbetes');
+                        m[field] = value; // Actualiza ref. en memoria
+                        store.put(m);
+                        if (statusDiv) statusDiv.innerHTML = svgCheckGray;
+
+                        // 2. Guardar en Firebase
+                        await update(ref(db, `marbetes/${m.id}`), { [field]: value });
+                        await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+                        
+                        if (statusDiv) statusDiv.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
+                        input.style.backgroundColor = '#dcfce7'; // Éxito
+                        
+                        refreshGrid(); // Actualizar el grid visual
+                        
+                        setTimeout(() => { input.style.backgroundColor = ''; if(statusDiv) statusDiv.innerHTML = ''; }, 2500);
+                    } catch (err) {
+                        console.error("Error al guardar:", err);
+                        if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444; font-weight:bold; font-size:14px;">!</span>`;
+                        input.style.backgroundColor = '#fee2e2'; // Error
+                        setTimeout(() => { input.style.backgroundColor = ''; if(statusDiv) statusDiv.innerHTML = ''; }, 2500);
+                    }
+                });
             });
         }
     </script>
