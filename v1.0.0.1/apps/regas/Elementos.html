@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Elementos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f4f6f8;
+            color: #333333;
+        }
+        
+        .header-bar {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-bar h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .caseta-group-title {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 5px;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 400px));
+            gap: 20px;
+        }
+
+        /* --- TARJETA --- */
+        .element-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-left: 5px solid #cbd5e1; /* Borde por defecto */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .element-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .element-card.activo { border-left-color: #10b981; }
+        .element-card.baja { border-left-color: #ef4444; }
+
+        /* --- ENCABEZADO DE TARJETA (ESTADO) --- */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .card-header span {
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-select {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .status-select.activo {
+            background-color: #dcfce7;
+            color: #059669;
+            border-color: #059669;
+        }
+
+        .status-select.baja {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* --- CUERPO DE TARJETA --- */
+        .card-body {
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .element-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            flex-shrink: 0;
+        }
+
+        .element-data {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+        }
+
+        .data-name {
+            margin: 0 0 5px 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .data-row strong {
+            color: #1e293b;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* --- ACCIONES (BOTONES) --- */
+        .card-actions {
+            display: flex;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .btn-action:last-child {
+            border-right: none;
+        }
+
+        .btn-action:hover { background-color: #e2e8f0; }
+        .btn-wa:hover { color: #10b981; }
+        .btn-copy:hover { color: #0284c7; }
+        .btn-edit:hover { color: #8B0056; } /* Fiusha institucional */
+        
+        /* --- FILTROS --- */
+        .filter-select {
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            outline: none;
+            color: #334155;
+            background-color: #ffffff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-layout" style="display: flex; width: 100vw; height: 100vh; overflow: hidden;">
+        <!-- Panel Central: Directorio -->
+        <div class="center-panel" style="flex: 1; padding: 20px; overflow-y: auto;">
+            <div class="header-bar">
+                <h2>Directorio de Elementos</h2>
+                <select id="filter-status" class="filter-select">
+                    <option value="todos">Todos</option>
+                    <option value="activo" selected>Activos</option>
+                    <option value="baja">Bajas</option>
+                </select>
+            </div>
+
+            <div class="main-container" id="main-container">
+                <!-- Las tarjetas se insertan aquí vía JS -->
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Detalle de Perfil (Oculto por defecto) -->
+        <aside class="side-panel" id="right-panel" style="display: none; width: 400px; min-width: 350px; border-left: 1px solid #e2e8f0; background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.05); position: relative; z-index: 100;">
+            <div class="side-resizer left-edge" id="right-resizer"></div>
+            <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                        <div class="detail-text-group">
+                            <h3 id="detail-name">Detalles</h3>
+                            <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
+                <div class="detail-tabs">
+                    <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
+                    <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
+                    <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
+                </div>
+                <div id="content-perfil" class="d-content">
+                    <p style="color: #888; text-align: center; margin-top: 20px;">Información del perfil...</p>
+                </div>
+                <div id="content-turno-detail" class="d-content active">
+                    <div id="turno-details-container"></div>
+                </div>
+                <div id="content-patrones" class="d-content">
+                    <p style="color: #888; text-align: center; margin-top: 20px;">Patrones de asistencia...</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module">
+        import { 
+            downloadElementos, 
+            downloadCasetas, 
+            downloadMotivosAusentismo,
+            downloadRegas,
+            getFotoElemento, 
+            updateElementProfileLocal, 
+            updateElementProfileCloud,
+            openDetailPanel,
+            selectDetailTab
+        } from './scrpt.js';
+
+        let allElements = [];
+        let casetasGlobal = [];
+        let motivosGlobal = [];
+        let casetasMap = {};
+
+        window.closeRightPanel = function() {
+            const rightPanel = document.getElementById('right-panel');
+            if (rightPanel) rightPanel.style.display = 'none';
+        };
+        window.selectDetailTab = selectDetailTab;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('main-container');
+            const filterSelect = document.getElementById('filter-status');
+            
+            container.innerHTML = '<p style="color: #64748b; font-weight: 600;">Cargando directorio...</p>';
+
+            try {
+                const [elements, casetas, motivos] = await Promise.all([
+                    downloadElementos(), 
+                    downloadCasetas(),
+                    downloadMotivosAusentismo()
+                ]);
+                allElements = elements;
+                casetasGlobal = casetas;
+                motivosGlobal = motivos;
+                
+                // Construir mapa de Casetas para saber su index de ordenamiento
+                casetas.forEach(c => casetasMap[c.id] = c.index ?? 999);
+                
+                renderDirectorio();
+            } catch (e) {
+                console.error('Fallo cargando directorio', e);
+                container.innerHTML = '<p style="color: #ef4444; font-weight: 600;">Ocurrió un error leyendo la base de datos de elementos.</p>';
+            }
+
+            // Escuchar cambios en el filtro
+            filterSelect.addEventListener('change', renderDirectorio);
+
+            // --- LÓGICA DE REDIMENSIONAMIENTO DEL PANEL DERECHO ---
+            const rightPanel = document.getElementById('right-panel');
+            const rightResizer = document.getElementById('right-resizer');
+            let isResizing = false;
+
+            rightResizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                rightResizer.classList.add('is-resizing');
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                let newWidth = window.innerWidth - e.clientX;
+                if (newWidth < 350) newWidth = 350; // Ancho mínimo
+                if (newWidth > window.innerWidth * 0.8) newWidth = window.innerWidth * 0.8; // Ancho máximo
+                rightPanel.style.width = newWidth + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    rightResizer.classList.remove('is-resizing');
+                }
+            });
+        });
+
+        function renderDirectorio() {
+            const container = document.getElementById('main-container');
+            const statusFilter = document.getElementById('filter-status').value;
+            container.innerHTML = ''; // Limpiar contenedor principal
+
+            const groups = {};
+
+            // 1. Filtrar y Agrupar
+            for (const el of allElements) {
+                const opData = el.Operativa || {};
+                const estado = opData.Estado || 'Desconocido';
+                const isActivo = estado.toLowerCase() === 'activo';
+
+                // Aplicar Filtro de estado
+                if (statusFilter === 'activo' && !isActivo) continue;
+                if (statusFilter === 'baja' && isActivo) continue;
+
+                // Obtener caseta (Predeterminada) o mandarlo a "Sin Asignar"
+                const casetaName = opData.AccesoPredeterminado || 'Sin Caseta Asignada';
+                if (!groups[casetaName]) groups[casetaName] = [];
+                
+                groups[casetaName].push(el);
+            }
+
+            // 2. Ordenar Grupos usando el Index de la Caseta
+            const sortedCasetaNames = Object.keys(groups).sort((a, b) => {
+                const idxA = casetasMap[a] !== undefined ? casetasMap[a] : 999;
+                const idxB = casetasMap[b] !== undefined ? casetasMap[b] : 999;
+                if (idxA !== idxB) return idxA - idxB;
+                return a.localeCompare(b); // Si tienen el mismo index, ordenar alfabéticamente
+            });
+
+            if (sortedCasetaNames.length === 0) {
+                container.innerHTML = '<p style="color: #64748b; font-weight: 600;">No hay elementos que coincidan con el filtro actual.</p>';
+                return;
+            }
+
+            // 3. Renderizar Grupos en la UI
+            sortedCasetaNames.forEach(casetaName => {
+                const groupDiv = document.createElement('div');
+                
+                const title = document.createElement('h3');
+                title.className = 'caseta-group-title';
+                title.innerText = casetaName;
+                groupDiv.appendChild(title);
+
+                const cardsCont = document.createElement('div');
+                cardsCont.className = 'cards-container';
+                
+                groups[casetaName].forEach(el => {
+                    cardsCont.appendChild(createCard(el));
+                });
+
+                groupDiv.appendChild(cardsCont);
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function createCard(el) {
+            const idData = el.Identidad || {};
+            const opData = el.Operativa || {};
+            
+            const nombre = el.id;
+            const idSocio = el.ID || '--';
+            const puesto = opData.Puesto || '--';
+            const fechaAlta = opData.FechaDeIngreso || '--';
+            const estado = opData.Estado || 'Desconocido';
+            const edad = calcAge(idData['Fecha de nacimiento']);
+            const telefono = (el.Teléfono || '').replace(/\D/g, '');
+
+            const isActivo = estado.toLowerCase() === 'activo';
+            const cardClass = isActivo ? 'activo' : 'baja';
+
+            // Crear Tarjeta
+            const card = document.createElement('div');
+            card.className = `element-card ${cardClass}`;
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>Estado de fuerza</span>
+                    <select class="status-select ${cardClass}">
+                        <option value="Activo" ${isActivo ? 'selected' : ''}>Activo</option>
+                        <option value="Baja" ${!isActivo ? 'selected' : ''}>Baja</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <img class="element-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                    <div class="element-data">
+                        <h4 class="data-name" title="${nombre}">${nombre}</h4>
+                        <div class="data-row"><span>No. de socio:</span> <strong>${idSocio}</strong></div>
+                        <div class="data-row"><span>Puesto:</span> <strong>${puesto}</strong></div>
+                        <div class="data-row"><span>Fecha de alta:</span> <strong>${fechaAlta}</strong></div>
+                        <div class="data-row"><span>Edad:</span> <strong>${edad}</strong></div>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-action btn-wa" title="Enviar WhatsApp"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg> WhatsApp</button>
+                    <button class="btn-action btn-copy" title="Copiar Tarjeta"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar</button>
+                    <button class="btn-action btn-edit" title="Editar Perfil"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar</button>
+                </div>
+            `;
+
+            // Cargar imagen de forma asíncrona
+            const imgEl = card.querySelector('.element-photo');
+            getFotoElemento(idSocio).then(url => { if(url) imgEl.src = url; });
+
+            // Evento: Cambio de Activo/Baja
+            const selectEl = card.querySelector('.status-select');
+            selectEl.addEventListener('change', async (e) => {
+                const newStatus = e.target.value;
+                const _isActivo = newStatus.toLowerCase() === 'activo';
+                
+                card.className = `element-card ${_isActivo ? 'activo' : 'baja'}`;
+                selectEl.className = `status-select ${_isActivo ? 'activo' : 'baja'}`;
+                
+                // Actualizar localmente el objeto para que persista al cambiar de filtros
+                if (!el.Operativa) el.Operativa = {};
+                el.Operativa.Estado = newStatus;
+                
+                try {
+                    const ts = await updateElementProfileLocal(nombre, { 'Operativa.Estado': newStatus });
+                    await updateElementProfileCloud(nombre, { 'Operativa.Estado': newStatus }, ts);
+                } catch (err) { console.error('Error al sincronizar estado:', err); }
+            });
+
+            // Botones de acción
+            card.querySelector('.btn-wa').onclick = () => {
+                if (telefono) window.location.href = `whatsapp://send?phone=52${telefono}`;
+                else alert("No hay teléfono registrado para este elemento.");
+            };
+            
+            card.querySelector('.btn-copy').onclick = async () => {
+                const btn = card.querySelector('.btn-copy');
+                const actionsDiv = card.querySelector('.card-actions');
+                
+                // 1. Ocultar botones de acción
+                actionsDiv.style.display = 'none';
+
+                try {
+                    // 2. Generar canvas de la tarjeta
+                    const canvas = await html2canvas(card, {
+                        backgroundColor: null, // Mantiene el fondo del elemento
+                        scale: 2 // Aumenta la resolución para mejor calidad
+                    });
+
+                    // 3. Convertir canvas a Blob
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            alert('No se pudo generar la imagen.');
+                            return;
+                        }
+                        try {
+                            // 4. Usar Clipboard API para copiar la imagen
+                            await navigator.clipboard.write([
+                                new ClipboardItem({ 'image/png': blob })
+                            ]);
+
+                            // 5. Feedback al usuario
+                            btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Copiado`;
+                            btn.style.color = '#059669';
+                            setTimeout(() => {
+                                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar`;
+                                btn.style.color = '';
+                            }, 2000);
+
+                        } catch (err) {
+                            console.error('Error al copiar la imagen al portapapeles:', err);
+                            alert('Error al copiar imagen. Tu navegador podría no ser compatible.');
+                        }
+                    }, 'image/png');
+
+                } catch (err) {
+                    console.error('Error con html2canvas:', err);
+                    alert('Ocurrió un error al generar la imagen de la tarjeta.');
+                } finally {
+                    // 6. Volver a mostrar los botones de acción
+                    actionsDiv.style.display = 'flex';
+                }
+            };
+
+            card.querySelector('.btn-edit').onclick = async () => {
+                const today = new Date();
+                const anio = today.getFullYear().toString();
+                const mesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][today.getMonth()];
+                const diaStr = String(today.getDate()).padStart(2, '0') + String(today.getMonth()+1).padStart(2, '0') + anio;
+
+                try {
+                    const existingRecord = await downloadRegas(anio, mesStr, diaStr, idSocio);
+                    await openDetailPanel(idSocio, nombre, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, true, anio, mesStr, diaStr);
+                    selectDetailTab('perfil');
+                } catch (err) {
+                    console.error("Error abriendo panel de detalle:", err);
+                }
+            };
+
+            return card;
+        }
+
+        // Helper para cálculo de edad (Mismo motor que arrastra scrpt.js)
+        function calcAge(dobValue) {
+            if (!dobValue || typeof dobValue !== 'string') return '--';
+            let birthDate;
+            if (dobValue.includes('-')) {
+                const parts = dobValue.split('-');
+                birthDate = parts[0].length === 4 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(parts[2], parts[1] - 1, parts[0]);
+            } else if (dobValue.includes('/')) {
+                const parts = dobValue.split('/');
+                birthDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                birthDate = new Date(dobValue);
+            }
+
+            if (isNaN(birthDate.getTime())) return '--';
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+            
+            return age >= 0 ? age + ' años' : '--';
+        }
+    </script>
+</body>
+</html>

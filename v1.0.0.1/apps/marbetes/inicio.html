@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Marbetes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f8;
+            font-family: 'Open Sans', sans-serif;
+            color: #334155;
+            box-sizing: border-box;
+        }
+
+        .header-bar {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-bar h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        #search-input {
+            padding: 10px 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            min-width: 250px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .loading-text {
+            text-align: center;
+            color: #64748b;
+            font-weight: 600;
+            padding: 40px;
+            font-size: 16px;
+        }
+
+        .marbetes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .marbete-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-top: 4px solid #0ea5e9;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .marbete-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 12px;
+        }
+
+        .folio-label { font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .folio-val { font-size: 18px; font-weight: 800; color: #0369a1; margin-left: 5px; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-entregado { background-color: #dcfce7; color: #166534; }
+        .status-baja { background-color: #fee2e2; color: #991b1b; }
+        .status-default { background-color: #f1f5f9; color: #475569; }
+
+        .data-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+        .data-row.grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .label { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+        .value { font-size: 13px; font-weight: 600; color: #1e293b; }
+        .name-val { font-size: 15px; font-weight: 800; color: #0f172a; }
+
+        .vehicle-section {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        .vehicle-title { font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <h2>Directorio de Marbetes</h2>
+        <input type="search" id="search-input" placeholder="Buscar por Nombre, Folio, Placas...">
+    </div>
+
+    <div id="loading" class="loading-text">Cargando base de datos de marbetes...</div>
+    
+    <div class="marbetes-grid" id="marbetes-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initIndexedDB } from '../../js/script.js';
+
+        // Configuración temporal de emergencia
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWnR9qrcgpHidCXo8kjAnIAM-3Bt0pZQE",
+            authDomain: "cic-cco-os.firebaseapp.com",
+            databaseURL: "https://cic-cco-os-default-rtdb.firebaseio.com",
+            projectId: "cic-cco-os",
+            storageBucket: "cic-cco-os.firebasestorage.app",
+            messagingSenderId: "707149465913",
+            appId: "1:707149465913:web:d84ee1394b1e75473e00e8",
+            measurementId: "G-2HCMXLMQXB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let allMarbetes = [];
+
+        async function downloadMarbetes() {
+            try {
+                const updateRef = ref(db, 'marbetes/ultima_actualizacion');
+                const updateSnapshot = await get(updateRef);
+                let remoteUpdateDate = null;
+                if (updateSnapshot.exists()) {
+                    const val = updateSnapshot.val();
+                    remoteUpdateDate = (typeof val === 'object' && val !== null) ? val.updateDate : val;
+                }
+
+                const dbLocal = await initIndexedDB();
+                const localMeta = await new Promise((resolve) => {
+                    const tx = dbLocal.transaction('marbetes', 'readonly');
+                    const store = tx.objectStore('marbetes');
+                    const req = store.get('ultima_actualizacion');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => resolve(null);
+                });
+                const localUpdateDate = localMeta ? localMeta.updateDate : null;
+
+                if (remoteUpdateDate && localUpdateDate === remoteUpdateDate) {
+                    console.log("Marbetes al día. Cargando desde IndexedDB...");
+                    return new Promise((resolve, reject) => {
+                        const tx = dbLocal.transaction('marbetes', 'readonly');
+                        const store = tx.objectStore('marbetes');
+                        const req = store.getAll();
+                        req.onsuccess = () => {
+                            const marbetesArray = req.result.filter(item => item.id !== 'ultima_actualizacion');
+                            resolve(marbetesArray);
+                        };
+                        req.onerror = (e) => reject(e.target.error);
+                    });
+                }
+
+                console.log("Marbetes desactualizados. Descargando desde Firebase...");
+                const marbetesRef = ref(db, 'marbetes');
+                const snapshot = await get(marbetesRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const marbetesArray = [];
+                    const tx = dbLocal.transaction('marbetes', 'readwrite');
+                    const store = tx.objectStore('marbetes');
+                    store.clear();
+                    
+                    for (const key in data) {
+                        if (key === 'ultima_actualizacion') {
+                            const val = data[key];
+                            const uDate = (typeof val === 'object' && val !== null) ? val.updateDate : val;
+                            store.put({ id: 'ultima_actualizacion', updateDate: uDate });
+                        } else {
+                            const marbete = { id: key, ...data[key] };
+                            marbetesArray.push(marbete);
+                            store.put(marbete);
+                        }
+                    }
+                    return marbetesArray;
+                }
+                return [];
+            } catch (error) {
+                console.error('Error al descargar marbetes:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await signInAnonymously(auth);
+                allMarbetes = await downloadMarbetes();
+                document.getElementById('loading').style.display = 'none';
+                
+                if (allMarbetes.length > 0) {
+                    renderMarbetes(allMarbetes);
+                } else {
+                    document.getElementById('marbetes-container').innerHTML = '<p style="color:#64748b;">No se encontraron marbetes registrados.</p>';
+                }
+            } catch (error) {
+                console.error("Error de inicialización:", error);
+                document.getElementById('loading').innerHTML = '<span style="color:#ef4444;">Error de conexión. No se pudieron cargar los marbetes.</span>';
+            }
+
+            // Normaliza texto: Protege de nulos/números y quita acentos para búsquedas exactas
+            const normalizeStr = (str) => (str == null ? '' : String(str)).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', () => {
+                const query = normalizeStr(searchInput.value).trim();
+                const filtered = allMarbetes.filter(m => {
+                    const nombre = normalizeStr(m.Nombre);
+                    const folio = normalizeStr(m.Folio);
+                    const placas = normalizeStr(m.Placas);
+                    const noSocio = normalizeStr(m['No de socio']);
+                    return nombre.includes(query) || folio.includes(query) || placas.includes(query) || noSocio.includes(query);
+                });
+                renderMarbetes(filtered);
+            });
+        });
+
+        function getBadgeClass(estatus) {
+            if (!estatus) return 'status-default';
+            const s = String(estatus).toLowerCase();
+            if (s.includes('entregado')) return 'status-entregado';
+            if (s.includes('baja')) return 'status-baja';
+            return 'status-default';
+        }
+
+        function parseDate(dateStr) {
+            const str = dateStr == null ? '' : String(dateStr);
+            if (!str.includes('/')) return new Date(0);
+            const parts = str.split('/');
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+
+        function renderMarbetes(data) {
+            const container = document.getElementById('marbetes-container');
+            container.innerHTML = '';
+
+            // Ordenar por fecha de asignación (más nuevo primero)
+            data.sort((a, b) => {
+                const dateA = parseDate(a['Fecha de asignacion']);
+                const dateB = parseDate(b['Fecha de asignacion']);
+                return dateB - dateA;
+            });
+
+            data.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'marbete-card';
+
+                // Limpiar nombre de caracteres extraños iniciales como guiones
+                const rawNombre = m.Nombre == null ? '' : String(m.Nombre);
+                const nombreLimpio = rawNombre.replace(/^[-.]\s*/, '').trim() || 'Sin Nombre';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <span class="folio-label">Folio</span>
+                            <span class="folio-val">${m.Folio !== undefined && m.Folio !== '' ? m.Folio : 'N/D'}</span>
+                        </div>
+                        <div class="badge ${getBadgeClass(m.Estatus)}">${m.Estatus || 'SIN ESTATUS'}</div>
+                    </div>
+                    
+                    <div class="data-row">
+                        <span class="label">Colaborador</span>
+                        <span class="name-val">${nombreLimpio}</span>
+                    </div>
+
+                    <div class="data-row grid-2">
+                        <div>
+                            <span class="label">No. Socio</span>
+                            <span class="value">${m['No de socio'] || '--'}</span>
+                        </div>
+                        <div>
+                            <span class="label">Teléfono</span>
+                            <span class="value">${m['Teléfono'] || '--'}</span>
+                        </div>
+                    </div>
+
+                    <div class="data-row">
+                        <span class="label">Puesto y Área</span>
+                        <span class="value" style="font-size: 11px;">${m.Puesto || '--'} <br> <span style="color:#64748b;">${m.Area || '--'}</span></span>
+                    </div>
+
+                    <div class="vehicle-section">
+                        <div class="vehicle-title">Datos de Vehículo</div>
+                        <div class="data-row grid-2" style="margin-bottom:5px;">
+                            <div>
+                                <span class="label">Marca</span>
+                                <span class="value">${m.Marca || '--'}</span>
+                            </div>
+                            <div>
+                                <span class="label">Modelo</span>
+                                <span class="value">${m.Modelo || '--'}</span>
+                            </div>
+                        </div>
+                        <div class="data-row grid-2" style="margin-bottom:0;">
+                            <div>
+                                <span class="label">Color</span>
+                                <span class="value">${m.Color || '--'}</span>
+                            </div>
+                            <div>
+                                <span class="label">Placas</span>
+                                <span class="value">${m.Placas || '--'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Casetas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f4f6f8;
+            color: #333333;
+        }
+
+        .header-bar {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-bar h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .casetas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+
+        .caseta-container {
+            max-width: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+        }
+        
+        .caseta-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .caseta-title-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: text;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .caseta-title-wrapper:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .caseta-element {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .caseta-element:last-child { margin-bottom: 0; }
+
+        .element-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-activo { background-color: #10b981; }
+        .status-baja { background-color: #ef4444; }
+        
+        /* --- ESTILOS DEL MODAL DE PERSONALIZACIÓN --- */
+        .cust-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        .cust-group label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px; overflow-y: auto; height: 100vh; box-sizing: border-box;">
+        <div class="header-bar">
+            <h2>Administración de Casetas</h2>
+            <button class="btn-action-main" style="width: auto; padding: 10px 20px; font-size: 12px; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0284c7, #0ea5e9);" onclick="createNewCaseta()">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Añadir Caseta
+            </button>
+        </div>
+
+        <div class="casetas-grid" id="casetas-container">
+            <p style="color: #64748b; font-weight: 600;">Cargando casetas...</p>
+        </div>
+    </div>
+
+    <!-- Modal Personalización -->
+    <div id="customize-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; backdrop-filter: blur(5px);">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:450px; max-width:90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h3 id="customize-title" style="margin-top:0; color:var(--fiusha);">Personalizar Encabezado</h3>
+            
+            <div id="customize-preview" style="height:60px; border-radius:6px; margin-bottom:20px; border:1px solid #ccc; display:flex; align-items:center; padding:0 15px; font-weight:600; color:white; text-shadow:1px 1px 2px rgba(0,0,0,0.5);">Vista Previa</div>
+
+            <div class="cust-group">
+                <label>Muestras Profesionales</label>
+                <div id="preset-palettes" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 5px;"></div>
+            </div>
+            
+            <div class="cust-group">
+                <label>Paleta de 5 Colores</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="color" id="color1" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color2" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color3" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color4" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                    <input type="color" id="color5" oninput="updatePreview()" style="flex:1; height:35px; cursor:pointer; padding:0; border:none;">
+                </div>
+            </div>
+
+            <div class="cust-group">
+                <label>Estilo / Patrón de Fondo</label>
+                <select id="cust-type" onchange="updatePreview()" style="padding:8px; border-radius:4px; border:1px solid #ccc; font-family: inherit;">
+                    <option value="0">Sutil Borde Izquierdo</option>
+                    <option value="1">Degradado Diagonal Suave</option>
+                    <option value="3">Resplandor Radial Superior</option>
+                    <option value="4">Cinta Lateral (Ribbon)</option>
+                    <option value="custom_linear">Arcoíris (Usa los 5 colores)</option>
+                </select>
+            </div>
+
+            <div class="cust-group" id="angle-container">
+                <label>Dirección del Degradado: <span id="angle-val">135</span>°</label>
+                <input type="range" id="cust-angle" min="0" max="360" value="135" oninput="updatePreview()">
+            </div>
+
+            <div class="cust-group">
+                <label>Transparencia (Opacidad): <span id="op-val">100</span>%</label>
+                <input type="range" id="cust-opacity" min="0.1" max="1" step="0.05" oninput="updatePreview()">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+                <button onclick="closeCustomizeModal()" style="padding:10px 15px; border:none; border-radius:4px; cursor:pointer; background:#eee; color:#333; font-weight: 600;">Cancelar</button>
+                <button onclick="saveCustomizeModal()" style="padding:10px 15px; border:none; border-radius:4px; background:var(--fiusha); color:white; cursor:pointer; font-weight:600;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { downloadCasetas, downloadElementos } from './scrpt.js';
+        import { applyHeaderStyles, openCustomizeModal, closeCustomizeModal, saveCustomizeModal, updatePreview, renderPalettes, applyPalette, initIndexedDB, syncCloudUpdate } from '../../js/script.js';
+
+        let casetasGlobal = [];
+        let elementosGlobal = [];
+
+        // Exponer funciones globales para el UI HTML
+        window.updatePreview = updatePreview;
+        window.closeCustomizeModal = closeCustomizeModal;
+        window.saveCustomizeModal = saveCustomizeModal;
+        window.applyPalette = applyPalette;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            renderPalettes();
+            await loadData();
+        });
+
+        async function loadData() {
+            try {
+                // 1. Ejecutar descargadores para asegurar la integridad (Sincronizar Firebase -> IndexedDB)
+                await Promise.all([downloadCasetas(), downloadElementos()]);
+                
+                // 2. Extraer los datos actualizados directamente de IndexedDB
+                const dbLocal = await initIndexedDB();
+                
+                // Cargar casetas locales
+                casetasGlobal = await new Promise((resolve) => {
+                    const req = dbLocal.transaction('casetas', 'readonly').objectStore('casetas').getAll();
+                    req.onsuccess = () => resolve(req.result.filter(c => c.id !== 'ultima_actualizacion'));
+                });
+                
+                // Cargar elementos locales
+                elementosGlobal = await new Promise((resolve) => {
+                    const req = dbLocal.transaction('elementos', 'readonly').objectStore('elementos').getAll();
+                    req.onsuccess = () => resolve(req.result.filter(e => e.id !== 'ultima_actualizacion'));
+                });
+
+                renderCasetas();
+            } catch (err) {
+                console.error("Error cargando datos:", err);
+                document.getElementById('casetas-container').innerHTML = '<p style="color: #ef4444; font-weight: 600;">Error al cargar la información.</p>';
+            }
+        }
+
+        function renderCasetas() {
+            const container = document.getElementById('casetas-container');
+            container.innerHTML = '';
+
+            // Respetar el índice de ordenamiento (con fallback a 999)
+            casetasGlobal.sort((a, b) => (a.index ?? 999) - (b.index ?? 999));
+
+            casetasGlobal.forEach((caseta, idx) => {
+                const card = document.createElement('div');
+                card.className = 'caseta-container draggable-row';
+                card.draggable = true;
+                card.dataset.id = caseta.id;
+                card.dataset.index = caseta.index ?? idx;
+
+                // --- ENCABEZADO ---
+                const header = document.createElement('div');
+                header.className = 'caseta-header';
+                applyHeaderStyles(header, caseta.bgHeader);
+
+                const titleWrapper = document.createElement('div');
+                titleWrapper.className = 'caseta-title-wrapper';
+                titleWrapper.title = "Clic para renombrar caseta";
+                titleWrapper.innerHTML = `
+                    <span style="font-size: 13px; text-transform: uppercase;">${caseta.id}</span>
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                `;
+                titleWrapper.onclick = () => renameCaseta(caseta.id);
+
+                const btnCust = document.createElement('button');
+                btnCust.className = 'btn-customize';
+                btnCust.title = "Personalizar Colores";
+                btnCust.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+                btnCust.onclick = (e) => {
+                    e.stopPropagation();
+                    openCustomizeModal(caseta, { storeName: 'casetas', dbUrl: 'https://regas.firebaseio.com', dbPath: 'casetas', onSave: loadData });
+                };
+
+                header.appendChild(titleWrapper);
+                header.appendChild(btnCust);
+                card.appendChild(header);
+
+                // --- CUERPO ---
+                const body = document.createElement('div');
+                body.className = 'caseta-body';
+                body.style.display = 'flex';
+                body.style.flexDirection = 'column';
+
+                const assignedElements = elementosGlobal.filter(e => e.Operativa && e.Operativa.AccesoPredeterminado === caseta.id && (e.Operativa.Estado || '').toLowerCase() === 'activo');
+                
+                if(assignedElements.length === 0) {
+                    body.innerHTML = '<span style="color:#94a3b8; font-size:11px; font-style:italic; padding: 10px; text-align: center;">Sin elementos asignados</span>';
+                } else {
+                    assignedElements.forEach(el => {
+                        const isActivo = (el.Operativa.Estado || '').toLowerCase() === 'activo';
+                        body.innerHTML += `
+                            <div class="caseta-element">
+                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                                    <div class="element-status ${isActivo ? 'status-activo' : 'status-baja'}" title="${isActivo ? 'Activo' : 'Baja'}"></div>
+                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${el.id}</span>
+                                </div>
+                                <span style="font-size:10px; color:#94a3b8;">${el.ID || '--'}</span>
+                            </div>
+                        `;
+                    });
+                }
+                card.appendChild(body);
+
+                // --- EVENTOS DRAG AND DROP ---
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('dragenter', handleDragEnter);
+                card.addEventListener('dragleave', handleDragLeave);
+                card.addEventListener('drop', handleDrop);
+                card.addEventListener('dragend', handleDragEnd);
+
+                container.appendChild(card);
+            });
+        }
+
+        // --- LÓGICA DE DRAG & DROP ---
+        let draggedCasetaEl = null;
+
+        function handleDragStart(e) {
+            draggedCasetaEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id);
+            document.body.classList.add('is-dragging');
+            setTimeout(() => this.style.opacity = '0.4', 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (this !== draggedCasetaEl) this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDragEnter(e) { e.preventDefault(); }
+        function handleDragLeave(e) { this.classList.remove('drag-over'); }
+        function handleDragEnd(e) {
+            document.body.classList.remove('is-dragging');
+            this.style.opacity = '1';
+            document.querySelectorAll('.caseta-container').forEach(c => c.classList.remove('drag-over'));
+        }
+
+        async function handleDrop(e) {
+            e.stopPropagation();
+            document.body.classList.remove('is-dragging');
+            this.classList.remove('drag-over');
+            if (draggedCasetaEl) draggedCasetaEl.style.opacity = '1';
+
+            if (draggedCasetaEl !== this) {
+                const draggedId = draggedCasetaEl.dataset.id;
+                const targetId = this.dataset.id;
+
+                const fromIdx = casetasGlobal.findIndex(c => c.id === draggedId);
+                const toIdx = casetasGlobal.findIndex(c => c.id === targetId);
+
+                if (fromIdx > -1 && toIdx > -1) {
+                    // Mover en memoria
+                    const [movedItem] = casetasGlobal.splice(fromIdx, 1);
+                    casetasGlobal.splice(toIdx, 0, movedItem);
+                    
+                    // Actualizar nuevos índices secuenciales
+                    casetasGlobal.forEach((c, idx) => c.index = idx);
+                    renderCasetas(); // Visualización inmediata
+
+                    const ts = Date.now();
+                    const updates = {};
+                    casetasGlobal.forEach(c => updates[`casetas/${c.id}/index`] = c.index);
+                    updates[`casetas/ultima_actualizacion/updateDate`] = ts;
+
+                    try {
+                        await syncCloudUpdate("https://regas.firebaseio.com", updates);
+                        const dbLocal = await initIndexedDB();
+                        const tx = dbLocal.transaction('casetas', 'readwrite');
+                        const store = tx.objectStore('casetas');
+                        casetasGlobal.forEach(c => store.put(c));
+                        store.put({ id: 'ultima_actualizacion', updateDate: ts });
+                    } catch(err) {
+                        console.error("Error al reordenar", err);
+                        alert("No se pudo guardar el nuevo orden.");
+                    }
+                }
+            }
+            return false;
+        }
+
+        // --- RENOMBRAR CASETA ---
+        async function renameCaseta(oldId) {
+            const newId = prompt("Ingresa el nuevo nombre para la caseta:", oldId);
+            if(!newId || newId.trim() === '' || newId === oldId) return;
+
+            const newIdTrimmed = newId.trim();
+            if(casetasGlobal.find(c => c.id.toLowerCase() === newIdTrimmed.toLowerCase())) {
+                alert("Ya existe una caseta registrada con ese nombre.");
+                return;
+            }
+
+            const casetaObj = casetasGlobal.find(c => c.id === oldId);
+            const newCasetaObj = { ...casetaObj, id: newIdTrimmed };
+            const ts = Date.now();
+
+            try {
+                const updates = {};
+                // 1. Reemplazar Nodo de Caseta
+                updates[`casetas/${newIdTrimmed}`] = newCasetaObj;
+                updates[`casetas/${oldId}`] = null;
+                updates[`casetas/ultima_actualizacion/updateDate`] = ts;
+
+                // 2. Modificar la relación en todos los elementos atados a esta caseta
+                const elementsToUpdate = elementosGlobal.filter(e => e.Operativa && e.Operativa.AccesoPredeterminado === oldId);
+                elementsToUpdate.forEach(el => {
+                    updates[`elementos/${el.id}/Operativa/AccesoPredeterminado`] = newIdTrimmed;
+                    updates[`elementos/${el.id}/ultima_edicion`] = ts;
+                    updates[`elementos/${el.id}/ultima_actualizacion`] = ts;
+                });
+                updates[`elementos/ultima_actualizacion`] = ts;
+
+                await syncCloudUpdate("https://regas.firebaseio.com", updates);
+
+                // 3. Modificar Local IndexedDB
+                const dbLocal = await initIndexedDB();
+                const txC = dbLocal.transaction('casetas', 'readwrite');
+                txC.objectStore('casetas').delete(oldId);
+                txC.objectStore('casetas').put(newCasetaObj);
+                txC.objectStore('casetas').put({ id: 'ultima_actualizacion', updateDate: ts });
+
+                if (elementsToUpdate.length > 0) {
+                    const txE = dbLocal.transaction('elementos', 'readwrite');
+                    elementsToUpdate.forEach(el => {
+                        el.Operativa.AccesoPredeterminado = newIdTrimmed;
+                        el.ultima_edicion = ts;
+                        el.ultima_actualizacion = ts;
+                        txE.objectStore('elementos').put(el);
+                    });
+                    txE.objectStore('elementos').put({ id: 'ultima_actualizacion', updateDate: ts, ultima_descarga: ts });
+                }
+
+                await loadData();
+            } catch(e) {
+                console.error(e);
+                alert("Ocurrió un error al renombrar la caseta y sus elementos vinculados.");
+            }
+        }
+
+        // --- CREAR NUEVA CASETA ---
+        window.createNewCaseta = async function() {
+            const newId = prompt("Nombre de la nueva caseta:");
+            if(!newId || newId.trim() === '') return;
+            
+            const newIdTrimmed = newId.trim();
+            if(casetasGlobal.find(c => c.id.toLowerCase() === newIdTrimmed.toLowerCase())) {
+                alert("Esa caseta ya está registrada.");
+                return;
+            }
+
+            // Colocar al final de la lista
+            const newIndex = casetasGlobal.length > 0 ? Math.max(...casetasGlobal.map(c => c.index ?? 0)) + 1 : 0;
+            
+            const newCaseta = {
+                id: newIdTrimmed,
+                index: newIndex,
+                bgHeader: { preset: 0, customColors: ['#0f172a', '#1e293b', '#334155', '#64748b', '#cbd5e1'] }
+            };
+
+            const ts = Date.now();
+            const updates = {};
+            updates[`casetas/${newIdTrimmed}`] = newCaseta;
+            updates[`casetas/ultima_actualizacion/updateDate`] = ts;
+
+            try {
+                await syncCloudUpdate("https://regas.firebaseio.com", updates);
+                
+                const dbLocal = await initIndexedDB();
+                const tx = dbLocal.transaction('casetas', 'readwrite');
+                tx.objectStore('casetas').put(newCaseta);
+                tx.objectStore('casetas').put({ id: 'ultima_actualizacion', updateDate: ts });
+
+                await loadData();
+            } catch(e) {
+                console.error(e);
+                alert("Error al intentar crear la caseta.");
+            }
+        };
+    </script>
+</body>
+</html>
