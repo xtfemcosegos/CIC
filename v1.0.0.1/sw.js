@@ -1,4 +1,5 @@
-const CACHE_NAME = 'cic-os-cache-1.0.0.904';
+const APP_VERSION = '1.0.0.849';
+const CACHE_NAME = `cic-os-cache-${APP_VERSION}`;
 
 self.addEventListener('install', event => {
     // Forzamos al Service Worker a instalarse de inmediato
@@ -8,6 +9,11 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
     // Solo interceptamos peticiones GET a los archivos de nuestra propia aplicación
     // (Ignoramos peticiones a Firebase, bases de datos externas o APIs de clima)
+    // También ignoramos el propio script del Service Worker para evitar que se cachee a sí mismo.
+    if (event.request.url.includes('sw.js')) {
+        return;
+    }
+
     if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
         return;
     }
@@ -25,7 +31,13 @@ self.addEventListener('fetch', event => {
                 });
             });
         }).catch(error => {
-            console.warn("El sistema está offline y este recurso no estaba en caché:", event.request.url);
+            console.warn("El sistema está offline y este recurso no estaba en caché. Error:", error, "URL:", event.request.url);
+            // Devolvemos una respuesta de error genérica para evitar que el navegador se quede "colgado"
+            // esperando una respuesta que nunca llegará. Este es el fix para el congelamiento.
+            return new Response('Recurso no disponible offline.', {
+                status: 404,
+                headers: { 'Content-Type': 'text/plain' },
+            });
         })
     );
 });

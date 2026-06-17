@@ -392,7 +392,7 @@
                 </div>
                 <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;">
                     <div style="display: flex; flex-direction: column; gap: 10px;"><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-empty" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar casetas sin elementos</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-time" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar hora de entrada</label></div>
-                    <button id="btn-copy-report" class="btn-action-main" title="Copiar al Portapapeles" style="padding: 0; background: #10b981; margin: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 8px;"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                    <button id="btn-copy-report" class="btn-action-main" title="Copiar al Portapapeles" onclick="copyReportToClipboard()" style="padding: 0; background: #10b981; margin: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 8px;"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
                 </div>
                 <textarea id="report-content" spellcheck="false" style="flex: 1; padding: 15px; font-family: monospace; font-size: 12px; color: #333; background: #fff; border: none; outline: none; resize: none; width: 100%; box-sizing: border-box;"></textarea>
             </div>
@@ -697,6 +697,24 @@
                 });
             };
 
+            // Listeners para checkboxes del reporte
+            const chkEmpty = document.getElementById('chk-report-empty');
+            const chkTime = document.getElementById('chk-report-time');
+            if (chkEmpty) {
+                chkEmpty.addEventListener('change', () => {
+                    if (window.currentReportTabId) {
+                        postToActiveIframe({ action: 'generateReportContent', payload: { tabId: window.currentReportTabId, showEmpty: chkEmpty.checked, showTime: chkTime?.checked } });
+                    }
+                });
+            }
+            if (chkTime) {
+                chkTime.addEventListener('change', () => {
+                    if (window.currentReportTabId) {
+                        postToActiveIframe({ action: 'generateReportContent', payload: { tabId: window.currentReportTabId, showEmpty: chkEmpty?.checked, showTime: chkTime.checked } });
+                    }
+                });
+            }
+
             // Escuchar mensajes de los iframes para abrir/cerrar el panel
             window.addEventListener('message', async (event) => {
                 if (event.data && event.data.action) {
@@ -783,7 +801,11 @@
                             document.getElementById('right-panel-add').style.display = 'none';
                             document.getElementById('right-panel-swap').style.display = 'none';
                             document.getElementById('right-panel-report').style.display = 'flex';
-                            postToActiveIframe({ action: 'generateReportContent', payload: { tabId: payload.tabId } });
+                            
+                            window.currentReportTabId = payload.tabId;
+                            const showEmpty = document.getElementById('chk-report-empty')?.checked;
+                            const showTime = document.getElementById('chk-report-time')?.checked;
+                            postToActiveIframe({ action: 'generateReportContent', payload: { tabId: payload.tabId, showEmpty, showTime } });
                             
                             let stateReport = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
                             stateReport.isOpen = true;
@@ -796,6 +818,16 @@
                             break;
                         case 'selectDetailTab':
                             window.selectDetailTab(payload.tab);
+                            break;
+                        case 'setReportContent':
+                            const reportContentEl = document.getElementById('report-content');
+                            const reportDateEl = document.getElementById('report-date-subtitle');
+                            if (reportContentEl && payload.text !== undefined) {
+                                reportContentEl.value = payload.text;
+                            }
+                            if (reportDateEl && payload.date) {
+                                reportDateEl.innerText = payload.date;
+                            }
                             break;
                     }
                 }

@@ -2,6 +2,9 @@ import { app } from './firebase.js';
 import { getDatabase, ref, get, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
+// Calcular URL de sw.js dinámicamente sin importar dónde se llame este script
+const SW_URL = new URL('../sw.js', import.meta.url).href;
+
 // Función global para cambiar entre pantallas
 export function switchFrame(frameId, isHistoryNavigation = false) {
     if (frameId === 'iframe-home') {
@@ -53,6 +56,29 @@ export function goForward() {
         pointer++;
         localStorage.setItem('historyPointer', pointer);
         switchFrame(history[pointer], true);
+    }
+}
+
+// Helper para obtener la versión de la App dinámicamente desde sw.js
+async function getAppVersion() {
+    try {
+        // Forzar al navegador a saltarse todas las cachés (incluyendo las de discos y proxies)
+        const response = await fetch(SW_URL + '?t=' + Date.now(), { 
+            cache: 'reload',
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        if (!response.ok) throw new Error('Fetch fallido');
+        const text = await response.text();
+        let match = text.match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+        if (!match) match = text.match(/const\s+CACHE_NAME\s*=\s*['"]cic-os-cache-([^'"]+)['"]/); // Fallback para versiones viejas
+        if (match) {
+            localStorage.setItem('cic_app_version', match[1]);
+            return match[1];
+        }
+        throw new Error('Versión no encontrada');
+    } catch(e) {
+        const cachedVersion = localStorage.getItem('cic_app_version');
+        return cachedVersion ? cachedVersion : 'Offline';
     }
 }
 
@@ -161,6 +187,21 @@ export function renderApps(apps, containerId = 'start-menu') {
     
     sysActionsContainer.appendChild(logoutLink);
     startMenu.appendChild(sysActionsContainer);
+
+    // Etiqueta de versión de la aplicación
+    const versionLabel = document.createElement('div');
+    versionLabel.style.textAlign = 'center';
+    versionLabel.style.color = 'rgba(255, 255, 255, 0.4)';
+    versionLabel.style.fontSize = '10px';
+    versionLabel.style.marginTop = '15px';
+    versionLabel.style.paddingTop = '10px';
+    versionLabel.style.borderTop = '1px solid rgba(255, 255, 255, 0.1)';
+    versionLabel.innerText = `Cargando versión...`;
+    startMenu.appendChild(versionLabel);
+    
+    getAppVersion().then(version => {
+        versionLabel.innerText = `Versión ${version}`;
+    });
 }
 
 // Funciones de Notificaciones en IndexedDB y RTDB
@@ -672,16 +713,61 @@ export async function processFirebaseQueue() {
     localStorage.removeItem('cic_sync_lock');
 }
 
+// --- SISTEMA DE ACTUALIZACIÓN (NETWORK-FIRST MANUAL) ---
+export async function asegurarUltimaVersion() {
+    if (navigator.onLine && 'caches' in window) {
+        try {
+            // En lugar del HTML, revisamos la versión oficial dentro de sw.js
+            const response = await fetch(SW_URL + '?t=' + Date.now(), { 
+                cache: 'reload',
+                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+            });
+            if (!response.ok) return;
+            
+            const text = await response.text();
+            const match = text.match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+            const newVersion = match ? match[1] : null;
+            
+            if (newVersion) {
+                const cachedVersion = localStorage.getItem('cic_app_version');
+                
+                // Si la versión cambió, limpiamos todo y recargamos
+                if (cachedVersion && cachedVersion !== newVersion) {
+                    console.log(`¡Nueva versión detectada! (${cachedVersion} -> ${newVersion}). Limpiando caché y recargando...`);
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    localStorage.setItem('cic_app_version', newVersion);
+                    
+                    // Exigimos al Service Worker actualizarse estructuralmente antes de recargar
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.update();
+                    }
+                    
+                    window.location.reload(true);
+                } else if (!cachedVersion) {
+                    localStorage.setItem('cic_app_version', newVersion);
+                }
+            }
+        } catch (e) {
+            console.log("Modo offline activo o error de red. Cargando versión en caché.");
+        }
+    }
+}
+
 // --- REGISTRO DEL SERVICE WORKER (SOPORTE OFFLINE DE PÁGINAS) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Calculamos la ruta dinámica a la raíz de la versión (v1.0.0.1)
-        const pathParts = window.location.pathname.split('/');
-        const vIndex = pathParts.findIndex(p => p === 'v1.0.0.1');
-        const swPath = vIndex >= 0 ? pathParts.slice(0, vIndex + 1).join('/') + '/sw.js' : '/sw.js';
-        
-        navigator.serviceWorker.register(swPath).then(registration => {
+        // Verificar si hay una nueva versión disponible antes de usar la caché
+        asegurarUltimaVersion();
+
+        navigator.serviceWorker.register(SW_URL).then(registration => {
             console.log('Soporte Offline Activado. Scope:', registration.scope);
+            
+            // Forzar al Service Worker a buscar actualizaciones estructurales si hay conexión
+            if (navigator.onLine) {
+                registration.update();
+            }
         }).catch(err => {
             console.warn('Fallo el registro del Soporte Offline:', err);
         });

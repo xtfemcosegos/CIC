@@ -225,7 +225,7 @@
                         if (payload && payload.tabId) {
                             currentReportTab = payload.tabId;
                         }
-                        window.generateReportContent();
+                        window.generateReportContent(payload?.showEmpty, payload?.showTime);
                     }
                     break;
                 case 'panelClosed':
@@ -1660,21 +1660,19 @@
         window.openReportPanel = function(tabId, save = true) {
             currentReportTab = tabId;
             window.parent.postMessage({ action: 'openReportPanel', payload: { tabId } }, '*');
-            
-            generateReportContent();
         };
 
-        window.generateReportContent = function() {
+        let currentShowEmpty = false;
+        let currentShowTime = false;
+
+        window.generateReportContent = function(showEmpty = currentShowEmpty, showTime = currentShowTime) {
+            currentShowEmpty = showEmpty;
+            currentShowTime = showTime;
+
             if (!currentReportTab) return;
-            const reportPanel = document.getElementById('right-panel-report');
-            if (reportPanel && reportPanel.style.display === 'none') return; // No generar si no está visible
-            
-            const showEmpty = document.getElementById('chk-report-empty').checked;
-            const showTime = document.getElementById('chk-report-time').checked;
             
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const dateStr = selectedDate.toLocaleDateString('es-ES', options);
-            document.getElementById('report-date-subtitle').innerText = dateStr;
             
             let reportText = `*DISTRIBUCIÓN TURNO ${currentReportTab.toUpperCase()}*\n`;
             reportText += `\`\`\`${dateStr}\`\`\`\n\n`;
@@ -1744,19 +1742,6 @@
             });
             
             window.parent.postMessage({ action: 'setReportContent', payload: { text: reportText.trim(), date: dateStr } }, '*');
-        };
-
-        window.copyReportToClipboard = function(btn) {
-            const content = document.getElementById('report-content').value;
-            navigator.clipboard.writeText(content).then(() => {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                btn.style.background = '#059669';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.style.background = '#10b981';
-                }, 2000);
-            }).catch(err => console.error('Error copiando:', err));
         };
 
         // --- CERRAR MENÚ DE ACCIONES MÓVIL AUTOMÁTICAMENTE ---
