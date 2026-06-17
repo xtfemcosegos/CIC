@@ -1852,9 +1852,9 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
 
             const isAusentismoView = activeShiftName === 'ausentismo';
             const currentMotivo = (sData.motivo || sData.Motivo || 'Falta').toLowerCase();
-            const isFaltaOSuspension = isAusentismoView && (currentMotivo === 'falta' || currentMotivo.includes('suspen'));
+            const isFaltaOSuspension = isAusentismoView && (currentMotivo.includes('falta') || currentMotivo.includes('suspen') || currentMotivo.includes('retardo'));
             
-            const hasReportField = isFaltaOSuspension || isIncActive('retardo');
+            const hasReportField = isFaltaOSuspension || (!isAusentismoView && isIncActive('retardo'));
             
             let currentReportText = sData.reporte || '';
             let typeSiniestro = 'Falta';
@@ -1863,8 +1863,8 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
             const casetaName = sData.caseta_original || sData.Caseta || 'Desconocido';
             
             if (hasReportField) {
-                if (isIncActive('retardo')) typeSiniestro = 'Retardo';
-                else if (isAusentismoView && sData.motivo && sData.motivo !== 'Falta') typeSiniestro = sData.motivo;
+                if (!isAusentismoView && isIncActive('retardo')) typeSiniestro = 'Retardo';
+                else if (isAusentismoView && sData.motivo) typeSiniestro = sData.motivo;
                 
                 if (typeSiniestro === 'Retardo') {
                     actionText = `Se aplica retardo a *${empleadoNombre}* , elemento de protección patrimonial CSCP, con número de empleado *${idElemento}* asignado en caseta ${casetaName}, quien ingresa a las ${sData.entrada_real || '--:--'} Hrs.`;
@@ -2067,7 +2067,8 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                         
                         el.style.backgroundColor = '#dcfce7'; // Guardado (Verde)
                         setTimeout(() => { el.style.backgroundColor = ''; if(statusDiv) statusDiv.innerHTML = ''; }, 2500);
-                        
+                        renderShiftForm(activeShiftName);
+
                         window.dispatchEvent(new CustomEvent('regasUpdated'));
                     } catch (err) {
                         if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444; font-weight:bold; font-size:14px;">!</span>`;
@@ -2155,14 +2156,20 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                     
                     const newVal = e.target.value;
                     const isAus = activeShiftName === 'ausentismo';
-                    if (isAus) { sData.motivo = newVal; delete sData.Caseta; } 
-                    else { sData.Caseta = newVal; delete sData.motivo; }
-                    
-                    const payload = { Caseta: isAus ? null : newVal, motivo: isAus ? newVal : null };
-                    
+                    let payload = {};
+                     
                     if (isAus) {
-                        payload.reporte = null;
-                        delete sData.reporte;
+                        sData.motivo = newVal; delete sData.Caseta;
+                        payload = { motivo: newVal, Caseta: null };
+                        
+                        const isFaltaOrSusp = newVal.toLowerCase().includes('falta') || newVal.toLowerCase().includes('suspen') || newVal.toLowerCase().includes('retardo');
+                        if (!isFaltaOrSusp) {
+                            payload.reporte = null;
+                            delete sData.reporte;
+                        }
+                    } else {
+                        sData.Caseta = newVal; delete sData.motivo;
+                        payload = { Caseta: newVal, motivo: null };
                     }
 
                     try {
@@ -2174,11 +2181,13 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                         
                         selUbi.style.backgroundColor = '#dcfce7';
                         setTimeout(() => { selUbi.style.backgroundColor = ''; if(statusDiv) statusDiv.innerHTML = ''; }, 2500);
+                        renderShiftForm(activeShiftName);
                         window.dispatchEvent(new CustomEvent('regasUpdated'));
                     } catch (err) {
                         if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444; font-weight:bold; font-size:14px;">!</span>`;
                         selUbi.style.backgroundColor = '#fee2e2';
                         setTimeout(() => { selUbi.style.backgroundColor = ''; if(statusDiv) statusDiv.innerHTML = ''; }, 2500);
+                        
                     }
                 });
             }
