@@ -290,16 +290,34 @@
 
         window.openDetailPanel = async function(...args) {
             await openDetailPanel(...args);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = true;
+            state.mode = 'detail';
+            state.elId = args[0];
+            state.elName = args[1];
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+            
             if (typeof saveInicioConfig === 'function') saveInicioConfig();
         };
         window.closeRightPanel = function() {
             closeRightPanel();
             window.intercambioData = null;
             document.body.style.cursor = '';
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = false;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+            
             if (typeof saveInicioConfig === 'function') saveInicioConfig();
         };
         window.selectDetailTab = function(tab) {
             selectDetailTab(tab);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.tab = tab;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+            
             if (typeof saveInicioConfig === 'function') saveInicioConfig();
         };
 
@@ -555,31 +573,24 @@
         window.saveInicioConfig = function() {
             const rightPanel = document.getElementById('right-panel');
             const activeTabEl = document.querySelector('.tab-content.active');
-            const detailIdEl = document.getElementById('detail-id');
-            const detailNameEl = document.getElementById('detail-name');
-            const activeDetailTabEl = document.querySelector('.d-tab.active');
-            
-            const isAdd = document.getElementById('right-panel-add') && document.getElementById('right-panel-add').style.display === 'flex';
-            const isReport = document.getElementById('right-panel-report') && document.getElementById('right-panel-report').style.display === 'flex';
             
             const config = {
                 isSplitMode: isSplitMode,
                 splitPos: document.body.style.getPropertyValue('--split-pos') || '50%',
                 activeTab: activeTabEl ? activeTabEl.id.replace('content-', '') : 'turno',
-                rightPanelOpen: rightPanel && rightPanel.style.display === 'flex',
-                rightPanelMode: isAdd ? 'add' : (isReport ? 'report' : 'detail'),
-                detailId: detailIdEl ? detailIdEl.innerText.replace('ID: ', '') : '',
-                detailName: detailNameEl ? detailNameEl.innerText : '',
-                detailTab: activeDetailTabEl ? activeDetailTabEl.id.replace('tab-', '') : 'turno',
                 leftPanelWidth: document.body.style.getPropertyValue('--left-panel-width') || '250px',
                 rightPanelWidth: document.body.style.getPropertyValue('--right-panel-width') || '33.333%',
-                reportTab: typeof currentReportTab !== 'undefined' ? currentReportTab : '',
                 isCompactView: document.body.classList.contains('vista-compacta')
             };
             localStorage.setItem('regasInicioConfig', JSON.stringify(config));
         };
 
-        window.applyInicioConfig = function() {
+        window.applyInicioConfig = async function() {
+            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
+            if (savedRightWidth) {
+                document.body.style.setProperty('--right-panel-width', savedRightWidth);
+            }
+
             const saved = localStorage.getItem('regasInicioConfig');
             if (saved) {
                 try {
@@ -600,8 +611,9 @@
                     if (config.leftPanelWidth) {
                         document.body.style.setProperty('--left-panel-width', config.leftPanelWidth);
                     }
-                    if (config.rightPanelWidth) {
+                    if (config.rightPanelWidth && !savedRightWidth) {
                         document.body.style.setProperty('--right-panel-width', config.rightPanelWidth);
+                        localStorage.setItem('regasRightPanelWidth', config.rightPanelWidth);
                     }
                     if (config.isCompactView) {
                         document.body.classList.add('vista-compacta');
@@ -758,6 +770,10 @@
                 if (rightResizer) rightResizer.classList.remove('is-resizing');
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
+
+                const currentWidth = document.body.style.getPropertyValue('--right-panel-width');
+                if (currentWidth) localStorage.setItem('regasRightPanelWidth', currentWidth);
+
                 if (typeof saveInicioConfig === 'function') saveInicioConfig();
             }
         });
@@ -792,25 +808,27 @@
         let elementosMap = {}; // Mapa para consultas instantáneas
 
         window.restoreRightPanelState = async function() {
-            const saved = localStorage.getItem('regasInicioConfig');
+            const saved = localStorage.getItem('regasPanelState');
             if (saved) {
                 try {
                     const config = JSON.parse(saved);
-                    if (config.rightPanelOpen) {
-                        if (config.rightPanelMode === 'add') {
+                    if (config.isOpen) {
+                        if (config.mode === 'add') {
                             openAddPanel(false);
-                        } else if (config.rightPanelMode === 'report') {
+                        } else if (config.mode === 'report') {
                             if (config.reportTab) openReportPanel(config.reportTab, false);
-                        } else if (config.rightPanelMode === 'detail' && config.detailId) {
+                        } else if (config.mode === 'swap') {
+                            if (window.openSwapPanel) openSwapPanel();
+                        } else if (config.mode === 'detail' && config.elId) {
                             const reqDate = selectedDate;
                             const isToday = reqDate.toDateString() === new Date().toDateString();
                             const anio = reqDate.getFullYear().toString();
                             const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
                             const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
                             
-                            const existingRecord = await downloadRegas(anio, mes, dia, config.detailId);
-                            openDetailPanel(config.detailId, config.detailName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
-                            if (config.detailTab) selectDetailTab(config.detailTab);
+                            const existingRecord = await downloadRegas(anio, mes, dia, config.elId);
+                            openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+                            if (config.tab) selectDetailTab(config.tab);
                         }
                     }
                 } catch (e) { console.error("Error restaurando panel", e); }
@@ -838,7 +856,37 @@
                 
                 buildContainers();
                 loadRegasData();
-                restoreRightPanelState(); // Recuperar panel lateral una vez cargada la BD
+                await restoreRightPanelState(); // Recuperar panel lateral una vez cargada la BD
+
+                // Si venimos de una acción externa (ej. Reportes), la ejecutamos ahora que todo está cargado
+                const pendingActionStr = localStorage.getItem('regasAction');
+                if (pendingActionStr) {
+                    localStorage.removeItem('regasAction'); // Limpiar para no re-ejecutar
+                    try {
+                        const action = JSON.parse(pendingActionStr);
+                        if (action.action === 'editRegasShift') {
+                            const record = window.currentRegasData ? window.currentRegasData[action.idElemento] : null;
+                            const isToday = selectedDate.toDateString() === new Date().toDateString();
+                            
+                            await openDetailPanel(
+                                action.idElemento, 
+                                action.empleadoNombre, 
+                                record || {}, 
+                                action.shiftName, 
+                                null, 
+                                casetasGlobal, 
+                                motivosGlobal, 
+                                isToday, 
+                                action.anio, 
+                                action.mes, 
+                                action.dia
+                            );
+                        }
+                    } catch (e) {
+                        console.error("Error ejecutando la acción pendiente:", e);
+                    }
+                }
+
             } catch (error) {
                 console.error("Error inicializando vista:", error);
                 document.getElementById('content-turno').innerHTML = '<p style="color:red; text-align:center;">Error de sincronización con la base de datos.</p>';
@@ -863,6 +911,11 @@
         
         const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
         renderElementosList(activeElementos);
+        
+        let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+        state.isOpen = true;
+        state.mode = 'add';
+        localStorage.setItem('regasPanelState', JSON.stringify(state));
         
         if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
     };
@@ -1000,6 +1053,11 @@
         
         const activeElementos = elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
         renderSwapList(activeElementos);
+        
+        let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+        state.isOpen = true;
+        state.mode = 'swap';
+        localStorage.setItem('regasPanelState', JSON.stringify(state));
     };
 
     window.renderSwapList = function(elementos) {
@@ -1723,7 +1781,19 @@
         // Iniciar motor de regas solo cuando Firebase confirme la sesión
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                initializeRegasView();
+                // Revisar si hay una acción pendiente de otro módulo (ej. Reportes)
+                // Esto se hace ANTES de inicializar para que la fecha correcta se cargue de inmediato.
+                const pendingActionStr = localStorage.getItem('regasAction');
+                if (pendingActionStr) {
+                    try {
+                        const action = JSON.parse(pendingActionStr);
+                        if (action.action === 'editRegasShift') {
+                            const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                            selectedDate = new Date(action.anio, meses.indexOf(action.mes), parseInt(action.dia.substring(0, 2)));
+                        }
+                    } catch(e) { console.error("Error al procesar acción pendiente:", e); }
+                }
+                initializeRegasView(); // Ahora se ejecutará con la fecha correcta si venía de una acción
             }
         });
 
@@ -1744,6 +1814,12 @@
             rightPanel.style.display = 'flex';
             
             generateReportContent();
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = true;
+            state.mode = 'report';
+            state.reportTab = tabId;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
             
             if (save && typeof saveInicioConfig === 'function') saveInicioConfig();
         };

@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regas - Reportes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        /* --- ENCABEZADO SUPERIOR (FILTROS HORIZONTALES) --- */
+        .top-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .title-bar {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--fiusha) 0%, #60003b 100%);
+            color: white;
+        }
+        .title-bar h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters-bar {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 15px 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 200px;
+        }
+        .input-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            color: #334155;
+            background-color: #f8fafc;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-select:focus {
+            border-color: var(--fiusha);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(139, 0, 86, 0.15);
+        }
+        .dynamic-section {
+            display: none;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+        .dynamic-section.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f1f5f9;
+            overflow: hidden;
+        }
+        .actions-bar {
+            padding: 15px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-main {
+            background: var(--fiusha);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(139, 0, 86, 0.2);
+            white-space: nowrap;
+        }
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(139, 0, 86, 0.3);
+        }
+        .actions-bar .title {
+            margin-right: auto;
+            font-size: 15px; color: #1e293b; font-weight: 700;
+        }
+        
+        .report-output-area {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            text-align: center;
+        }
+        
+        .report-section-html {
+            width: 1000px;
+            background: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            display: inline-block;
+            text-align: left;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .app-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* --- ESTILOS INTERNOS DE LA TABLA (Para Renderizado) --- */
+        .render-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 12px;
+            color: #334155;
+        }
+        .render-table th {
+            background-color: #0f172a; /* Negro para encabezados */
+            color: #ffffff; /* Letras blancas */
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+        }
+        .render-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        .render-photo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <div class="title-bar">
+            <h2>
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Reportes Generales
+            </h2>
+        </div>
+        <div class="filters-bar">
+            <div class="input-group">
+                <label>Tipo</label>
+                <select id="report-type" class="form-select">
+                    <option value="diario">Diario</option>
+                    <option value="incidencias">Incidencias</option>
+                    <option value="futura">Distribución Futura</option>
+                </select>
+            </div>
+
+            <!-- SECCIÓN: REPORTE DIARIO -->
+            <div id="opts-diario" class="dynamic-section active">
+                <div class="input-group">
+                    <label>Variación</label>
+                    <select id="diario-variation" class="form-select">
+                        <option value="completo">Completo</option>
+                        <option value="nocturno">Turno Nocturno</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="diario-date" class="form-select">
+                </div>
+            </div>
+
+            <!-- SECCIÓN: INCIDENCIAS -->
+            <div id="opts-incidencias" class="dynamic-section">
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="incidencias-date" class="form-select">
+                </div>
+            </div>
+
+            <!-- SECCIÓN: DISTRIBUCIÓN FUTURA -->
+            <div id="opts-futura" class="dynamic-section">
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="futura-date" class="form-select">
+                </div>
+            </div>
+
+            <button id="btn-generate" class="btn-main" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Generar
+            </button>
+        </div>
+    </header>
+
+    <div class="app-body">
+        <main class="main-content">
+            <div class="actions-bar">
+                <h3 class="title" id="output-title">Vista Previa</h3>
+                <button id="btn-email" class="btn-main" style="padding: 8px 16px; font-size: 12px; background: #0ea5e9; box-shadow: none;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    Enviar
+                </button>
+                <button id="btn-copy" class="btn-main" style="padding: 8px 16px; font-size: 12px; background: #10b981; box-shadow: none;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copiar Imagen Completa
+                </button>
+            </div>
+            <div id="report-output" class="report-output-area">
+                <p style="color: #94a3b8; font-weight: 600; text-align: center; margin-top: 50px;">El reporte generado aparecerá aquí segmentado por imágenes.</p>
+            </div>
+        </main>
+
+        <!-- Panel Derecho (Oculto por defecto) -->
+        <aside class="side-panel" id="right-panel" style="width: 340px;">
+            <div class="side-resizer left-edge" id="right-resizer"></div>
+            <!-- Sub-Panel de Detalle -->
+            <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                        <div class="detail-text-group">
+                            <h3 id="detail-name">Detalles</h3>
+                            <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
+                        </div>
+                    </div>
+                    <button onclick="window.closeRightPanel()">×</button>
+                </div>
+                <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
+                <div class="detail-tabs">
+                    <div class="d-tab" onclick="window.selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
+                    <div class="d-tab active" onclick="window.selectDetailTab('turno')" id="tab-turno">Turno</div>
+                    <div class="d-tab" onclick="window.selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
+                </div>
+                <div id="content-perfil" class="d-content"></div>
+                <div id="content-turno-detail" class="d-content active"><div id="turno-details-container"></div></div>
+                <div id="content-patrones" class="d-content"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module">
+        import { downloadRegas, downloadElementos, getFotoElemento, downloadMotivosAusentismo, downloadCasetas, openDetailPanel, closeRightPanel, selectDetailTab } from './scrpt.js';
+
+        window.reportImagesDataUrls = [];
+        window.casetasGlobal = [];
+        window.motivosGlobal = [];
+        
+        window.openDetailPanel = async function(...args) {
+            await openDetailPanel(...args);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = true;
+            state.mode = 'detail';
+            state.elId = args[0];
+            state.elName = args[1];
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+        
+        window.closeRightPanel = function() {
+            closeRightPanel();
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = false;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+        
+        window.selectDetailTab = function(tab) {
+            selectDetailTab(tab);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.tab = tab;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+        
+        window.getFotoElemento = getFotoElemento;
+
+        window.restoreRightPanelState = async function() {
+            const saved = localStorage.getItem('regasPanelState');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    if (config.isOpen && config.mode === 'detail' && config.elId) {
+                        const dateVal = document.getElementById('diario-date').value;
+                        let p = dateVal.split('-');
+                        let dTarget = new Date(p[0], p[1]-1, p[2]);
+                        if (isNaN(dTarget.getTime())) dTarget = new Date();
+                        
+                        const isToday = dTarget.toDateString() === new Date().toDateString();
+                        const anio = dTarget.getFullYear().toString();
+                        const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][dTarget.getMonth()];
+                        const dia = String(dTarget.getDate()).padStart(2, '0') + String(dTarget.getMonth()+1).padStart(2, '0') + anio;
+                        
+                        const existingRecord = await downloadRegas(anio, mes, dia, config.elId);
+                        await openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, window.casetasGlobal, window.motivosGlobal, isToday, anio, mes, dia);
+                        if (config.tab) selectDetailTab(config.tab);
+                    }
+                } catch (e) { console.error("Error restaurando panel en Reportes", e); }
+            }
+        };
+
+        // Formateador Helper YYYY-MM-DD
+        const formatDateForInput = (d) => {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Crear Workspace Oculto para Renderizado (html2canvas)
+            const workspace = document.createElement('div');
+            workspace.id = 'render-workspace';
+            workspace.style.cssText = 'position: absolute; top: -9999px; left: -9999px; width: 1000px; background: #ffffff;';
+            document.body.appendChild(workspace);
+
+            // Cargar de inmediato los catálogos para que el panel se pueda abrir al iniciar
+            (async () => {
+                try {
+                    const [casetas, motivos] = await Promise.all([downloadCasetas(), downloadMotivosAusentismo()]);
+                    window.casetasGlobal = casetas;
+                    window.motivosGlobal = motivos;
+                    await window.restoreRightPanelState();
+                } catch(e) { console.error("Error pre-loading catalogs:", e); }
+            })();
+
+            const reportType = document.getElementById('report-type');
+            const sections = {
+                'diario': document.getElementById('opts-diario'),
+                'incidencias': document.getElementById('opts-incidencias'),
+                'futura': document.getElementById('opts-futura')
+            };
+
+            // Inicializar fechas por defecto
+            const today = new Date();
+            document.getElementById('diario-date').value = formatDateForInput(today);
+            document.getElementById('incidencias-date').value = formatDateForInput(today);
+            
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('futura-date').value = formatDateForInput(tomorrow);
+
+            // Lógica para alternar las secciones de configuración
+            reportType.addEventListener('change', (e) => {
+                Object.values(sections).forEach(sec => sec.classList.remove('active'));
+                if (sections[e.target.value]) {
+                    sections[e.target.value].classList.add('active');
+                }
+                document.getElementById('report-output').innerHTML = '<p style="color: #94a3b8; font-weight: 600; text-align: center; margin-top: 50px;">El reporte generado aparecerá aquí segmentado por imágenes.</p>';
+            });
+
+            // Auto-Actualizar el reporte si hacemos modificaciones en el panel derecho
+            window.addEventListener('regasUpdated', () => {
+                const type = document.getElementById('report-type').value;
+                if (type === 'diario' && document.getElementById('diario-variation').value === 'completo') {
+                    generateDiarioCompleto(document.getElementById('diario-date').value);
+                }
+            });
+
+            // Lógica de Redimensionamiento del Panel Derecho
+            const rightResizer = document.getElementById('right-resizer');
+            const rightPanel = document.getElementById('right-panel');
+            let isRightResizing = false;
+
+            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
+            if (savedRightWidth && rightPanel) {
+                rightPanel.style.width = savedRightWidth;
+            }
+
+            if (rightResizer) {
+                rightResizer.addEventListener('mousedown', (e) => {
+                    isRightResizing = true;
+                    rightResizer.classList.add('is-resizing');
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                });
+            }
+            window.addEventListener('mousemove', (e) => {
+                if (!isRightResizing) return;
+                let newWidth = window.innerWidth - e.clientX;
+                if (newWidth < 300) newWidth = 300;
+                if (newWidth > 800) newWidth = 800;
+                if (rightPanel) rightPanel.style.width = `${newWidth}px`;
+            });
+            window.addEventListener('mouseup', () => {
+                if (isRightResizing) {
+                    isRightResizing = false;
+                    if (rightResizer) rightResizer.classList.remove('is-resizing');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
+                }
+            });
+
+            // Lógica de copiado maestro de todas las imágenes generadas
+            document.getElementById('btn-copy').addEventListener('click', async (e) => {
+                const btn = e.currentTarget;
+                
+                if(!window.reportImagesDataUrls || window.reportImagesDataUrls.length === 0) return alert("No hay ningún reporte generado para copiar.");
+                
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Procesando...`;
+                
+                // Reconstruir imágenes a partir de las DataURLs generadas en segundo plano
+                const images = await Promise.all(window.reportImagesDataUrls.map(src => {
+                    return new Promise(res => {
+                        const img = new Image();
+                        img.onload = () => res(img);
+                        img.src = src;
+                    });
+                }));
+
+                let totalHeight = 0;
+                let maxWidth = 0;
+                images.forEach(img => {
+                    totalHeight += img.height;
+                    if (img.width > maxWidth) maxWidth = img.width;
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = maxWidth;
+                canvas.height = totalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                let currentY = 0;
+                images.forEach(img => {
+                    const x = (maxWidth - img.width) / 2;
+                    ctx.drawImage(img, x, currentY);
+                    currentY += img.height;
+                });
+
+                canvas.toBlob(async (blob) => {
+                    const originalHtml = btn.innerHTML;
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Copiado con éxito!`;
+                        btn.style.background = '#10b981';
+                    } catch (err) {
+                        console.error('Error copiando imagen', err);
+                        btn.innerHTML = `Error`;
+                        btn.style.background = '#ef4444';
+                    }
+                    setTimeout(() => { btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar Imagen Completa`; btn.style.background = '#10b981'; }, 3000);
+                }, 'image/png');
+            });
+
+            document.getElementById('btn-generate').addEventListener('click', async () => {
+                const type = reportType.value;
+                const output = document.getElementById('report-output');
+                
+                output.innerHTML = '<p style="color: #64748b; font-weight: 600; text-align: center; margin-top: 50px;">Consultando base de datos y dibujando reporte...</p>';
+                
+                try {
+                    if (type === 'diario' && document.getElementById('diario-variation').value === 'completo') {
+                        await generateDiarioCompleto(document.getElementById('diario-date').value);
+                    } else {
+                        output.innerHTML = `<p style="color: #ef4444; font-weight: 600; text-align: center; margin-top: 50px;">El reporte seleccionado aún está en desarrollo.</p>`;
+                    }
+                } catch (error) {
+                    output.innerHTML = `<p style="color: #ef4444; font-weight: 600; text-align: center; margin-top: 50px;">Error al generar el reporte:<br>${error.message}</p>`;
+                }
+            });
+
+            // Botón de Enviar por Correo
+            document.getElementById('btn-email').addEventListener('click', openEmailReportModal);
+        });
+
+        async function generateDiarioCompleto(dateStr) {
+            const workspace = document.getElementById('render-workspace');
+            const output = document.getElementById('report-output');
+            workspace.innerHTML = ''; // Limpiar
+            output.innerHTML = ''; // Limpiar
+            window.reportImagesDataUrls = []; // Reiniciar capturas
+
+            // 1. Preparar Fecha
+            const p = dateStr.split('-');
+            const dTarget = new Date(p[0], p[1]-1, p[2]);
+            const anio = dTarget.getFullYear().toString();
+            const mesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][dTarget.getMonth()];
+            const diaStr = String(dTarget.getDate()).padStart(2, '0') + String(dTarget.getMonth()+1).padStart(2, '0') + anio;
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dateSubtitle = dTarget.toLocaleDateString('es-MX', options);
+            dateSubtitle = dateSubtitle.charAt(0).toUpperCase() + dateSubtitle.slice(1);
+
+            // 2. Descargar Datos
+            const [records, elementos, motivos, casetas] = await Promise.all([
+                downloadRegas(anio, mesStr, diaStr),
+                downloadElementos(),
+                downloadMotivosAusentismo(),
+                downloadCasetas()
+            ]);
+            window.motivosGlobal = motivos;
+            window.casetasGlobal = casetas;
+
+            const shifts = { matutino: [], vespertino: [], nocturno: [], ausentismo: [] };
+            
+            if (records && records.registros) {
+                for (const [idElemento, data] of Object.entries(records.registros)) {
+                    const elInfo = elementos.find(e => e.ID == idElemento || e.id === idElemento) || { id: idElemento, ID: idElemento };
+                    const nombre = elInfo.id;
+                    const uid = elInfo.ID || idElemento;
+
+                    for (const shift of ['matutino', 'vespertino', 'nocturno', 'ausentismo']) {
+                        if (data[shift]) {
+                            if (shift === 'ausentismo') {
+                                const motivo = (data[shift].motivo || data[shift].Motivo || '').toLowerCase();
+                                if (motivo === 'descanso') continue;
+                            }
+                            shifts[shift].push({ idElemento, uid, nombre, data: data[shift] });
+                        }
+                    }
+                }
+            }
+
+            for (const s in shifts) {
+                shifts[s].sort((a,b) => a.nombre.localeCompare(b.nombre));
+            }
+
+            // 3. Renderizar y Capturar Encabezado Principal
+            const headerHtml = `
+                <h1 style="margin: 0 0 5px 0; color: #0f172a; font-size: 28px; font-weight: 800; text-transform: uppercase;">Reporte Diario de Asistencia</h1>
+                <h2 style="margin: 0; color: #64748b; font-size: 18px; font-weight: 600;">${dateSubtitle}</h2>
+            `;
+            
+            const outHeader = document.createElement('div');
+            outHeader.className = 'report-section-html';
+            outHeader.style.cssText = 'padding: 40px; text-align: center; border-bottom: 4px solid #8B0056;';
+            outHeader.innerHTML = headerHtml;
+            output.appendChild(outHeader);
+
+            const workHeader = document.createElement('div');
+            workHeader.style.cssText = 'padding: 30px; text-align: center; background: #ffffff; border-bottom: 4px solid #8B0056; width: 1000px; box-sizing: border-box;';
+            workHeader.innerHTML = headerHtml;
+            workspace.appendChild(workHeader);
+            const canvasHeader = await html2canvas(workHeader, { scale: 2 });
+            window.reportImagesDataUrls.push(canvasHeader.toDataURL('image/png'));
+            workspace.innerHTML = '';
+
+            // 4. Renderizar y Capturar Secciones de Turnos
+            // Actualizamos los colores de los títulos de turno
+            const shiftNames = [
+                // Colores pastel para los fondos de los encabezados de sección
+                { id: 'matutino', title: 'Turno Matutino', bgColor: '#fef08a', textColor: '#713f12' },
+                { id: 'vespertino', title: 'Turno Vespertino', bgColor: '#bfdbfe', textColor: '#1e3a8a' },
+                { id: 'nocturno', title: 'Turno Nocturno', bgColor: '#000000', textColor: '#ffffff' },
+                { id: 'ausentismo', title: 'Ausentismos', bgColor: '#f1f5f9', textColor: '#475569' }
+            ];
+
+            for (const sh of shiftNames) {
+                if (shifts[sh.id].length === 0) continue; // Saltar si está vacío
+
+                let tableHtml = `
+                    <h3 style="background-color: ${sh.bgColor}; color: ${sh.textColor}; margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid ${sh.textColor}; padding: 10px 15px;">${sh.title}</h3>
+                    <table class="render-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Graf</th>
+                                <th style="width: 80px;">ID</th>
+                                <th>Elemento</th>
+                                ${sh.id !== 'ausentismo' ? `<th style="width: 70px;">Entrada</th><th style="width: 70px;">Salida</th>` : ''}
+                                <th style="width: 120px;">Incidencia</th>
+                                <th style="width: 200px;">Comentario</th>
+                                <th data-html2canvas-ignore="true" style="width: 50px;">Editar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                for (const rec of shifts[sh.id]) {
+                    // Cargar foto real
+                    const fotoUrl = await getFotoElemento(rec.idElemento);
+                    
+                    let tags = '';
+                    const isIncActive = (v) => v === true || String(v).toLowerCase() === 'true' || String(v).toLowerCase() === 'si';
+                    if(isIncActive(rec.data.es_extra)) tags += `<span style="background: #8B0056; color: white; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 4px; display: inline-block;">EXTRA</span>`;
+                    if(isIncActive(rec.data.es_recuperacion)) tags += `<span style="background: #059669; color: white; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 4px; display: inline-block;">RECUP</span>`;
+                    if(isIncActive(rec.data.es_festivo)) tags += `<span style="background: #7e22ce; color: white; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 4px; display: inline-block;">FESTIVO</span>`;
+                    if(isIncActive(rec.data.retardo)) tags += `<span style="background: #fef08a; color: #991b1b; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #ef4444; margin-right: 4px; display: inline-block;">RETARDO</span>`;
+                    if(sh.id === 'ausentismo') {
+                        const mLabel = (rec.data.motivo || 'Falta').toUpperCase();
+                        let mBg = '#e2e8f0'; let mCol = '#334155';
+                        const motivoObj = motivos.find(m => m.id.toLowerCase() === (rec.data.motivo || 'falta').toLowerCase());
+                        if (motivoObj && motivoObj.bgHeader && motivoObj.bgHeader.customColors && motivoObj.bgHeader.customColors.length > 0) {
+                            mBg = motivoObj.bgHeader.customColors[0]; mCol = '#ffffff';
+                        }
+                        tags += `<span style="background: ${mBg}; color: ${mCol}; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block;">${mLabel}</span>`;
+                    }
+
+                    const editBtnHtml = `
+                        <td data-html2canvas-ignore="true" style="text-align: center;">
+                            <button onclick="window.editShiftFromReport('${rec.uid}', '${rec.nombre}', '${anio}', '${mesStr}', '${diaStr}', '${sh.id}')" style="background:transparent; border:none; cursor:pointer; color:#8B0056; padding:5px;" title="Editar este turno en la pantalla de Inicio">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                        </td>
+                    `;
+
+                    tableHtml += `
+                        <tr>
+                            <td style="text-align: center;"><img src="${fotoUrl}" class="render-photo"></td>
+                            <td style="text-align: center; font-weight: 600;">${rec.uid}</td>
+                            <td style="font-weight: 700;">${rec.nombre}</td>
+                            ${sh.id !== 'ausentismo' ? `
+                            <td style="text-align: center; font-weight: 600; color: #059669;">${rec.data.entrada_real || '--:--'}</td>
+                            <td style="text-align: center; font-weight: 600; color: #991b1b;">${rec.data.salida_real || '--:--'}</td>
+                            ` : ''}
+                            <td>${tags}</td>
+                            <td style="font-size: 11px; color: #64748b;">${rec.data.comentario || ''}</td>
+                            ${editBtnHtml}
+                        </tr>
+                    `;
+                }
+                
+                tableHtml += `</tbody></table>`;
+                
+                // Cargar HTML interactivo (Con Botones) a la pantalla del usuario
+                const outSec = document.createElement('div');
+                outSec.className = 'report-section-html';
+                outSec.style.cssText = 'padding: 30px;';
+                outSec.innerHTML = tableHtml;
+                output.appendChild(outSec);
+                    
+                // Cargar HTML clonado en segundo plano para sacar fotografía (Ignorando Botones)
+                const workSec = document.createElement('div');
+                workSec.style.cssText = 'padding: 30px; background: #ffffff; width: 1000px; box-sizing: border-box;';
+                workSec.innerHTML = tableHtml;
+                workspace.appendChild(workSec);
+                
+                // Ceder un respiro para que las imágenes (fotos) carguen en el DOM oculto antes del render
+                await new Promise(r => setTimeout(r, 100)); 
+                
+                const canvasSh = await html2canvas(workSec, { scale: 2, useCORS: true });
+                window.reportImagesDataUrls.push(canvasSh.toDataURL('image/png'));
+                workspace.innerHTML = '';
+            }
+            
+            workspace.innerHTML = ''; // Limpiar memoria
+        }
+
+        window.editShiftFromReport = async function(elId, elName, anio, mes, dia, shiftName) {
+            const mIndex = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].indexOf(mes);
+            const reqDate = new Date(parseInt(anio), mIndex, parseInt(dia.substring(0, 2)));
+            const isItToday = reqDate.toDateString() === new Date().toDateString();
+            
+            const existingRecord = await downloadRegas(anio, mes, dia, elId);
+            
+            await openDetailPanel(elId, elName, existingRecord || {}, shiftName, null, window.casetasGlobal, window.motivosGlobal, isItToday, anio, mes, dia);
+        }
+
+        function openEmailReportModal() {
+            if (!window.reportImagesDataUrls || window.reportImagesDataUrls.length === 0) return alert("Primero debes generar un reporte para poder enviarlo.");
+
+            let modal = document.getElementById('email-report-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'email-report-modal';
+                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:flex; justify-content:center; align-items:center; backdrop-filter: blur(2px); padding: 15px;';
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div style="background:#fff; padding:25px; border-radius:12px; width:500px; max-width:100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <h3 style="margin-top:0; color:#0ea5e9; display:flex; align-items:center; gap:8px;">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        Enviar por Correo
+                    </h3>
+                    <div class="input-group" style="margin-bottom:15px;">
+                        <label>Para:</label>
+                        <input type="text" id="email-to" class="form-select" placeholder="destinatario@correo.com">
+                    </div>
+                    <div class="input-group" style="margin-bottom:20px;">
+                        <label>CC (Opcional):</label>
+                        <input type="text" id="email-cc" class="form-select" placeholder="copia@correo.com">
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px;">
+                        <button id="btn-cancel-email" style="padding:10px 20px; border:none; border-radius:6px; cursor:pointer; background:#e2e8f0; color:#334155; font-weight: 700;">Cancelar</button>
+                        <button id="btn-confirm-email" class="btn-main" style="background:#0ea5e9; box-shadow:none; padding:10px 20px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+
+            document.getElementById('btn-cancel-email').onclick = () => modal.style.display = 'none';
+            document.getElementById('btn-confirm-email').onclick = async () => {
+                const btn = document.getElementById('btn-confirm-email');
+                const to = document.getElementById('email-to').value.trim();
+                if (!to) return alert("Debes ingresar al menos un destinatario.");
+
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Enviando...`;
+
+                let htmlBody = `<!DOCTYPE html><html><body style="font-family: sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; text-align: center;">`;
+                window.reportImagesDataUrls.forEach(src => {
+                    htmlBody += `<img src="${src}" style="width: 100%; max-width: 1000px; height: auto; display: block; margin: 0 auto 15px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">`;
+                });
+                htmlBody += `</body></html>`;
+
+                const payload = {
+                    to: to.replace(/,/g, ';'),
+                    cc: document.getElementById('email-cc').value.trim().replace(/,/g, ';'),
+                    Cuerpo: htmlBody
+                };
+
+                const apiUrl = "https://default3b2cbccb81bb44a2a19a2386bb3606.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/507bea91c30c4743b4749a474f92ad3f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PzEbbL5wNoHu-b78wQtE7JP0H-RKDb3btp2iHGbM6vU";
+
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+                    
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Enviado!`;
+                    btn.style.background = '#10b981';
+                    btn.style.opacity = '1';
+                    setTimeout(() => modal.style.display = 'none', 2000);
+                } catch (error) {
+                    console.error("Error enviando correo:", error);
+                    alert("Ocurrió un error al enviar el correo.");
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Enviar`;
+                }
+            };
+        }
+    </script>
+</body>
+</html>

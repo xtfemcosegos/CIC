@@ -283,11 +283,50 @@
         let motivosGlobal = [];
         let casetasMap = {};
 
-        window.closeRightPanel = function() {
-            const rightPanel = document.getElementById('right-panel');
-            if (rightPanel) rightPanel.style.display = 'none';
+        window.openDetailPanel = async function(...args) {
+            await openDetailPanel(...args);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = true;
+            state.mode = 'detail';
+            state.elId = args[0];
+            state.elName = args[1];
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
         };
-        window.selectDetailTab = selectDetailTab;
+        
+        window.closeRightPanel = function() {
+            closeRightPanel();
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = false;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+        
+        window.selectDetailTab = function(tab) {
+            selectDetailTab(tab);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.tab = tab;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+
+        window.restoreRightPanelState = async function() {
+            const saved = localStorage.getItem('regasPanelState');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    if (config.isOpen && config.mode === 'detail' && config.elId) {
+                        const today = new Date();
+                        const anio = today.getFullYear().toString();
+                        const mesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][today.getMonth()];
+                        const diaStr = String(today.getDate()).padStart(2, '0') + String(today.getMonth()+1).padStart(2, '0') + anio;
+                        
+                        const existingRecord = await downloadRegas(anio, mesStr, diaStr, config.elId);
+                        await openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, true, anio, mesStr, diaStr);
+                        if (config.tab) selectDetailTab(config.tab);
+                    }
+                } catch (e) { console.error("Error restaurando panel", e); }
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('main-container');
@@ -309,6 +348,8 @@
                 casetas.forEach(c => casetasMap[c.id] = c.index ?? 999);
                 
                 renderDirectorio();
+                
+                await window.restoreRightPanelState();
             } catch (e) {
                 console.error('Fallo cargando directorio', e);
                 container.innerHTML = '<p style="color: #ef4444; font-weight: 600;">Ocurrió un error leyendo la base de datos de elementos.</p>';
@@ -321,6 +362,11 @@
             const rightPanel = document.getElementById('right-panel');
             const rightResizer = document.getElementById('right-resizer');
             let isResizing = false;
+
+            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
+            if (savedRightWidth && rightPanel) {
+                rightPanel.style.width = savedRightWidth;
+            }
 
             rightResizer.addEventListener('mousedown', (e) => {
                 isResizing = true;
@@ -342,6 +388,7 @@
                     isResizing = false;
                     document.body.style.cursor = '';
                     rightResizer.classList.remove('is-resizing');
+                    if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
                 }
             });
         });

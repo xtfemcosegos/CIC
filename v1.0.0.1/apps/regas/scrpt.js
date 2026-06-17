@@ -1063,7 +1063,7 @@ function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, 
                     <input type="time" class="pat-det-prog form-select">
                 </div>
                 <div class="input-col" style="margin-bottom:12px;">
-                    <label>Comentarios / Notas</label>
+                    <label>comentario / Notas</label>
                     <textarea class="pat-det-com form-textarea" placeholder="Opcional..." style="min-height:50px; resize:none;"></textarea>
                 </div>
                 <label style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; display:block; text-transform: uppercase;">Incidencias Pre-Cargadas</label>
@@ -1135,7 +1135,7 @@ function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, 
         const prog = container.querySelector('.pat-det-prog').value;
         const com = container.querySelector('.pat-det-com').value;
         if(prog) details.entrada_programada = prog;
-        if(com) details.comentarios = com;
+        if(com) details.comentario = com;
         
         if(container.querySelector('.pat-det-ext').classList.contains('active')) details.es_extra = true;
         if(container.querySelector('.pat-det-rec').classList.contains('active')) details.es_recuperacion = true;
@@ -1242,7 +1242,7 @@ function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, 
             const d = JSON.parse(el.getAttribute('data-details') || '{}');
             container.querySelector('.pat-det-title').innerText = `(${type.toUpperCase()})`;
             container.querySelector('.pat-det-prog').value = d.entrada_programada || '';
-            container.querySelector('.pat-det-com').value = d.comentarios || '';
+            container.querySelector('.pat-det-com').value = d.comentario || '';
             
             const setBtn = (sel, val) => { const b = container.querySelector(sel); if(val) b.classList.add('active'); else b.classList.remove('active'); };
             setBtn('.pat-det-ext', d.es_extra); setBtn('.pat-det-rec', d.es_recuperacion); setBtn('.pat-det-fes', d.es_festivo);
@@ -1949,7 +1949,7 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                 
                 <div class="form-group-box compact" style="flex: 1;">
                     <div class="comments-row" style="position:relative;">
-                        <textarea class="form-textarea inp-com" placeholder="Escribe un comentario sobre este turno..." style="padding-right:25px; min-height: 70px;">${sData.comentarios || ''}</textarea>
+                        <textarea class="form-textarea inp-com" placeholder="Escribe un comentario sobre este turno..." style="padding-right:25px; min-height: 70px;">${sData.comentario || ''}</textarea>
                         <div class="save-status" style="position:absolute; right:8px; top:8px; display:flex; align-items:center; pointer-events:none;"></div>
                     </div>
                 </div>
@@ -2076,7 +2076,7 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
             bindInput('.inp-prog', 'entrada_programada');
             bindInput('.inp-ent', 'entrada_real');
             bindInput('.inp-sal', 'salida_real');
-            bindInput('.inp-com', 'comentarios');
+            bindInput('.inp-com', 'comentario');
             if (hasReportField) bindInput('.inp-rep', 'reporte');
             
             const btnCopyRep = formDiv.querySelector('.btn-copy-rep');
@@ -2120,7 +2120,7 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                         timestamp: new Date().toISOString()
                     };
 
-                    openEmailModal(emailPayload, async (folio) => {
+                    if(window.openEmailModal) window.openEmailModal(emailPayload, async (folio) => {
                         const repTextarea = formDiv.querySelector('.inp-rep');
                         let textToUpdate = repTextarea ? repTextarea.value : currentReportText;
                         

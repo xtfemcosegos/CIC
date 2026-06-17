@@ -261,13 +261,33 @@
         import { applyHeaderStyles } from '../../js/script.js';
         import './mc_script.js';
 
+        window.openDetailPanel = async function(...args) {
+            await openDetailPanel(...args);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = true;
+            state.mode = 'detail';
+            state.elId = args[0];
+            state.elName = args[1];
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
+
         window.closeRightPanel = function() {
             closeRightPanel();
             window.intercambioData = null;
             document.body.style.cursor = '';
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.isOpen = false;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
         };
-        window.selectDetailTab = selectDetailTab;
-        window.openDetailPanel = openDetailPanel;
+        window.selectDetailTab = function(tab) {
+            selectDetailTab(tab);
+            
+            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+            state.tab = tab;
+            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        };
         window.getFotoElemento = getFotoElemento;
 
         let casetasGlobal = [];
@@ -292,6 +312,28 @@
             return 'background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1;'; // Gris por defecto
         };
 
+        window.restoreRightPanelState = async function() {
+            const saved = localStorage.getItem('regasPanelState');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    if (config.isOpen) {
+                        if (config.mode === 'swap') {
+                            if (window.openSwapPanel) openSwapPanel();
+                        } else if (config.mode === 'detail' && config.elId) {
+                            const anio = startDate.getFullYear().toString();
+                            const mes = fullMeses[startDate.getMonth()];
+                            const dia = startDate.getDate().toString().padStart(2, '0') + (startDate.getMonth()+1).toString().padStart(2, '0') + anio;
+                            
+                            const existingRecord = await downloadRegas(anio, mes, dia, config.elId);
+                            await openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, false, anio, mes, dia);
+                            if (config.tab) selectDetailTab(config.tab);
+                        }
+                    }
+                } catch (e) { console.error("Error restaurando panel", e); }
+            }
+        };
+
         async function init() {
             try {
                 const [casetas, elementos, motivos] = await Promise.all([
@@ -304,6 +346,8 @@
                 motivosGlobal = motivos;
                 
                 await renderGrid();
+                
+                await window.restoreRightPanelState();
             } catch (error) {
                 console.error("Error inicializando planeación:", error);
                 document.getElementById('grid-body').innerHTML = '<tr><td colspan="100" style="padding:20px; color:red;">Error conectando a la base de datos.</td></tr>';
@@ -959,6 +1003,12 @@
         const rightResizer = document.getElementById('right-resizer');
         let isRightResizing = false;
 
+        const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
+        const rightPanelEl = document.getElementById('right-panel');
+        if (savedRightWidth && rightPanelEl) {
+            rightPanelEl.style.width = savedRightWidth;
+        }
+
         if (rightResizer) {
             rightResizer.addEventListener('mousedown', (e) => {
                 isRightResizing = true;
@@ -983,6 +1033,8 @@
                 if (rightResizer) rightResizer.style.backgroundColor = 'transparent';
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
+                const rightPanel = document.getElementById('right-panel');
+                if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
             }
         });
 
