@@ -53,6 +53,14 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            justify-content: flex-end;
+            align-items: center;
+            min-width: 300px;
+        }
         #search-input {
             padding: 10px 15px;
             border: none;
@@ -60,12 +68,42 @@
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
-            min-width: 250px;
+            min-width: 150px;
             flex: 1;
             max-width: 400px;
         }
-        #search-input:focus {
+        #search-input:focus, #filter-status:focus {
             outline: 2px solid #34d399;
+        }
+        #filter-status {
+            padding: 10px 15px;
+            border: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            color: #334155;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #toggle-view-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0 12px;
+            height: 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        #toggle-view-btn:hover {
+            background: rgba(255,255,255,0.3);
         }
 
         .loading-text {
@@ -81,6 +119,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
+            align-items: start;
         }
 
         .date-group-header {
@@ -117,10 +156,7 @@
         .card-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 12px;
+            align-items: flex-start;
         }
 
         .folio-label { font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; }
@@ -162,28 +198,42 @@
         }
         .vehicle-title { font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
 
-        .contact-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-            padding-top: 12px;
+        /* --- COMPACT MODE & HOVER EXPAND --- */
+        .card-body {
+            display: none;
+            padding-top: 15px;
+            margin-top: 15px;
             border-top: 1px solid #f1f5f9;
         }
-        .btn-contact {
+        body.full-view .card-body {
+            display: block;
+            animation: none;
+        }
+        .marbete-card:hover .card-body,
+        .marbete-card.expanded .card-body {
+            display: block;
+            animation: fadeInBody 0.3s ease;
+        }
+        @keyframes fadeInBody {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-contact-mini {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            text-decoration: none;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
             transition: all 0.2s;
+            color: white;
+            text-decoration: none;
         }
-        .btn-wa { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
-        .btn-wa:hover { background-color: #bbf7d0; }
-        .btn-teams { background-color: #e0e7ff; color: #1e3a8a; border: 1px solid #93c5fd; }
-        .btn-teams:hover { background-color: #bfdbfe; }
+        .btn-wa-mini { background-color: #25D366; box-shadow: 0 2px 4px rgba(37,211,102,0.3); }
+        .btn-wa-mini:hover { transform: scale(1.1); background-color: #1ebc59; }
+        .btn-teams-mini { background-color: #5059C9; box-shadow: 0 2px 4px rgba(80,89,201,0.3); }
+        .btn-teams-mini:hover { transform: scale(1.1); background-color: #434ba8; }
 
         /* --- ESTILOS DEL PANEL LATERAL TIPO REGAS --- */
         .side-panel {
@@ -344,7 +394,18 @@
         <div class="center-panel">
             <div class="header-bar">
                 <h2>Directorio de Marbetes</h2>
-                <input type="search" id="search-input" placeholder="Buscar por Nombre, Folio, Placas...">
+                <div class="header-controls">
+                    <input type="search" id="search-input" placeholder="Buscar por Nombre, Folio, Placas...">
+                    <select id="filter-status">
+                        <option value="Entregado" selected>Entregados</option>
+                        <option value="Pendiente">Pendientes</option>
+                        <option value="Baja">Bajas</option>
+                        <option value="Todos">Todos</option>
+                    </select>
+                    <button id="toggle-view-btn" title="Alternar Vista">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    </button>
+                </div>
             </div>
 
             <div id="loading" class="loading-text">Cargando base de datos de marbetes...</div>
@@ -368,35 +429,26 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { app } from '../../js/firebase.js';
+        import { getDatabase, ref, get, set, update, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { initIndexedDB } from '../../js/script.js';
 
-        // Configuración temporal de emergencia
-        const firebaseConfig = {
-            apiKey: "AIzaSyCWnR9qrcgpHidCXo8kjAnIAM-3Bt0pZQE",
-            authDomain: "cic-cco-os.firebaseapp.com",
-            databaseURL: "https://cic-cco-os-default-rtdb.firebaseio.com",
-            projectId: "cic-cco-os",
-            storageBucket: "cic-cco-os.firebasestorage.app",
-            messagingSenderId: "707149465913",
-            appId: "1:707149465913:web:d84ee1394b1e75473e00e8",
-            measurementId: "G-2HCMXLMQXB"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const auth = getAuth(app);
+        // Usando la configuración central y apuntando a la base de datos específica de marbetes
+        const db = getDatabase(app, "https://marbetes.firebaseio.com");
 
         let allMarbetes = [];
+        let currentFilteredData = [];
+        let currentRenderCount = 0;
+        let currentDateGroup = null;
+        let currentExactQuery = '';
+        const LOAD_STEP = 50;
 
         // Normaliza texto: Protege de nulos/números y quita acentos para búsquedas exactas
         const normalizeStr = (str) => (str == null ? '' : String(str)).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         async function downloadMarbetes() {
             try {
-                const updateRef = ref(db, 'marbetes/ultima_actualizacion');
+                const updateRef = ref(db, 'marbetes_v2/ultima_actualizacion');
                 const updateSnapshot = await get(updateRef);
                 let remoteUpdateDate = null;
                 if (updateSnapshot.exists()) {
@@ -429,7 +481,7 @@
                 }
 
                 console.log("Marbetes desactualizados. Descargando desde Firebase...");
-                const marbetesRef = ref(db, 'marbetes');
+                const marbetesRef = ref(db, 'marbetes_v2');
                 const snapshot = await get(marbetesRef);
                 
                 if (snapshot.exists()) {
@@ -444,7 +496,7 @@
                     if (!remoteUpdateDate) {
                         remoteUpdateDate = Date.now();
                         try {
-                            await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: remoteUpdateDate });
+                            await set(ref(db, 'marbetes_v2/ultima_actualizacion'), { updateDate: remoteUpdateDate });
                         } catch (e) {
                             console.warn("No se pudo escribir la fecha en Firebase por permisos:", e);
                         }
@@ -471,33 +523,49 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                await signInAnonymously(auth);
                 allMarbetes = await downloadMarbetes();
                 document.getElementById('loading').style.display = 'none';
                 
                 if (allMarbetes.length > 0) {
-                    renderMarbetes(allMarbetes);
+                    refreshGrid();
                 } else {
                     document.getElementById('marbetes-container').innerHTML = '<p style="color:#64748b;">No se encontraron marbetes registrados.</p>';
                 }
+
+                // Activar Escucha en vivo para las Nuevas Solicitudes
+                listenToSolicitudes();
             } catch (error) {
                 console.error("Error de inicialización:", error);
                 document.getElementById('loading').innerHTML = '<span style="color:#ef4444;">Error de conexión. No se pudieron cargar los marbetes.</span>';
             }
 
             const searchInput = document.getElementById('search-input');
-            searchInput.addEventListener('input', () => {
-                const query = normalizeStr(searchInput.value).trim();
-                const filtered = allMarbetes.filter(m => {
-                    const nombre = normalizeStr(m.Nombre);
-                    const folio = normalizeStr(m.Folio);
-                    const pureFolio = normalizeStr(getMarbeteGraphics(m.Folio).pureFolio);
-                    const placas = normalizeStr(m.Placas);
-                    const noSocio = normalizeStr(m['No de socio']);
-                    return nombre.includes(query) || folio.includes(query) || pureFolio.includes(query) || placas.includes(query) || noSocio.includes(query);
-                });
-                renderMarbetes(filtered, query);
+            searchInput.addEventListener('input', refreshGrid);
+            
+            const filterStatus = document.getElementById('filter-status');
+            filterStatus.addEventListener('change', refreshGrid);
+
+            const toggleViewBtn = document.getElementById('toggle-view-btn');
+            let isFullView = localStorage.getItem('marbetesFullView') === 'true';
+            
+            const updateViewIcon = () => {
+                if (isFullView) {
+                    document.body.classList.add('full-view');
+                    toggleViewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+                    toggleViewBtn.title = 'Cambiar a Vista Compacta';
+                } else {
+                    document.body.classList.remove('full-view');
+                    toggleViewBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>';
+                    toggleViewBtn.title = 'Cambiar a Vista Completa';
+                }
+            };
+            
+            toggleViewBtn.addEventListener('click', () => {
+                isFullView = !isFullView;
+                localStorage.setItem('marbetesFullView', isFullView);
+                updateViewIcon();
             });
+            updateViewIcon();
 
             // --- LÓGICA DE REDIMENSIONAMIENTO DEL PANEL DERECHO ---
             const rightPanel = document.getElementById('right-panel');
@@ -508,6 +576,18 @@
             const savedWidth = localStorage.getItem('marbetesRightPanelWidth');
             if (savedWidth && rightPanel) {
                 rightPanel.style.width = savedWidth;
+            }
+            
+            // --- LÓGICA DE SCROLL INFINITO ---
+            const centerPanel = document.querySelector('.center-panel');
+            if (centerPanel) {
+                centerPanel.addEventListener('scroll', () => {
+                    if (centerPanel.scrollTop + centerPanel.clientHeight >= centerPanel.scrollHeight - 300) {
+                        if (currentRenderCount < currentFilteredData.length) {
+                            loadMoreMarbetes();
+                        }
+                    }
+                });
             }
 
             if (rightResizer) {
@@ -537,6 +617,50 @@
                 });
             }
         });
+
+        // Receptor automático en la cola de solicitudes
+        function listenToSolicitudes() {
+            const solRef = ref(db, 'solicitudes');
+            onChildAdded(solRef, async (snapshot) => {
+                const solKey = snapshot.key;
+                const solData = snapshot.val();
+                
+                const today = new Date();
+                const currentDateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+                
+                const newMarbete = {
+                    ...solData,
+                    id: solKey,
+                    Folio: "", // Se asigna vacío para detonar la interfaz de Asignar Folio
+                    'Fecha de solicitud': currentDateStr
+                };
+                if (!newMarbete.Estatus) newMarbete.Estatus = "Pendiente";
+
+                try {
+                    // Borrar de la cola para que no se duplique con otras sesiones activas
+                    await remove(ref(db, `solicitudes/${solKey}`));
+                    
+                    // Escribir en base local
+                    const dbLocal = await initIndexedDB();
+                    const tx = dbLocal.transaction('marbetes', 'readwrite');
+                    const store = tx.objectStore('marbetes');
+                    store.put(newMarbete);
+
+                    // Escribir en base real final y actualizar fecha global
+                    await update(ref(db, `marbetes_v2/${solKey}`), newMarbete);
+                    await set(ref(db, 'marbetes_v2/ultima_actualizacion'), { updateDate: Date.now() });
+
+                    // Refrescar en memoria e inyectar en interfaz
+                    const existsIndex = allMarbetes.findIndex(m => m.id === solKey);
+                    if (existsIndex > -1) allMarbetes[existsIndex] = newMarbete;
+                    else allMarbetes.push(newMarbete);
+                    
+                    refreshGrid();
+                } catch (error) {
+                    console.error("Error procesando solicitud:", error);
+                }
+            });
+        }
 
         function getBadgeClass(estatus) {
             if (!estatus) return 'status-default';
@@ -600,67 +724,108 @@
 
         // Helper para refrescar visualmente el grid al editar
         function refreshGrid() {
-            const query = normalizeStr(document.getElementById('search-input').value).trim();
+            const searchInputEl = document.getElementById('search-input');
+            const query = normalizeStr(searchInputEl ? searchInputEl.value : '').trim();
+            const filterEl = document.getElementById('filter-status');
+            const statusFilter = filterEl ? filterEl.value.toLowerCase() : 'todos';
+            
             const filtered = allMarbetes.filter(m => {
-                const nombre = normalizeStr(m.Nombre);
-                const folio = normalizeStr(m.Folio);
-                const pureFolio = normalizeStr(getMarbeteGraphics(m.Folio).pureFolio);
-                const placas = normalizeStr(m.Placas);
-                const noSocio = normalizeStr(m['No de socio']);
-                return nombre.includes(query) || folio.includes(query) || pureFolio.includes(query) || placas.includes(query) || noSocio.includes(query);
+                // Filtro por estatus
+                const mStatus = (m.Estatus || 'pendiente').toLowerCase();
+                if (statusFilter !== 'todos' && mStatus !== statusFilter) return false;
+
+                // Filtro por texto
+                if (query !== '') {
+                    const nombre = normalizeStr(m.Nombre);
+                    const folio = normalizeStr(m.Folio);
+                    const pureFolio = normalizeStr(getMarbeteGraphics(m.Folio).pureFolio);
+                    const placas = normalizeStr(m.Placas);
+                    const noSocio = normalizeStr(m['No de socio']);
+                    return nombre.includes(query) || folio.includes(query) || pureFolio.includes(query) || placas.includes(query) || noSocio.includes(query);
+                }
+                return true;
             });
             renderMarbetes(filtered, query);
+        }
+
+        // Función auxiliar global para obtener la fecha efectiva (Entrega o en su defecto Solicitud)
+        function getEffectiveDate(m) {
+            const ent = parseDate(m['Fecha de asignación']);
+            if (ent.getTime() > 0) return ent;
+            return parseDate(m['Fecha de solicitud']);
         }
 
         function renderMarbetes(data, exactQuery = '') {
             const container = document.getElementById('marbetes-container');
             container.innerHTML = '';
+            
+            currentExactQuery = exactQuery;
+            currentFilteredData = data;
+            currentRenderCount = 0;
+            currentDateGroup = null;
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 20px;">No se encontraron resultados con los filtros actuales.</p>';
+                return;
+            }
 
-            // Ordenar por fecha de solicitud y entrega (más nuevo primero), dando máxima prioridad al folio
+            // Ordenar por fecha efectiva (más nuevo primero), dando máxima prioridad al folio
             data.sort((a, b) => {
-                if (exactQuery) {
-                    const exactA = normalizeStr(a.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(a.Folio).pureFolio) === exactQuery;
-                    const exactB = normalizeStr(b.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(b.Folio).pureFolio) === exactQuery;
+                if (currentExactQuery) {
+                    const exactA = normalizeStr(a.Folio) === currentExactQuery || normalizeStr(getMarbeteGraphics(a.Folio).pureFolio) === currentExactQuery;
+                    const exactB = normalizeStr(b.Folio) === currentExactQuery || normalizeStr(getMarbeteGraphics(b.Folio).pureFolio) === currentExactQuery;
                     if (exactA && !exactB) return -1;
                     if (!exactA && exactB) return 1;
                 }
                 
-                const dateA_sol = parseDate(a['Fecha de solicitud']);
-                const dateB_sol = parseDate(b['Fecha de solicitud']);
+                const effA = getEffectiveDate(a);
+                const effB = getEffectiveDate(b);
                 
-                if (dateB_sol.getTime() !== dateA_sol.getTime()) {
-                    return dateB_sol - dateA_sol; // Orden descendente (más nuevo primero)
+                if (effB.getTime() !== effA.getTime()) {
+                    return effB - effA; // Orden descendente (más nuevo primero)
                 }
                 
-                const dateA_ent = parseDate(a['Fecha de asignacion']);
-                const dateB_ent = parseDate(b['Fecha de asignacion']);
-                return dateB_ent - dateA_ent; // Desempate por entrega
+                // Desempate interno: Los que ya fueron entregados se muestran arriba de los pendientes
+                const statusA = (a.Estatus || '').toLowerCase() === 'entregado' ? 1 : 0;
+                const statusB = (b.Estatus || '').toLowerCase() === 'entregado' ? 1 : 0;
+                return statusB - statusA;
             });
 
-            let currentDateGroup = null;
+            loadMoreMarbetes();
+        }
 
-            // Limitar a los primeros 50 elementos para optimizar la interfaz
-            data.slice(0, 50).forEach(m => {
-                const solDateObj = parseDate(m['Fecha de solicitud']);
-                let solDateStr = "Sin Fecha de Solicitud";
-                if (solDateObj.getTime() > 0) {
+        function loadMoreMarbetes() {
+            const container = document.getElementById('marbetes-container');
+            const dataSlice = currentFilteredData.slice(currentRenderCount, currentRenderCount + LOAD_STEP);
+            if (dataSlice.length === 0) return;
+            
+            dataSlice.forEach(m => {
+                const effDateObj = getEffectiveDate(m);
+                let effDateStr = "Fecha Desconocida";
+                if (effDateObj.getTime() > 0) {
                     // Obtener formato agradable (ej: Lunes, 15 de enero de 2024) y capitalizar primera letra
-                    const rawDate = solDateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                    solDateStr = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
+                    const rawDate = effDateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    effDateStr = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
                 }
 
                 // Si detecta una nueva fecha, inserta el separador antes de inyectar las tarjetas correspondientes
-                if (solDateStr !== currentDateGroup) {
-                    currentDateGroup = solDateStr;
+                if (effDateStr !== currentDateGroup) {
+                    currentDateGroup = effDateStr;
                     const header = document.createElement('div');
                     header.className = 'date-group-header';
-                    header.innerText = solDateStr;
+                    header.innerText = effDateStr;
                     container.appendChild(header);
                 }
 
                 const card = document.createElement('div');
                 card.className = 'marbete-card';
-                if (exactQuery && (normalizeStr(m.Folio) === exactQuery || normalizeStr(getMarbeteGraphics(m.Folio).pureFolio) === exactQuery)) {
+                
+                // Si hay una búsqueda activa, expandir la tarjeta automáticamente
+                if (currentExactQuery !== '') {
+                    card.classList.add('expanded');
+                }
+                
+                if (currentExactQuery && (normalizeStr(m.Folio) === currentExactQuery || normalizeStr(getMarbeteGraphics(m.Folio).pureFolio) === currentExactQuery)) {
                     card.classList.add('exact-match');
                 }
                 card.onclick = () => openDetailPanel(m);
@@ -668,6 +833,18 @@
                 // Limpiar nombre de caracteres extraños iniciales como guiones
                 const rawNombre = m.Nombre == null ? '' : String(m.Nombre);
                 const nombreLimpio = rawNombre.replace(/^[-.]\s*/, '').trim() || 'Sin Nombre';
+                
+                // Helper para resaltar coincidencias de texto
+                const hl = (txt) => {
+                    if (!txt || !currentExactQuery) return txt || '--';
+                    const str = String(txt);
+                    const lowerStr = normalizeStr(str);
+                    const idx = lowerStr.indexOf(currentExactQuery); // currentExactQuery ya viene normalizado
+                    if (idx >= 0) {
+                        return str.substring(0, idx) + `<mark style="background-color:#fef08a; color:#92400e; padding:0 2px; border-radius:3px; font-weight:bold;">${str.substring(idx, idx + currentExactQuery.length)}</mark>` + str.substring(idx + currentExactQuery.length);
+                    }
+                    return str;
+                };
 
                 // Obtener propiedades gráficas del marbete
                 const gfx = getMarbeteGraphics(m.Folio);
@@ -676,78 +853,81 @@
                 let cleanPhone = m.Teléfono ? String(m.Teléfono).replace(/\D/g, '') : '';
                 if (cleanPhone.length >= 10) {
                     if (cleanPhone.length === 10) cleanPhone = '52' + cleanPhone;
-                    waHtml = `<a href="whatsapp://send?phone=${cleanPhone}" target="_blank" rel="noopener noreferrer" class="btn-contact btn-wa" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WhatsApp</a>`;
+                    waHtml = `<a href="whatsapp://send?phone=${cleanPhone}" target="_blank" rel="noopener noreferrer" class="btn-contact-mini btn-wa-mini" title="WhatsApp" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></a>`;
                 }
 
                 let teamsHtml = '';
                 let rawEmail = m.Correo || m.email || m.CorreoElectronico || '';
                 let cleanEmail = String(rawEmail).trim();
                 if (cleanEmail.includes('@') && !cleanEmail.toLowerCase().includes('sin informaci')) {
-                    teamsHtml = `<a href="msteams://teams.microsoft.com/l/chat/0/0?users=${cleanEmail}" target="_blank" rel="noopener noreferrer" class="btn-contact btn-teams" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Teams</a>`;
+                    teamsHtml = `<a href="msteams://teams.microsoft.com/l/chat/0/0?users=${cleanEmail}" target="_blank" rel="noopener noreferrer" class="btn-contact-mini btn-teams-mini" title="Teams" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></a>`;
                 }
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <div style="display:flex; gap:12px; align-items:center;">
-                            <div class="marbete-tag mini ${gfx.color}" style="--bg-hole: #ffffff;">
+                        <div style="display:flex; gap:12px; align-items:flex-start;">
+                            <div class="marbete-tag mini ${gfx.color}" style="--bg-hole: #ffffff; margin-top:2px;">
                                 <div class="marbete-digits ${gfx.digitsCls}">
                                     <span>${gfx.top}</span>
                                     <span>${gfx.bottom}</span>
                                 </div>
                             </div>
                             <div style="display: flex; flex-direction: column;">
-                                <span class="folio-label">Folio</span>
-                                ${gfx.pureFolio !== '' ? `<span class="folio-val" style="margin-left:0; font-size: 22px; line-height: 1;">${gfx.pureFolio}</span>` : `<button class="btn-asignar-folio" style="margin-top: 5px; padding: 6px 10px; font-size: 11px; background-color: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Asignar Folio</button>`}
+                                <span class="folio-label" style="line-height:1;">Folio</span>
+                                ${gfx.pureFolio !== '' ? `<span class="folio-val" style="margin-left:0; font-size: 22px; line-height: 1.1; margin-top:2px;">${hl(gfx.pureFolio)}</span>` : `<button class="btn-asignar-folio" style="margin-top: 4px; padding: 4px 8px; font-size: 10px; background-color: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Asignar Folio</button>`}
+                                <span class="name-val" style="font-size: 14px; margin-top: 6px; line-height: 1.2; color: #0f172a; word-break: break-word;">${hl(nombreLimpio)}</span>
                             </div>
                         </div>
-                        <div class="badge ${getBadgeClass(m.Estatus)}">${m.Estatus || 'SIN ESTATUS'}</div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                            <div class="badge ${getBadgeClass(m.Estatus)}">${m.Estatus || 'SIN ESTATUS'}</div>
+                            <div style="display: flex; gap: 6px;">
+                                ${waHtml}
+                                ${teamsHtml}
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="data-row">
-                        <span class="label">Colaborador</span>
-                        <span class="name-val">${nombreLimpio}</span>
-                    </div>
+                    <div class="card-body">
+                        <div class="data-row grid-2">
+                            <div>
+                                <span class="label">No. Socio</span>
+                                <span class="value">${hl(m['No de socio'])}</span>
+                            </div>
+                            <div>
+                                <span class="label">Teléfono</span>
+                                <span class="value">${m['Teléfono'] || '--'}</span>
+                            </div>
+                        </div>
 
-                    <div class="data-row grid-2">
-                        <div>
-                            <span class="label">No. Socio</span>
-                            <span class="value">${m['No de socio'] || '--'}</span>
+                        <div class="data-row">
+                            <span class="label">Puesto y Área</span>
+                            <span class="value" style="font-size: 11px;">${m.Puesto || '--'} <br> <span style="color:#64748b;">${m.Area || '--'}</span></span>
                         </div>
-                        <div>
-                            <span class="label">Teléfono</span>
-                            <span class="value">${m['Teléfono'] || '--'}</span>
-                        </div>
-                    </div>
 
-                    <div class="data-row">
-                        <span class="label">Puesto y Área</span>
-                        <span class="value" style="font-size: 11px;">${m.Puesto || '--'} <br> <span style="color:#64748b;">${m.Area || '--'}</span></span>
-                    </div>
-
-                    <div class="vehicle-section">
-                        <div class="vehicle-title">Datos de Vehículo</div>
-                        <div class="data-row grid-2" style="margin-bottom:5px;">
-                            <div>
-                                <span class="label">Marca</span>
-                                <span class="value">${m.Marca || '--'}</span>
+                        <div class="vehicle-section">
+                            <div class="vehicle-title">Datos de Vehículo</div>
+                            <div class="data-row grid-2" style="margin-bottom:5px;">
+                                <div>
+                                    <span class="label">Marca</span>
+                                    <span class="value">${m.Marca || '--'}</span>
+                                </div>
+                                <div>
+                                    <span class="label">Modelo</span>
+                                    <span class="value">${m.Modelo || '--'}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span class="label">Modelo</span>
-                                <span class="value">${m.Modelo || '--'}</span>
-                            </div>
-                        </div>
-                        <div class="data-row grid-2" style="margin-bottom:0;">
-                            <div>
-                                <span class="label">Color</span>
-                                <span class="value">${m.Color || '--'}</span>
-                            </div>
-                            <div>
-                                <span class="label">Placas</span>
-                                <span class="value">${m.Placas || '--'}</span>
+                            <div class="data-row grid-2" style="margin-bottom:0;">
+                                <div>
+                                    <span class="label">Color</span>
+                                    <span class="value">${m.Color || '--'}</span>
+                                </div>
+                                <div>
+                                    <span class="label">Placas</span>
+                                    <span class="value">${hl(m.Placas)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    ${(waHtml || teamsHtml) ? `<div class="contact-actions">${waHtml}${teamsHtml}</div>` : ''}
                 `;
 
                 const btnAsignar = card.querySelector('.btn-asignar-folio');
@@ -760,6 +940,8 @@
 
                 container.appendChild(card);
             });
+            
+            currentRenderCount += LOAD_STEP;
         }
 
         function openAsignarFolioDialog(m) {
@@ -851,15 +1033,15 @@
                     const store = tx.objectStore('marbetes');
                     m.Folio = realFolio;
                     m.Estatus = 'Entregado';
-                    m['Fecha de asignacion'] = currentDateStr;
+                    m['Fecha de asignación'] = currentDateStr;
                     store.put(m);
 
-                    await update(ref(db, `marbetes/${m.id}`), { 
+                    await update(ref(db, `marbetes_v2/${m.id}`), { 
                         Folio: realFolio,
                         Estatus: 'Entregado',
-                        'Fecha de asignacion': currentDateStr
+                        'Fecha de asignación': currentDateStr
                     });
-                    await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+                    await set(ref(db, 'marbetes_v2/ultima_actualizacion'), { updateDate: Date.now() });
 
                     btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Éxito!';
                     btn.style.background = '#059669';
@@ -972,7 +1154,7 @@
                     </div>
                     <div style="display:flex; gap:10px;">
                         ${createInput('F. Solicitud', 'Fecha de solicitud', m['Fecha de solicitud'], 'date')}
-                        ${createInput('F. Entrega', 'Fecha de asignacion', m['Fecha de asignacion'], 'date')}
+                        ${createInput('F. Entrega', 'Fecha de asignación', m['Fecha de asignación'], 'date')}
                     </div>
                 </div>
 
@@ -1077,8 +1259,8 @@
                     store.put(m);
                     if (fStatus) fStatus.innerHTML = svgCheckGray;
 
-                    await update(ref(db, `marbetes/${m.id}`), { Folio: realFolio });
-                    await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+                    await update(ref(db, `marbetes_v2/${m.id}`), { Folio: realFolio });
+                    await set(ref(db, 'marbetes_v2/ultima_actualizacion'), { updateDate: Date.now() });
                     
                     if (fStatus) fStatus.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
                     if (cStatus) cStatus.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
@@ -1136,8 +1318,8 @@
                         if (statusDiv) statusDiv.innerHTML = svgCheckGray;
 
                         // 2. Guardar en Firebase
-                        await update(ref(db, `marbetes/${m.id}`), { [field]: value });
-                        await set(ref(db, 'marbetes/ultima_actualizacion'), { updateDate: Date.now() });
+                        await update(ref(db, `marbetes_v2/${m.id}`), { [field]: value });
+                        await set(ref(db, 'marbetes_v2/ultima_actualizacion'), { updateDate: Date.now() });
                         
                         if (statusDiv) statusDiv.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`;
                         input.style.backgroundColor = '#dcfce7'; // Éxito
