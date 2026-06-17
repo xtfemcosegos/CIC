@@ -205,89 +205,29 @@
         </div>
     </div>
 
-    <!-- Panel Derecho (Oculto, para Perfil y Turnos) -->
-    <aside class="side-panel" id="right-panel" style="display: none; position: fixed; right: 0; top: 0; height: 100%; z-index: 1000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); width: 350px;">
-        <div class="side-resizer left-edge" id="right-resizer"></div>
-        <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
-            <div class="detail-header">
-                <div class="detail-header-info">
-                    <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
-                    <div class="detail-text-group">
-                        <h3 id="detail-name">Detalles</h3>
-                        <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
-                    </div>
-                </div>
-                <button onclick="closeRightPanel()">×</button>
-            </div>
-            <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
-            <div class="detail-tabs">
-                <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
-                <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
-                <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
-            </div>
-            <div id="content-perfil" class="d-content"></div>
-            <div id="content-turno-detail" class="d-content active">
-                <div id="turno-details-container"></div>
-            </div>
-            <div id="content-patrones" class="d-content"></div>
-        </div>
-        
-        <!-- Sub-Panel de Intercambio (Nuevo) -->
-        <div id="right-panel-swap" style="display: none; flex-direction: column; height: 100%;">
-            <div class="detail-header">
-                <div class="detail-header-info">
-                    <div class="detail-text-group">
-                        <h3 style="font-size: 14px; margin: 0;">Intercambiar Turno</h3>
-                        <span id="swap-subtitle" style="font-size: 11px; opacity: 0.8;">Selecciona un turno</span>
-                    </div>
-                </div>
-                <button onclick="closeRightPanel()">×</button>
-            </div>
-            <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);">
-                <input type="text" id="search-swap-input" placeholder="Buscar por Nombre o ID..." oninput="window.filterSwapList()" class="form-select" style="width: 100%; box-sizing: border-box;">
-            </div>
-            <div id="swap-element-list" style="flex: 1; overflow-y: auto; padding: 0;">
-                <!-- Lista inyectada por JS -->
-            </div>
-        </div>
-    </aside>
-
     <!-- Menús Contextuales -->
     <div id="element-context-menu"></div>
     <div id="plan-context-menu" style="display:none; position:fixed; background:#ffffff; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:9999; border-radius:8px; padding:5px 0; min-width: 150px;"></div>
 
     <script type="module">
-        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, openDetailPanel, closeRightPanel, selectDetailTab, deleteShiftKey, updateShiftDataLocal, updateShiftDataCloud } from './scrpt.js';
+        import { downloadCasetas, downloadElementos, downloadRegas, downloadMotivosAusentismo, getFotoElemento, deleteShiftKey, updateShiftDataLocal, updateShiftDataCloud, executeSwap } from './scrpt.js';
         import { applyHeaderStyles } from '../../js/script.js';
         import './mc_script.js';
 
-        window.openDetailPanel = async function(...args) {
-            await openDetailPanel(...args);
-            
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.isOpen = true;
-            state.mode = 'detail';
-            state.elId = args[0];
-            state.elName = args[1];
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        const openDetailPanel = async (idElemento, empleadoNombre, record, initialShiftName, bgHeader, casetasList, motivosList, isToday, anio, mes, dia) => {
+            const payload = {
+                idElemento, empleadoNombre, initialShiftName, bgHeader,
+                contextDate: new Date(anio, fullMeses.indexOf(mes), parseInt(dia.substring(0,2))).toISOString()
+            };
+            window.parent.postMessage({ action: 'requestOpenDetailPanel', payload }, '*');
         };
+        window.openDetailPanel = openDetailPanel;
 
-        window.closeRightPanel = function() {
-            closeRightPanel();
-            window.intercambioData = null;
-            document.body.style.cursor = '';
-            
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.isOpen = false;
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
-        };
-        window.selectDetailTab = function(tab) {
-            selectDetailTab(tab);
-            
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.tab = tab;
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
-        };
+        const closeRightPanel = () => { window.parent.postMessage({ action: 'closeRightPanel' }, '*'); window.intercambioData = null; document.body.style.cursor = ''; };
+        window.closeRightPanel = closeRightPanel;
+
+        const selectDetailTab = (tab) => { window.parent.postMessage({ action: 'selectDetailTab', payload: { tab } }, '*'); };
+        window.selectDetailTab = selectDetailTab;
         window.getFotoElemento = getFotoElemento;
 
         let casetasGlobal = [];
@@ -312,28 +252,6 @@
             return 'background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1;'; // Gris por defecto
         };
 
-        window.restoreRightPanelState = async function() {
-            const saved = localStorage.getItem('regasPanelState');
-            if (saved) {
-                try {
-                    const config = JSON.parse(saved);
-                    if (config.isOpen) {
-                        if (config.mode === 'swap') {
-                            if (window.openSwapPanel) openSwapPanel();
-                        } else if (config.mode === 'detail' && config.elId) {
-                            const anio = startDate.getFullYear().toString();
-                            const mes = fullMeses[startDate.getMonth()];
-                            const dia = startDate.getDate().toString().padStart(2, '0') + (startDate.getMonth()+1).toString().padStart(2, '0') + anio;
-                            
-                            const existingRecord = await downloadRegas(anio, mes, dia, config.elId);
-                            await openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, false, anio, mes, dia);
-                            if (config.tab) selectDetailTab(config.tab);
-                        }
-                    }
-                } catch (e) { console.error("Error restaurando panel", e); }
-            }
-        };
-
         async function init() {
             try {
                 const [casetas, elementos, motivos] = await Promise.all([
@@ -346,8 +264,6 @@
                 motivosGlobal = motivos;
                 
                 await renderGrid();
-                
-                await window.restoreRightPanelState();
             } catch (error) {
                 console.error("Error inicializando planeación:", error);
                 document.getElementById('grid-body').innerHTML = '<tr><td colspan="100" style="padding:20px; color:red;">Error conectando a la base de datos.</td></tr>';
@@ -470,7 +386,11 @@
                         const anio = startDate.getFullYear().toString();
                         const mes = fullMeses[startDate.getMonth()];
                         const dia = startDate.getDate().toString().padStart(2, '0') + (startDate.getMonth()+1).toString().padStart(2, '0') + startDate.getFullYear().toString();
-                        openDetailPanel(elId, elName, {}, null, null, casetasGlobal, motivosGlobal, false, anio, mes, dia);
+                        
+                        const casetaItem = casetasGlobal.find(c => c.id === casetaId);
+                        const bgHeaderToPass = casetaItem ? casetaItem.bgHeader : null;
+
+                        openDetailPanel(elId, elName, {}, null, bgHeaderToPass, casetasGlobal, motivosGlobal, false, anio, mes, dia);
                         selectDetailTab('perfil');
                     };
                     tr.appendChild(thEl);
@@ -533,8 +453,30 @@
             const isToday = dTarget.toDateString() === new Date().toDateString();
             
             const record = await downloadRegas(anio, mes, dia, elId);
+
+            let bgHeaderToPass = null;
+            let casetaIdDelTurno = null;
+
+            if (record && shiftName && record[shiftName]) {
+                casetaIdDelTurno = record[shiftName].Caseta || record[shiftName].motivo;
+            } else {
+                const elemento = elementosGlobal.find(e => e.ID == elId || e.id == elName);
+                if (elemento && elemento.Operativa) {
+                    casetaIdDelTurno = elemento.Operativa.AccesoPredeterminado;
+                }
+            }
+
+            if (casetaIdDelTurno) {
+                const casetaItem = casetasGlobal.find(c => c.id === casetaIdDelTurno);
+                if (casetaItem) {
+                    bgHeaderToPass = casetaItem.bgHeader;
+                } else {
+                    const motivoItem = motivosGlobal.find(m => m.id === casetaIdDelTurno);
+                    if (motivoItem) bgHeaderToPass = motivoItem.bgHeader;
+                }
+            }
             
-            openDetailPanel(elId, elName, record || {}, shiftName, null, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
+            openDetailPanel(elId, elName, record || {}, shiftName, bgHeaderToPass, casetasGlobal, motivosGlobal, isToday, anio, mes, dia);
             selectDetailTab('turno');
         };
 
@@ -996,45 +938,6 @@
             // Hacia el Pasado (Izquierda)
             else if (this.scrollLeft <= 150) {
                 prependPreviousMonth();
-            }
-        });
-
-        // --- REDIMENSIONAMIENTO DEL PANEL DERECHO ---
-        const rightResizer = document.getElementById('right-resizer');
-        let isRightResizing = false;
-
-        const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
-        const rightPanelEl = document.getElementById('right-panel');
-        if (savedRightWidth && rightPanelEl) {
-            rightPanelEl.style.width = savedRightWidth;
-        }
-
-        if (rightResizer) {
-            rightResizer.addEventListener('mousedown', (e) => {
-                isRightResizing = true;
-                rightResizer.style.backgroundColor = 'var(--fiusha)';
-                rightResizer.style.opacity = '0.5';
-                document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none';
-            });
-        }
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isRightResizing) return;
-            let newWidth = window.innerWidth - e.clientX;
-            if (newWidth < 300) newWidth = 300; 
-            if (newWidth > 800) newWidth = 800; 
-            document.getElementById('right-panel').style.width = `${newWidth}px`;
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (isRightResizing) {
-                isRightResizing = false;
-                if (rightResizer) rightResizer.style.backgroundColor = 'transparent';
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-                const rightPanel = document.getElementById('right-panel');
-                if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
             }
         });
 

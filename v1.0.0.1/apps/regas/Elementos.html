@@ -232,37 +232,6 @@
             </div>
         </div>
 
-        <!-- Panel Derecho: Detalle de Perfil (Oculto por defecto) -->
-        <aside class="side-panel" id="right-panel" style="display: none; width: 400px; min-width: 350px; border-left: 1px solid #e2e8f0; background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.05); position: relative; z-index: 100;">
-            <div class="side-resizer left-edge" id="right-resizer"></div>
-            <div id="right-panel-detail" style="display: flex; flex-direction: column; height: 100%;">
-                <div class="detail-header">
-                    <div class="detail-header-info">
-                        <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
-                        <div class="detail-text-group">
-                            <h3 id="detail-name">Detalles</h3>
-                            <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
-                        </div>
-                    </div>
-                    <button onclick="closeRightPanel()">×</button>
-                </div>
-                <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
-                <div class="detail-tabs">
-                    <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
-                    <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
-                    <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
-                </div>
-                <div id="content-perfil" class="d-content">
-                    <p style="color: #888; text-align: center; margin-top: 20px;">Información del perfil...</p>
-                </div>
-                <div id="content-turno-detail" class="d-content active">
-                    <div id="turno-details-container"></div>
-                </div>
-                <div id="content-patrones" class="d-content">
-                    <p style="color: #888; text-align: center; margin-top: 20px;">Patrones de asistencia...</p>
-                </div>
-            </div>
-        </aside>
     </div>
 
     <script type="module">
@@ -273,9 +242,7 @@
             downloadRegas,
             getFotoElemento, 
             updateElementProfileLocal, 
-            updateElementProfileCloud,
-            openDetailPanel,
-            selectDetailTab
+            updateElementProfileCloud
         } from './scrpt.js';
 
         let allElements = [];
@@ -283,50 +250,20 @@
         let motivosGlobal = [];
         let casetasMap = {};
 
-        window.openDetailPanel = async function(...args) {
-            await openDetailPanel(...args);
-            
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.isOpen = true;
-            state.mode = 'detail';
-            state.elId = args[0];
-            state.elName = args[1];
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
+        const openDetailPanel = async (idElemento, empleadoNombre, record, initialShiftName, bgHeader, casetasList, motivosList, isToday, anio, mes, dia) => {
+            const payload = {
+                idElemento, empleadoNombre, initialShiftName, bgHeader,
+                contextDate: new Date().toISOString() // Elementos siempre usa la fecha actual
+            };
+            window.parent.postMessage({ action: 'requestOpenDetailPanel', payload }, '*');
         };
-        
-        window.closeRightPanel = function() {
-            closeRightPanel();
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.isOpen = false;
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
-        };
-        
-        window.selectDetailTab = function(tab) {
-            selectDetailTab(tab);
-            
-            let state = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-            state.tab = tab;
-            localStorage.setItem('regasPanelState', JSON.stringify(state));
-        };
+        window.openDetailPanel = openDetailPanel;
 
-        window.restoreRightPanelState = async function() {
-            const saved = localStorage.getItem('regasPanelState');
-            if (saved) {
-                try {
-                    const config = JSON.parse(saved);
-                    if (config.isOpen && config.mode === 'detail' && config.elId) {
-                        const today = new Date();
-                        const anio = today.getFullYear().toString();
-                        const mesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][today.getMonth()];
-                        const diaStr = String(today.getDate()).padStart(2, '0') + String(today.getMonth()+1).padStart(2, '0') + anio;
-                        
-                        const existingRecord = await downloadRegas(anio, mesStr, diaStr, config.elId);
-                        await openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, true, anio, mesStr, diaStr);
-                        if (config.tab) selectDetailTab(config.tab);
-                    }
-                } catch (e) { console.error("Error restaurando panel", e); }
-            }
-        };
+        const closeRightPanel = () => { window.parent.postMessage({ action: 'closeRightPanel' }, '*'); };
+        window.closeRightPanel = closeRightPanel;
+
+        const selectDetailTab = (tab) => { window.parent.postMessage({ action: 'selectDetailTab', payload: { tab } }, '*'); };
+        window.selectDetailTab = selectDetailTab;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('main-container');
@@ -348,8 +285,6 @@
                 casetas.forEach(c => casetasMap[c.id] = c.index ?? 999);
                 
                 renderDirectorio();
-                
-                await window.restoreRightPanelState();
             } catch (e) {
                 console.error('Fallo cargando directorio', e);
                 container.innerHTML = '<p style="color: #ef4444; font-weight: 600;">Ocurrió un error leyendo la base de datos de elementos.</p>';
@@ -357,40 +292,6 @@
 
             // Escuchar cambios en el filtro
             filterSelect.addEventListener('change', renderDirectorio);
-
-            // --- LÓGICA DE REDIMENSIONAMIENTO DEL PANEL DERECHO ---
-            const rightPanel = document.getElementById('right-panel');
-            const rightResizer = document.getElementById('right-resizer');
-            let isResizing = false;
-
-            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
-            if (savedRightWidth && rightPanel) {
-                rightPanel.style.width = savedRightWidth;
-            }
-
-            rightResizer.addEventListener('mousedown', (e) => {
-                isResizing = true;
-                document.body.style.cursor = 'col-resize';
-                rightResizer.classList.add('is-resizing');
-                e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isResizing) return;
-                let newWidth = window.innerWidth - e.clientX;
-                if (newWidth < 350) newWidth = 350; // Ancho mínimo
-                if (newWidth > window.innerWidth * 0.8) newWidth = window.innerWidth * 0.8; // Ancho máximo
-                rightPanel.style.width = newWidth + 'px';
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isResizing) {
-                    isResizing = false;
-                    document.body.style.cursor = '';
-                    rightResizer.classList.remove('is-resizing');
-                    if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
-                }
-            });
         });
 
         function renderDirectorio() {
@@ -579,9 +480,13 @@
                 const mesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][today.getMonth()];
                 const diaStr = String(today.getDate()).padStart(2, '0') + String(today.getMonth()+1).padStart(2, '0') + anio;
 
+                const casetaPredeterminada = el.Operativa?.AccesoPredeterminado;
+                const casetaItem = casetaPredeterminada ? casetasGlobal.find(c => c.id === casetaPredeterminada) : null;
+                const bgHeaderToPass = casetaItem ? casetaItem.bgHeader : null;
+
                 try {
                     const existingRecord = await downloadRegas(anio, mesStr, diaStr, idSocio);
-                    await openDetailPanel(idSocio, nombre, existingRecord || {}, null, null, casetasGlobal, motivosGlobal, true, anio, mesStr, diaStr);
+                    await openDetailPanel(idSocio, nombre, existingRecord || {}, null, bgHeaderToPass, casetasGlobal, motivosGlobal, true, anio, mesStr, diaStr);
                     selectDetailTab('perfil');
                 } catch (err) {
                     console.error("Error abriendo panel de detalle:", err);

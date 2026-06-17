@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Regas - Shell</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
     <style>
         :root {
             --color-base: #8B0056; /* Fiusha oscuro */
@@ -332,9 +333,71 @@
     </nav>
 
     <!-- Contenido Principal -->
-    <main id="main-content">
-        <!-- Iframes generados dinámicamente -->
-    </main>
+    <div class="app-body" style="display: flex; flex: 1; overflow: hidden;">
+        <main id="main-content" style="flex: 1; position: relative;">
+            <!-- Iframes generados dinámicamente -->
+        </main>
+
+        <!-- Panel Derecho Unificado -->
+        <aside class="side-panel" id="right-panel" style="display: none;">
+            <div class="side-resizer left-edge" id="right-resizer"></div>
+            <!-- Sub-Panel de Detalle -->
+            <div id="right-panel-detail" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info">
+                        <img id="detail-photo" class="detail-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" alt="Foto">
+                        <div class="detail-text-group">
+                            <h3 id="detail-name">Detalles</h3>
+                            <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
+                        </div>
+                    </div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
+                <div class="detail-tabs">
+                    <div class="d-tab" onclick="selectDetailTab('perfil')" id="tab-perfil">Perfil</div>
+                    <div class="d-tab active" onclick="selectDetailTab('turno')" id="tab-turno">Turno</div>
+                    <div class="d-tab" onclick="selectDetailTab('patrones')" id="tab-patrones">Patrones</div>
+                </div>
+                <div id="content-perfil" class="d-content"></div>
+                <div id="content-turno-detail" class="d-content active"><div id="turno-details-container"></div></div>
+                <div id="content-patrones" class="d-content"></div>
+            </div>
+
+            <!-- Sub-Panel de Catálogo de Elementos -->
+            <div id="right-panel-add" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Catálogo</h3><span style="font-size: 11px; opacity: 0.8;">Buscar y asignar elemento</span></div></div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-elemento-input" placeholder="Buscar por Nombre o ID..." oninput="window.renderElementosList(this.value)" class="form-select" style="width: 100%; box-sizing: border-box;"></div>
+                <div id="add-elemento-list" style="flex: 1; overflow-y: auto; padding: 0;"></div>
+            </div>
+
+            <!-- Sub-Panel de Intercambio -->
+            <div id="right-panel-swap" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Intercambiar Turno</h3><span id="swap-subtitle" style="font-size: 11px; opacity: 0.8;">Selecciona un turno</span></div></div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-swap-input" placeholder="Buscar por Nombre o ID..." oninput="window.renderSwapList(this.value)" class="form-select" style="width: 100%; box-sizing: border-box;"></div>
+                <div id="swap-element-list" style="flex: 1; overflow-y: auto; padding: 0;"></div>
+            </div>
+
+            <!-- Sub-Panel de Reporte -->
+            <div id="right-panel-report" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Reporte de Distribución</h3><span id="report-date-subtitle" style="font-size: 11px; opacity: 0.8;"></span></div></div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+                <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;"><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-empty" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar casetas sin elementos</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-time" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar hora de entrada</label></div>
+                    <button id="btn-copy-report" class="btn-action-main" title="Copiar al Portapapeles" style="padding: 0; background: #10b981; margin: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 8px;"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                </div>
+                <textarea id="report-content" spellcheck="false" style="flex: 1; padding: 15px; font-family: monospace; font-size: 12px; color: #333; background: #fff; border: none; outline: none; resize: none; width: 100%; box-sizing: border-box;"></textarea>
+            </div>
+        </aside>
+    </div>
 
     <script>
         // Definición de las secciones y sus iconos SVG
@@ -348,6 +411,8 @@
             { id: 'Eventos', title: 'Eventos', icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' }
         ];
 
+        let activeIframe = null;
+
         // Configuración inicial desde LocalStorage
         const CONFIG_KEY = 'regasShellConfig';
         let config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
@@ -355,6 +420,13 @@
             position: 'left', // 'left', 'right'
             lastSection: 'inicio'
         };
+
+        // --- Funciones de Comunicación con Iframes ---
+        function postToActiveIframe(message) {
+            if (activeIframe && activeIframe.contentWindow) {
+                activeIframe.contentWindow.postMessage(message, '*');
+            }
+        }
 
         // --- Inicialización del DOM ---
         function init() {
@@ -379,6 +451,7 @@
             // Restaurar estado e inyectar punto inicial nativo
             window.history.replaceState({ section: config.lastSection }, "", "");
             navigate(config.lastSection, false);
+            initPanelLogic();
         }
 
         // --- Lógica de Navegación ---
@@ -395,6 +468,7 @@
                 iframe.src = sectionId + '.html';
                 document.getElementById('main-content').appendChild(iframe);
             }
+            activeIframe = iframe;
             iframe.classList.add('active');
 
             // Actualizar botones activos
@@ -434,6 +508,356 @@
 
         function togglePosition() {
             setConfig('position', config.position === 'left' ? 'right' : 'left');
+        }
+
+        // --- LÓGICA DEL PANEL DERECHO UNIFICADO ---
+        async function initPanelLogic() {
+            // Importar funciones del script modular
+            const scrpt = await import('./scrpt.js');
+            
+            // Exponer funciones al scope global para que los `onclick` del HTML funcionen
+            window.closeRightPanel = () => {
+                scrpt.closeRightPanel();
+                postToActiveIframe({ action: 'panelClosed' }); // Notificar al iframe
+            };
+            window.selectDetailTab = scrpt.selectDetailTab;
+
+            // Funciones de Lógica de UI para paneles
+            window.copyReportToClipboard = function() {
+                const content = document.getElementById('report-content').value;
+                navigator.clipboard.writeText(content).then(() => {
+                    const btn = document.querySelector('button[title="Copiar al Portapapeles"]');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                    btn.style.background = '#059669';
+                    setTimeout(() => { btn.innerHTML = originalHTML; btn.style.background = '#10b981'; }, 2000);
+                });
+            };
+
+            let panelContext = {}; // Almacena el contexto del iframe activo (ej. fecha)
+
+            window.renderElementosList = function(query = '') {
+                const listContainer = document.getElementById('add-elemento-list');
+                listContainer.innerHTML = '';
+                let elementos = window.elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+                
+                if (query) {
+                    query = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    elementos = elementos.filter(el => {
+                        let elId = el.ID ? String(el.ID).toLowerCase() : "";
+                        let elName = el.id ? String(el.id).toLowerCase() : "";
+                        elId = elId.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        elName = elName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        return elName.includes(query) || elId.includes(query);
+                    });
+                }
+                if (elementos.length === 0) { listContainer.innerHTML = '<p style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No se encontraron resultados.</p>'; return; }
+
+                const grouped = {};
+                elementos.forEach(el => {
+                    const casetaId = (el.Operativa && el.Operativa.AccesoPredeterminado) ? el.Operativa.AccesoPredeterminado : 'Sin Asignar';
+                    if (!grouped[casetaId]) grouped[casetaId] = [];
+                    grouped[casetaId].push(el);
+                });
+                const getCasetaIndex = (cId) => { if (cId === 'Sin Asignar') return 9999; const c = window.casetasGlobal.find(x => x.id === cId); return c ? (c.index || 0) : 9998; };
+                const sortedCasetaIds = Object.keys(grouped).sort((a, b) => getCasetaIndex(a) - getCasetaIndex(b));
+
+                sortedCasetaIds.forEach(casetaId => {
+                    const header = document.createElement('div');
+                    header.className = 'add-element-group-header';
+                    header.innerText = casetaId;
+                    listContainer.appendChild(header);
+
+                    grouped[casetaId].forEach(el => {
+                        const elId = el.ID ? String(el.ID) : String(el.id);
+                        const elName = el.id; 
+                        const div = document.createElement('div');
+                        div.className = 'add-element-item';
+                        div.setAttribute('draggable', 'true');
+                        div.innerHTML = `
+                            <img class="add-element-img" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" data-emp-id-add="${elId}">
+                            <div class="add-element-info"><span class="add-element-name">${elName}</span><span class="add-element-id">ID: ${elId}</span></div>
+                        `;
+                        div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', JSON.stringify({ idElemento: elId, isNew: true })); postToActiveIframe({ action: 'dragStart' }); });
+                        div.addEventListener('dragend', () => postToActiveIframe({ action: 'dragEnd' }));
+                        
+                        // El Shell ahora abre el panel directamente, sin mensajes de ida y vuelta
+                        div.onclick = async () => {
+                            const { contextDate } = panelContext;
+                            if (!contextDate) return console.error("No hay contexto de fecha para abrir el panel de detalle.");
+
+                            const reqDate = new Date(contextDate);
+                            const anio = reqDate.getFullYear().toString();
+                            const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                            const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                            
+                            const record = await scrpt.downloadRegas(anio, mes, dia, elId);
+                            
+                            const el = window.elementosGlobal.find(e => e.ID == elId || e.id == elName);
+                            const casetaPredeterminada = el?.Operativa?.AccesoPredeterminado;
+                            const casetaItem = casetaPredeterminada ? window.casetasGlobal.find(c => c.id === casetaPredeterminada) : null;
+                            const bgHeader = casetaItem ? casetaItem.bgHeader : null;
+
+                            document.getElementById('right-panel-detail').style.display = 'flex';
+                            document.getElementById('right-panel-add').style.display = 'none';
+                            await scrpt.openDetailPanel(elId, elName, record || {}, null, bgHeader, window.casetasGlobal, window.motivosGlobal, false, anio, mes, dia);
+                            
+                            let stateDetail = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+                            stateDetail.isOpen = true;
+                            stateDetail.mode = 'detail';
+                            stateDetail.elId = elId;
+                            stateDetail.elName = elName;
+                            stateDetail.anio = anio;
+                            stateDetail.mes = mes;
+                            stateDetail.dia = dia;
+                            localStorage.setItem('regasPanelState', JSON.stringify(stateDetail));
+                        };
+
+                        listContainer.appendChild(div);
+                        scrpt.getFotoElemento(elId).then(fotoUrl => { const img = div.querySelector(`img[data-emp-id-add="${elId}"]`); if(img) img.src = fotoUrl; });
+                    });
+                });
+            };
+
+            window.renderSwapList = function(query = '') {
+                const sourceData = window.intercambioData;
+                if (!sourceData) return;
+                const listContainer = document.getElementById('swap-element-list');
+                listContainer.innerHTML = '';
+                
+                let elementos = window.elementosGlobal.filter(el => el.Operativa && el.Operativa.Estado === 'Activo');
+                if (query) {
+                    query = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    elementos = elementos.filter(el => {
+                        let elId = el.ID ? String(el.ID).toLowerCase() : "";
+                        let elName = el.id ? String(el.id).toLowerCase() : "";
+                        elId = elId.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        elName = elName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        return elName.includes(query) || elId.includes(query);
+                    });
+                }
+                if (elementos.length === 0) { listContainer.innerHTML = '<p style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No se encontraron resultados.</p>'; return; }
+
+                elementos.forEach(el => {
+                    const elId = el.ID ? String(el.ID) : String(el.id);
+                    if (elId === sourceData.idElemento) return;
+
+                    const record = window.currentRegasData ? window.currentRegasData[elId] : null;
+                    const shifts = [];
+                    if (record) {
+                        Object.keys(record).forEach(k => {
+                            const lowerK = k.toLowerCase();
+                            if (['matutino', 'vespertino', 'nocturno', 'ausentismo'].includes(lowerK)) shifts.push({ name: lowerK, data: record[k] });
+                        });
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = 'add-element-item';
+                    div.style.flexDirection = 'column';
+                    div.style.alignItems = 'flex-start';
+                    div.style.gap = '8px';
+
+                    let html = `<div style="display: flex; align-items: center; gap: 12px; width: 100%;"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" data-emp-id-swap="${elId}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0;"><div style="display:flex; flex-direction:column;"><span style="font-weight:600; font-size:12px; color:#334155;">${el.id}</span><span style="font-size:10px; color:#64748b; margin-top:2px;">ID: ${elId}</span></div></div>`;
+
+                    if (shifts.length > 0) {
+                        html += `<div style="display: flex; gap: 5px; flex-wrap: wrap; width: 100%;">`;
+                        shifts.forEach(sh => {
+                            const caseta = sh.data.Caseta || sh.data.motivo || 'Desconocido';
+                            const isAus = sh.name === 'ausentismo';
+                            const color = isAus ? '#64748b' : (sh.name === 'matutino' ? '#ca8a04' : (sh.name === 'vespertino' ? '#1d4ed8' : '#000000'));
+                            const bgColor = isAus ? '#f1f5f9' : (sh.name === 'matutino' ? '#fef08a' : (sh.name === 'vespertino' ? '#dbeafe' : '#e2e8f0'));
+                            html += `<button class="btn-swap-shift" data-shift="${sh.name}" style="flex: 1; padding: 6px; border: 1px solid ${color}; background-color: ${bgColor}; color: ${color}; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: bold;">${sh.name.toUpperCase()} (${caseta})</button>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div style="width: 100%;"><button class="btn-swap-shift" data-shift="ninguno" style="width: 100%; padding: 6px; border: 1px dashed #cbd5e1; background-color: transparent; color: #64748b; border-radius: 6px; cursor: pointer; font-size: 10px;">Intercambiar y dejar sin turno</button></div>`;
+                    }
+
+                    div.innerHTML = html;
+                    div.querySelectorAll('.btn-swap-shift').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const targetShiftName = btn.getAttribute('data-shift');
+                            const targetShiftDesc = targetShiftName === 'ninguno' ? 'Ninguno' : targetShiftName.toUpperCase();
+                            if (confirm(`¿Confirmas el intercambio de turnos?\n\n1. ${sourceData.empleadoNombre} recibe: ${targetShiftDesc}\n2. ${el.id} recibe: ${sourceData.shift.name.toUpperCase()}`)) {
+                                btn.innerText = 'Intercambiando...'; btn.disabled = true;
+                                // El Shell ejecuta el intercambio directamente
+                                const { contextDate } = panelContext;
+                                const reqDate = new Date(contextDate);
+                                const anio = reqDate.getFullYear().toString();
+                                const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                                const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                                
+                                scrpt.executeSwap(sourceData, elId, targetShiftName, anio, mes, dia);
+                            }
+                        });
+                    });
+                    listContainer.appendChild(div);
+                    scrpt.getFotoElemento(elId).then(fotoUrl => { const img = div.querySelector(`img[data-emp-id-swap="${elId}"]`); if(img) img.src = fotoUrl; });
+                });
+            };
+
+            // Escuchar mensajes de los iframes para abrir/cerrar el panel
+            window.addEventListener('message', async (event) => {
+                if (event.data && event.data.action) {
+                    const { action, payload } = event.data;
+                    
+                    // Cargar catálogos si aún no existen
+                    if (!window.casetasGlobal) {
+                        [window.casetasGlobal, window.motivosGlobal, window.elementosGlobal] = await Promise.all([
+                            scrpt.downloadCasetas(),
+                            scrpt.downloadMotivosAusentismo(),
+                            scrpt.downloadElementos()
+                        ]);
+                    }
+
+                    switch(action) {
+                        case 'requestOpenDetailPanel':
+                            const { idElemento, empleadoNombre, initialShiftName, bgHeader, contextDate } = payload;
+                            const reqDate = new Date(contextDate);
+                            const isToday = reqDate.toDateString() === new Date().toDateString();
+                            const anio = reqDate.getFullYear().toString();
+                            const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][reqDate.getMonth()];
+                            const dia = reqDate.getDate().toString().padStart(2, '0') + (reqDate.getMonth()+1).toString().padStart(2, '0') + reqDate.getFullYear().toString();
+                            
+                            const record = await scrpt.downloadRegas(anio, mes, dia, idElemento);
+
+                            document.getElementById('right-panel').style.display = 'flex';
+                            document.getElementById('right-panel-detail').style.display = 'flex';
+                            document.getElementById('right-panel-add').style.display = 'none';
+                            document.getElementById('right-panel-swap').style.display = 'none';
+                            document.getElementById('right-panel-report').style.display = 'none';
+
+                            await scrpt.openDetailPanel(
+                                idElemento, empleadoNombre, record || {}, 
+                                initialShiftName, bgHeader, window.casetasGlobal, 
+                                window.motivosGlobal, isToday, anio, mes, dia
+                            );
+                            
+                            let stateDetailReq = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+                            stateDetailReq.isOpen = true;
+                            stateDetailReq.mode = 'detail';
+                            stateDetailReq.elId = idElemento;
+                            stateDetailReq.elName = empleadoNombre;
+                            stateDetailReq.anio = anio;
+                            stateDetailReq.mes = mes;
+                            stateDetailReq.dia = dia;
+                            localStorage.setItem('regasPanelState', JSON.stringify(stateDetailReq));
+                            break;
+                        case 'openAddPanel':
+                            panelContext = payload; // Guardar contexto
+                            document.getElementById('right-panel').style.display = 'flex';
+                            document.getElementById('right-panel-detail').style.display = 'none';
+                            document.getElementById('right-panel-swap').style.display = 'none';
+                            document.getElementById('right-panel-report').style.display = 'none';
+                            document.getElementById('right-panel-add').style.display = 'flex';
+                            if(document.getElementById('search-elemento-input')) document.getElementById('search-elemento-input').value = '';
+                            window.renderElementosList();
+                            
+                            let stateAdd = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+                            stateAdd.isOpen = true;
+                            stateAdd.mode = 'add';
+                            localStorage.setItem('regasPanelState', JSON.stringify(stateAdd));
+                            break;
+                        case 'openSwapPanel':
+                            window.intercambioData = payload.intercambioData;
+                            panelContext = payload; // Guardar contexto
+                            window.currentRegasData = payload.currentRegasData;
+                            document.getElementById('right-panel').style.display = 'flex';
+                            document.getElementById('right-panel-detail').style.display = 'none';
+                            document.getElementById('right-panel-add').style.display = 'none';
+                            document.getElementById('right-panel-report').style.display = 'none';
+                            document.getElementById('right-panel-swap').style.display = 'flex';
+                            if (document.getElementById('search-swap-input')) document.getElementById('search-swap-input').value = '';
+                            if (payload.intercambioData) document.getElementById('swap-subtitle').innerText = `Turno de ${payload.intercambioData.empleadoNombre}`;
+                            window.renderSwapList();
+                            
+                            let stateSwap = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+                            stateSwap.isOpen = true;
+                            stateSwap.mode = 'swap';
+                            localStorage.setItem('regasPanelState', JSON.stringify(stateSwap));
+                            break;
+                        case 'openReportPanel':
+                            document.getElementById('right-panel').style.display = 'flex';
+                            document.getElementById('right-panel-detail').style.display = 'none';
+                            document.getElementById('right-panel-add').style.display = 'none';
+                            document.getElementById('right-panel-swap').style.display = 'none';
+                            document.getElementById('right-panel-report').style.display = 'flex';
+                            postToActiveIframe({ action: 'generateReportContent', payload: { tabId: payload.tabId } });
+                            
+                            let stateReport = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
+                            stateReport.isOpen = true;
+                            stateReport.mode = 'report';
+                            stateReport.reportTab = payload.tabId;
+                            localStorage.setItem('regasPanelState', JSON.stringify(stateReport));
+                            break;
+                        case 'closeRightPanel':
+                            window.closeRightPanel();
+                            break;
+                        case 'selectDetailTab':
+                            window.selectDetailTab(payload.tab);
+                            break;
+                    }
+                }
+            });
+
+            // Lógica de redimensionamiento
+            const rightResizer = document.getElementById('right-resizer');
+            const rightPanel = document.getElementById('right-panel');
+            let isRightResizing = false;
+
+            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
+            if (savedRightWidth && rightPanel) {
+                rightPanel.style.width = savedRightWidth;
+            }
+
+            if (rightResizer) {
+                rightResizer.addEventListener('mousedown', (e) => {
+                    isRightResizing = true;
+                    rightResizer.classList.add('is-resizing');
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                });
+            }
+            window.addEventListener('mousemove', (e) => {
+                if (!isRightResizing) return;
+                let newWidth = window.innerWidth - e.clientX;
+                if (newWidth < 300) newWidth = 300;
+                if (newWidth > 800) newWidth = 800;
+                if (rightPanel) rightPanel.style.width = `${newWidth}px`;
+            });
+            window.addEventListener('mouseup', () => {
+                if (isRightResizing) {
+                    isRightResizing = false;
+                    if (rightResizer) rightResizer.classList.remove('is-resizing');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
+                }
+            });
+
+            // Restaurar estado del panel al cargar
+            const savedState = localStorage.getItem('regasPanelState');
+            if (savedState) {
+                const config = JSON.parse(savedState);
+                if (config.isOpen) {
+                    if (config.mode === 'add') {
+                        window.openAddPanel();
+                    } else if (config.mode === 'report' && config.reportTab) {
+                        window.openReportPanel(config.reportTab);
+                    } else if (config.mode === 'detail' && config.elId && config.anio) {
+                        const existingRecord = await scrpt.downloadRegas(config.anio, config.mes, config.dia, config.elId);
+                        await scrpt.openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, window.casetasGlobal, window.motivosGlobal, false, config.anio, config.mes, config.dia);
+                        if (config.tab) window.selectDetailTab(config.tab);
+                    }
+                }
+            }
+
+            // Notificar a los iframes cuando se guarde un cambio en el panel
+            // para que puedan refrescar su vista si es necesario.
+            window.addEventListener('regasUpdated', () => {
+                postToActiveIframe({ action: 'regasUpdated' });
+            });
         }
 
         function toggleOverlay() {

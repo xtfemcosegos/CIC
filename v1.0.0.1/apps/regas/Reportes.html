@@ -369,7 +369,6 @@
                     const [casetas, motivos] = await Promise.all([downloadCasetas(), downloadMotivosAusentismo()]);
                     window.casetasGlobal = casetas;
                     window.motivosGlobal = motivos;
-                    await window.restoreRightPanelState();
                 } catch(e) { console.error("Error pre-loading catalogs:", e); }
             })();
 
@@ -396,49 +395,6 @@
                     sections[e.target.value].classList.add('active');
                 }
                 document.getElementById('report-output').innerHTML = '<p style="color: #94a3b8; font-weight: 600; text-align: center; margin-top: 50px;">El reporte generado aparecerá aquí segmentado por imágenes.</p>';
-            });
-
-            // Auto-Actualizar el reporte si hacemos modificaciones en el panel derecho
-            window.addEventListener('regasUpdated', () => {
-                const type = document.getElementById('report-type').value;
-                if (type === 'diario' && document.getElementById('diario-variation').value === 'completo') {
-                    generateDiarioCompleto(document.getElementById('diario-date').value);
-                }
-            });
-
-            // Lógica de Redimensionamiento del Panel Derecho
-            const rightResizer = document.getElementById('right-resizer');
-            const rightPanel = document.getElementById('right-panel');
-            let isRightResizing = false;
-
-            const savedRightWidth = localStorage.getItem('regasRightPanelWidth');
-            if (savedRightWidth && rightPanel) {
-                rightPanel.style.width = savedRightWidth;
-            }
-
-            if (rightResizer) {
-                rightResizer.addEventListener('mousedown', (e) => {
-                    isRightResizing = true;
-                    rightResizer.classList.add('is-resizing');
-                    document.body.style.cursor = 'col-resize';
-                    document.body.style.userSelect = 'none';
-                });
-            }
-            window.addEventListener('mousemove', (e) => {
-                if (!isRightResizing) return;
-                let newWidth = window.innerWidth - e.clientX;
-                if (newWidth < 300) newWidth = 300;
-                if (newWidth > 800) newWidth = 800;
-                if (rightPanel) rightPanel.style.width = `${newWidth}px`;
-            });
-            window.addEventListener('mouseup', () => {
-                if (isRightResizing) {
-                    isRightResizing = false;
-                    if (rightResizer) rightResizer.classList.remove('is-resizing');
-                    document.body.style.cursor = '';
-                    document.body.style.userSelect = '';
-                    if (rightPanel) localStorage.setItem('regasRightPanelWidth', rightPanel.style.width);
-                }
             });
 
             // Lógica de copiado maestro de todas las imágenes generadas
@@ -690,13 +646,13 @@
         }
 
         window.editShiftFromReport = async function(elId, elName, anio, mes, dia, shiftName) {
-            const mIndex = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].indexOf(mes);
-            const reqDate = new Date(parseInt(anio), mIndex, parseInt(dia.substring(0, 2)));
-            const isItToday = reqDate.toDateString() === new Date().toDateString();
-            
-            const existingRecord = await downloadRegas(anio, mes, dia, elId);
-            
-            await openDetailPanel(elId, elName, existingRecord || {}, shiftName, null, window.casetasGlobal, window.motivosGlobal, isItToday, anio, mes, dia);
+            const dTarget = new Date(parseInt(anio), ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].indexOf(mes), parseInt(dia.substring(0,2)));
+            const payload = {
+                idElemento: elId, empleadoNombre: elName,
+                initialShiftName: shiftName,
+                contextDate: dTarget.toISOString()
+            };
+            window.parent.postMessage({ action: 'requestOpenDetailPanel', payload }, '*');
         }
 
         function openEmailReportModal() {

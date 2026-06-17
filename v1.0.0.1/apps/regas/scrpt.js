@@ -1851,7 +1851,10 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
             }
 
             const isAusentismoView = activeShiftName === 'ausentismo';
-            const hasReportField = (sData.reporte !== undefined && sData.reporte !== null) || isAusentismoView || isIncActive('retardo');
+            const currentMotivo = (sData.motivo || sData.Motivo || 'Falta').toLowerCase();
+            const isFaltaOSuspension = isAusentismoView && (currentMotivo === 'falta' || currentMotivo.includes('suspen'));
+            
+            const hasReportField = isFaltaOSuspension || isIncActive('retardo');
             
             let currentReportText = sData.reporte || '';
             let typeSiniestro = 'Falta';
