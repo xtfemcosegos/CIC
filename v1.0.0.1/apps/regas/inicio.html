@@ -657,41 +657,6 @@
             }
         });
 
-        // --- LÓGICA DE REDIMENSIONAMIENTO (PANEL DERECHO) ---
-        const rightResizer = document.getElementById('right-resizer');
-        let isRightResizing = false;
-
-        if (rightResizer) {
-            rightResizer.addEventListener('mousedown', (e) => {
-                isRightResizing = true;
-                rightResizer.classList.add('is-resizing');
-                document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none';
-            });
-        }
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isRightResizing) return;
-            let newWidth = window.innerWidth - e.clientX;
-            if (newWidth < 300) newWidth = 300; // Límite mínimo
-            if (newWidth > 800) newWidth = 800; // Límite máximo
-            document.body.style.setProperty('--right-panel-width', `${newWidth}px`);
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (isRightResizing) {
-                isRightResizing = false;
-                if (rightResizer) rightResizer.classList.remove('is-resizing');
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-
-                const currentWidth = document.body.style.getPropertyValue('--right-panel-width');
-                if (currentWidth) localStorage.setItem('regasRightPanelWidth', currentWidth);
-
-                if (typeof saveInicioConfig === 'function') saveInicioConfig();
-            }
-        });
-
         // --- LÓGICA PARA MOSTRAR/OCULTAR CASETAS VACÍAS ---
         let showHiddenCasetas = false;
         window.toggleHiddenCasetas = function() {
