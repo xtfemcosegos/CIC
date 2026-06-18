@@ -703,6 +703,93 @@ export async function updateElementProfileCloud(elementKey, flatUpdates, timesta
     await syncCloudUpdate("https://regas.firebaseio.com", updates);
 }
 
+/**
+ * Migra todos los registros de Regas de un ID de elemento antiguo a uno nuevo.
+ * @param {string} oldId - El ID del elemento a reemplazar (ej. "Pendiente").
+ * @param {string} newId - El nuevo ID del elemento.
+ * @returns {Promise<void>}
+ */
+export async function migrateElementoId(oldId, newId) {
+     if (!oldId || !newId || oldId === newId) {
+         console.log("Migración de ID cancelada: IDs inválidos.");
+         return;
+     }
+ 
+     console.log(`Iniciando migración de ID: ${oldId} -> ${newId}`);
+     const dbLocal = await initIndexedDB();
+     const cloudUpdates = {};
+     const ts = Date.now();
+ 
+     // 1. Migración en IndexedDB (local)
+     const tx = dbLocal.transaction(['regas', 'elementos'], 'readwrite');
+     const regasStore = tx.objectStore('regas');
+     const elementosStore = tx.objectStore('elementos');
+ 
+     const allYearsData = await new Promise((res, rej) => {
+         const r = regasStore.getAll();
+         r.onsuccess = () => res(r.result);
+         r.onerror = () => rej(r.error);
+     });
+ 
+     for (const yearData of allYearsData) {
+         let yearModified = false;
+         if (yearData.meses) {
+             for (const mes in yearData.meses) {
+                 const monthData = yearData.meses[mes];
+                 if (monthData.dias) {
+                     for (const dia in monthData.dias) {
+                         const dayData = monthData.dias[dia];
+                         if (dayData.registros && dayData.registros[oldId]) {
+                             console.log(`Migrando localmente: ${yearData.id}/${mes}/${dia} para ${oldId}`);
+                             yearModified = true;
+                             
+                             // Copia el registro al nuevo ID
+                             dayData.registros[newId] = { ...dayData.registros[oldId] };
+                             
+                             // Elimina el registro antiguo
+                             delete dayData.registros[oldId];
+                             
+                             // Prepara el lote de actualizaciones para la nube
+                             const path = `${yearData.id}/${mes}/${dia}`;
+                             cloudUpdates[`${path}/${newId}`] = dayData.registros[newId];
+                             cloudUpdates[`${path}/${oldId}`] = null; // Comando para borrar en Firebase
+                             cloudUpdates[`${path}/ultima_actualizacion`] = ts;
+                         }
+                     }
+                 }
+             }
+         }
+         if (yearModified) {
+             regasStore.put(yearData);
+         }
+     }
+ 
+     // 2. Migración del perfil del elemento en sí
+     const newProfile = await new Promise((res, rej) => {
+         const r = elementosStore.get(newId);
+         r.onsuccess = () => res(r.result);
+         r.onerror = () => rej(r.error);
+     });
+ 
+     // Eliminar el perfil antiguo de la base de datos local
+     elementosStore.delete(oldId);
+ 
+     if (newProfile) {
+         cloudUpdates[`elementos/${newId}`] = newProfile;
+         cloudUpdates[`elementos/${oldId}`] = null;
+         cloudUpdates[`elementos/ultima_actualizacion`] = ts;
+     }
+ 
+     // 3. Ejecutar la migración en la Nube (Firebase)
+     if (Object.keys(cloudUpdates).length > 0) {
+         console.log("Enviando lote de migración a Firebase...", cloudUpdates);
+         await syncCloudUpdate("https://regas.firebaseio.com", cloudUpdates);
+         console.log("Migración en la nube completada.");
+     } else {
+         console.log("No se encontraron registros para migrar.");
+     }
+}
+
 // Helper Interno: Renderizar formulario de perfil interactivo
 function renderProfileForm(container, elData, elementKey) {
     const createInput = (label, value, path, type="text", extraHtml="") => {
@@ -941,6 +1028,23 @@ function renderProfileForm(container, elData, elementKey) {
                     ${createCheckbox('Acceso Habilitado', elData.Acceso, 'Acceso')}
                 </div>
             </div>
+
+            <!-- ACCIONES AVANZADAS -->
+            <div class="form-group-box" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <h4 class="profile-section-title" style="color: #ef4444;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Acciones Avanzadas
+                </h4>
+                <div class="detail-row" style="grid-template-columns: 1fr;">
+                    <div class="input-col">
+                        <label>Fusionar historial desde un ID antiguo</label>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="text" id="merge-old-id" class="form-select profile-input" placeholder="Ej: Pendiente" style="flex-grow: 1; width: auto;">
+                            <button id="btn-merge-history" class="btn-action-main" style="background:#ef4444; padding: 10px 15px; font-size:12px;">Fusionar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
@@ -948,6 +1052,7 @@ function renderProfileForm(container, elData, elementKey) {
 
     // --- AUTOGUARDADO INDIVIDUAL POR CAMPO (AUTO-SAVE) ---
     container.querySelectorAll('.profile-input, .profile-input-cb').forEach(input => {
+        let originalValue = input.type === 'checkbox' ? input.checked : input.value;
         input.addEventListener('change', async (e) => {
             const path = input.getAttribute('data-path');
             const value = input.type === 'checkbox' ? input.checked : input.value;
@@ -961,10 +1066,22 @@ function renderProfileForm(container, elData, elementKey) {
             input.style.backgroundColor = '#fef08a'; // Amarillo (Guardando)
             
             try {
-                const ts = await updateElementProfileLocal(elementKey, { [path]: value });
+                // Si se está cambiando el ID, es un caso especial de migración
+                if (path === 'ID' && value !== originalValue) {
+                    if (!confirm(`Estás a punto de cambiar el ID de "${originalValue}" a "${value}". Esto moverá TODOS sus registros históricos. ¿Estás seguro?`)) {
+                        input.value = originalValue; // Revertir cambio en la UI
+                        input.style.backgroundColor = '';
+                        if (statusDiv) statusDiv.innerHTML = '';
+                        return;
+                    }
+                    await migrateElementoId(originalValue, value);
+                } else {
+                    const ts = await updateElementProfileLocal(elementKey, { [path]: value });
+                    await updateElementProfileCloud(elementKey, { [path]: value }, ts);
+                }
+
                 if (statusDiv) statusDiv.innerHTML = svgCheckGray; // Guardado Local
                 
-                await updateElementProfileCloud(elementKey, { [path]: value }, ts);
                 if (statusDiv) statusDiv.innerHTML = `<div style="display:flex; margin-right:-6px;">${svgCheckGreen}<span style="margin-left:-10px;">${svgCheckGreen}</span></div>`; // Guardado Nube
                 
                 input.style.backgroundColor = '#dcfce7'; // Verde (Éxito)
@@ -977,6 +1094,36 @@ function renderProfileForm(container, elData, elementKey) {
             }
         });
     });
+
+    // --- LÓGICA DE FUSIÓN DE HISTORIAL ---
+    const btnMerge = container.querySelector('#btn-merge-history');
+    if (btnMerge) {
+        btnMerge.addEventListener('click', async () => {
+            const oldIdInput = container.querySelector('#merge-old-id');
+            const oldId = oldIdInput.value.trim();
+            const newId = elData.ID;
+
+            if (!oldId) {
+                alert("Por favor, especifica el ID antiguo del cual quieres migrar el historial.");
+                return;
+            }
+
+            if (confirm(`¡ATENCIÓN!\n\nEstás a punto de mover TODO el historial del ID "${oldId}" a "${newId}".\n\nEsta acción es irreversible. ¿Estás seguro de continuar?`)) {
+                btnMerge.innerText = 'Fusionando...';
+                btnMerge.disabled = true;
+                try {
+                    await migrateElementoId(oldId, newId);
+                    alert(`¡Fusión completada! El historial de "${oldId}" ahora pertenece a "${newId}". La vista se recargará.`);
+                    window.dispatchEvent(new CustomEvent('regasUpdated'));
+                } catch (error) {
+                    console.error("Error durante la fusión:", error);
+                    alert("Ocurrió un error durante la fusión. Revisa la consola para más detalles.");
+                    btnMerge.innerText = 'Fusionar';
+                    btnMerge.disabled = false;
+                }
+            }
+        });
+    }
 }
 
 // Helper Interno: Renderizar formulario de patrones
