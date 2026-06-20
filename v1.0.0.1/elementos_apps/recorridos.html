@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recorridos del Elemento - Regas OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fiusha: #8B0056;
+            --fiusha-dark: #6e0043;
+            --fiusha-light: #b01a7b;
+            --bg-color: #f4f6f8;
+            --border-color: #cbd5e1;
+            --text-color: #1e293b;
+            --success: #10b981;
+            --success-bg: #dcfce7;
+            --success-text: #15803d;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --warning-text: #b45309;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #ffffff;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--fiusha);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .header-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title-group h2 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #ffffff, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-content {
+            flex: 1;
+            display: flex;
+            position: relative;
+            height: calc(100% - 50px);
+        }
+
+        .guard-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #ffffff;
+            height: 100%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .guard-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .guard-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .guard-card-title {
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .guard-location-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .geo-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 10px;
+        }
+
+        .checkpoints-timeline {
+            position: relative;
+            margin-top: 15px;
+            padding-left: 20px;
+        }
+
+        .checkpoints-timeline::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 2px;
+            height: calc(100% - 25px);
+            background: #cbd5e1;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 18px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px #cbd5e1;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item.active::before {
+            background: var(--fiusha);
+            box-shadow: 0 0 0 2px var(--fiusha);
+        }
+
+        .timeline-item.visited::before {
+            background: var(--success);
+            box-shadow: 0 0 0 2px var(--success);
+        }
+
+        .timeline-item-title {
+            font-weight: 600;
+        }
+
+        .timeline-item-subtitle {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .btn-guard-start {
+            background: linear-gradient(135deg, var(--fiusha), var(--fiusha-light));
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(139, 0, 86, 0.3);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-guard-start:active {
+            transform: scale(0.98);
+        }
+
+        .guard-action-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .btn-mark-pulse {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--success), #34d399);
+            border: none;
+            color: white;
+            font-weight: 800;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+            position: relative;
+        }
+
+        .btn-mark-pulse::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--success);
+            animation: pulse-ring 1.5s infinite;
+            pointer-events: none;
+        }
+
+        .btn-mark-pulse:disabled {
+            background: #cbd5e1;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-mark-pulse:disabled::after {
+            animation: none;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .guard-secondary-actions {
+            display: flex;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .btn-guard-secondary {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-guard-report {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .btn-guard-finish {
+            border-color: #cbd5e1;
+            color: #475569;
+            background: #f8fafc;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        .form-select, .form-input, .form-textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-family: inherit;
+            font-size: 12px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            background: #fff;
+            color: var(--text-color);
+        }
+
+        .form-textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        /* --- MODALES --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modal-enter 0.3s ease;
+        }
+
+        @keyframes modal-enter {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            background: #f8fafc;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+        }
+
+        .modal-header button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            background: #f8fafc;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-modal-cancel {
+            background: #e2e8f0;
+            color: #475569;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-modal-submit {
+            background: var(--fiusha);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="header-title-group">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+            <h2>Recorridos del Elemento</h2>
+        </div>
+    </header>
+
+    <div class="app-content">
+        <div class="guard-container">
+            <div class="guard-scrollable" id="guard-main-view">
+                
+                <!-- Identidad o Configuración inicial -->
+                <div id="guard-setup-box">
+                    <div class="guard-card">
+                        <div class="guard-card-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Identidad del Guardia
+                        </div>
+                        <div class="guard-location-box">
+                            <span id="guard-name-display" style="font-weight: 700;">Cargando...</span>
+                            <span class="geo-badge" id="guard-id-display" style="background:#e2e8f0; color:#475569;">ID: --</span>
+                        </div>
+                    </div>
+
+                    <div class="guard-card">
+                        <div class="guard-card-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Selección de Ruta
+                        </div>
+                        <label class="form-label">Seleccionar Ruta de Ronda</label>
+                        <select id="guard-route-select" class="form-select">
+                            <option value="">Cargando rutas...</option>
+                        </select>
+                        <button class="btn-guard-start" id="btn-start-tour">Iniciar Recorrido 🚀</button>
+                    </div>
+                </div>
+
+                <!-- Recorrido en progreso -->
+                <div id="guard-active-box" style="display: none;">
+                    <!-- Localizador GPS -->
+                    <div class="guard-card">
+                        <div class="guard-card-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            Geolocalizador Real
+                        </div>
+                        <div class="guard-location-box">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <span style="font-size:10px; color:#64748b; font-weight:bold; text-transform:uppercase;">Coordenadas Actuales</span>
+                                <span id="guard-coords" style="font-family: monospace; font-weight: 700;">Buscando GPS...</span>
+                            </div>
+                            <span class="geo-badge" id="geo-status-badge" style="background:var(--warning-bg); color:var(--warning-text);">GPS Inactivo</span>
+                        </div>
+                    </div>
+
+                    <!-- Botón Gigante de Marcado -->
+                    <div class="guard-card" style="text-align: center; padding: 25px 15px;">
+                        <div class="guard-action-center">
+                            <button class="btn-mark-pulse" id="btn-mark-point">
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-bottom:6px;"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                MARCAR PUNTO
+                            </button>
+                            <span id="current-checkpoint-name" style="font-weight: 800; font-size: 13px; color: var(--fiusha);">SIGUIENTE: --</span>
+                        </div>
+                    </div>
+
+                    <!-- Checklist visual de la ruta -->
+                    <div class="guard-card">
+                        <div class="guard-card-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            Puntos de Control
+                        </div>
+                        <div class="checkpoints-timeline" id="guard-timeline-list">
+                            <!-- Generado dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción Secundarios -->
+                    <div class="guard-secondary-actions">
+                        <button class="btn-guard-secondary btn-guard-report" id="btn-trigger-report">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            Incidencia
+                        </button>
+                        <button class="btn-guard-secondary btn-guard-finish" id="btn-finish-tour">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Terminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Reportar Incidencia -->
+    <div class="modal-overlay" id="modal-report">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Reportar Incidencia</h3>
+                <button onclick="closeReportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Título de Incidencia</label>
+                <input type="text" id="report-title" class="form-input" placeholder="Ej: Vidrio roto, puerta abierta">
+
+                <label class="form-label">Descripción</label>
+                <textarea id="report-desc" class="form-textarea" placeholder="Describe los detalles de la situación..."></textarea>
+
+                <label class="form-label">Fotografía</label>
+                <input type="file" id="report-photo" accept="image/*" class="form-input" style="padding: 4px;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeReportModal()">Cancelar</button>
+                <button class="btn-modal-submit" id="btn-submit-report">Enviar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase y Lógica JS -->
+    <script type="module">
+        import { app } from '../js/firebase.js';
+        import { getDatabase, ref, get, set, update, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initIndexedDB } from '../js/script.js';
+
+        const db = getDatabase(app, "https://cic-os-default-rtdb.firebaseio.com");
+        const dbRegas = getDatabase(app, "https://regas.firebaseio.com");
+
+        let currentGuardId = "86959";
+        let currentGuardName = "Guardia de Seguridad";
+        
+        let currentTourData = null;
+        let watchId = null;
+        let lastReportedLocation = null;
+
+        // Cargar identidad desde LocalStorage
+        const cachedUserInfo = localStorage.getItem('userInfo');
+        if (cachedUserInfo) {
+            try {
+                const userData = JSON.parse(cachedUserInfo)[0];
+                if (userData) {
+                    currentGuardId = userData.ID || userData.id || currentGuardId;
+                    currentGuardName = userData.nombre || currentGuardName;
+                }
+            } catch (e) { console.warn("Error leyendo userInfo", e); }
+        }
+        document.getElementById('guard-name-display').innerText = currentGuardName;
+        document.getElementById('guard-id-display').innerText = `ID: ${currentGuardId}`;
+
+        // Cargar foto de perfil de elemento
+        async function getFotoElemento(id) {
+            try {
+                const dbLocal = await initIndexedDB();
+                const cachedPhoto = await new Promise((resolve) => {
+                    const tx = dbLocal.transaction('multimedia', 'readonly');
+                    const store = tx.objectStore('multimedia');
+                    const req = store.get(id.toString());
+                    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+                    req.onerror = () => resolve(null);
+                });
+
+                if (cachedPhoto) {
+                    return cachedPhoto; // Retorna la imagen local en Base64 o URL
+                }
+            } catch(e) {}
+            return '../ico/cic.ico'; // Fallback
+        }
+
+        // --- SISTEMA DE ALMACÉN DE CONFIGURACIÓN CON SINCRONIZACIÓN Y TIMESTAMPS ---
+        async function loadConfigLocal(key) {
+            try {
+                const dbLocal = await initIndexedDB();
+                return new Promise((resolve) => {
+                    const tx = dbLocal.transaction('RecorridosConfig', 'readonly');
+                    const store = tx.objectStore('RecorridosConfig');
+                    const req = store.get(key);
+                    req.onsuccess = () => resolve(req.result ? req.result.data : null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                console.warn("IndexedDB no disponible:", err);
+                return null;
+            }
+        }
+
+        async function saveConfigLocal(key, data) {
+            try {
+                const dbLocal = await initIndexedDB();
+                return new Promise((resolve, reject) => {
+                    const tx = dbLocal.transaction('RecorridosConfig', 'readwrite');
+                    const store = tx.objectStore('RecorridosConfig');
+                    const req = store.put({ id: key, data: data });
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                console.warn("IndexedDB no disponible:", err);
+            }
+        }
+
+        async function syncRoutes() {
+            // 1. Cargar rutas desde local al selector primero
+            let localRutas = await loadConfigLocal('rutas') || {};
+            populateRoutesSelect(localRutas);
+
+            // 2. Si está online, comprobar timestamp ultima_actualizacion
+            if (navigator.onLine) {
+                try {
+                    const metadata = await loadConfigLocal('metadata') || {};
+                    const serverTimestampSnap = await get(ref(db, 'recorridos/config/ultima_actualizacion'));
+                    const serverTimestamp = serverTimestampSnap.exists() ? serverTimestampSnap.val() : 0;
+
+                    if (serverTimestamp !== metadata.lastUpdated || !metadata.lastUpdated) {
+                        console.log("Nueva configuración en servidor. Descargando...");
+                        const routesSnap = await get(ref(db, 'recorridos/config/rutas'));
+                        const routesData = routesSnap.exists() ? routesSnap.val() : {};
+
+                        await saveConfigLocal('rutas', routesData);
+                        await saveConfigLocal('metadata', { lastUpdated: serverTimestamp });
+                        
+                        populateRoutesSelect(routesData);
+                    } else {
+                        console.log("Configuración de rutas al día (caché local).");
+                    }
+                } catch (e) {
+                    console.warn("Error en sincronización de rutas:", e);
+                }
+            }
+        }
+
+        function populateRoutesSelect(rutas) {
+            const select = document.getElementById('guard-route-select');
+            select.innerHTML = '<option value="">Seleccione una Ruta...</option>';
+            Object.keys(rutas).forEach(key => {
+                select.innerHTML += `<option value="${key}">${rutas[key].nombre}</option>`;
+            });
+            if (Object.keys(rutas).length === 0) {
+                select.innerHTML = '<option value="">No hay rutas configuradas</option>';
+            }
+        }
+
+        // --- TRACKING EN TIEMPO REAL ---
+        function startGuardGeolocationTracking() {
+            if (!navigator.geolocation) {
+                alert("La geolocalización no está soportada por su navegador.");
+                return;
+            }
+
+            const geoOptions = {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 10000
+            };
+
+            const successCallback = (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                lastReportedLocation = { lat, lon, timestamp: Date.now() };
+
+                document.getElementById('guard-coords').innerText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                const badge = document.getElementById('geo-status-badge');
+                badge.innerText = "GPS Activo";
+                badge.style.background = "var(--success-bg)";
+                badge.style.color = "var(--success-text)";
+
+                // Actualizar ubicación en Firebase RTDB si el recorrido está activo
+                if (currentTourData && currentTourData.estado === 'en_progreso') {
+                    update(ref(db, `recorridos/activos/${currentGuardId}/location`), lastReportedLocation);
+                }
+            };
+
+            const errorCallback = (error) => {
+                console.warn("Error de geolocalización:", error);
+                const badge = document.getElementById('geo-status-badge');
+                badge.innerText = "Error GPS";
+                badge.style.background = "var(--danger-bg)";
+                badge.style.color = "var(--danger-text)";
+            };
+
+            // Iniciar escucha continua
+            watchId = navigator.geolocation.watchPosition(successCallback, errorCallback, geoOptions);
+        }
+
+        function stopGuardGeolocationTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            const badge = document.getElementById('geo-status-badge');
+            badge.innerText = "GPS Inactivo";
+            badge.style.background = "var(--warning-bg)";
+            badge.style.color = "var(--warning-text)";
+        }
+
+        // --- MANEJO DE RUTAS Y TIMELINE ---
+        document.getElementById('btn-start-tour').onclick = async () => {
+            const routeKey = document.getElementById('guard-route-select').value;
+            if (!routeKey) {
+                alert("Seleccione una ruta válida de la lista.");
+                return;
+            }
+
+            // Cargar ruta
+            let rutas = await loadConfigLocal('rutas') || {};
+            let routeData = rutas[routeKey];
+
+            if (!routeData && navigator.onLine) {
+                const rtSnapshot = await get(ref(db, `recorridos/config/rutas/${routeKey}`));
+                if (rtSnapshot.exists()) routeData = rtSnapshot.val();
+            }
+
+            if (!routeData) {
+                alert("No se pudo cargar la configuración de la ruta.");
+                return;
+            }
+
+            const puntosVisita = routeData.puntos.map(pt => ({
+                ...pt,
+                visitado: false,
+                fechaVisita: null,
+                latReal: null,
+                lonReal: null
+            }));
+
+            const fotoUrl = await getFotoElemento(currentGuardId);
+
+            currentTourData = {
+                idElemento: currentGuardId,
+                empleadoNombre: currentGuardName,
+                fotoUrl,
+                routeId: routeKey,
+                routeName: routeData.nombre,
+                estado: 'en_progreso',
+                fechaInicio: Date.now(),
+                ultimoPasoVisita: 0,
+                puntosVisita,
+                location: lastReportedLocation || { lat: 25.6866, lon: -100.3161, timestamp: Date.now() },
+                incidencias: {}
+            };
+
+            // Guardar recorrido activo en Firebase
+            await set(ref(db, `recorridos/activos/${currentGuardId}`), currentTourData);
+
+            startGuardGeolocationTracking();
+
+            document.getElementById('guard-setup-box').style.display = 'none';
+            document.getElementById('guard-active-box').style.display = 'block';
+
+            renderGuardTimeline();
+            updateCurrentCheckpointLabel();
+        };
+
+        function renderGuardTimeline() {
+            const container = document.getElementById('guard-timeline-list');
+            container.innerHTML = '';
+
+            if (!currentTourData || !currentTourData.puntosVisita) return;
+
+            currentTourData.puntosVisita.forEach((pt, index) => {
+                const div = document.createElement('div');
+                const stepIndex = index + 1;
+                const isActive = stepIndex === (currentTourData.ultimoPasoVisita + 1);
+                const isVisited = pt.visitado;
+
+                let stateClass = '';
+                if (isActive) stateClass = 'active';
+                else if (isVisited) stateClass = 'visited';
+
+                div.className = `timeline-item ${stateClass}`;
+                div.innerHTML = `
+                    <div>
+                        <span class="timeline-item-title">${pt.nombre}</span><br>
+                        <span class="timeline-item-subtitle">${pt.tipo.toUpperCase()}</span>
+                    </div>
+                    <span style="font-size:10px; font-weight:700; color:${isVisited ? 'var(--success)' : '#888'};">
+                        ${isVisited ? new Date(pt.fechaVisita).toLocaleTimeString() : (isActive ? 'Siguiente' : 'Pendiente')}
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateCurrentCheckpointLabel() {
+            const label = document.getElementById('current-checkpoint-name');
+            const nextIndex = currentTourData.ultimoPasoVisita;
+            if (nextIndex < currentTourData.puntosVisita.length) {
+                const pt = currentTourData.puntosVisita[nextIndex];
+                label.innerText = `SIGUIENTE: ${pt.nombre} (${pt.tipo.toUpperCase()})`;
+                document.getElementById('btn-mark-point').disabled = false;
+            } else {
+                label.innerText = `¡TODOS LOS PUNTOS VISITADOS!`;
+                document.getElementById('btn-mark-point').disabled = true;
+            }
+        }
+
+        // MARCAR PUNTO
+        document.getElementById('btn-mark-point').onclick = () => {
+            const btn = document.getElementById('btn-mark-point');
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            const processMark = (position) => {
+                const lat = position ? position.coords.latitude : (lastReportedLocation ? lastReportedLocation.lat : 25.6866);
+                const lon = position ? position.coords.longitude : (lastReportedLocation ? lastReportedLocation.lon : -100.3161);
+
+                const nextIndex = currentTourData.ultimoPasoVisita;
+                if (nextIndex >= currentTourData.puntosVisita.length) return;
+
+                const pt = currentTourData.puntosVisita[nextIndex];
+                pt.visitado = true;
+                pt.fechaVisita = Date.now();
+                pt.latReal = lat;
+                pt.lonReal = lon;
+
+                currentTourData.ultimoPasoVisita += 1;
+                currentTourData.location = { lat, lon, timestamp: Date.now() };
+
+                // Guardar en Firebase
+                update(ref(db, `recorridos/activos/${currentGuardId}`), {
+                    ultimoPasoVisita: currentTourData.ultimoPasoVisita,
+                    location: currentTourData.location
+                });
+                set(ref(db, `recorridos/activos/${currentGuardId}/puntosVisita/${nextIndex}`), pt);
+
+                renderGuardTimeline();
+                updateCurrentCheckpointLabel();
+
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            };
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    processMark,
+                    (err) => {
+                        console.warn("Fallo de GPS al marcar punto, usando última ubicación:", err);
+                        processMark(null);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                processMark(null);
+            }
+        };
+
+        // --- INCIDENCIAS ---
+        window.closeReportModal = () => {
+            document.getElementById('modal-report').classList.remove('active');
+            document.getElementById('report-title').value = '';
+            document.getElementById('report-desc').value = '';
+            document.getElementById('report-photo').value = '';
+        };
+
+        document.getElementById('btn-trigger-report').onclick = () => {
+            document.getElementById('modal-report').classList.add('active');
+        };
+
+        document.getElementById('btn-submit-report').onclick = async () => {
+            const title = document.getElementById('report-title').value.trim();
+            const desc = document.getElementById('report-desc').value.trim();
+            const photoFile = document.getElementById('report-photo').files[0];
+
+            if (!title) {
+                alert("Debe ingresar un título para la incidencia.");
+                return;
+            }
+
+            const sendReport = (fotoBase64) => {
+                const incidencia = {
+                    titulo: title,
+                    descripcion: desc,
+                    foto: fotoBase64 || null,
+                    fecha: Date.now()
+                };
+
+                const newKey = push(ref(db, `recorridos/activos/${currentGuardId}/incidencias`)).key;
+                set(ref(db, `recorridos/activos/${currentGuardId}/incidencias/${newKey}`), incidencia);
+
+                if (!currentTourData.incidencias) currentTourData.incidencias = {};
+                currentTourData.incidencias[newKey] = incidencia;
+
+                closeReportModal();
+                alert("Incidencia reportada con éxito.");
+            };
+
+            if (photoFile) {
+                const reader = new FileReader();
+                reader.onload = () => sendReport(reader.result);
+                reader.onerror = () => {
+                    console.error("Error leyendo imagen");
+                    sendReport(null);
+                };
+                reader.readAsDataURL(photoFile);
+            } else {
+                sendReport(null);
+            }
+        };
+
+        // --- FINALIZAR RECORRIDO Y GUARDAR EN REGAS ---
+        async function saveRecorridoLocalRegas(anio, mes, dia, idElemento, shiftKey, recKey, recData) {
+            try {
+                const dbLocal = await initIndexedDB();
+                return new Promise((resolve, reject) => {
+                    const tx = dbLocal.transaction('regas', 'readwrite');
+                    const store = tx.objectStore('regas');
+                    const req = store.get(anio.toString());
+                    req.onsuccess = () => {
+                        let localAnio = req.result;
+                        if (!localAnio) {
+                            localAnio = { id: anio.toString(), meses: {} };
+                        }
+                        if (!localAnio.meses[mes]) localAnio.meses[mes] = { dias: {} };
+                        if (!localAnio.meses[mes].dias[dia]) localAnio.meses[mes].dias[dia] = { registros: {} };
+                        if (!localAnio.meses[mes].dias[dia].registros[idElemento]) {
+                            localAnio.meses[mes].dias[dia].registros[idElemento] = {};
+                        }
+                        if (!localAnio.meses[mes].dias[dia].registros[idElemento][shiftKey]) {
+                            localAnio.meses[mes].dias[dia].registros[idElemento][shiftKey] = {};
+                        }
+                        
+                        localAnio.meses[mes].dias[dia].registros[idElemento][shiftKey][recKey] = recData;
+
+                        const putReq = store.put(localAnio);
+                        putReq.onsuccess = () => resolve();
+                        putReq.onerror = () => reject(putReq.error);
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn("No se pudo escribir en la IndexedDB de regas local:", e);
+            }
+        }
+
+        document.getElementById('btn-finish-tour').onclick = async () => {
+            if (confirm("¿Está seguro de que desea finalizar el recorrido?")) {
+                currentTourData.estado = 'completado';
+                currentTourData.fechaFin = Date.now();
+
+                // 1. Determinar Fecha y Claves para Regas
+                const now = new Date();
+                const anio = now.getFullYear().toString();
+                const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][now.getMonth()];
+                const dia = now.getDate().toString().padStart(2, '0') + (now.getMonth()+1).toString().padStart(2, '0') + now.getFullYear().toString();
+
+                let shiftKey = 'matutino'; // Fallback por defecto
+
+                // Intentar leer el registro de asistencia actual para identificar el turno activo
+                try {
+                    const snapReg = await get(ref(dbRegas, `${anio}/${mes}/${dia}/${currentGuardId}`));
+                    if (snapReg.exists()) {
+                        const regData = snapReg.val();
+                        // Buscar si tiene algún turno creado
+                        const shKeys = Object.keys(regData).filter(k => ['matutino', 'vespertino', 'nocturno'].includes(k.toLowerCase()));
+                        if (shKeys.length > 0) {
+                            shiftKey = shKeys[0].toLowerCase();
+                        }
+                    } else {
+                        // Si no existe, determinar por hora actual
+                        const hour = now.getHours();
+                        if (hour >= 6 && hour < 14) shiftKey = 'matutino';
+                        else if (hour >= 14 && hour < 22) shiftKey = 'vespertino';
+                        else shiftKey = 'nocturno';
+                    }
+                } catch(e) {
+                    console.warn("Fallo al consultar regas, usando fallback de hora:", e);
+                    const hour = now.getHours();
+                    if (hour >= 6 && hour < 14) shiftKey = 'matutino';
+                    else if (hour >= 14 && hour < 22) shiftKey = 'vespertino';
+                    else shiftKey = 'nocturno';
+                }
+
+                // 2. Determinar la clave incremental recorridoN (ej: recorrido1, recorrido2)
+                let recorridoIndex = 1;
+                try {
+                    const snapShift = await get(ref(dbRegas, `${anio}/${mes}/${dia}/${currentGuardId}/${shiftKey}`));
+                    if (snapShift.exists()) {
+                        const shiftData = snapShift.val();
+                        const existingKeys = Object.keys(shiftData).filter(k => k.startsWith('recorrido'));
+                        recorridoIndex = existingKeys.length + 1;
+                    }
+                } catch(e) {}
+                const recorridoKey = `recorrido${recorridoIndex}`;
+
+                // 3. Guardar detallado en Base de Datos Regas (Firebase Cloud)
+                const regasPath = `${anio}/${mes}/${dia}/${currentGuardId}/${shiftKey}/${recorridoKey}`;
+                await set(ref(dbRegas, regasPath), currentTourData);
+
+                // 4. Guardar detallado en Regas Local (IndexedDB)
+                await saveRecorridoLocalRegas(anio, mes, dia, currentGuardId, shiftKey, recorridoKey, currentTourData);
+
+                // 5. Guardar resumen en el historial general de recorridos
+                const summary = {
+                    idElemento: currentGuardId,
+                    empleadoNombre: currentGuardName,
+                    routeName: currentTourData.routeName,
+                    startTime: currentTourData.fechaInicio,
+                    endTime: currentTourData.fechaFin,
+                    shiftKey: shiftKey,
+                    contextDate: now.toISOString(),
+                    regasPath: regasPath
+                };
+
+                const historyKey = push(ref(db, 'recorridos/historial')).key;
+                await set(ref(db, `recorridos/historial/${historyKey}`), summary);
+
+                // 6. Borrar activo
+                await remove(ref(db, `recorridos/activos/${currentGuardId}`));
+
+                stopGuardGeolocationTracking();
+                currentTourData = null;
+
+                // Reset UI
+                document.getElementById('guard-setup-box').style.display = 'block';
+                document.getElementById('guard-active-box').style.display = 'none';
+
+                alert("Recorrido guardado y reportado correctamente.");
+            }
+        };
+
+        // --- INICIALIZACIÓN ---
+        syncRoutes();
+    </script>
+</body>
+</html>

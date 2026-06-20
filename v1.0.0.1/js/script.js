@@ -266,8 +266,8 @@ export async function getLocalNotifications(uid) {
 // Inicializar IndexedDB para el sistema
 export function initIndexedDB() {
     return new Promise((resolve, reject) => {
-        // Abre o crea la base de datos 'cic-os' en su versión 2
-        const request = indexedDB.open('cic-os', 2);
+        // Abre o crea la base de datos 'cic-os' en su versión 3
+        const request = indexedDB.open('cic-os', 3);
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;

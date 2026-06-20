@@ -2107,6 +2107,136 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
             `;
             container.appendChild(formDiv);
 
+            // --- DETECCION DE RECORRIDOS COMPLETADOS ---
+            const recorridosKeys = Object.keys(sData).filter(k => k.startsWith('recorrido'));
+            if (recorridosKeys.length > 0) {
+                const recContainer = document.createElement('div');
+                recContainer.style.cssText = `
+                    margin-top: 15px;
+                    border-top: 1px solid #cbd5e1;
+                    padding-top: 15px;
+                `;
+                
+                recContainer.innerHTML = `
+                    <h4 style="font-size:11px; margin:0 0 10px 0; color:var(--fiusha); display:flex; align-items:center; gap:6px; text-transform:uppercase; font-weight:800;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2.5"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+                        Recorridos Realizados (${recorridosKeys.length})
+                    </h4>
+                `;
+
+                recorridosKeys.forEach(k => {
+                    const rec = sData[k];
+                    const countVisited = rec.puntosVisita ? rec.puntosVisita.filter(p => p.visitado).length : 0;
+                    const countTotal = rec.puntosVisita ? rec.puntosVisita.length : 0;
+                    
+                    const startTimeStr = rec.fechaInicio ? new Date(rec.fechaInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                    const endTimeStr = rec.fechaFin ? new Date(rec.fechaFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        padding: 10px;
+                        margin-bottom: 8px;
+                    `;
+
+                    // Checklist
+                    let pointsListHtml = '';
+                    if (rec.puntosVisita && rec.puntosVisita.length > 0) {
+                        pointsListHtml = `
+                            <div style="margin-top: 6px; font-size: 10px; border-left: 2px solid #cbd5e1; padding-left: 8px; margin-left: 2px;">
+                        `;
+                        rec.puntosVisita.forEach((pt, idx) => {
+                            const timeMark = pt.visitado && pt.fechaVisita ? new Date(pt.fechaVisita).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pendiente';
+                            pointsListHtml += `
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 3px; color:${pt.visitado ? 'var(--text-color)' : '#64748b'};">
+                                    <span><strong>${idx+1}.</strong> ${pt.nombre} (${pt.tipo.toUpperCase()})</span>
+                                    <span style="font-weight:bold; color:${pt.visitado ? 'var(--success)' : '#64748b'};">${timeMark}</span>
+                                </div>
+                            `;
+                        });
+                        pointsListHtml += `</div>`;
+                    }
+
+                    // Incidencias
+                    let incidentsHtml = '';
+                    if (rec.incidencias && Object.keys(rec.incidencias).length > 0) {
+                        incidentsHtml = `
+                            <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
+                                <span style="font-size: 9px; font-weight: bold; color: var(--danger); text-transform: uppercase;">⚠️ Incidencias Reportadas:</span>
+                        `;
+                        Object.keys(rec.incidencias).forEach(ik => {
+                            const inc = rec.incidencias[ik];
+                            incidentsHtml += `
+                                <div style="font-size: 9px; margin-top: 4px; background: #fff; border: 1px solid #f1f5f9; border-radius: 6px; padding: 5px;">
+                                    <strong style="color:var(--danger);">${inc.titulo}</strong>
+                                    <span style="float:right; font-size:8px; color:#64748b;">${new Date(inc.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <p style="margin:2px 0 0 0; color:#475569; line-height: 1.2;">${inc.descripcion}</p>
+                                    ${inc.foto ? `<img src="${inc.foto}" style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 4px; border: 1px solid #e2e8f0; cursor: pointer;" onclick="window.viewFullHistoryPhoto('${inc.titulo}', '${inc.descripcion}', '${inc.foto}')">` : ''}
+                                </div>
+                            `;
+                        });
+                        incidentsHtml += `</div>`;
+                    }
+
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size: 11px; margin-bottom: 4px;">
+                            <span style="font-weight:bold; color:var(--fiusha);">${rec.routeName}</span>
+                            <span style="font-size: 10px; font-weight:bold; color:${countVisited === countTotal ? 'var(--success)' : 'var(--warning)'};">
+                                ${countVisited}/${countTotal} Puntos
+                            </span>
+                        </div>
+                        <div style="font-size: 9px; color:#64748b;">
+                            🕒 Duración: <strong>${startTimeStr} - ${endTimeStr}</strong>
+                        </div>
+                        ${pointsListHtml}
+                        ${incidentsHtml}
+                    `;
+                    recContainer.appendChild(card);
+                });
+
+                container.appendChild(recContainer);
+            }
+
+            // Visor de fotos inline global
+            window.viewFullHistoryPhoto = function(title, desc, src) {
+                let modal = document.getElementById('history-full-photo-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'history-full-photo-modal';
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.8);
+                        backdrop-filter: blur(5px);
+                        z-index: 99999;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                        box-sizing: border-box;
+                    `;
+                    modal.innerHTML = `
+                        <div style="background:#fff; border-radius:12px; max-width:400px; width:100%; overflow:hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display:flex; flex-direction:column;">
+                            <div style="padding:12px; border-bottom:1px solid #cbd5e1; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+                                <h3 id="hist-photo-title" style="margin:0; font-size:12px; font-weight:800; color:#1e293b; text-transform:uppercase;"></h3>
+                                <button onclick="document.getElementById('history-full-photo-modal').style.display='none'" style="background:none; border:none; font-size:18px; font-weight:bold; cursor:pointer; color:#64748b;">&times;</button>
+                            </div>
+                            <div style="padding:15px; text-align:center; overflow-y:auto; max-height: 350px;">
+                                <p id="hist-photo-desc" style="font-size:11px; color:#475569; text-align:left; margin-bottom:10px; line-height:1.3;"></p>
+                                <img id="hist-photo-img" style="max-width:100%; border-radius:8px; border:1px solid #cbd5e1;">
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                document.getElementById('hist-photo-title').innerText = title;
+                document.getElementById('hist-photo-desc').innerText = desc;
+                document.getElementById('hist-photo-img').src = src;
+                modal.style.display = 'flex';
+            };
+
             // Helper: Atar eventos al botón principal de acción
             const bindMainActionBtn = () => {
                 const btnAction = formDiv.querySelector('.btn-action-main');
