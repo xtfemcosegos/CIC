@@ -23,6 +23,7 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            padding: 10px;
             gap: 10px;
         }
 
@@ -219,7 +220,8 @@
         <!-- Panel Central: Directorio -->
         <div class="center-panel" style="flex: 1; padding: 20px; overflow-y: auto;">
             <div class="header-bar">
-                <h2>Directorio de Elementos</h2>
+                <h2 style="padding-left: 10px;">Directorio de Elementos</h2>
+                <input type="text" id="search-input" placeholder="Buscar por nombre o ID..." class="filter-select" style="flex-grow: 1; max-width: 400px;">
                 <select id="filter-status" class="filter-select">
                     <option value="todos">Todos</option>
                     <option value="activo" selected>Activos</option>
@@ -268,6 +270,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('main-container');
             const filterSelect = document.getElementById('filter-status');
+            const searchInput = document.getElementById('search-input');
             
             container.innerHTML = '<p style="color: #64748b; font-weight: 600;">Cargando directorio...</p>';
 
@@ -292,11 +295,14 @@
 
             // Escuchar cambios en el filtro
             filterSelect.addEventListener('change', renderDirectorio);
+            searchInput.addEventListener('input', renderDirectorio);
         });
 
         function renderDirectorio() {
             const container = document.getElementById('main-container');
             const statusFilter = document.getElementById('filter-status').value;
+            const searchInput = document.getElementById('search-input');
+            const searchQuery = searchInput ? searchInput.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
             container.innerHTML = ''; // Limpiar contenedor principal
 
             const groups = {};
@@ -306,6 +312,15 @@
                 const opData = el.Operativa || {};
                 const estado = opData.Estado || 'Desconocido';
                 const isActivo = estado.toLowerCase() === 'activo';
+
+                // Aplicar filtro de búsqueda
+                if (searchQuery) {
+                    const nombre = (el.id || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const idSocio = (el.ID || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    if (!nombre.includes(searchQuery) && !idSocio.includes(searchQuery)) {
+                        continue;
+                    }
+                }
 
                 // Aplicar Filtro de estado
                 if (statusFilter === 'activo' && !isActivo) continue;

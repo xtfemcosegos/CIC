@@ -98,8 +98,9 @@ window.handleMenuAction = async function(action, param) {
 
     if (['perfil', 'turno', 'patrones'].includes(action)) {
         if (window.openDetailPanel) {
-            await window.openDetailPanel(data.idElemento, data.empleadoNombre, data.record, data.shift.name, data.bgHeaderToPass, data.casetasGlobal, data.motivosGlobal, isToday, anio, mes, dia);
-            if (action !== 'turno' && window.selectDetailTab) window.selectDetailTab(action);
+            const shiftName = data.shift ? data.shift.name : null;
+            await window.openDetailPanel(data.idElemento, data.empleadoNombre, data.record, shiftName, data.bgHeaderToPass, data.casetasGlobal, data.motivosGlobal, isToday, anio, mes, dia);
+            if (window.selectDetailTab) window.selectDetailTab(action);
         }
     } else if (action === 'asignar') {
         try { await moveElementoRegas(anio, mes, dia, data.idElemento, param, data.currentCaseta || 'Desconocido', false, null); fireUpdateEvent(); } catch(e) { console.error(e); }

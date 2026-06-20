@@ -103,6 +103,13 @@
         }
     </style>
 </head>
+<script type="module">
+    // Importar funciones necesarias para que estén disponibles en el scope global
+    import { getFotoElemento } from './scrpt.js';
+    window.getFotoElemento = getFotoElemento;
+    window.openDetailPanel = (id, name, bg) => window.parent.postMessage({ action: 'requestOpenDetailPanel', payload: { idElemento: id, empleadoNombre: name, bgHeader: bg, contextDate: new Date().toISOString() } }, '*');
+    window.selectDetailTab = (tab) => window.parent.postMessage({ action: 'selectDetailTab', payload: { tab } }, '*');
+</script>
 <body>
     <div style="padding: 20px; overflow-y: auto; height: 100vh; box-sizing: border-box;">
         <div class="header-bar">
@@ -266,18 +273,21 @@
                 if(assignedElements.length === 0) {
                     body.innerHTML = '<span style="color:#94a3b8; font-size:11px; font-style:italic; padding: 10px; text-align: center;">Sin elementos asignados</span>';
                 } else {
-                    assignedElements.forEach(el => {
-                        const isActivo = (el.Operativa.Estado || '').toLowerCase() === 'activo';
-                        body.innerHTML += `
-                            <div class="caseta-element">
-                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-                                    <div class="element-status ${isActivo ? 'status-activo' : 'status-baja'}" title="${isActivo ? 'Activo' : 'Baja'}"></div>
-                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${el.id}</span>
-                                </div>
-                                <span style="font-size:10px; color:#94a3b8;">${el.ID || '--'}</span>
-                            </div>
+                    assignedElements.forEach(el => { 
+                        const row = document.createElement('div');
+                        row.className = 'caseta-element-row emp-compact-card';
+                        row.innerHTML = `
+                            <img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23cccccc%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #e0e0e0; flex-shrink: 0;">
+                            <div class="text-info-container" style="display:flex; flex-direction:column; overflow:hidden; flex:1; min-width:0;"><span class="element-name" style="font-weight: 600; font-size: 12px; color: var(--text-color); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${el.id}</span><span class="element-id" style="font-size: 10px; color: #64748b;">ID: ${el.ID}</span></div>
                         `;
-                    });
+                        row.onclick = async () => {
+                            await window.openDetailPanel(el.ID, el.id, caseta.bgHeader);
+                            window.selectDetailTab('perfil');
+                        };
+                        body.appendChild(row);
+                        const imgEl = row.querySelector('img');
+                        window.getFotoElemento(el.ID).then(url => { if(url && imgEl) imgEl.src = url; });
+                    }); 
                 }
                 card.appendChild(body);
 

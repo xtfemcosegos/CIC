@@ -1,4 +1,4 @@
-import { app, functions, httpsCallable } from '../../js/firebase.js';
+import { app } from '../../js/firebase.js';
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { initIndexedDB, applyHeaderStyles, syncCloudUpdate } from '../../js/script.js';
@@ -1147,12 +1147,6 @@ function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, 
             </h4>
             <p style="font-size: 11px; color: #64748b; margin-top: 0; line-height: 1.4;">Asigna turnos automáticamente para un rango de fechas. <strong style="color:#ef4444;">Precaución:</strong> esto sobrescribirá cualquier turno o ausentismo existente en los días que abarque el patrón.</p>
             
-            <button id="btn-ai-suggest" class="btn-new-shift" style="width: 100%; border-color: #c026d3; color: #a21caf; background: #fdf4ff; box-shadow: 0 2px 4px rgba(192, 38, 211, 0.1); margin-bottom: 5px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 5px; vertical-align: middle;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg>
-                ✨ Analizar y Sugerir Patrón (IA)
-            </button>
-            <div id="ai-suggestion-text" style="font-size: 11px; color: #059669; margin-bottom: 10px; font-weight: 600; text-align: center;"></div>
-            
             <div class="detail-row">
                 <div class="input-col"><label>Fecha de Inicio</label><input type="date" id="pat-start-date" class="form-select" value="${formatYMD(startDate)}"></div>
                 <div class="input-col"><label>Fecha de Fin</label><input type="date" id="pat-end-date" class="form-select" value="${formatYMD(endDate)}"></div>
@@ -1408,88 +1402,7 @@ function renderPatronesForm(container, idElemento, empleadoNombre, contextDate, 
         }
     });
 
-    // --- MAGIA DE LA IA (GENKIT) ---
-    const btnAi = container.querySelector('#btn-ai-suggest');
-    const aiText = container.querySelector('#ai-suggestion-text');
-    if (btnAi) {
-        btnAi.addEventListener('click', async (e) => {
-            e.preventDefault();
-            btnAi.disabled = true;
-            btnAi.style.opacity = '0.6';
-            btnAi.innerHTML = 'Analizando 30 días de historial...';
-            aiText.innerText = '';
-            aiText.style.color = '#059669';
-            
-            try {
-                // 1. Extraer últimos 30 días de IndexedDB
-                let historyStr = "";
-                const contextD = new Date(contextDate);
-                for(let i=30; i>=1; i--) {
-                    const d = new Date(contextD);
-                    d.setDate(d.getDate() - i);
-                    const y = d.getFullYear().toString();
-                    const mStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][d.getMonth()];
-                    const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + y;
-                    
-                    const rec = await downloadRegas(y, mStr, dStr, idElemento);
-                    let shiftName = "descanso"; // Asumimos descanso si no hay nada en la BD local
-                    if (rec) {
-                        if(rec.matutino) shiftName = "matutino";
-                        else if(rec.vespertino) shiftName = "vespertino";
-                        else if(rec.nocturno) shiftName = "nocturno";
-                        else if(rec.ausentismo) shiftName = "descanso";
-                    }
-                    historyStr += `${d.toLocaleDateString()}: ${shiftName}\n`;
-                }
-                
-                // 2. Llamar a la Cloud Function de Genkit
-                const sugerirPatron = httpsCallable(functions, 'sugerirpatron');
-                const res = await sugerirPatron({ historial: historyStr });
-                const data = res.data;
-                
-                aiText.innerText = `💡 ${data.razonamiento}`;
-                
-                // 3. Aplicar la sugerencia a la Interfaz
-                patType.value = data.tipoPatron;
-                patType.dispatchEvent(new Event('change')); // Fuerza a que se dibuje el timeline vacío
-                
-                if (data.tipoPatron === 'custom_cyclic' && data.secuencia) {
-                    timeline.innerHTML = ''; // Limpiamos el día 1 genérico
-                    let cyclicDays = 0;
-                    
-                    data.secuencia.forEach((turnoStr, index) => {
-                        cyclicDays++;
-                        const col = document.createElement('div');
-                        col.className = 'pat-day-col';
-                        col.setAttribute('data-index', index);
-                        col.style.cssText = 'min-width: 70px; flex: 1; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; padding: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);';
-                        
-                        col.innerHTML = `<div style="font-size:10px; font-weight:bold; color:#64748b; margin-bottom:5px; text-transform:uppercase;">Día ${cyclicDays}</div>`;
-                        
-                        const dropzone = document.createElement('div');
-                        dropzone.className = 'pat-dropzone';
-                        dropzone.style.cssText = 'width:100%; flex:1; min-height:60px; display:flex; flex-direction:column; gap:5px; align-items:center; border: 2px dashed transparent; border-radius:4px; padding:2px; transition:border 0.2s;';
-                        col.appendChild(dropzone);
-                        timeline.appendChild(col);
-                        
-                        const t = turnoStr.toLowerCase();
-                        if(['matutino', 'vespertino', 'nocturno', 'descanso'].includes(t)) {
-                            addShiftToZone(dropzone, t, {}); // Inyectamos las tarjetas según la IA
-                        }
-                    });
-                }
-                
-            } catch(err) {
-                console.error("Error Genkit:", err);
-                aiText.style.color = '#ef4444';
-                aiText.innerText = err.message || "Error al analizar. Verifica tu conexión a internet o el servidor.";
-            }
-            
-            btnAi.disabled = false;
-            btnAi.style.opacity = '1';
-            btnAi.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 5px; vertical-align: middle;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> ✨ Analizar y Sugerir Patrón (IA)';
-        });
-    }
+
 
     // --- MOTOR DE GENERACIÓN DEL PATRÓN ---
     const btnApply = container.querySelector('#btn-apply-pattern');
@@ -1768,8 +1681,6 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
         });
     }
 
-    selectDetailTab('turno'); // Mueve a pestaña turno
-    
     // Renderizar pestaña de Patrones
     const contentPatrones = document.getElementById('content-patrones');
     if (contentPatrones) {
@@ -1812,6 +1723,65 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
             
             container.appendChild(tabsDiv);
             
+            // 1.5 DIBUJAR ETIQUETA DE FECHA Y SELECTOR
+            const dateLabelDiv = document.createElement('div');
+            const isTodayDate = contextDate.toDateString() === new Date().toDateString();
+            dateLabelDiv.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 12px;
+                border-radius: 8px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                font-size: 11px;
+                font-weight: 600;
+                background-color: ${isTodayDate ? '#dcfce7' : '#f1f5f9'};
+                color: ${isTodayDate ? '#15803d' : '#475569'};
+                border: 1px solid ${isTodayDate ? '#bbf7d0' : '#e2e8f0'};
+            `;
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateText = contextDate.toLocaleDateString('es-MX', options);
+            const capitalizedDateText = dateText.charAt(0).toUpperCase() + dateText.slice(1);
+            
+            const yYear = contextDate.getFullYear();
+            const mMonth = String(contextDate.getMonth() + 1).padStart(2, '0');
+            const dDay = String(contextDate.getDate()).padStart(2, '0');
+            const dateInputVal = `${yYear}-${mMonth}-${dDay}`;
+            
+            dateLabelDiv.innerHTML = `
+                <span>📅 ${capitalizedDateText}</span>
+                <input type="date" id="shift-detail-date-picker" class="form-select" value="${dateInputVal}" style="width: auto; padding: 2px 6px; font-size: 11px; margin-left: 10px; height: 26px; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; background: #fff; color: #334155;">
+            `;
+            
+            container.appendChild(dateLabelDiv);
+            
+            const datePicker = dateLabelDiv.querySelector('#shift-detail-date-picker');
+            datePicker.addEventListener('change', async (e) => {
+                const selectedVal = e.target.value;
+                if (!selectedVal) return;
+                
+                container.innerHTML = '<p style="color: #888; text-align: center; margin-top: 20px;">Cargando turno...</p>';
+                
+                try {
+                    const newDate = new Date(selectedVal + 'T00:00:00');
+                    const newAnio = newDate.getFullYear().toString();
+                    const newMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][newDate.getMonth()];
+                    const newDia = newDate.getDate().toString().padStart(2, '0') + (newDate.getMonth()+1).toString().padStart(2, '0') + newDate.getFullYear().toString();
+                    const newIsToday = newDate.toDateString() === new Date().toDateString();
+                    
+                    const newRecord = await downloadRegas(newAnio, newMes, newDia, idElemento);
+                    
+                    await openDetailPanel(idElemento, empleadoNombre, newRecord || {}, null, bgHeader, casetasList, motivosList, newIsToday, newAnio, newMes, newDia);
+                    selectDetailTab('turno');
+                } catch(err) {
+                    console.error("Error al cambiar fecha:", err);
+                    alert("Error al cargar la fecha seleccionada.");
+                    renderShiftForm(activeShiftName);
+                }
+            });
+
             // 2. EXTRAER DATOS DEL TURNO SELECCIONADO
 
             // Si es la pestaña "Fantasma", dibujamos los botones de turnos disponibles para crear
@@ -2071,13 +2041,13 @@ export async function openDetailPanel(idElemento, empleadoNombre, record, initia
                         </div>
                         <div class="input-col"><label>Entrada Real</label>
                             <div style="position:relative; display:flex; align-items:center; width:100%;">
-                                <input type="time" class="form-time inp-ent" value="${sData.entrada_real || ''}" style="width:100%; padding-right:25px;">
+                                <input type="time" class="form-time inp-ent" value="${sData.entrada_real || ''}" style="width:100%; padding-right:25px;" ${!isToday ? 'disabled' : ''}>
                                 <div class="save-status" style="position:absolute; right:8px; display:flex; align-items:center; pointer-events:none;"></div>
                             </div>
                         </div>
                         <div class="input-col"><label>Salida Real</label>
                             <div style="position:relative; display:flex; align-items:center; width:100%;">
-                                <input type="time" class="form-time inp-sal" value="${sData.salida_real || ''}" style="width:100%; padding-right:25px;">
+                                <input type="time" class="form-time inp-sal" value="${sData.salida_real || ''}" style="width:100%; padding-right:25px;" ${!sData.entrada_real ? 'disabled' : ''}>
                                 <div class="save-status" style="position:absolute; right:8px; display:flex; align-items:center; pointer-events:none;"></div>
                             </div>
                         </div>

@@ -190,9 +190,15 @@
         window.getFotoElemento = getFotoElemento;
 
         const openDetailPanel = async (idElemento, empleadoNombre, record, initialShiftName, bgHeader, casetasList, motivosList, isToday, anio, mes, dia) => {
+            const mesesStr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            const mIndex = mesesStr.indexOf(mes);
+            const dNum = parseInt(dia.substring(0, 2), 10);
+            const yNum = parseInt(anio, 10);
+            const computedDate = new Date(yNum, mIndex, dNum);
+            
             const payload = {
                 idElemento, empleadoNombre, initialShiftName, bgHeader,
-                contextDate: selectedDate.toISOString()
+                contextDate: computedDate.toISOString()
             };
             window.parent.postMessage({ action: 'requestOpenDetailPanel', payload }, '*');
         };

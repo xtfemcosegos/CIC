@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.0.856';
+const APP_VERSION = '1.0.0.872';
 const CACHE_NAME = `cic-os-cache-${APP_VERSION}`;
 
 self.addEventListener('install', event => {

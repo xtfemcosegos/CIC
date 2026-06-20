@@ -271,7 +271,7 @@ export function initIndexedDB() {
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            const stores = ['regas', 'elementos', 'casetas', 'marbetes', 'multimedia', 'formularios', 'reportes', 'externos','notificaciones', 'motivosAusentismo'];
+            const stores = ['regas', 'elementos', 'casetas', 'marbetes', 'multimedia', 'formularios', 'reportes', 'externos','notificaciones', 'motivosAusentismo', 'RecorridosConfig'];
             
             stores.forEach(store => {
                 if (!db.objectStoreNames.contains(store)) {

@@ -333,6 +333,11 @@
     </nav>
 
     <!-- Contenido Principal -->
+    <button id="reopen-right-panel-btn" style="display: none; position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 500; background: var(--color-base); color: white; border: none; width: 30px; height: 50px; border-top-left-radius: 8px; border-bottom-left-radius: 8px; cursor: pointer; box-shadow: -2px 0 10px rgba(0,0,0,0.3);">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
     <div class="app-body" style="display: flex; flex: 1; overflow: hidden;">
         <main id="main-content" style="flex: 1; position: relative;">
             <!-- Iframes generados dinámicamente -->
@@ -351,7 +356,9 @@
                             <span id="detail-id" style="font-size: 11px; opacity: 0.8;"></span>
                         </div>
                     </div>
-                    <button onclick="closeRightPanel()">×</button>
+                    <button onclick="closeRightPanel()" title="Colapsar Panel" class="btn-action-main" style="width: auto; height: auto; padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
                 <div id="detail-quick-actions-container" style="background: #fafafa;"></div>
                 <div class="detail-tabs">
@@ -364,11 +371,36 @@
                 <div id="content-patrones" class="d-content"></div>
             </div>
 
+            <!-- Sub-Panel de Recorridos -->
+            <div id="right-panel-recorridos" style="display: none; flex-direction: column; height: 100%;">
+                <div class="panel-tabs" style="background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
+                    <div class="panel-tab active" onclick="window.selectRecorridosTab('control')">Control</div>
+                    <div class="panel-tab" onclick="window.selectRecorridosTab('config')">Configuración</div>
+                    <div class="panel-tab" onclick="window.selectRecorridosTab('historial')">Historial</div>
+                </div>
+                <div class="panel-content">
+                    <!-- Pestaña de Control de Rutas -->
+                    <div id="recorridos-tab-control" class="tab-content active" style="padding: 20px;"></div>
+                    <!-- Pestaña de Historial -->
+                    <div id="recorridos-tab-historial" class="tab-content" style="padding: 20px;"></div>
+                    <!-- Pestaña de Configuración de Predios -->
+                    <div id="recorridos-tab-config" class="tab-content" style="padding: 20px;"></div>
+                </div>
+                <div class="detail-header" style="border-top: 1px solid #e2e8f0;">
+                    <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Panel de Recorridos</h3></div></div>
+                    <button onclick="closeRightPanel()">×</button>
+                </div>
+            </div>
+
+
+
             <!-- Sub-Panel de Catálogo de Elementos -->
             <div id="right-panel-add" style="display: none; flex-direction: column; height: 100%;">
                 <div class="detail-header">
                     <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Catálogo</h3><span style="font-size: 11px; opacity: 0.8;">Buscar y asignar elemento</span></div></div>
-                    <button onclick="closeRightPanel()">×</button>
+                    <button onclick="closeRightPanel()" title="Colapsar Panel" class="btn-action-main" style="width: auto; height: auto; padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
                 <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-elemento-input" placeholder="Buscar por Nombre o ID..." oninput="window.renderElementosList(this.value)" class="form-select" style="width: 100%; box-sizing: border-box;"></div>
                 <div id="add-elemento-list" style="flex: 1; overflow-y: auto; padding: 0;"></div>
@@ -378,7 +410,9 @@
             <div id="right-panel-swap" style="display: none; flex-direction: column; height: 100%;">
                 <div class="detail-header">
                     <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Intercambiar Turno</h3><span id="swap-subtitle" style="font-size: 11px; opacity: 0.8;">Selecciona un turno</span></div></div>
-                    <button onclick="closeRightPanel()">×</button>
+                    <button onclick="closeRightPanel()" title="Colapsar Panel" class="btn-action-main" style="width: auto; height: auto; padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
                 <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-swap-input" placeholder="Buscar por Nombre o ID..." oninput="window.renderSwapList(this.value)" class="form-select" style="width: 100%; box-sizing: border-box;"></div>
                 <div id="swap-element-list" style="flex: 1; overflow-y: auto; padding: 0;"></div>
@@ -388,7 +422,9 @@
             <div id="right-panel-report" style="display: none; flex-direction: column; height: 100%;">
                 <div class="detail-header">
                     <div class="detail-header-info"><div class="detail-text-group"><h3 style="font-size: 14px; margin: 0;">Reporte de Distribución</h3><span id="report-date-subtitle" style="font-size: 11px; opacity: 0.8;"></span></div></div>
-                    <button onclick="closeRightPanel()">×</button>
+                    <button onclick="closeRightPanel()" title="Colapsar Panel" class="btn-action-main" style="width: auto; height: auto; padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
                 <div style="padding: 15px; background: #fafafa; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;">
                     <div style="display: flex; flex-direction: column; gap: 10px;"><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-empty" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar casetas sin elementos</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; color:#334155; margin:0;"><input type="checkbox" id="chk-report-time" style="accent-color: var(--fiusha); width: 16px; height: 16px;"> Mostrar hora de entrada</label></div>
@@ -410,7 +446,10 @@
             { id: 'Casetas', title: 'Casetas', icon: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>' },
             { id: 'Eventos', title: 'Eventos', icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' }
         ];
-
+        const EXTRA_BUTTONS = [
+            { id: 'recorridosPanel', title: 'Panel Recorridos', icon: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>', action: 'openRecorridosPanel' }
+        ];
+        
         let activeIframe = null;
 
         // Configuración inicial desde LocalStorage
@@ -445,6 +484,16 @@
                 };
                 navList.appendChild(a);
             });
+            
+            // Generar botones extra
+            EXTRA_BUTTONS.forEach(btn => {
+                const a = document.createElement('a');
+                a.className = 'nav-btn extra-btn';
+                a.setAttribute('data-section', btn.id);
+                a.innerHTML = `<svg viewBox="0 0 24 24">${btn.icon}</svg><span>${btn.title}</span>`;
+                a.onclick = (e) => { e.preventDefault(); if(window[btn.action]) windowbtn.action; };
+                navList.appendChild(a);
+            });
 
             applyConfig();
             
@@ -470,6 +519,11 @@
             }
             activeIframe = iframe;
             iframe.classList.add('active');
+
+            // Si es la sección de recorridos, abrimos el panel de control
+            if (sectionId === 'Recorridos' && window.openRecorridosPanel) {
+                window.openRecorridosPanel();
+            }
 
             // Actualizar botones activos
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -514,13 +568,31 @@
         async function initPanelLogic() {
             // Importar funciones del script modular
             const scrpt = await import('./scrpt.js');
+            const reopenBtn = document.getElementById('reopen-right-panel-btn');
             
             // Exponer funciones al scope global para que los `onclick` del HTML funcionen
+            const savePanelState = (isOpen, mode, extra = {}) => {
+                let state = { isOpen, mode, ...extra };
+                localStorage.setItem('regasPanelState', JSON.stringify(state));
+            };
+
             window.closeRightPanel = () => {
                 scrpt.closeRightPanel();
                 postToActiveIframe({ action: 'panelClosed' }); // Notificar al iframe
+                if (reopenBtn) reopenBtn.style.display = 'block';
+            };
+            window.openLastRightPanel = () => {
+                const lastMode = JSON.parse(localStorage.getItem('regasPanelState') || '{}').mode;
+                if (lastMode === 'recorridos') {
+                    scrpt.openRecorridosPanel();
+                } else {
+                    document.getElementById('right-panel').style.display = 'flex';
+                }
+                savePanelState(true, lastMode);
+                if (reopenBtn) reopenBtn.style.display = 'none';
             };
             window.selectDetailTab = scrpt.selectDetailTab;
+            window.openRecorridosPanel = scrpt.openRecorridosPanel;
 
             // Funciones de Lógica de UI para paneles
             window.copyReportToClipboard = function() {
@@ -533,6 +605,10 @@
                     setTimeout(() => { btn.innerHTML = originalHTML; btn.style.background = '#10b981'; }, 2000);
                 });
             };
+
+            if (reopenBtn) {
+                reopenBtn.onclick = window.openLastRightPanel;
+            }
 
             let panelContext = {}; // Almacena el contexto del iframe activo (ej. fecha)
 
@@ -602,15 +678,7 @@
                             document.getElementById('right-panel-add').style.display = 'none';
                             await scrpt.openDetailPanel(elId, elName, record || {}, null, bgHeader, window.casetasGlobal, window.motivosGlobal, false, anio, mes, dia);
                             
-                            let stateDetail = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-                            stateDetail.isOpen = true;
-                            stateDetail.mode = 'detail';
-                            stateDetail.elId = elId;
-                            stateDetail.elName = elName;
-                            stateDetail.anio = anio;
-                            stateDetail.mes = mes;
-                            stateDetail.dia = dia;
-                            localStorage.setItem('regasPanelState', JSON.stringify(stateDetail));
+                            savePanelState(true, 'detail', { elId, elName, anio, mes, dia });
                         };
 
                         listContainer.appendChild(div);
@@ -744,6 +812,8 @@
                             document.getElementById('right-panel-detail').style.display = 'flex';
                             document.getElementById('right-panel-add').style.display = 'none';
                             document.getElementById('right-panel-swap').style.display = 'none';
+                            document.getElementById('right-panel-recorridos').style.display = 'none';
+                            document.getElementById('reopen-right-panel-btn').style.display = 'none';
                             document.getElementById('right-panel-report').style.display = 'none';
 
                             await scrpt.openDetailPanel(
@@ -768,14 +838,13 @@
                             document.getElementById('right-panel-detail').style.display = 'none';
                             document.getElementById('right-panel-swap').style.display = 'none';
                             document.getElementById('right-panel-report').style.display = 'none';
+                            document.getElementById('right-panel-recorridos').style.display = 'none';
+                            document.getElementById('reopen-right-panel-btn').style.display = 'none';
                             document.getElementById('right-panel-add').style.display = 'flex';
                             if(document.getElementById('search-elemento-input')) document.getElementById('search-elemento-input').value = '';
                             window.renderElementosList();
                             
-                            let stateAdd = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-                            stateAdd.isOpen = true;
-                            stateAdd.mode = 'add';
-                            localStorage.setItem('regasPanelState', JSON.stringify(stateAdd));
+                            savePanelState(true, 'add');
                             break;
                         case 'openSwapPanel':
                             window.intercambioData = payload.intercambioData;
@@ -785,21 +854,22 @@
                             document.getElementById('right-panel-detail').style.display = 'none';
                             document.getElementById('right-panel-add').style.display = 'none';
                             document.getElementById('right-panel-report').style.display = 'none';
+                            document.getElementById('right-panel-recorridos').style.display = 'none';
+                            document.getElementById('reopen-right-panel-btn').style.display = 'none';
                             document.getElementById('right-panel-swap').style.display = 'flex';
                             if (document.getElementById('search-swap-input')) document.getElementById('search-swap-input').value = '';
                             if (payload.intercambioData) document.getElementById('swap-subtitle').innerText = `Turno de ${payload.intercambioData.empleadoNombre}`;
                             window.renderSwapList();
                             
-                            let stateSwap = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-                            stateSwap.isOpen = true;
-                            stateSwap.mode = 'swap';
-                            localStorage.setItem('regasPanelState', JSON.stringify(stateSwap));
+                            savePanelState(true, 'swap');
                             break;
                         case 'openReportPanel':
                             document.getElementById('right-panel').style.display = 'flex';
                             document.getElementById('right-panel-detail').style.display = 'none';
                             document.getElementById('right-panel-add').style.display = 'none';
                             document.getElementById('right-panel-swap').style.display = 'none';
+                            document.getElementById('reopen-right-panel-btn').style.display = 'none';
+                            document.getElementById('right-panel-recorridos').style.display = 'none';
                             document.getElementById('right-panel-report').style.display = 'flex';
                             
                             window.currentReportTabId = payload.tabId;
@@ -807,11 +877,7 @@
                             const showTime = document.getElementById('chk-report-time')?.checked;
                             postToActiveIframe({ action: 'generateReportContent', payload: { tabId: payload.tabId, showEmpty, showTime } });
                             
-                            let stateReport = JSON.parse(localStorage.getItem('regasPanelState') || '{}');
-                            stateReport.isOpen = true;
-                            stateReport.mode = 'report';
-                            stateReport.reportTab = payload.tabId;
-                            localStorage.setItem('regasPanelState', JSON.stringify(stateReport));
+                            savePanelState(true, 'report', { reportTab: payload.tabId });
                             break;
                         case 'closeRightPanel':
                             window.closeRightPanel();
@@ -875,10 +941,16 @@
             if (savedState) {
                 const config = JSON.parse(savedState);
                 if (config.isOpen) {
+                    if (!window.casetasGlobal) { // Asegurar que los catálogos estén cargados
+                        [window.casetasGlobal, window.motivosGlobal, window.elementosGlobal] = await Promise.all([
+                            scrpt.downloadCasetas(), scrpt.downloadMotivosAusentismo(), scrpt.downloadElementos()
+                        ]);
+                    }
+                    if (reopenBtn) reopenBtn.style.display = 'none';
                     if (config.mode === 'add') {
-                        window.openAddPanel();
+                        postToActiveIframe({ action: 'openAddPanel' });
                     } else if (config.mode === 'report' && config.reportTab) {
-                        window.openReportPanel(config.reportTab);
+                        postToActiveIframe({ action: 'openReportPanel', payload: { tabId: config.reportTab } });
                     } else if (config.mode === 'detail' && config.elId && config.anio) {
                         const existingRecord = await scrpt.downloadRegas(config.anio, config.mes, config.dia, config.elId);
                         await scrpt.openDetailPanel(config.elId, config.elName, existingRecord || {}, null, null, window.casetasGlobal, window.motivosGlobal, false, config.anio, config.mes, config.dia);
